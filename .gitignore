@@ -1,0 +1,36 @@
+# ========================================
+# .gitignore - SmartHome Intelligence
+# ========================================
+
+# Variables d'environnement (TRÈS IMPORTANT)
+.env
+.env.local
+.env.production
+
+# Node modules
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Logs
+logs/
+*.log
+
+# Fichiers système
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Build
+dist/
+build/
+
+# Fichiers temporaires
+*.tmp
+*.temp
