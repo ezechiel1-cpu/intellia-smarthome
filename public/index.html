@@ -21,11 +21,7 @@
       --warning: #f39c12;
     }
     
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
     
     body {
       font-family: "Segoe UI", Tahoma, Helvetica, Arial, sans-serif;
@@ -41,10 +37,15 @@
     }
 
     body.night-mode .card,
-    body.night-mode .device-card {
+    body.night-mode .device-card,
+    body.night-mode #login-overlay .login-box {
       background: rgba(30, 41, 59, 0.95);
       color: #e2e8f0;
       border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    body.night-mode #login-overlay {
+      background: linear-gradient(135deg, #0e0f13, #0f1724);
     }
 
     body.night-mode input,
@@ -53,28 +54,14 @@
       color: #e2e8f0;
       border: 1px solid rgba(255, 255, 255, 0.2);
     }
-
-    body.night-mode input::placeholder {
-      color: #94a3b8;
-    }
-
-    body.night-mode .btn {
-      background: rgba(51, 65, 85, 0.8);
-      color: #e2e8f0;
-      border: 1px solid rgba(255, 255, 255, 0.1);
-    }
-
+    body.night-mode input::placeholder { color: #94a3b8; }
+    body.night-mode .btn { background: rgba(51, 65, 85, 0.8); color: #e2e8f0; border: 1px solid rgba(255, 255, 255, 0.1); }
     body.night-mode .btn.primary { background: var(--primary); color: white; }
     body.night-mode .btn.warn { background: var(--danger); color: white; }
     body.night-mode .btn.success { background: var(--success); color: white; }
     body.night-mode .btn.warning { background: var(--warning); color: white; }
-
     body.night-mode .chat-window { background: rgba(15, 23, 42, 0.6); }
-    body.night-mode .msg.bot {
-      background: rgba(30, 41, 59, 0.9);
-      color: #e2e8f0;
-      border: 1px solid rgba(255, 255, 255, 0.1);
-    }
+    body.night-mode .msg.bot { background: rgba(30, 41, 59, 0.9); color: #e2e8f0; border: 1px solid rgba(255, 255, 255, 0.1); }
     body.night-mode table th, body.night-mode table td { border-bottom: 1px solid rgba(255, 255, 255, 0.1); color: #e2e8f0; }
     body.night-mode .chip { background: rgba(51, 65, 85, 0.6); color: #e2e8f0; }
     body.night-mode .settings-group { border-bottom: 1px solid rgba(255, 255, 255, 0.1); }
@@ -171,11 +158,22 @@
     .settings-group h3 { margin-bottom: 15px; color: var(--primary); }
     .toggle-section { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
 
+    /* Animation PUSH TO TALK */
     .pulse { animation: pulse 1.5s infinite ease-in-out; }
     @keyframes pulse {
       0% { box-shadow: 0 0 0 0 rgba(231, 76, 60, 0.7); background-color: var(--danger); }
       70% { box-shadow: 0 0 0 10px rgba(231, 76, 60, 0); }
       100% { box-shadow: 0 0 0 0 rgba(231, 76, 60, 0); background-color: var(--danger); }
+    }
+    
+    /* Animation ICONE CONVERSATION CONTINUE */
+    .icon-pulse {
+        animation: icon-pulse-anim 1.5s infinite ease-in-out;
+    }
+    @keyframes icon-pulse-anim {
+      0% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.2); opacity: 0.7; }
+      100% { transform: scale(1); opacity: 1; }
     }
     
     /* Responsive */
@@ -192,237 +190,306 @@
     @media (min-width: 768px) {
       .two-column { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
     }
+
+    /* ==== Écran de connexion ==== */
+    #login-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: linear-gradient(135deg, #f5f7fa, #c3cfe2);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 2000;
+      transition: opacity 0.3s ease;
+    }
+    
+    .login-box {
+      background: var(--card-bg);
+      padding: 30px 40px;
+      border-radius: 12px;
+      box-shadow: var(--shadow);
+      text-align: center;
+      max-width: 400px;
+    }
+    
+    .login-box .app-icon {
+      font-size: 48px;
+      color: var(--primary);
+      margin-bottom: 16px;
+    }
+    
+    .login-box h2 { margin-bottom: 8px; }
+    .login-box p { color: var(--muted); margin-bottom: 24px; }
+
+    /* ==== Interface principale masquée par défaut ==== */
+    .main-app { display: none; }
+    
+    /* Style pour la carte de profil */
+    #user-profile-card {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      background: rgba(0,0,0,0.02);
+      padding: 12px;
+      border-radius: 8px;
+    }
+    
+    body.night-mode #user-profile-card {
+      background: rgba(255,255,255,0.05);
+    }
+
+    #user-photo {
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid var(--primary);
+    }
+    
+    #user-profile-card div { flex: 1; }
+    #user-name-display { font-weight: 700; font-size: 16px; }
+    #user-email-display { font-size: 14px; color: var(--muted); word-break: break-all; }
+    
+    /* Animation de fondu pour les suggestions */
+    #proactive-suggestion {
+      transition: opacity 0.5s ease-in-out;
+    }
+    #proactive-suggestion.fade-out {
+      opacity: 0;
+    }
   </style>
 </head>
 <body>
-  <div class="container">
-    <header>
-      <h1>SmartHome Intelligence — Mon Assistant Hybride Autonome</h1>
-      <div style="margin-top:8px">
-        <span id="statusLocal" class="chip">Local : -</span>
-        <span id="statusOnline" class="chip">Assistant : -</span>
-        <span id="intelliaLatency" class="chip">latence: -</span>
-        <span id="db-count" class="chip">on: 0</span>
-      </div>
-    </header>
 
-    <div class="main-nav">
-      <button class="nav-btn active" data-target="sec-domotique">Domotique</button>
-      <button class="nav-btn" data-target="sec-intelligence">Assistant IA</button>
-      <button class="nav-btn" data-target="sec-planning">Planning</button>
-      <button class="nav-btn" data-target="sec-params">Paramètres</button>
+  <div id="login-overlay">
+    <div class="login-box">
+      <div class="app-icon"><i class="fas fa-home-user"></i></div>
+      <h2>SmartHome Intelligence</h2>
+      <p>Veuillez vous connecter pour accéder à votre assistant domotique.</p>
+      
+      <button class="btn primary" id="googleSignInOverlayBtn" style="width:100%; justify-content:center;">
+          <svg style="width:20px; height:20px; margin-right:8px;" viewBox="0 0 24 24"><path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" style="color:#4285F4"></path><path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" style="color:#34A853"></path><path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" style="color:#FBBC05"></path><path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" style="color:#EA4335"></path><path fill="none" d="M1 1h22v22H1z"></path></svg>
+          Se connecter avec Google
+      </button>
     </div>
-
-    <section id="sec-domotique" class="section active">
-      <div class="grid" style="grid-template-columns:1fr">
-        <div>
-          <div class="card">
-            <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
-              <strong>Contrôles rapides</strong>
-              <div class="flex" style="flex-wrap:wrap">
-                <button class="btn" id="dayModeBtn"><i class="fas fa-sun"></i> Jour</button>
-                <button class="btn" id="nightModeBtn"><i class="fas fa-moon"></i> Nuit</button>
-                <button class="btn success" id="allOnBtn">Tout allumer</button>
-                <button class="btn warn" id="allOffBtn">Tout éteindre</button>
-              </div>
-            </div>
-            
-            <div style="margin-top:12px; border-top: 1px solid rgba(0,0,0,0.1); padding-top:12px;">
-              <strong>📡 Connexion directe ESP32</strong>
-              <div class="flex" style="flex-wrap:wrap; justify-content: center;">
-                <button class="btn primary" id="connect-ws">Connecter à l'ESP32</button>
-                <button class="btn warn" id="disconnect-ws" style="display:none;">Déconnecter</button>
-              </div>
-              <div id="ws-status" class="chip" style="margin-top:8px;">Statut: Déconnecté</div>
-            </div>
-
-            </div>
-          
-          <div class="card" style="margin-top:12px">
-            <h3>💡 Suggestions Proactives</h3>
-            <p id="proactive-suggestion" style="font-size:14px; color:var(--muted)">Il fait chaud aujourd'hui. Pensez à allumer le ventilateur du salon pour rester au frais.</p>
-            </div>
-
-          <div class="card" style="margin-top:12px">
-            <strong>➕ Ajouter un appareil</strong>
-            <label>Nom</label>
-            <input id="newDeviceName" placeholder="Lampe Jardin" style="width:100%;padding:8px;border-radius:8px;border:1px solid #ddd" />
-            <label>Type</label>
-            <select id="newDeviceType" style="width:100%;padding:8px;border-radius:8px;border:1px solid #ddd">
-              <option value="lamp">Lampe</option> <option value="ventilateur">Ventilateur</option>
-              <option value="plug">Prise</option> <option value="thermostat">Thermostat</option>
-              <option value="volet">Volet Roulant</option>
-            </select>
-            <label>Pièce</label>
-            <input id="newDeviceRoom" placeholder="Salon, Chambre..." style="width:100%;padding:8px;border-radius:8px;border:1px solid #ddd" />
-            <div style="margin-top:10px;display:flex;gap:8px">
-              <button class="btn primary" id="btnAddDevice">Ajouter</button>
-              <button class="btn" id="btnRefreshDevices">Rafraîchir</button>
-            </div>
-            <div id="addDeviceResult" style="margin-top:8px;color:green"></div>
-          </div>
-
-          <div style="margin-top:12px"> <div id="deviceGrid" class="grid"></div> </div>
-        </div>
-      </div>
-    </section>
-
-    <section id="sec-intelligence" class="section">
-      <div class="card">
-        <strong>Conversation complète avec l'Assistant Hybride</strong>
-        <div id="chatFullWindow" class="chat-window"></div>
-        <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
-          <input id="chatFullInput" placeholder="Posez une question à l'Assistant..." style="flex:1;padding:8px;border-radius:8px;border:1px solid #ddd" />
-          <button class="btn" id="voicePushToTalk" title="Appuyer pour parler / Appuyer pour arrêter"> <i class="fas fa-microphone-alt"></i> </button>
-          <button class="btn" id="voiceContinuous" title="Mode conversation continue"> <i class="fa-solid fa-waveform"></i> </button>
-          <button class="btn primary" id="chatFullSend">Envoyer</button>
-        </div>
-        <div style="margin-top:8px">
-          <span class="chip">Mode Conversation: <span id="continuousStatus">Désactivé</span></span>
-          <span class="chip" id="intelliaStatus">Assistant: Non connecté</span>
-          <span class="chip" id="voiceStatus">Voix: Inactive</span>
-        </div>
-        <div style="margin-top:12px">
-            <strong>Exemples de commandes:</strong>
-            <ul style="margin-left:20px;margin-top:8px;font-size:14px;">
-              <li>"Allume la lampe du salon"</li> <li>"Éteins tout à 22h"</li>
-              <li>"Règle la luminosité à 50%"</li> <li>"Supprime toutes les planifications"</li>
-            </ul>
-        </div>
-      </div>
-    </section>
-
-    <section id="sec-planning" class="section">
-      <div class="two-column">
-        <div class="card">
-          <strong>Ajouter une planification</strong>
-          <div style="margin-top:8px">
-            <label>Appareil</label>
-            <select id="plan-device" style="width:100%;padding:8px;border-radius:8px;border:1px solid #ddd"></select>
-            <label>Heure</label>
-            <input type="time" id="plan-time" style="width:100%;padding:8px;border-radius:8px;border:1px solid #ddd" />
-            <label>Action</label>
-            <select id="plan-action" style="width:100%;padding:8px;border-radius:8px;border:1px solid #ddd">
-              <option value="ON">Allumer</option> <option value="OFF">Éteindre</option>
-            </select>
-            <label>Puissance (%)</label>
-            <input id="plan-power" type="number" min="0" max="100" value="100" style="width:100%;padding:8px;border-radius:8px;border:1px solid #ddd" />
-            <div style="margin-top:8px;display:flex;gap:8px">
-              <button class="btn primary" id="addPlan">Ajouter</button>
-              <button class="btn warning" id="clearAllPlans"> <i class="fas fa-trash"></i> Tout supprimer </button>
-            </div>
-          </div>
-        </div>
-        <div class="card">
-          <strong>Planifications enregistrées</strong>
-          <div id="planningTable" style="margin-top:8px"></div>
-        </div>
-      </div>
-    </section>
-
-    <section id="sec-params" class="section">
-      <div class="card">
-        <h2>Paramètres du Système</h2>
-        
-        <div class="settings-group">
-          <h3>Apparence</h3>
-          <div class="toggle-section">
-            <span>Mode sombre</span>
-            <label class="switch-3d"><input type="checkbox" id="darkModeToggle"><span class="slider-3d"></span></label>
-          </div>
-        </div>
-
-        <div class="settings-group">
-          <h3>Notifications</h3>
-          <div class="toggle-section">
-            <span>Activer les notifications</span>
-            <label class="switch-3d"><input type="checkbox" id="notificationsToggle" checked><span class="slider-3d"></span></label>
-          </div>
-          <div class="toggle-section">
-            <span>Notifications vocales de l'Assistant</span>
-            <label class="switch-3d"><input type="checkbox" id="voiceNotificationsToggle" checked><span class="slider-3d"></span></label>
-          </div>
-        </div>
-
-        <div class="settings-group">
-          <h3>Gestion des Données</h3>
-          <div style="display:flex;gap:8px">
-            <button class="btn success" id="exportConfigBtn"><i class="fas fa-download"></i> Exporter</button>
-            <button class="btn primary" id="importConfigBtn"><i class="fas fa-upload"></i> Importer</button>
-            <input type="file" id="importConfigFile" accept=".json" style="display:none;" />
-          </div>
-        </div>
-
-        <div class="settings-group">
-            <h3>👤 Profil Utilisateur Sécurisé</h3>
-            <div id="user-profile-login">
-                <p style="font-size:14px; color:var(--muted); margin-bottom:12px;">Connectez-vous pour synchroniser vos paramètres et préférences.</p>
-                <button class="btn primary" id="googleSignInBtn" style="width:100%; justify-content:center;">
-                    <svg style="width:20px; height:20px; margin-right:8px;" viewBox="0 0 24 24"><path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" style="color:#4285F4"></path><path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" style="color:#34A853"></path><path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" style="color:#FBBC05"></path><path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" style="color:#EA4335"></path><path fill="none" d="M1 1h22v22H1z"></path></svg>
-                    Se connecter avec Google
-                </button>
-            </div>
-            <div id="user-profile-info" style="display:none;">
-                <p><strong>Nom:</strong> <span id="user-name-display"></span></p>
-                <p><strong>Email:</strong> <span id="user-email-display"></span></p>
-                <label for="user-firstname" style="margin-top:10px;">Prénom</label>
-                <input type="text" id="user-firstname" placeholder="Complétez votre prénom" style="width:100%;padding:8px;border-radius:8px;border:1px solid #ddd">
-                <div style="margin-top:10px;display:flex;gap:8px">
-                    <button class="btn primary" id="saveProfileBtn">Enregistrer les modifications</button>
-                    <button class="btn" id="signOutBtn">Déconnexion</button>
-                </div>
-            </div>
-        </div>
-        
-        <div class="settings-group">
-            <h3>Journal d'Activité</h3>
-            <div id="activityLog" style="height: 200px; overflow-y: auto; background: rgba(0,0,0,0.03); border-radius: 8px; padding: 10px; font-size: 13px; border: 1px solid rgba(0,0,0,0.06);"></div>
-        </div>
-
-        <div class="settings-group">
-          <h3>Sécurité</h3>
-          <label for="security-pin">Code PIN</label>
-          <input type="password" id="security-pin" placeholder="Entrez un code PIN" style="width:100%;padding:8px;border-radius:8px;border:1px solid #ddd">
-          <div style="margin-top:10px;display:flex;gap:8px"> <button class="btn primary" id="savePinBtn">Enregistrer</button> </div>
-        </div>
-
-        <div class="settings-group">
-          <h3>Réinitialisation</h3>
-          <button class="btn warn" id="resetBtn"> <i class="fas fa-trash"></i> Réinitialiser l'application </button>
-          <p style="margin-top:8px;font-size:13px;color:var(--muted)"> Attention: Cette action supprimera tous les appareils et paramètres. </p>
-        </div>
-      </div>
-    </section>
   </div>
 
-  <footer>
-    <button data-target="sec-domotique" class="btn-nav active"><i class="fas fa-home"></i><span>Accueil</span></button>
-    <button data-target="sec-intelligence" class="btn-nav"><i class="fas fa-robot"></i><span>Assistant</span></button>
-    <button data-target="sec-planning" class="btn-nav"><i class="fas fa-calendar-alt"></i><span>Planning</span></button>
-    <button data-target="sec-params" class="btn-nav"><i class="fas fa-cog"></i><span>Paramètres</span></button>
-  </footer>
+  <div class="main-app">
+    <div class="container">
+      <header>
+        <h1>SmartHome Intelligence — Mon Assistant Hybride Autonome</h1>
+        <div style="margin-top:8px">
+          <span id="statusLocal" class="chip">Local : -</span>
+          <span id="statusOnline" class="chip">Assistant : -</span>
+          <span id="intelliaLatency" class="chip">latence: -</span>
+          <span id="db-count" class="chip">on: 0</span>
+        </div>
+      </header>
 
-  <script type="module">
+      <div class="main-nav">
+        <button class="nav-btn active" data-target="sec-domotique">Domotique</button>
+        <button class="nav-btn" data-target="sec-intelligence">Assistant IA</button>
+        <button class="nav-btn" data-target="sec-planning">Planning</button>
+        <button class="nav-btn" data-target="sec-params">Paramètres</button>
+      </div>
+
+      <section id="sec-domotique" class="section active">
+        <div class="grid" style="grid-template-columns:1fr">
+          <div>
+            <div class="card">
+              <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+                <strong>Contrôles rapides</strong>
+                <div class="flex" style="flex-wrap:wrap">
+                  <button class="btn" id="dayModeBtn"><i class="fas fa-sun"></i> Jour</button>
+                  <button class="btn" id="nightModeBtn"><i class="fas fa-moon"></i> Nuit</button>
+                  <button class="btn success" id="allOnBtn">Tout allumer</button>
+                  <button class="btn warn" id="allOffBtn">Tout éteindre</button>
+                </div>
+              </div>
+              
+              <div style="margin-top:12px; border-top: 1px solid rgba(0,0,0,0.1); padding-top:12px;">
+                <strong><i class="fas fa-robot"></i> Assistant Vocal</strong>
+                <button class="btn primary" id="quickVoiceToggleBtn" style="width:100%; justify-content:center; margin-top:8px; font-size: 15px;">
+                  <i class="fas fa-waveform"></i> Lancer la conversation
+                </button>
+              </div>
+
+              <div style="margin-top:12px; border-top: 1px solid rgba(0,0,0,0.1); padding-top:12px;">
+                <strong>📡 Connexion directe ESP32</strong>
+                <div class="flex" style="flex-wrap:wrap; justify-content: center;">
+                  <button class="btn primary" id="connect-ws">Connecter à l'ESP32</button>
+                  <button class="btn warn" id="disconnect-ws" style="display:none;">Déconnecter</button>
+                </div>
+                <div id="ws-status" class="chip" style="margin-top:8px;">Statut: Déconnecté</div>
+              </div>
+
+            </div>
+            
+            <div class="card" style="margin-top:12px">
+              <h3>💡 Suggestions Proactives</h3>
+              <p id="proactive-suggestion" style="font-size:14px; color:var(--muted)">...</p>
+            </div>
+
+            <div class="card" style="margin-top:12px" id="addDeviceCard">
+              <button class="btn primary" id="toggleAddDeviceForm" style="width: 100%; justify-content: center;">
+                ➕ Ajouter un appareil
+              </button>
+              
+              <div id="addDeviceFormContainer" style="display: none; margin-top: 15px;">
+                <label>Nom</label>
+                <input id="newDeviceName" placeholder="Lampe Jardin" style="width:100%;padding:8px;border-radius:8px;border:1px solid #ddd" autocomplete="off" />
+                <label>Type</label>
+                <select id="newDeviceType" style="width:100%;padding:8px;border-radius:8px;border:1px solid #ddd">
+                  <option value="lamp">Lampe</option> <option value="ventilateur">Ventilateur</option>
+                  <option value="plug">Prise</option> <option value="thermostat">Thermostat</option>
+                  <option value="volet">Volet Roulant</option>
+                </select>
+                <label>Pièce</label>
+                <input id="newDeviceRoom" placeholder="Salon, Chambre..." style="width:100%;padding:8px;border-radius:8px;border:1px solid #ddd" autocomplete="off" />
+                <div style="margin-top:10px;display:flex;gap:8px">
+                  <button class="btn primary" id="btnAddDevice">Ajouter</button>
+                  <button class="btn" id="btnRefreshDevices">Rafraîchir</button>
+                </div>
+                <div id="addDeviceResult" style="margin-top:8px;color:green"></div>
+              </div>
+            </div>
+
+            <div style="margin-top:12px"> <div id="deviceGrid" class="grid"></div> </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="sec-intelligence" class="section">
+        <div class="card">
+          <strong><i class="fas fa-robot"></i> Conversation complète avec l'Assistant Hybride</strong>
+          <div id="chatFullWindow" class="chat-window"></div>
+          <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
+            <input id="chatFullInput" placeholder="Posez une question à l'Assistant..." style="flex:1;padding:8px;border-radius:8px;border:1px solid #ddd" />
+            <button class="btn" id="voicePushToTalk" title="Appuyer pour parler / Appuyer pour arrêter"> <i class="fas fa-microphone-alt"></i> </button>
+            <button class="btn" id="voiceContinuous" title="Mode conversation continue"> <i class="fa-solid fa-waveform"></i> </button>
+            <button class="btn primary" id="chatFullSend">Envoyer</button>
+          </div>
+          <div style="margin-top:8px">
+            <span class="chip">Mode Conversation: <span id="continuousStatus">Désactivé</span></span>
+            <span class="chip" id="intelliaStatus">Assistant: Non connecté</span>
+            <span class="chip" id="voiceStatus">Voix: Inactive</span>
+          </div>
+          <div style="margin-top:12px">
+              <strong>Exemples de commandes:</strong>
+              <ul style="margin-left:20px;margin-top:8px;font-size:14px;">
+                <li>"Allume la lampe du salon"</li> <li>"Éteins tout à 22h"</li>
+                <li>"Règle la luminosité à 50%"</li> <li>"Supprime toutes les planifications"</li>
+              </ul>
+          </div>
+        </div>
+      </section>
+
+      <section id="sec-planning" class="section">
+        <div class="two-column">
+          <div class="card">
+            <strong>Ajouter une planification</strong>
+            <div style="margin-top:8px">
+              <label>Appareil</label>
+              <select id="plan-device" style="width:100%;padding:8px;border-radius:8px;border:1px solid #ddd"></select>
+              <label>Heure</label>
+              <input type="time" id="plan-time" style="width:100%;padding:8px;border-radius:8px;border:1px solid #ddd" />
+              <label>Action</label>
+              <select id="plan-action" style="width:100%;padding:8px;border-radius:8px;border:1px solid #ddd">
+                <option value="ON">Allumer</option> <option value="OFF">Éteindre</option>
+              </select>
+              <label>Puissance (%)</label>
+              <input id="plan-power" type="number" min="0" max="100" value="100" style="width:100%;padding:8px;border-radius:8px;border:1px solid #ddd" />
+              <div style="margin-top:8px;display:flex;gap:8px">
+                <button class="btn primary" id="addPlan">Ajouter</button>
+                <button class="btn warning" id="clearAllPlans"> <i class="fas fa-trash"></i> Tout supprimer </button>
+              </div>
+            </div>
+          </div>
+          <div class="card">
+            <strong>Planifications enregistrées</strong>
+            <div id="planningTable" style="margin-top:8px"></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="sec-params" class="section">
+        <div class="card">
+          <h2>Paramètres du Système</h2>
+          
+          <div class="settings-group">
+            <h3>Apparence</h3>
+            <div class="toggle-section">
+              <span>Mode sombre</span>
+              <label class="switch-3d"><input type="checkbox" id="darkModeToggle"><span class="slider-3d"></span></label>
+            </div>
+          </div>
+
+          <div class="settings-group">
+            <h3>Notifications</h3>
+            <div class="toggle-section">
+              <span>Activer les notifications</span>
+              <label class="switch-3d"><input type="checkbox" id="notificationsToggle" checked><span class="slider-3d"></span></label>
+            </div>
+            <div class="toggle-section">
+              <span>Notifications vocales de l'Assistant</span>
+              <label class="switch-3d"><input type="checkbox" id="voiceNotificationsToggle" checked><span class="slider-3d"></span></label>
+            </div>
+          </div>
+          
+          <div class="settings-group">
+              <h3>👤 Profil Utilisateur</h3>
+              <div id="user-profile-card">
+                  <img id="user-photo" src="" alt="Photo de profil">
+                  <div>
+                      <strong id="user-name-display"></strong>
+                      <p id="user-email-display"></p>
+                  </div>
+              </div>
+              <button class="btn warn" id="signOutBtn" style="margin-top: 15px; width: 100%; justify-content: center;">
+                <i class="fas fa-sign-out-alt"></i> Déconnexion
+              </button>
+          </div>
+          
+          <div class="settings-group">
+              <h3>Journal d'Activité</h3>
+              <div id="activityLog" style="height: 200px; overflow-y: auto; background: rgba(0,0,0,0.03); border-radius: 8px; padding: 10px; font-size: 13px; border: 1px solid rgba(0,0,0,0.06);"></div>
+          </div>
+
+          <div class="settings-group">
+            <h3>Réinitialisation</h3>
+            <button class="btn warn" id="resetBtn"> <i class="fas fa-trash"></i> Réinitialiser l'application </button>
+            <p style="margin-top:8px;font-size:13px;color:var(--muted)"> Attention: Cette action supprimera tous les appareils et paramètres. </p>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <footer>
+      <button data-target="sec-domotique" class="btn-nav active"><i class="fas fa-home"></i><span>Accueil</span></button>
+      <button data-target="sec-intelligence" class="btn-nav"><i class="fas fa-robot"></i><span>Assistant</span></button>
+      <button data-target="sec-planning" class="btn-nav"><i class="fas fa-calendar-alt"></i><span>Planning</span></button>
+      <button data-target="sec-params" class="btn-nav"><i class="fas fa-cog"></i><span>Paramètres</span></button>
+    </footer>
+  </div> <script type="module">
   /*************************************************
    * SmartHome Intelligence - Version Finale Corrigée
+   * Connexion obligatoire + Raccourci Vocal + Suggestions Dynamiques
+   * Synchro UI boutons vocaux
    *************************************************/
 
   // ======= CONFIG =======
- // Détection automatique de l'environnement (Local vs. Production)
-let RENDER_API;
+  let RENDER_API;
 
-if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-  // Nous sommes en développement local
-  RENDER_API = 'http://localhost:3000';
-  console.log('Environnement local détecté. API ->', RENDER_API);
-} else {
-  // Nous sommes en production (déployé sur Render ou ailleurs)
-  RENDER_API = 'https://smarthome-0tyx.onrender.com';
-  console.log('Environnement de production détecté. API ->', RENDER_API);
-}
+  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+    RENDER_API = 'http://localhost:3000';
+    console.log('Environnement local détecté. API ->', RENDER_API);
+  } else {
+    RENDER_API = 'https://smarthome-0tyx.onrender.com';
+    console.log('Environnement de production détecté. API ->', RENDER_API);
+  }
   const AUTH_KEY = "cle-secrete-intellia";
 
-  // Your web app's Firebase configuration
   const firebaseConfig = {
     apiKey: "AIzaSyA5oYEu4-nOUtjOe2JJ4C9VwNniNSBdjqI",
     authDomain: "mamaisonintelligente-14485.firebaseapp.com",
@@ -445,14 +512,14 @@ if (window.location.hostname === 'localhost' || window.location.hostname === '12
     devices: [], deviceStates: {},
     isNightMode: localStorage.getItem('nightMode') === 'true',
     connectionType: 'none', isConnected: false,
-    // SUPPRIMÉ: bluetoothCharacteristic: null,
     intelliaOnline: false,
-    securityPin: localStorage.getItem('securityPin') || '',
     notificationsEnabled: localStorage.getItem('notifications') !== 'false',
     voiceNotifications: localStorage.getItem('voiceNotifications') !== 'false',
     websocket: null,
     plans: []
   };
+  
+  const defaultAvatar = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iI2FlYWVhZSI+PHBhdGggZD0iTTEyIDJDNi40OCAyIDIgNi40OCAyIDEyczQuNDggMTQgMTAgMTBjNS41MiAwIDEwLTQuNDggMTAtMTBTMjcuNTIgMiAxMiAyem0wIDJjMS42NiAwIDMgMS4zNCAzIDNzLTEuMzQgMy0zIDMtMy0xLjM0LTMtM1MwLjM0IDQgMTIgNHptMCAxNmMtMi42NyAwLTUuNDMtMS4yOS03LTIuODguNTYtMS42NSAzLjU1LTIuNjIgNy0yLjYyczYuNDQgLjk3IDcgMi42MmMtMS41NyAxLjU5LTQuMzMgMi44OC03IDIuODh6Ii8+PC9zdmc+";
 
   const deviceTypes = {
     'lamp': { name: 'Lampe', hasBrightness: true, icon: 'lightbulb' },
@@ -461,6 +528,16 @@ if (window.location.hostname === 'localhost' || window.location.hostname === '12
     'thermostat': { name: 'Thermostat', hasBrightness: false, icon: 'temperature-low' },
     'volet': { name: 'Volet Roulant', hasBrightness: false, icon: 'window-maximize' }
   };
+  
+  const proactiveSuggestions = [
+    "Bonjour ! Pensez à allumer la lumière du bureau si vous commencez à travailler.",
+    "Il est l'heure du déjeuner. N'oubliez pas d'éteindre les appareils de la cuisine après usage.",
+    "Le soleil se couche bientôt. Voulez-vous que j'allume les lampes d'ambiance ?",
+    "Il fait chaud aujourd'hui. Pensez à allumer le ventilateur pour rester au frais.",
+    "Vérification de sécurité : toutes les lumières sont-elles éteintes avant de dormir ?",
+    "Une nouvelle journée commence ! Je suis prêt à vous aider à automatiser vos tâches."
+  ];
+  let suggestionIndex = 0;
 
   // ======= UI: Navigation =======
   document.querySelectorAll('.nav-btn, .btn-nav').forEach(btn => {
@@ -506,6 +583,7 @@ if (window.location.hostname === 'localhost' || window.location.hostname === '12
   // ======= Activity Log =======
   function logActivity(message, type = 'info') {
       const logContainer = el('activityLog');
+      if (!logContainer) return;
       const time = new Date().toLocaleTimeString();
       const entry = document.createElement('div');
       entry.innerHTML = `<span style="color:var(--muted)">[${time}]</span> ${message}`;
@@ -569,7 +647,12 @@ if (window.location.hostname === 'localhost' || window.location.hostname === '12
     const type = el('newDeviceType').value;
     const room = el('newDeviceRoom').value.trim();
     
-    if (!name || !room) return alert('Nom et pièce requis');
+    if (!name || !room) {
+        el('addDeviceResult').textContent = 'Nom et pièce requis';
+        el('addDeviceResult').style.color = 'var(--danger)';
+        setTimeout(() => { el('addDeviceResult').textContent = ''; }, 3000);
+        return;
+    }
     
     const id = name.toLowerCase().replace(/\s+/g, '_').replace(/[^\w\-]/g, '');
     const deviceType = deviceTypes[type] || {};
@@ -580,6 +663,12 @@ if (window.location.hostname === 'localhost' || window.location.hostname === '12
     
     el('newDeviceName').value = ''; el('newDeviceRoom').value = '';
     logActivity(`Appareil ajouté: ${name}`);
+    
+    el('addDeviceFormContainer').style.display = 'none';
+    el('toggleAddDeviceForm').textContent = '➕ Ajouter un appareil';
+    el('addDeviceResult').textContent = 'Appareil ajouté avec succès !';
+    el('addDeviceResult').style.color = 'var(--success)';
+    setTimeout(() => { el('addDeviceResult').textContent = ''; }, 3000);
   });
 
   window.deleteDevicePrompt = async function(id) {
@@ -621,32 +710,20 @@ if (window.location.hostname === 'localhost' || window.location.hostname === '12
     sendCommand(deviceId, v > 0 ? "ON" : "OFF", v);
   };
 
-  // MODIFIÉ: sendCommand envoie maintenant via WebSocket si connecté
   window.sendCommand = (deviceId, action, value = null) => {
     const val = (value !== null) ? value : (action === "ON" ? 100 : 0);
     
-    // 1. Envoyer la commande via WebSocket si connecté
     if (appState.websocket && appState.websocket.readyState === WebSocket.OPEN) {
-        const wsPayload = {
-            type: "control",
-            device_id: deviceId,
-            action: action, // "ON" or "OFF"
-            value: val      // 0-100
-        };
+        const wsPayload = { type: "control", device_id: deviceId, action: action, value: val };
         appState.websocket.send(JSON.stringify(wsPayload));
         logActivity(`[WS] Commande envoyée: ${deviceId} -> ${action} (${val})`);
     } else if (appState.connectionType === 'websocket') {
          logActivity("Erreur: WS non connecté. Commande non envoyée à l'ESP.");
     }
 
-    // 2. Mettre à jour l'état local (optimistic update)
     appState.deviceStates[deviceId] = { etat: action, luminosite: val };
     renderDevices();
-    
-    // 3. Mettre à jour le backend (Firebase / LocalStorage)
     writeDeviceStateToBackend(deviceId, action, val);
-    
-    // 4. Logger l'activité
     logActivity(`Commande: ${deviceId} -> ${action} ${value !== null ? `(${value}%)` : ''}`);
   };
 
@@ -729,7 +806,7 @@ if (window.location.hostname === 'localhost' || window.location.hostname === '12
   const saveDevicesToLocalStorage = () => localStorage.setItem('sh_devices', JSON.stringify(appState.devices));
   const loadDevicesFromLocalStorage = () => { appState.devices = JSON.parse(localStorage.getItem('sh_devices') || '[]'); };
   const savePlansToLocalStorage = () => localStorage.setItem('sh_plans', JSON.stringify(appState.plans));
-  const loadPlansFromLocalStorage = () => { appState.plans = JSON.parse(localStorage.getItem('sh_plans') || '[]'); };
+  const loadPlansToLocalStorage = () => { appState.plans = JSON.parse(localStorage.getItem('sh_plans') || '[]'); };
 
   // ======= Voice Synthesis & Recognition =======
   let preferredVoice = null;
@@ -755,15 +832,18 @@ if (window.location.hostname === 'localhost' || window.location.hostname === '12
     window.speechSynthesis.speak(u);
   }
 
+  // MODIFIÉ: VoiceEngine avec synchro UI améliorée
   const VoiceEngine = {
     recognition: null, isPushToTalkActive: false, isContinuousActive: false, isPausedForSpeech: false,
     init() {
       if (!("webkitSpeechRecognition" in window || "SpeechRecognition" in window)) {
         el('voicePushToTalk').disabled = true; el('voiceContinuous').disabled = true;
+        el('quickVoiceToggleBtn').disabled = true; el('quickVoiceToggleBtn').textContent = 'Voix non supportée';
         el('voiceStatus').textContent = 'Voix: Non supportée'; return;
       }
       el('voicePushToTalk').addEventListener('click', () => this.togglePushToTalk());
       el('voiceContinuous').addEventListener('click', () => this.toggleContinuousConversation());
+      el('quickVoiceToggleBtn').addEventListener('click', () => this.toggleContinuousConversation());
     },
     createRecognitionInstance(continuous = false) {
       const Rec = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -771,6 +851,38 @@ if (window.location.hostname === 'localhost' || window.location.hostname === '12
       rec.lang = 'fr-FR'; rec.continuous = continuous; rec.interimResults = false;
       return rec;
     },
+    
+    // Fonction centralisée de mise à jour de l'interface utilisateur
+    updateContinuousUI() {
+        const btn1 = el('voiceContinuous'); // Bouton onglet Assistant
+        const btn2 = el('quickVoiceToggleBtn'); // Bouton onglet Accueil
+        const status = el('continuousStatus');
+        const isActive = this.isContinuousActive;
+
+        if (status) status.textContent = isActive ? 'Activé' : 'Désactivé';
+
+        // Logique pour btn1 (onglet Assistant)
+        if (btn1) {
+          btn1.classList.toggle('active', isActive); // 'active' (cyan) quand c'est ON
+          btn1.classList.toggle('warn', isActive);   // 'warn' (rouge) quand c'est ON
+          const icon1 = btn1.querySelector('i');
+          if (icon1) {
+            icon1.classList.toggle('icon-pulse', isActive);
+            icon1.classList.toggle('fa-waveform', !isActive);
+            icon1.classList.toggle('fa-stop-circle', isActive);
+          }
+        }
+        
+        // Logique pour btn2 (raccourci Accueil)
+        if (btn2) {
+          btn2.classList.toggle('primary', !isActive);
+          btn2.classList.toggle('warn', isActive); // 'warn' (rouge) quand c'est ON
+          btn2.innerHTML = isActive ? 
+            '<i class="fas fa-stop-circle icon-pulse"></i> Conversation active' : 
+            '<i class="fas fa-waveform"></i> Lancer la conversation';
+        }
+    },
+    
     togglePushToTalk() {
       if (this.isPushToTalkActive) { if (this.recognition) this.recognition.stop(); return; }
       if (this.isContinuousActive) this.toggleContinuousConversation();
@@ -786,10 +898,14 @@ if (window.location.hostname === 'localhost' || window.location.hostname === '12
     },
     toggleContinuousConversation() {
         this.isContinuousActive = !this.isContinuousActive;
-        el('continuousStatus').textContent = this.isContinuousActive ? 'Activé' : 'Désactivé';
-        el('voiceContinuous').classList.toggle('active', this.isContinuousActive);
-        if (this.isContinuousActive) { if (this.isPushToTalkActive) this.togglePushToTalk(); this.startContinuousLoop(); } 
-        else { this.stopRecognition(); }
+        this.updateContinuousUI();
+        
+        if (this.isContinuousActive) { 
+          if (this.isPushToTalkActive) this.togglePushToTalk();
+          this.startContinuousLoop(); 
+        } else { 
+          this.stopRecognition(); 
+        }
     },
     startContinuousLoop() {
         if (!this.isContinuousActive || this.isPausedForSpeech) return;
@@ -802,9 +918,15 @@ if (window.location.hostname === 'localhost' || window.location.hostname === '12
     },
     stopRecognition() {
       if (this.recognition) { try { this.recognition.stop(); } catch(e) {} }
-      this.recognition = null; this.isPushToTalkActive = false; this.isContinuousActive = false;
-      el('voicePushToTalk').classList.remove('pulse'); el('voiceContinuous').classList.remove('active');
-      el('continuousStatus').textContent = 'Désactivé'; el('voiceStatus').textContent = 'Voix: Inactive';
+      this.recognition = null; 
+      
+      this.isPushToTalkActive = false;
+      this.isContinuousActive = false;
+      
+      el('voicePushToTalk').classList.remove('pulse');
+      this.updateContinuousUI(); // Synchro UI
+      
+      el('voiceStatus').textContent = 'Voix: Inactive';
     },
     pauseRecognition() {
       if (this.isContinuousActive && !this.isPausedForSpeech) {
@@ -898,21 +1020,19 @@ if (window.location.hostname === 'localhost' || window.location.hostname === '12
       appState.isNightMode = e.target.checked; localStorage.setItem('nightMode', e.target.checked);
       document.body.classList.toggle('night-mode', e.target.checked);
     });
+    
     el('notificationsToggle').addEventListener('change', (e) => localStorage.setItem('notifications', e.target.checked));
     el('voiceNotificationsToggle').addEventListener('change', (e) => localStorage.setItem('voiceNotifications', e.target.checked));
-    el('security-pin').value = appState.securityPin;
-    el('savePinBtn').addEventListener('click', () => { localStorage.setItem('securityPin', el('security-pin').value); alert('Code PIN enregistré !'); });
+    
     el('resetBtn').addEventListener('click', () => { if (confirm("Réinitialiser l'application ?")) { localStorage.clear(); location.reload(); } });
-    el('exportConfigBtn').addEventListener('click', handleExport);
-    el('importConfigBtn').addEventListener('click', () => el('importConfigFile').click());
-    el('importConfigFile').addEventListener('change', handleImport);
-    el('googleSignInBtn').addEventListener('click', handleGoogleSignIn);
+    
+    el('googleSignInOverlayBtn').addEventListener('click', handleGoogleSignIn);
     el('signOutBtn').addEventListener('click', handleSignOut);
-    el('saveProfileBtn').addEventListener('click', handleSaveProfile);
   }
 
   // ======= User Profile Functions (Real) =======
   function handleGoogleSignIn() {
+    if (!auth) return;
     const provider = new GoogleAuthProvider();
     signInWithPopup(auth, provider).catch((error) => {
         console.error("Erreur d'authentification:", error);
@@ -921,125 +1041,75 @@ if (window.location.hostname === 'localhost' || window.location.hostname === '12
   }
 
   function handleSignOut() {
+    if (!auth) return;
     signOut(auth).catch((error) => console.error("Erreur de déconnexion:", error));
   }
-
-  function showUserProfile(user) {
-    el('user-profile-login').style.display = 'none';
-    el('user-profile-info').style.display = 'block';
-    el('user-name-display').textContent = user.displayName;
-    el('user-email-display').textContent = user.email;
-    el('user-firstname').value = user.displayName.split(' ')[0] || '';
-  }
-
-  function handleSaveProfile() {
-    alert("Fonctionnalité de sauvegarde du profil à implémenter !");
-  }
-
-  function handleExport() {
-    const config = { devices: appState.devices, plans: appState.plans || [], settings: { nightMode: appState.isNightMode, pin: appState.securityPin } };
-    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(config, null, 2));
-    const dl = document.createElement('a');
-    dl.setAttribute("href", dataStr); dl.setAttribute("download", "smarthome_config.json");
-    document.body.appendChild(dl); dl.click(); dl.remove();
-    logActivity("Configuration exportée.");
-  }
-
-  function handleImport(event) {
-    const file = event.target.files[0]; if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (e) => {
-        try {
-            const config = JSON.parse(e.target.result);
-            if (config.devices) { appState.devices = config.devices; saveDevicesToLocalStorage(); }
-            if (config.plans) { appState.plans = config.plans; savePlansToLocalStorage(); }
-            if(config.settings) { localStorage.setItem('nightMode', config.settings.nightMode); localStorage.setItem('securityPin', config.settings.pin); }
-            alert('Configuration importée ! La page va se recharger.');
-            location.reload();
-        } catch (err) { alert('Erreur de lecture du fichier.'); console.error(err); }
-    };
-    reader.readAsText(file);
-  }
-
-  // SUPPRIMÉ: La fonction connectToBluetooth et son listener ont été retirés.
   
-  // ======= AJOUT: WebSocket (ESP32) Logic =======
+  // ======= WebSocket (ESP32) Logic =======
   const HARDCODED_ESP_IP = "192.168.43.248";
 
   function connectWebSocket() {
-      if (appState.websocket && appState.websocket.readyState === WebSocket.OPEN) {
-          logActivity("Déjà connecté au WebSocket.");
-          return;
-      }
-      
-      const wsUrl = `ws://${HARDCODED_ESP_IP}/ws`;
-      logActivity(`Tentative de connexion à ${wsUrl}...`);
-      el('ws-status').textContent = 'Statut: Connexion...';
-      
-      try {
-          appState.websocket = new WebSocket(wsUrl);
-
-          appState.websocket.onopen = () => {
-              logActivity("✅ WebSocket connecté !");
-              el('ws-status').textContent = 'Statut: Connecté';
-              el('ws-status').style.backgroundColor = 'var(--success)';
-              el('connect-ws').style.display = 'none';
-              el('disconnect-ws').style.display = 'block';
-              appState.connectionType = 'websocket';
-              appState.isConnected = true;
-              // Envoyer un message d'init
-              appState.websocket.send(JSON.stringify({ type: 'hello', client: 'web' }));
-          };
-
-          appState.websocket.onmessage = (event) => {
-              logActivity(`[WS] Message reçu: ${event.data}`);
-              try {
-                  const data = JSON.parse(event.data);
-                  // Logique pour traiter les messages de l'ESP32
-                  // Si l'ESP32 confirme un changement d'état
-                  if (data.type === 'state_update' && data.device_id && data.state) {
-                      const { device_id, state, power } = data;
-                      // Mettre à jour l'état (même si on l'a déjà fait en local)
-                      // pour être synchronisé avec l'appareil
-                      appState.deviceStates[device_id] = { etat: state, luminosite: power };
-                      renderDevices(); 
-                  }
-                  if (data.type === 'ping') {
-                      logActivity("[WS] Ping reçu, envoi du pong.");
-                      appState.websocket.send(JSON.stringify({type: 'pong'}));
-                  }
-              } catch (e) {
-                  console.warn("[WS] Message non JSON reçu:", event.data);
-              }
-          };
-
-          appState.websocket.onclose = () => {
-              logActivity("WebSocket déconnecté.");
-              el('ws-status').textContent = 'Statut: Déconnecté';
-              el('ws-status').style.backgroundColor = '';
-              el('connect-ws').style.display = 'block';
-              el('disconnect-ws').style.display = 'none';
-              appState.websocket = null;
-              appState.connectionType = 'none';
-              appState.isConnected = false;
-          };
-
-          appState.websocket.onerror = (error) => {
-              console.error("Erreur WebSocket:", error);
-              logActivity("Erreur de connexion WebSocket.");
-              el('ws-status').textContent = 'Statut: Erreur';
-              el('ws-status').style.backgroundColor = 'var(--danger)';
-              if (appState.websocket) {
-                  appState.websocket.close(); // Forcer la fermeture en cas d'erreur
-              }
-              appState.websocket = null;
-          };
-
-      } catch (e) {
-          console.error("Impossible de créer le WebSocket:", e);
-          logActivity("Erreur: Impossible de créer le WebSocket.");
-          el('ws-status').textContent = 'Statut: Erreur';
-      }
+    if (appState.websocket && appState.websocket.readyState === WebSocket.OPEN) {
+        logActivity("Déjà connecté au WebSocket.");
+        return;
+    }
+    const wsUrl = `ws://${HARDCODED_ESP_IP}/ws`;
+    logActivity(`Tentative de connexion à ${wsUrl}...`);
+    el('ws-status').textContent = 'Statut: Connexion...';
+    try {
+        appState.websocket = new WebSocket(wsUrl);
+        appState.websocket.onopen = () => {
+            logActivity("✅ WebSocket connecté !");
+            el('ws-status').textContent = 'Statut: Connecté';
+            el('ws-status').style.backgroundColor = 'var(--success)';
+            el('connect-ws').style.display = 'none';
+            el('disconnect-ws').style.display = 'block';
+            appState.connectionType = 'websocket';
+            appState.isConnected = true;
+            appState.websocket.send(JSON.stringify({ type: 'hello', client: 'web' }));
+        };
+        appState.websocket.onmessage = (event) => {
+            logActivity(`[WS] Message reçu: ${event.data}`);
+            try {
+                const data = JSON.parse(event.data);
+                if (data.type === 'state_update' && data.device_id && data.state) {
+                    const { device_id, state, power } = data;
+                    appState.deviceStates[device_id] = { etat: state, luminosite: power };
+                    renderDevices(); 
+                }
+                if (data.type === 'ping') {
+                    logActivity("[WS] Ping reçu, envoi du pong.");
+                    appState.websocket.send(JSON.stringify({type: 'pong'}));
+                }
+            } catch (e) {
+                console.warn("[WS] Message non JSON reçu:", event.data);
+            }
+        };
+        appState.websocket.onclose = () => {
+            logActivity("WebSocket déconnecté.");
+            el('ws-status').textContent = 'Statut: Déconnecté';
+            el('ws-status').style.backgroundColor = '';
+            el('connect-ws').style.display = 'block';
+            el('disconnect-ws').style.display = 'none';
+            appState.websocket = null;
+            appState.connectionType = 'none';
+            appState.isConnected = false;
+        };
+        appState.websocket.onerror = (error) => {
+            console.error("Erreur WebSocket:", error);
+            logActivity("Erreur de connexion WebSocket.");
+            el('ws-status').textContent = 'Statut: Erreur';
+            el('ws-status').style.backgroundColor = 'var(--danger)';
+            if (appState.websocket) {
+                appState.websocket.close();
+            }
+            appState.websocket = null;
+        };
+    } catch (e) {
+        console.error("Impossible de créer le WebSocket:", e);
+        logActivity("Erreur: Impossible de créer le WebSocket.");
+        el('ws-status').textContent = 'Statut: Erreur';
+    }
   }
 
   function disconnectWebSocket() {
@@ -1048,7 +1118,6 @@ if (window.location.hostname === 'localhost' || window.location.hostname === '12
       }
   }
 
-  // AJOUT: Listeners pour les boutons WS
   el('connect-ws')?.addEventListener('click', connectWebSocket);
   el('disconnect-ws')?.addEventListener('click', disconnectWebSocket);
 
@@ -1070,11 +1139,57 @@ if (window.location.hostname === 'localhost' || window.location.hostname === '12
     }
   }, 15000);
 
-  // ======= Auth State Change Listener =======
-  onAuthStateChanged(auth, (user) => {
-    if (user) { showUserProfile(user); } 
-    else { el('user-profile-login').style.display = 'block'; el('user-profile-info').style.display = 'none'; }
-  });
+  // ======= Auth State Change Listener (Le "Gardien") =======
+  if (auth) {
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        // --- Utilisateur connecté ---
+        document.querySelector('.main-app').style.display = 'block';
+        document.getElementById('login-overlay').style.display = 'none';
+
+        // Peupler la carte de profil
+        const userPhoto = el('user-photo');
+        userPhoto.src = user.photoURL || defaultAvatar;
+        userPhoto.onerror = () => { userPhoto.src = defaultAvatar; }; 
+        
+        el('user-name-display').textContent = user.displayName || 'Utilisateur';
+        el('user-email-display').textContent = user.email;
+
+      } else {
+        // --- Utilisateur déconnecté ---
+        document.querySelector('.main-app').style.display = 'none';
+        document.getElementById('login-overlay').style.display = 'block';
+      }
+    });
+  } else {
+    // Fallback si Firebase échoue
+    el('login-overlay').innerHTML = `
+      <div class="login-box">
+        <h2>Erreur Critique</h2>
+        <p>Impossible de se connecter à la base de données (Firebase). L'application ne peut pas démarrer.</p>
+      </div>`;
+    el('login-overlay').style.display = 'flex';
+  }
+  
+  
+  // Logique pour animer les suggestions
+  function updateProactiveSuggestion() {
+    const el = document.getElementById('proactive-suggestion');
+    if (!el) return;
+
+    // 1. Fondu sortant
+    el.classList.add('fade-out');
+    
+    setTimeout(() => {
+      // 2. Changer le texte (pendant qu'il est invisible)
+      suggestionIndex = (suggestionIndex + 1) % proactiveSuggestions.length;
+      el.textContent = proactiveSuggestions[suggestionIndex];
+      
+      // 3. Fondu entrant
+      el.classList.remove('fade-out');
+    }, 500); // Doit correspondre à la transition CSS (0.5s)
+  }
+
 
   // ======= Initialisation =======
   function initUI() {
@@ -1085,9 +1200,22 @@ if (window.location.hostname === 'localhost' || window.location.hostname === '12
     renderDevices();
     appendChat('bot', 'Bonjour ! Je suis votre Assistant Hybride Autonome.');
     logActivity("Application initialisée.");
+    
+    // Démarrer le cycle des suggestions
+    updateProactiveSuggestion(); // Afficher la première suggestion
+    setInterval(updateProactiveSuggestion, 10000); // Changer toutes les 10 secondes
+    
+    el('toggleAddDeviceForm').addEventListener('click', () => {
+      const form = el('addDeviceFormContainer');
+      const btn = el('toggleAddDeviceForm');
+      const isHidden = form.style.display === 'none' || form.style.display === '';
+      
+      form.style.display = isHidden ? 'block' : 'none';
+      btn.innerHTML = isHidden ? '➖ Masquer le formulaire' : '➕ Ajouter un appareil';
+    });
   }
 
-  initUI();
+  initUI(); // Appel initial pour attacher les listeners
 
   // For debugging
   window.appState = appState;

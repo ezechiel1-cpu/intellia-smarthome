@@ -1,6 +1,7 @@
 // ========================================
 // INTELLIA v2.1 - Assistant Domotique Intelligent
 // Multi-clés API + Conversations Fluides
+// MODIFIÉ POUR FLUIDITÉ VOCALE
 // ========================================
 const express = require('express');
 const cors = require('cors');
@@ -275,7 +276,7 @@ async function chatWithRetry(prompt, devices, maxRetries = API_KEYS.length) {
     try {
       const keyObj = getNextApiKey();
       const genAI = new GoogleGenerativeAI(keyObj.key);
-      const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+      const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" }); // Utilisation de gemini-2.5-flash
 
       const chat = model.startChat({
         history: [
@@ -296,7 +297,7 @@ async function chatWithRetry(prompt, devices, maxRetries = API_KEYS.length) {
         ],
         generationConfig: {
           responseMimeType: "application/json",
-          temperature: 0.8,
+          temperature: 0.7, // MODIFIÉ: 0.8 -> 0.7 pour des réponses plus prévisibles
           maxOutputTokens: 4096,
         },
       });
@@ -320,7 +321,8 @@ ANALYSE ET RÉPONDS EN JSON VALIDE :
 `;
 
       const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 25000);
+      // MODIFIÉ: Timeout réduit à 15s pour une meilleure réactivité vocale
+      const timeout = setTimeout(() => controller.abort(), 15000); // 15 secondes
 
       const result = await chat.sendMessage(fullPrompt, { signal: controller.signal });
       clearTimeout(timeout);
@@ -391,6 +393,17 @@ app.post('/api/chat', async (req, res) => {
 
     if (!result.success) {
       console.error('💥 TOUTES LES CLÉS ONT ÉCHOUÉ');
+      
+      // Gestion d'erreur spécifique pour le timeout
+      if (result.error && result.error.name === 'AbortError') {
+          console.error('⏱️ TIMEOUT: Requête trop longue (15s)');
+          return res.status(504).json({ 
+            reply: "La demande a pris trop de temps. L'assistant semble lent, veuillez réessayer.",
+            execute: [],
+            planning_commands: []
+          });
+      }
+      
       return res.status(503).json({ 
         reply: "Désolé, le service est temporairement indisponible. Toutes les clés API ont atteint leur limite. Réessayez dans quelques minutes.",
         execute: [],
@@ -463,7 +476,7 @@ app.post('/api/chat', async (req, res) => {
     
   } catch (error) {
     if (error.name === 'AbortError') {
-      console.error('⏱️ TIMEOUT: Requête trop longue');
+      console.error('⏱️ TIMEOUT: Requête trop longue (15s)');
       return res.status(504).json({ 
         reply: "La demande a pris trop de temps. Réessayez.",
         execute: [],
@@ -565,8 +578,8 @@ process.on('SIGINT', () => {
 3. Envoyer plusieurs requêtes → Observer la rotation
 
 🚀 OPTIMISATIONS APPLIQUÉES :
-- Modèle gemini-2.0-flash-exp (plus rapide)
-- Temperature 0.8 (réponses naturelles)
+- Modèle gemini-2.5-flash (rapide)
+- Temperature 0.7 (plus direct)
 - maxOutputTokens 4096 (réponses détaillées)
-- Timeout réduit à 25s (fluidité vocale)
+- Timeout réduit à 15s (fluidité vocale)
 */
