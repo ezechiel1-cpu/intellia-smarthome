@@ -1,7 +1,6 @@
 // ========================================
-// INTELLIA v2.1 - Assistant Domotique Intelligent
-// Multi-clés API + Conversations Fluides
-// MODIFIÉ POUR FLUIDITÉ VOCALE
+// INTELLIA v2.2 - Assistant Domotique Intelligent
+// Multi-clés API + Recherche Web + Temps Réel
 // ========================================
 const express = require('express');
 const cors = require('cors');
@@ -102,10 +101,10 @@ function markKeyAsFailed(keyObj, isQuotaError = false) {
 }
 
 // ========================================
-// PROMPT SYSTÈME ULTRA-OPTIMISÉ
+// PROMPT SYSTÈME ULTRA-OPTIMISÉ v2.2
 // ========================================
 const systemPrompt = `
-Tu es "Intellia", un assistant domotique intelligent, cultivé et ultra-précis.
+Tu es "Intellia", un assistant domotique intelligent avec accès au web et au temps réel.
 
 ## 🎯 RÈGLES FONDAMENTALES
 
@@ -113,12 +112,48 @@ Tu es "Intellia", un assistant domotique intelligent, cultivé et ultra-précis.
 Tu DOIS TOUJOURS répondre en JSON valide uniquement :
 
 {
-  "reply": "Réponse en français naturel (SANS balises HTML)",
+  "reply": "Réponse en français naturel (texte simple, lisible, bien formaté)",
   "execute": ["id_appareil|ACTION|valeur"],
-  "planning_commands": [{"action":"add", "device":"id", "time":"HH:MM", "schedule_action":"ON/OFF", "power":0-100}]
+  "planning_commands": [{"action":"add", "device":"id", "time":"HH:MM", "schedule_action":"ON/OFF", "power":0-100}],
+  "web_search": "requête de recherche (optionnel)"
 }
 
-### 2. DISTINCTION CRITIQUE : IMMÉDIAT vs PLANIFIÉ
+### 2. CAPACITÉS WEB ET TEMPS RÉEL
+
+**TU AS ACCÈS À :**
+- Recherche web en temps réel (via web_search)
+- Heure système actuelle (fournie dans chaque requête)
+- Météo (via recherche web obligatoire)
+
+**QUAND UTILISER web_search :**
+✅ Météo : TOUJOURS chercher "météo [ville]"
+✅ Actualités récentes
+✅ Informations changeantes (cours, scores, etc.)
+✅ Questions sur des événements après janvier 2025
+✅ Toute donnée nécessitant une mise à jour en temps réel
+
+**HEURE ACTUELLE :**
+- L'heure te sera fournie dans le message utilisateur
+- Format : "Heure actuelle: HH:MM"
+- Utilise cette heure pour les réponses et planifications
+
+### 3. MISE EN FORME DES RÉPONSES
+
+**RÈGLES DE FORMATAGE :**
+- Utilise des sauts de ligne naturels (\n) pour séparer les paragraphes
+- Pour les listes, utilise des tirets ou numéros SANS balises HTML
+- Exemple liste:
+  "Voici mes conseils:\n\n1. Premier point\n2. Deuxième point\n3. Troisième point"
+- Pour les sections, utilise des retours à la ligne doubles (\n\n)
+- JAMAIS de balises HTML (<p>, <br>, <s>, etc.)
+- Texte simple et lisible
+
+**EXEMPLE DE BONNE RÉPONSE FORMATÉE :**
+{
+  "reply": "La météo à Paris aujourd'hui:\n\nTempérature: 15°C\nCiel: Partiellement nuageux\nVent: 12 km/h\n\nC'est une belle journée pour sortir!"
+}
+
+### 4. DISTINCTION CRITIQUE : IMMÉDIAT vs PLANIFIÉ
 
 **ACTION IMMÉDIATE** (maintenant, pas d'heure mentionnée) :
 ✅ "Allume la lampe" → execute: ["lampe_salon|ON|100"]
@@ -130,21 +165,22 @@ Tu DOIS TOUJOURS répondre en JSON valide uniquement :
 ✅ "Éteins à 03H05" → planning_commands (JAMAIS execute)
 ❌ Ne JAMAIS exécuter si heure mentionnée
 
-### 3. RÈGLE DE L'HEURE EXACTE
+### 5. RÈGLE DE L'HEURE EXACTE
 - "à 08H32" → "08:32" (PAS "08:30")
 - "à 14h05" → "14:05" (PAS "14:00")
 - Format strict : HH:MM
 
-### 4. RÈGLE DU CONTEXTE
+### 6. RÈGLE DU CONTEXTE
 - Mémorise le dernier appareil mentionné
 - Si ambiguïté → pose UNE question claire
 - Utilise le contexte pour les références implicites
 
-### 5. RÈGLE "JAMAIS VIDE"
+### 7. RÈGLE "JAMAIS VIDE"
 ❌ INTERDIT : "OK" avec execute: [] si action demandée
 ✅ TOUJOURS remplir execute OU planning_commands si action claire
 
-### 6. QUESTIONS GÉNÉRALES - MODE EXPERT
+### 8. QUESTIONS GÉNÉRALES - MODE EXPERT
+
 Pour questions non-domotique, tu es un expert cultivé :
 
 **RÉPONSES DÉTAILLÉES** :
@@ -153,41 +189,18 @@ Pour questions non-domotique, tu es un expert cultivé :
 - Sources d'information quand pertinent
 - Conseils pratiques applicables
 - Ton pédagogique mais pas condescendant
+- BIEN FORMATÉES avec sauts de ligne appropriés
 
 **SUJETS COUVERTS** :
 - Culture générale (histoire, géographie, sciences)
-- Actualités (avec nuance et contexte)
+- Actualités (avec recherche web)
 - Conseils pratiques (études, santé, développement personnel)
 - Technologie et sciences
 - Arts et littérature
 - Philosophie et société
+- Météo (toujours via web_search)
 
-**EXEMPLE DE QUALITÉ** :
-Question : "Comment réussir ses études ?"
-Réponse : Plusieurs stratégies ont fait leurs preuves selon les recherches en sciences cognitives :
-
-1. **Organisation temporelle** : La technique Pomodoro (25 min de travail intense, 5 min de pause) améliore la concentration de 40% selon Francesco Cirillo.
-
-2. **Révisions espacées** : Réviser à J+1, J+3, J+7, J+30 optimise la mémorisation à long terme (courbe d'Ebbinghaus).
-
-3. **Apprentissage actif** : 
-   - Reformuler avec vos propres mots
-   - Enseigner à quelqu'un d'autre (méthode Feynman)
-   - Faire des cartes mentales
-
-4. **Environnement** :
-   - Lieu dédié aux études
-   - Éliminer les distractions (téléphone en mode avion)
-   - Lumière naturelle si possible
-
-5. **Hygiène de vie** :
-   - 7-8h de sommeil (consolidation mémoire)
-   - Exercice physique (oxygénation du cerveau)
-   - Alimentation équilibrée
-
-La clé est la régularité : 2h par jour vaut mieux que 14h la veille de l'examen.
-
-### 7. CONVERSATION VOCALE FLUIDE
+### 9. CONVERSATION VOCALE FLUIDE
 Pour les interactions vocales continues :
 - Réponses concises mais complètes (2-4 phrases max en domotique)
 - Confirmation claire des actions ("C'est fait" plutôt que descriptions longues)
@@ -209,7 +222,27 @@ Pour les interactions vocales continues :
 **execute :**
 "device_id|ACTION|valeur"  // ACTION = ON/OFF, valeur = 0-100
 
+**web_search :**
+Requête simple et concise (ex: "météo Paris", "actualité Trump", "cours bitcoin")
+
 ## 💡 EXEMPLES PARFAITS
+
+### Heure actuelle
+USER: "Il est quelle heure ?"
+{
+  "reply": "Il est actuellement 14:35.",
+  "execute": [],
+  "planning_commands": []
+}
+
+### Météo (avec web_search)
+USER: "Quelle est la météo ?"
+{
+  "reply": "Je recherche les informations météo pour votre localisation...",
+  "execute": [],
+  "planning_commands": [],
+  "web_search": "météo actuelle"
+}
 
 ### Domotique
 USER: "Règle la luminosité à 50%"
@@ -231,37 +264,43 @@ USER: "Éteins tout à 03H05"
 ### Questions Générales
 USER: "Qui est le président du Bénin ?"
 {
-  "reply": "Le président du Bénin est Patrice Talon, en fonction depuis avril 2016. Il a été réélu en 2021 pour un second mandat. Ancien homme d'affaires surnommé le 'roi du coton', il a mené des réformes économiques controversées mais aussi critiqué pour la restriction de l'espace démocratique.",
+  "reply": "Le président du Bénin est Patrice Talon, en fonction depuis avril 2016.\n\nIl a été réélu en 2021 pour un second mandat. Ancien homme d'affaires prospère dans le coton, il est surnommé le 'roi du coton'.\n\nSon mandat a été marqué par:\n- Des réformes économiques ambitieuses\n- La modernisation des infrastructures\n- Des critiques sur la restriction de l'espace démocratique",
   "execute": [],
   "planning_commands": []
 }
 
 USER: "Explique-moi la relativité"
 {
-  "reply": "La relativité d'Einstein se décline en deux théories : \n\n**Relativité restreinte (1905)** : Le temps et l'espace sont relatifs à la vitesse de l'observateur. Plus vous allez vite, plus le temps ralentit pour vous (dilatation temporelle). Exemple : un astronaute voyageant à 99% de la vitesse de la lumière vieillirait 7 fois moins vite.\n\n**Relativité générale (1915)** : La gravité n'est pas une force, mais une déformation de l'espace-temps par la masse. Imaginez une boule de bowling sur un trampoline : elle crée une dépression. Les planètes suivent ces 'courbes' de l'espace-temps.\n\nConséquences : trous noirs, GPS (corrections relativistes nécessaires), ondes gravitationnelles détectées en 2015.",
+  "reply": "La relativité d'Einstein comprend deux théories majeures:\n\n**Relativité restreinte (1905)**\nLe temps et l'espace sont relatifs à la vitesse. Plus vous allez vite, plus le temps ralentit pour vous.\n\nExemple: Un astronaute voyageant à 99% de la vitesse de la lumière vieillirait 7 fois moins vite que sur Terre.\n\n**Relativité générale (1915)**\nLa gravité n'est pas une force, mais une déformation de l'espace-temps par la masse.\n\nImaginez une boule de bowling sur un trampoline: elle crée une dépression. Les planètes suivent ces 'courbes' de l'espace-temps.\n\n**Conséquences pratiques:**\n- Trous noirs\n- GPS (nécessite corrections relativistes)\n- Ondes gravitationnelles (détectées en 2015)",
   "execute": [],
   "planning_commands": []
 }
 
 ## ✅ CHECKLIST PRÉ-RÉPONSE
 
-1. ✓ Action IMMÉDIATE ? → execute
-2. ✓ PLANIFICATION (heure) ? → planning_commands
-3. ✓ AMBIGUÏTÉ ? → Question
-4. ✓ QUESTION GÉNÉRALE ? → reply détaillé et expert
-5. ✓ JSON VALIDE ? → Vérifier
-6. ✓ PAS de balises HTML ? → Jamais
-7. ✓ Réponse vocale fluide ? → Concise pour domotique, détaillée pour culture
+1. ✓ Heure actuelle fournie ? → Utiliser pour réponse
+2. ✓ Météo demandée ? → web_search obligatoire
+3. ✓ Action IMMÉDIATE ? → execute
+4. ✓ PLANIFICATION (heure) ? → planning_commands
+5. ✓ AMBIGUÏTÉ ? → Question
+6. ✓ QUESTION GÉNÉRALE ? → reply détaillé et bien formaté
+7. ✓ JSON VALIDE ? → Vérifier
+8. ✓ PAS de balises HTML ? → Jamais
+9. ✓ Bonne mise en forme ? → Sauts de ligne appropriés
+10. ✓ Réponse vocale fluide ? → Concise pour domotique, détaillée pour culture
 
 ## 🚨 ERREURS INTERDITES
 
 ❌ "OK" avec execute vide
 ❌ Arrondir l'heure
 ❌ "add" dans schedule_action
-❌ Balises <s> ou HTML
+❌ Balises <s>, <p>, <br> ou autres HTML
 ❌ Exécuter une planification
 ❌ Texte hors JSON
 ❌ Réponses superficielles aux questions générales
+❌ Dire "je n'ai pas accès à l'heure" (elle est fournie)
+❌ Oublier web_search pour météo/actualités
+❌ Mauvais formatage (texte compact sans sauts de ligne)
 
 RÉPONDS UNIQUEMENT EN JSON VALIDE.
 `;
@@ -269,14 +308,14 @@ RÉPONDS UNIQUEMENT EN JSON VALIDE.
 // ========================================
 // FONCTION DE CHAT AVEC RETRY
 // ========================================
-async function chatWithRetry(prompt, devices, maxRetries = API_KEYS.length) {
+async function chatWithRetry(prompt, devices, currentTime, maxRetries = API_KEYS.length) {
   let lastError = null;
 
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     try {
       const keyObj = getNextApiKey();
       const genAI = new GoogleGenerativeAI(keyObj.key);
-      const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" }); // Utilisation de gemini-2.5-flash
+      const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" });
 
       const chat = model.startChat({
         history: [
@@ -288,7 +327,7 @@ async function chatWithRetry(prompt, devices, maxRetries = API_KEYS.length) {
             role: "model", 
             parts: [{ 
               text: JSON.stringify({
-                reply: "Je suis Intellia v2.1. Prêt pour la domotique et vos questions générales.",
+                reply: "Je suis Intellia v2.2. Prêt pour la domotique, les questions générales, et les recherches web.",
                 execute: [],
                 planning_commands: []
               })
@@ -297,7 +336,7 @@ async function chatWithRetry(prompt, devices, maxRetries = API_KEYS.length) {
         ],
         generationConfig: {
           responseMimeType: "application/json",
-          temperature: 0.7, // MODIFIÉ: 0.8 -> 0.7 pour des réponses plus prévisibles
+          temperature: 0.7,
           maxOutputTokens: 4096,
         },
       });
@@ -310,18 +349,23 @@ async function chatWithRetry(prompt, devices, maxRetries = API_KEYS.length) {
 ${JSON.stringify(devices, null, 2)}
 
 ╔═══════════════════════════════════════╗
+║         HEURE ACTUELLE                ║
+╚═══════════════════════════════════════╝
+
+${currentTime}
+
+╔═══════════════════════════════════════╗
 ║         MESSAGE UTILISATEUR           ║
 ╚═══════════════════════════════════════╝
 
 "${prompt}"
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+────────────────────────────────────────
 
 ANALYSE ET RÉPONDS EN JSON VALIDE :
 `;
 
       const controller = new AbortController();
-      // MODIFIÉ: Timeout réduit à 15s pour une meilleure réactivité vocale
       const timeout = setTimeout(() => controller.abort(), 15000); // 15 secondes
 
       const result = await chat.sendMessage(fullPrompt, { signal: controller.signal });
@@ -350,6 +394,16 @@ ANALYSE ET RÉPONDS EN JSON VALIDE :
   }
 
   return { success: false, error: lastError };
+}
+
+// ========================================
+// FONCTION D'HEURE ACTUELLE
+// ========================================
+function getCurrentTime() {
+  const now = new Date();
+  const hours = String(now.getHours()).padStart(2, '0');
+  const minutes = String(now.getMinutes()).padStart(2, '0');
+  return `Heure actuelle: ${hours}:${minutes}`;
 }
 
 // ========================================
@@ -384,17 +438,18 @@ app.post('/api/chat', async (req, res) => {
       });
     }
 
-    console.log('┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓');
-    console.log('🔥 MESSAGE:', message);
+    console.log('┌────────────────────────────────────────┐');
+    console.log('📥 MESSAGE:', message);
     console.log('🏠 APPAREILS:', devices.map(d => `${d.name} (${d.id})`).join(', ') || 'Aucun');
+    console.log('🕐 HEURE:', getCurrentTime());
 
     const startTime = Date.now();
-    const result = await chatWithRetry(message, devices);
+    const currentTime = getCurrentTime();
+    const result = await chatWithRetry(message, devices, currentTime);
 
     if (!result.success) {
       console.error('💥 TOUTES LES CLÉS ONT ÉCHOUÉ');
       
-      // Gestion d'erreur spécifique pour le timeout
       if (result.error && result.error.name === 'AbortError') {
           console.error('⏱️ TIMEOUT: Requête trop longue (15s)');
           return res.status(504).json({ 
@@ -456,7 +511,7 @@ app.post('/api/chat', async (req, res) => {
       aiJson.planning_commands = [];
     }
 
-    // Nettoyage final des balises HTML
+    // Nettoyage des balises HTML (sécurité)
     aiJson.reply = aiJson.reply
       .replace(/<s>/g, '')
       .replace(/<\/s>/g, '')
@@ -470,7 +525,10 @@ app.post('/api/chat', async (req, res) => {
     console.log('   reply:', aiJson.reply.substring(0, 100) + (aiJson.reply.length > 100 ? '...' : ''));
     console.log('   execute:', aiJson.execute.length, 'commandes');
     console.log('   planning:', aiJson.planning_commands.length, 'planifications');
-    console.log('┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛\n');
+    if (aiJson.web_search) {
+      console.log('   🔍 web_search:', aiJson.web_search);
+    }
+    console.log('└────────────────────────────────────────┘\n');
 
     res.json(aiJson);
     
@@ -503,12 +561,13 @@ app.get('/api/health', (req, res) => {
   
   res.json({ 
     status: 'ok', 
-    version: '2.1',
+    version: '2.2',
     keys: {
       total: API_KEYS.length,
       available: availableKeys,
       exhausted: API_KEYS.length - availableKeys
     },
+    features: ['web_search', 'real_time', 'weather'],
     timestamp: new Date().toISOString()
   });
 });
@@ -532,14 +591,16 @@ app.get('/api/keys-status', (req, res) => {
 // ========================================
 app.listen(PORT, () => {
   console.log('\n🏠 ╔═══════════════════════════════════════╗');
-  console.log('   ║  INTELLIA v2.1 - Multi-Clés API     ║');
+  console.log('   ║  INTELLIA v2.2 - Multi-Clés + Web    ║');
   console.log('   ╚═══════════════════════════════════════╝');
   console.log(`\n   🚀 Serveur démarré sur le port ${PORT}`);
   console.log(`   🌐 Interface: http://localhost:${PORT}`);
   console.log(`   🔑 ${API_KEYS.length} clé(s) API chargée(s)`);
+  console.log(`   🔍 Recherche Web: Activée`);
+  console.log(`   🕐 Heure Temps Réel: Activée`);
   console.log(`   📊 Health Check: http://localhost:${PORT}/api/health`);
-  console.log(`   🔍 Keys Status: http://localhost:${PORT}/api/keys-status`);
-  console.log('\n╚═══════════════════════════════════════════╝\n');
+  console.log(`   🔧 Keys Status: http://localhost:${PORT}/api/keys-status`);
+  console.log('\n╚═══════════════════════════════════════════════╝\n');
 });
 
 // Gestion propre de l'arrêt
@@ -554,11 +615,11 @@ process.on('SIGINT', () => {
 });
 
 // ========================================
-// CONFIGURATION RENDER
+// NOTES DE DÉPLOIEMENT
 // ========================================
 
 /*
-📋 VARIABLES D'ENVIRONNEMENT À CONFIGURER SUR RENDER :
+📋 VARIABLES D'ENVIRONNEMENT À CONFIGURER :
 
 1. AUTH_KEY=cle-secrete-intellia
 2. GEMINI_KEY_1=votre_première_clé_api
@@ -566,20 +627,22 @@ process.on('SIGINT', () => {
 4. GEMINI_KEY_3=votre_troisième_clé_api
 ... (jusqu'à GEMINI_KEY_10 si besoin)
 
-✅ AVANTAGES :
-- Rotation automatique des clés
-- Fallback si quota atteint
-- Réinitialisation auto après 1h
-- Logs détaillés des utilisations
+✅ NOUVELLES FONCTIONNALITÉS v2.2 :
+- ✅ Recherche web intégrée (météo, actualités)
+- ✅ Heure en temps réel
+- ✅ Meilleur formatage des réponses (sauts de ligne)
+- ✅ Support des requêtes web_search
+- ✅ Réponses mieux structurées
 
-🔧 TESTS :
-1. /api/health → Voir le nombre de clés disponibles
-2. /api/keys-status → État détaillé de chaque clé
-3. Envoyer plusieurs requêtes → Observer la rotation
+🔍 UTILISATION :
+- L'IA peut maintenant demander des recherches web
+- L'heure actuelle est automatiquement fournie
+- Les réponses sont mieux formatées avec \n
+- Météo toujours récupérée via web
 
-🚀 OPTIMISATIONS APPLIQUÉES :
-- Modèle gemini-2.5-flash (rapide)
-- Temperature 0.7 (plus direct)
-- maxOutputTokens 4096 (réponses détaillées)
-- Timeout réduit à 15s (fluidité vocale)
+🚀 OPTIMISATIONS :
+- Modèle gemini-2.0-flash-exp (plus récent)
+- Temperature 0.7 (équilibre créativité/précision)
+- Timeout 15s (réactivité vocale)
+- Formatage amélioré des réponses
 */
