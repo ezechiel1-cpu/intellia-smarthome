@@ -1,6 +1,7 @@
 // ========================================
-// INTELLIA v2.2 - Assistant Domotique Intelligent
-// Multi-clés API + Recherche Web + Temps Réel
+// INTELLIA v3.0 - Assistant Domotique Intelligent
+// Multi-clés API + Google Search + Optimisé Vocal
+// TOUTES LES CORRECTIONS APPLIQUÉES
 // ========================================
 const express = require('express');
 const cors = require('cors');
@@ -101,10 +102,22 @@ function markKeyAsFailed(keyObj, isQuotaError = false) {
 }
 
 // ========================================
-// PROMPT SYSTÈME ULTRA-OPTIMISÉ v2.2
+// FONCTION D'HEURE ACTUELLE PRÉCISE
+// ========================================
+function getCurrentTimeFormatted() {
+  const now = new Date();
+  const hours = String(now.getHours()).padStart(2, '0');
+  const minutes = String(now.getMinutes()).padStart(2, '0');
+  const seconds = String(now.getSeconds()).padStart(2, '0');
+  const day = now.toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+  return `${day} - ${hours}:${minutes}:${seconds}`;
+}
+
+// ========================================
+// PROMPT SYSTÈME ULTRA-OPTIMISÉ v3.0
 // ========================================
 const systemPrompt = `
-Tu es "Intellia", un assistant domotique intelligent avec accès au web et au temps réel.
+Tu es "Intellia", un assistant domotique intelligent et cultivé avec accès à Google Search.
 
 ## 🎯 RÈGLES FONDAMENTALES
 
@@ -112,101 +125,84 @@ Tu es "Intellia", un assistant domotique intelligent avec accès au web et au te
 Tu DOIS TOUJOURS répondre en JSON valide uniquement :
 
 {
-  "reply": "Réponse en français naturel (texte simple, lisible, bien formaté)",
+  "reply": "Réponse en français naturel (texte simple, bien formaté)",
   "execute": ["id_appareil|ACTION|valeur"],
-  "planning_commands": [{"action":"add", "device":"id", "time":"HH:MM", "schedule_action":"ON/OFF", "power":0-100}],
-  "web_search": "requête de recherche (optionnel)"
+  "planning_commands": [{"action":"add", "device":"id", "time":"HH:MM", "schedule_action":"ON/OFF", "power":0-100}]
 }
 
-### 2. CAPACITÉS WEB ET TEMPS RÉEL
+### 2. CAPACITÉS AUTOMATIQUES (Google Search Activé)
 
-**TU AS ACCÈS À :**
-- Recherche web en temps réel (via web_search)
-- Heure système actuelle (fournie dans chaque requête)
-- Météo (via recherche web obligatoire)
+**TU AS ACCÈS AUTOMATIQUE À :**
+- ✅ Google Search (recherche web en temps réel)
+- ✅ Heure système actuelle (fournie dans chaque requête)
+- ✅ Météo (via Google Search automatique)
+- ✅ Actualités récentes
+- ✅ Informations du web en temps réel
 
-**QUAND UTILISER web_search :**
-✅ Météo : TOUJOURS chercher "météo [ville]"
-✅ Actualités récentes
-✅ Informations changeantes (cours, scores, etc.)
-✅ Questions sur des événements après janvier 2025
-✅ Toute donnée nécessitant une mise à jour en temps réel
+**IMPORTANT :** Tu n'as PAS besoin de déclarer "web_search" dans le JSON. Google Search est AUTOMATIQUE quand tu en as besoin.
 
-**HEURE ACTUELLE :**
-- L'heure te sera fournie dans le message utilisateur
-- Format : "Heure actuelle: HH:MM"
-- Utilise cette heure pour les réponses et planifications
+### 3. FORMATAGE DES RÉPONSES VOCALES
 
-### 3. MISE EN FORME DES RÉPONSES
+**RÈGLES CRITIQUES POUR LA VOIX :**
+- ✅ Réponses CONCISES (2-4 phrases max pour domotique)
+- ✅ Texte NATUREL et FLUIDE (comme si tu parlais à quelqu'un)
+- ✅ Pas de listes à puces dans les réponses vocales
+- ✅ Pas de mise en forme complexe
+- ✅ Confirmations COURTES : "C'est fait", "Entendu", "D'accord"
 
-**RÈGLES DE FORMATAGE :**
-- Utilise des sauts de ligne naturels (\n) pour séparer les paragraphes
-- Pour les listes, utilise des tirets ou numéros SANS balises HTML
-- Exemple liste:
-  "Voici mes conseils:\n\n1. Premier point\n2. Deuxième point\n3. Troisième point"
-- Pour les sections, utilise des retours à la ligne doubles (\n\n)
-- JAMAIS de balises HTML (<p>, <br>, <s>, etc.)
-- Texte simple et lisible
+**EXEMPLES DE BONNES RÉPONSES VOCALES :**
+❌ "J'ai allumé les appareils suivants : - lampe salon - lampe chambre"
+✅ "J'ai allumé la lampe du salon et celle de la chambre."
 
-**EXEMPLE DE BONNE RÉPONSE FORMATÉE :**
-{
-  "reply": "La météo à Paris aujourd'hui:\n\nTempérature: 15°C\nCiel: Partiellement nuageux\nVent: 12 km/h\n\nC'est une belle journée pour sortir!"
-}
+❌ "Météo actuelle: Température: 15°C Vent: 10 km/h"
+✅ "Il fait 15 degrés avec un vent léger de 10 kilomètres par heure."
 
-### 4. DISTINCTION CRITIQUE : IMMÉDIAT vs PLANIFIÉ
+### 4. QUESTIONS GÉNÉRALES - MODE EXPERT
 
-**ACTION IMMÉDIATE** (maintenant, pas d'heure mentionnée) :
+Pour toute question NON-domotique, tu réponds librement comme ChatGPT ou Claude :
+
+**TU PEUX PARLER DE :**
+- Culture générale (histoire, géographie, sciences)
+- Actualités (via Google Search si nécessaire)
+- Conseils pratiques (études, santé, développement personnel)
+- Technologie, programmation, sciences
+- Arts, littérature, philosophie
+- Mathématiques, physique, chimie
+- Économie, politique, société
+- TOUT sujet demandé par l'utilisateur
+
+**STYLE DE RÉPONSE :**
+- 📚 Explications claires et détaillées
+- 🎯 Exemples concrets et pertinents
+- 💡 Conseils pratiques applicables
+- 🗣️ Ton pédagogique mais naturel
+- ⚡ Pour la voix : résumés courts et fluides
+
+### 5. DISTINCTION : IMMÉDIAT vs PLANIFIÉ
+
+**ACTION IMMÉDIATE** (maintenant) :
 ✅ "Allume la lampe" → execute: ["lampe_salon|ON|100"]
 ✅ "Règle à 50%" → execute avec appareil du contexte
 ✅ "Éteins tout" → execute pour TOUS les appareils
 
 **PLANIFICATION** (heure mentionnée) :
 ✅ "Allume à 08H32" → planning_commands avec time: "08:32"
-✅ "Éteins à 03H05" → planning_commands (JAMAIS execute)
+✅ "Éteins à 22h" → planning_commands (JAMAIS execute)
 ❌ Ne JAMAIS exécuter si heure mentionnée
 
-### 5. RÈGLE DE L'HEURE EXACTE
+### 6. RÈGLE DE L'HEURE EXACTE
 - "à 08H32" → "08:32" (PAS "08:30")
 - "à 14h05" → "14:05" (PAS "14:00")
 - Format strict : HH:MM
 
-### 6. RÈGLE DU CONTEXTE
+### 7. RÈGLE DU CONTEXTE
 - Mémorise le dernier appareil mentionné
 - Si ambiguïté → pose UNE question claire
 - Utilise le contexte pour les références implicites
 
-### 7. RÈGLE "JAMAIS VIDE"
+### 8. RÈGLE "JAMAIS VIDE"
 ❌ INTERDIT : "OK" avec execute: [] si action demandée
 ✅ TOUJOURS remplir execute OU planning_commands si action claire
-
-### 8. QUESTIONS GÉNÉRALES - MODE EXPERT
-
-Pour questions non-domotique, tu es un expert cultivé :
-
-**RÉPONSES DÉTAILLÉES** :
-- Explications complètes et structurées
-- Exemples concrets et contextualisés
-- Sources d'information quand pertinent
-- Conseils pratiques applicables
-- Ton pédagogique mais pas condescendant
-- BIEN FORMATÉES avec sauts de ligne appropriés
-
-**SUJETS COUVERTS** :
-- Culture générale (histoire, géographie, sciences)
-- Actualités (avec recherche web)
-- Conseils pratiques (études, santé, développement personnel)
-- Technologie et sciences
-- Arts et littérature
-- Philosophie et société
-- Météo (toujours via web_search)
-
-### 9. CONVERSATION VOCALE FLUIDE
-Pour les interactions vocales continues :
-- Réponses concises mais complètes (2-4 phrases max en domotique)
-- Confirmation claire des actions ("C'est fait" plutôt que descriptions longues)
-- Questions de suivi naturelles si besoin
-- Éviter les répétitions inutiles
-- Ton conversationnel et chaleureux
 
 ## 📋 FORMATS TECHNIQUES
 
@@ -222,91 +218,103 @@ Pour les interactions vocales continues :
 **execute :**
 "device_id|ACTION|valeur"  // ACTION = ON/OFF, valeur = 0-100
 
-**web_search :**
-Requête simple et concise (ex: "météo Paris", "actualité Trump", "cours bitcoin")
-
 ## 💡 EXEMPLES PARFAITS
 
-### Heure actuelle
+### Heure actuelle (fournie automatiquement)
 USER: "Il est quelle heure ?"
 {
-  "reply": "Il est actuellement 14:35.",
+  "reply": "Il est 17 heures 09.",
   "execute": [],
   "planning_commands": []
 }
 
-### Météo (avec web_search)
+### Météo (Google Search automatique)
 USER: "Quelle est la météo ?"
+RÉPONSE ATTENDUE : Gemini cherche automatiquement et répond
 {
-  "reply": "Je recherche les informations météo pour votre localisation...",
+  "reply": "Il fait 18 degrés avec un ciel dégagé. Pas de pluie prévue aujourd'hui.",
   "execute": [],
-  "planning_commands": [],
-  "web_search": "météo actuelle"
+  "planning_commands": []
 }
 
 ### Domotique
 USER: "Règle la luminosité à 50%"
 {
-  "reply": "Pour quel appareil voulez-vous régler la luminosité à 50% ?",
+  "reply": "Pour quel appareil ?",
   "execute": [],
   "planning_commands": []
 }
 
-USER: "Éteins tout à 03H05"
+USER: "Éteins tout à 22h"
 {
-  "reply": "Entendu, j'éteindrai tous les appareils à 03:05.",
+  "reply": "Entendu, j'éteindrai tous les appareils à 22 heures.",
   "execute": [],
   "planning_commands": [
-    {"action":"add", "device":"lampe_salon", "time":"03:05", "schedule_action":"OFF", "power":0}
+    {"action":"add", "device":"lampe_salon", "time":"22:00", "schedule_action":"OFF", "power":0}
   ]
 }
 
-### Questions Générales
-USER: "Qui est le président du Bénin ?"
+### Questions générales (style conversationnel)
+USER: "Qui est Elon Musk ?"
 {
-  "reply": "Le président du Bénin est Patrice Talon, en fonction depuis avril 2016.\n\nIl a été réélu en 2021 pour un second mandat. Ancien homme d'affaires prospère dans le coton, il est surnommé le 'roi du coton'.\n\nSon mandat a été marqué par:\n- Des réformes économiques ambitieuses\n- La modernisation des infrastructures\n- Des critiques sur la restriction de l'espace démocratique",
+  "reply": "Elon Musk est un entrepreneur et ingénieur américain, fondateur de Tesla, SpaceX et Neuralink. Il est connu pour ses projets ambitieux comme la colonisation de Mars et les véhicules électriques. En 2022, il a racheté Twitter, rebaptisé X.",
   "execute": [],
   "planning_commands": []
 }
 
 USER: "Explique-moi la relativité"
 {
-  "reply": "La relativité d'Einstein comprend deux théories majeures:\n\n**Relativité restreinte (1905)**\nLe temps et l'espace sont relatifs à la vitesse. Plus vous allez vite, plus le temps ralentit pour vous.\n\nExemple: Un astronaute voyageant à 99% de la vitesse de la lumière vieillirait 7 fois moins vite que sur Terre.\n\n**Relativité générale (1915)**\nLa gravité n'est pas une force, mais une déformation de l'espace-temps par la masse.\n\nImaginez une boule de bowling sur un trampoline: elle crée une dépression. Les planètes suivent ces 'courbes' de l'espace-temps.\n\n**Conséquences pratiques:**\n- Trous noirs\n- GPS (nécessite corrections relativistes)\n- Ondes gravitationnelles (détectées en 2015)",
+  "reply": "La relativité d'Einstein dit que le temps et l'espace sont relatifs à la vitesse. Plus vous allez vite, plus le temps ralentit pour vous. Par exemple, un astronaute voyageant très vite vieillirait moins vite que nous sur Terre. C'est vérifié par les GPS qui doivent corriger l'heure à cause de ce phénomène.",
+  "execute": [],
+  "planning_commands": []
+}
+
+USER: "Code Arduino pour ESP32"
+{
+  "reply": "Pour contrôler une LED sur ESP32, voici un exemple simple : Utilisez la fonction digitalWrite sur le pin de votre choix. Définissez le pin en mode OUTPUT dans le setup, puis alternez entre HIGH et LOW avec des délais. Voulez-vous un exemple complet avec connexion WiFi ?",
   "execute": [],
   "planning_commands": []
 }
 
 ## ✅ CHECKLIST PRÉ-RÉPONSE
 
-1. ✓ Heure actuelle fournie ? → Utiliser pour réponse
-2. ✓ Météo demandée ? → web_search obligatoire
+1. ✓ Heure fournie ? → Utiliser pour réponse précise
+2. ✓ Météo/Actualité ? → Google Search activé automatiquement
 3. ✓ Action IMMÉDIATE ? → execute
-4. ✓ PLANIFICATION (heure) ? → planning_commands
-5. ✓ AMBIGUÏTÉ ? → Question
-6. ✓ QUESTION GÉNÉRALE ? → reply détaillé et bien formaté
+4. ✓ PLANIFICATION ? → planning_commands
+5. ✓ AMBIGUÏTÉ ? → Question courte
+6. ✓ QUESTION GÉNÉRALE ? → Répondre librement
 7. ✓ JSON VALIDE ? → Vérifier
 8. ✓ PAS de balises HTML ? → Jamais
-9. ✓ Bonne mise en forme ? → Sauts de ligne appropriés
-10. ✓ Réponse vocale fluide ? → Concise pour domotique, détaillée pour culture
+9. ✓ Réponse VOCALE ? → Concise et naturelle
+10. ✓ Style CONVERSATIONNEL ? → Fluide et humain
 
 ## 🚨 ERREURS INTERDITES
 
-❌ "OK" avec execute vide
+❌ "OK" avec execute vide si action demandée
 ❌ Arrondir l'heure
 ❌ "add" dans schedule_action
-❌ Balises <s>, <p>, <br> ou autres HTML
+❌ Balises HTML (<p>, <br>, <s>, etc.)
 ❌ Exécuter une planification
 ❌ Texte hors JSON
-❌ Réponses superficielles aux questions générales
-❌ Dire "je n'ai pas accès à l'heure" (elle est fournie)
-❌ Oublier web_search pour météo/actualités
-❌ Mauvais formatage (texte compact sans sauts de ligne)
+❌ Réponses robotiques ("J'ai effectué...")
+❌ Dire "je n'ai pas accès" alors que Google Search est activé
+❌ Listes à puces dans réponses vocales
+❌ Réponses trop longues pour la voix
+
+## 🎤 OPTIMISATION VOCALE
+
+**Pour TOUTE réponse destinée à la voix :**
+- Phrases courtes (max 20 mots)
+- Éviter les chiffres complexes (dire "dix-huit" au lieu de "18")
+- Pas de ponctuation complexe dans le ton
+- Confirmations ultra-courtes : "Fait", "OK", "Compris"
 
 RÉPONDS UNIQUEMENT EN JSON VALIDE.
 `;
 
 // ========================================
-// FONCTION DE CHAT AVEC RETRY
+// FONCTION DE CHAT AVEC RETRY ET GOOGLE SEARCH
 // ========================================
 async function chatWithRetry(prompt, devices, currentTime, maxRetries = API_KEYS.length) {
   let lastError = null;
@@ -315,7 +323,12 @@ async function chatWithRetry(prompt, devices, currentTime, maxRetries = API_KEYS
     try {
       const keyObj = getNextApiKey();
       const genAI = new GoogleGenerativeAI(keyObj.key);
-      const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" });
+      
+      // 🔑 MODÈLE AVEC GOOGLE SEARCH ACTIVÉ
+      const model = genAI.getGenerativeModel({ 
+        model: "gemini-2.5-flash",
+        tools: [{ googleSearch: {} }] // ✅ Active Google Search automatique
+      });
 
       const chat = model.startChat({
         history: [
@@ -327,7 +340,7 @@ async function chatWithRetry(prompt, devices, currentTime, maxRetries = API_KEYS
             role: "model", 
             parts: [{ 
               text: JSON.stringify({
-                reply: "Je suis Intellia v2.2. Prêt pour la domotique, les questions générales, et les recherches web.",
+                reply: "Je suis Intellia v3.0, votre assistant intelligent avec accès à Google Search. Prêt à vous aider !",
                 execute: [],
                 planning_commands: []
               })
@@ -336,7 +349,7 @@ async function chatWithRetry(prompt, devices, currentTime, maxRetries = API_KEYS
         ],
         generationConfig: {
           responseMimeType: "application/json",
-          temperature: 0.7,
+          temperature: 0.8, // ✅ Augmenté pour réponses plus naturelles
           maxOutputTokens: 4096,
         },
       });
@@ -349,7 +362,7 @@ async function chatWithRetry(prompt, devices, currentTime, maxRetries = API_KEYS
 ${JSON.stringify(devices, null, 2)}
 
 ╔═══════════════════════════════════════╗
-║         HEURE ACTUELLE                ║
+║         HEURE ACTUELLE PRÉCISE        ║
 ╚═══════════════════════════════════════╝
 
 ${currentTime}
@@ -366,7 +379,7 @@ ANALYSE ET RÉPONDS EN JSON VALIDE :
 `;
 
       const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 15000); // 15 secondes
+      const timeout = setTimeout(() => controller.abort(), 20000); // ✅ 20s au lieu de 15s
 
       const result = await chat.sendMessage(fullPrompt, { signal: controller.signal });
       clearTimeout(timeout);
@@ -394,16 +407,6 @@ ANALYSE ET RÉPONDS EN JSON VALIDE :
   }
 
   return { success: false, error: lastError };
-}
-
-// ========================================
-// FONCTION D'HEURE ACTUELLE
-// ========================================
-function getCurrentTime() {
-  const now = new Date();
-  const hours = String(now.getHours()).padStart(2, '0');
-  const minutes = String(now.getMinutes()).padStart(2, '0');
-  return `Heure actuelle: ${hours}:${minutes}`;
 }
 
 // ========================================
@@ -439,28 +442,29 @@ app.post('/api/chat', async (req, res) => {
     }
 
     console.log('┌────────────────────────────────────────┐');
-    console.log('📥 MESSAGE:', message);
+    console.log('🔥 MESSAGE:', message);
     console.log('🏠 APPAREILS:', devices.map(d => `${d.name} (${d.id})`).join(', ') || 'Aucun');
-    console.log('🕐 HEURE:', getCurrentTime());
+    
+    const currentTime = getCurrentTimeFormatted();
+    console.log('🕐 HEURE:', currentTime);
 
     const startTime = Date.now();
-    const currentTime = getCurrentTime();
     const result = await chatWithRetry(message, devices, currentTime);
 
     if (!result.success) {
       console.error('💥 TOUTES LES CLÉS ONT ÉCHOUÉ');
       
       if (result.error && result.error.name === 'AbortError') {
-          console.error('⏱️ TIMEOUT: Requête trop longue (15s)');
+          console.error('⏱️ TIMEOUT: Requête trop longue (20s)');
           return res.status(504).json({ 
-            reply: "La demande a pris trop de temps. L'assistant semble lent, veuillez réessayer.",
+            reply: "La demande a pris trop de temps. Veuillez réessayer.",
             execute: [],
             planning_commands: []
           });
       }
       
       return res.status(503).json({ 
-        reply: "Désolé, le service est temporairement indisponible. Toutes les clés API ont atteint leur limite. Réessayez dans quelques minutes.",
+        reply: "Désolé, le service est temporairement indisponible. Réessayez dans quelques instants.",
         execute: [],
         planning_commands: []
       });
@@ -475,7 +479,9 @@ app.post('/api/chat', async (req, res) => {
       aiJson = JSON.parse(aiText);
     } catch (parseError) {
       console.error('❌ ERREUR PARSING:', parseError.message);
+      console.error('📄 Texte reçu:', aiText.substring(0, 200));
       
+      // Nettoyage avancé
       const cleaned = aiText
         .replace(/^```json\s*\n?/, '')
         .replace(/\n?```\s*$/, '')
@@ -483,6 +489,7 @@ app.post('/api/chat', async (req, res) => {
         .replace(/<\/s>/g, '')
         .replace(/<p>/g, '')
         .replace(/<\/p>/g, '')
+        .replace(/<br\s*\/?>/g, ' ')
         .trim();
       
       try {
@@ -491,7 +498,7 @@ app.post('/api/chat', async (req, res) => {
       } catch (secondError) {
         console.error('❌ ÉCHEC NETTOYAGE:', secondError.message);
         return res.json({
-          reply: "Désolé, j'ai eu un problème de communication. Pouvez-vous reformuler ?",
+          reply: "Désolé, j'ai eu un problème technique. Pouvez-vous reformuler autrement ?",
           execute: [],
           planning_commands: []
         });
@@ -511,30 +518,26 @@ app.post('/api/chat', async (req, res) => {
       aiJson.planning_commands = [];
     }
 
-    // Nettoyage des balises HTML (sécurité)
+    // Nettoyage final (sécurité)
     aiJson.reply = aiJson.reply
-      .replace(/<s>/g, '')
-      .replace(/<\/s>/g, '')
-      .replace(/<p>/g, '')
-      .replace(/<\/p>/g, '')
-      .replace(/<br\s*\/?>/g, '\n')
+      .replace(/<[^>]*>/g, '') // Supprime TOUTES les balises HTML
       .replace(/&nbsp;/g, ' ')
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
       .trim();
 
     console.log('✅ RÉPONSE FINALE:');
     console.log('   reply:', aiJson.reply.substring(0, 100) + (aiJson.reply.length > 100 ? '...' : ''));
     console.log('   execute:', aiJson.execute.length, 'commandes');
     console.log('   planning:', aiJson.planning_commands.length, 'planifications');
-    if (aiJson.web_search) {
-      console.log('   🔍 web_search:', aiJson.web_search);
-    }
     console.log('└────────────────────────────────────────┘\n');
 
     res.json(aiJson);
     
   } catch (error) {
     if (error.name === 'AbortError') {
-      console.error('⏱️ TIMEOUT: Requête trop longue (15s)');
+      console.error('⏱️ TIMEOUT: Requête trop longue (20s)');
       return res.status(504).json({ 
         reply: "La demande a pris trop de temps. Réessayez.",
         execute: [],
@@ -561,13 +564,14 @@ app.get('/api/health', (req, res) => {
   
   res.json({ 
     status: 'ok', 
-    version: '2.2',
+    version: '3.0',
     keys: {
       total: API_KEYS.length,
       available: availableKeys,
       exhausted: API_KEYS.length - availableKeys
     },
-    features: ['web_search', 'real_time', 'weather'],
+    features: ['google_search', 'real_time', 'weather', 'voice_optimized'],
+    model: 'gemini-2.0-flash-exp',
     timestamp: new Date().toISOString()
   });
 });
@@ -591,13 +595,14 @@ app.get('/api/keys-status', (req, res) => {
 // ========================================
 app.listen(PORT, () => {
   console.log('\n🏠 ╔═══════════════════════════════════════╗');
-  console.log('   ║  INTELLIA v2.2 - Multi-Clés + Web    ║');
+  console.log('   ║  INTELLIA v3.0 - Google Search OK    ║');
   console.log('   ╚═══════════════════════════════════════╝');
   console.log(`\n   🚀 Serveur démarré sur le port ${PORT}`);
   console.log(`   🌐 Interface: http://localhost:${PORT}`);
   console.log(`   🔑 ${API_KEYS.length} clé(s) API chargée(s)`);
-  console.log(`   🔍 Recherche Web: Activée`);
-  console.log(`   🕐 Heure Temps Réel: Activée`);
+  console.log(`   🔍 Google Search: ✅ ACTIVÉ`);
+  console.log(`   🕐 Heure Temps Réel: ✅ ACTIVÉ`);
+  console.log(`   🎤 Optimisation Vocale: ✅ ACTIVÉ`);
   console.log(`   📊 Health Check: http://localhost:${PORT}/api/health`);
   console.log(`   🔧 Keys Status: http://localhost:${PORT}/api/keys-status`);
   console.log('\n╚═══════════════════════════════════════════════╝\n');
@@ -615,34 +620,41 @@ process.on('SIGINT', () => {
 });
 
 // ========================================
-// NOTES DE DÉPLOIEMENT
+// NOTES DE DÉPLOIEMENT v3.0
 // ========================================
 
 /*
-📋 VARIABLES D'ENVIRONNEMENT À CONFIGURER :
+📋 VARIABLES D'ENVIRONNEMENT REQUISES :
 
 1. AUTH_KEY=cle-secrete-intellia
 2. GEMINI_KEY_1=votre_première_clé_api
 3. GEMINI_KEY_2=votre_deuxième_clé_api
-4. GEMINI_KEY_3=votre_troisième_clé_api
 ... (jusqu'à GEMINI_KEY_10 si besoin)
 
-✅ NOUVELLES FONCTIONNALITÉS v2.2 :
-- ✅ Recherche web intégrée (météo, actualités)
-- ✅ Heure en temps réel
-- ✅ Meilleur formatage des réponses (sauts de ligne)
-- ✅ Support des requêtes web_search
-- ✅ Réponses mieux structurées
+✅ NOUVEAUTÉS v3.0 :
+- ✅ Google Search activé automatiquement (tools: [{ googleSearch: {} }])
+- ✅ Heure précise avec secondes et date complète
+- ✅ Réponses vocales optimisées (courtes et naturelles)
+- ✅ Temperature 0.8 pour réponses plus humaines
+- ✅ Timeout 20s au lieu de 15s
+- ✅ Nettoyage HTML renforcé
+- ✅ Questions générales traitées librement
+- ✅ Meilleure gestion des erreurs de parsing
 
-🔍 UTILISATION :
-- L'IA peut maintenant demander des recherches web
-- L'heure actuelle est automatiquement fournie
-- Les réponses sont mieux formatées avec \n
-- Météo toujours récupérée via web
+🔧 CORRECTIONS APPLIQUÉES :
+1. ✅ Recherche web fonctionnelle (Google Search API)
+2. ✅ Heure correcte et précise
+3. ✅ Formatage vocal optimisé
+4. ✅ Parsing JSON plus robuste
+5. ✅ Pas de champ "web_search" inutile dans JSON
+6. ✅ Réponses naturelles et conversationnelles
 
-🚀 OPTIMISATIONS :
-- Modèle gemini-2.0-flash-exp (plus récent)
-- Temperature 0.7 (équilibre créativité/précision)
-- Timeout 15s (réactivité vocale)
-- Formatage amélioré des réponses
+🎯 UTILISATION :
+- L'IA cherche automatiquement sur Google quand nécessaire
+- Heure fournie avec précision (secondes + date)
+- Réponses vocales courtes et fluides
+- Questions générales traitées comme ChatGPT/Claude
+- Domotique : contrôle précis et planification
+
+🚀 MODÈLE : gemini-2.0-flash-exp (avec Google Search)
 */
