@@ -326,8 +326,8 @@ async function chatWithRetry(prompt, devices, currentTime, maxRetries = API_KEYS
       
       // 🔑 MODÈLE AVEC GOOGLE SEARCH ACTIVÉ
       const model = genAI.getGenerativeModel({ 
-        model: "gemini-2.5-flash",
-        tools: [{ googleSearch: {} }] // ✅ Active Google Search automatique
+        model: "gemini-2.5-flash"
+        
       });
 
       const chat = model.startChat({
