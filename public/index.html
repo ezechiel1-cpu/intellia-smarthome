@@ -52,7 +52,7 @@
     body.night-mode select {
       background: rgba(15, 23, 42, 0.8);
       color: #e2e8f0;
-      border: 1px solid rgba(255, 255, 255, 0.2);
+      border: 1px solid rgba(255, 255, 0.2);
     }
     body.night-mode input::placeholder { color: #94a3b8; }
     body.night-mode .btn { background: rgba(51, 65, 85, 0.8); color: #e2e8f0; border: 1px solid rgba(255, 255, 255, 0.1); }
@@ -485,7 +485,7 @@
     RENDER_API = 'http://localhost:3000';
     console.log('Environnement local détecté. API ->', RENDER_API);
   } else {
-    RENDER_API = 'https://smarthome-0tyx.onrender.com';
+    RENDER_API = 'https://intellia-smarthome.onrender.com';
     console.log('Environnement de production détecté. API ->', RENDER_API);
   }
   const AUTH_KEY = "cle-secrete-intellia";
@@ -519,7 +519,7 @@
     plans: []
   };
   
-  const defaultAvatar = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iI2FlYWVhZSI+PHBhdGggZD0iTTEyIDJDNi40OCAyIDIgNi40OCAyIDEyczQuNDggMTQgMTAgMTBjNS41MiAwIDEwLTQuNDggMTAtMTBTMjcuNTIgMiAxMiAyem0wIDJjMS42NiAwIDMgMS4zNCAzIDNzLTEuMzQgMy0zIDMtMy0xLjM0LTMtM1MwLjM0IDQgMTIgNHptMCAxNmMtMi42NyAwLTUuNDMtMS4yOS03LTIuODguNTYtMS42NSAzLjU1LTIuNjIgNy0yLjYyczYuNDQgLjk3IDcgMi42MmMtMS41NyAxLjU5LTQuMzMgMi44OC03IDIuODh6Ii8+PC9zdmc+";
+  const defaultAvatar = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iI2FlYWVhZSI+PHBhdGggZD0iTTEyIDJDNi40OCAyIDIgNi40OCAyIDEyczQuNDggMTQgMTAgMTBjNS41MiAwIDEwLTQuNDggMTAtMTBTMjcuNTIgMiAxMiAyem0wIDJjMS42NiAwIDMgMS4zNCAzIDNzLTEuMzQgMy0zIDMtMy0xLjM0LTMtM1MwLjM0IDQgMTIgNHptMCAxNmMtMi42NyAwLTUuNDMtMS4yOS03LTIuODguNTYtMS42NSAzLjU1LTIuNjIgNy0yLjYyczYuNDQgLjk3IDcgMi46MmMtMS41NyAxLjU5LTQuMzMgMi44OC03IDIuODh6Ii8+PC9zdmc+";
 
   const deviceTypes = {
     'lamp': { name: 'Lampe', hasBrightness: true, icon: 'lightbulb' },
@@ -832,6 +832,36 @@
     window.speechSynthesis.speak(u);
   }
 
+  // ======= Notification de Bureau (Nouveau) =======
+  function sendBrowserNotification(title, body) {
+    // 1. Vérifier si les notifications sont activées dans les paramètres de l'application
+    if (!appState.notificationsEnabled) {
+      logActivity('Notification de bureau ignorée (désactivée dans les paramètres).');
+      return;
+    }
+
+    // 2. Vérifier si le navigateur supporte les notifications
+    if (!('Notification' in window)) {
+      console.warn('Ce navigateur ne supporte pas les notifications de bureau.');
+      return;
+    }
+
+    // 3. Gérer les permissions
+    if (Notification.permission === 'granted') {
+      // Permission déjà accordée : envoyer la notif
+      new Notification(title, { body: body, icon: './favicon.ico' }); // Vous pouvez changer l'icône
+    } 
+    else if (Notification.permission !== 'denied') {
+      // Permission non encore demandée (ou 'default') : la demander
+      Notification.requestPermission().then(permission => {
+        if (permission === 'granted') {
+          new Notification(title, { body: body, icon: './favicon.ico' });
+        }
+      });
+    }
+    // 4. Si 'denied', ne rien faire.
+  }
+
   // MODIFIÉ: VoiceEngine avec synchro UI améliorée
   const VoiceEngine = {
     recognition: null, isPushToTalkActive: false, isContinuousActive: false, isPausedForSpeech: false,
@@ -957,11 +987,23 @@
       const t0 = Date.now();
       const r = await fetch(`${RENDER_API}/api/chat`, {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message, key: AUTH_KEY, devices: appState.devices.map(d => ({ id: d.id, name: d.name, type: d.type, room: d.room })) }),
+        // MODIFICATION 1: Envoi des états et de la session
+        body: JSON.stringify({
+          message,
+          key: AUTH_KEY,
+          devices: appState.devices.map(d => ({ id: d.id, name: d.name, type: d.type, room: d.room })),
+          deviceStates: appState.deviceStates, // NOUVEAU : envoyer les états
+          sessionId: 'default'
+        }),
       });
       el('intelliaLatency').textContent = `latence: ${Date.now() - t0}ms`;
       if (!r.ok) throw new Error(`Server error ${r.status}`);
       const j = await r.json();
+      
+      // MODIFICATION 2: Afficher les suggestions si présentes
+      if (j.suggestions && j.suggestions.length > 0) {
+        displaySuggestions(j.suggestions);
+      }
       
       if (j.planning_commands) {
         for (const cmd of j.planning_commands) {
@@ -991,13 +1033,72 @@
   }
 
   // ======= Chat Interface =======
+  // MODIFICATION 4: Amélioration de appendChat pour le code Markdown
   const appendChat = (role, text) => {
-    const target = el('chatFullWindow'); if (!target) return;
+    const target = el('chatFullWindow');
+    if (!target) return;
+  
     const node = document.createElement('div');
     node.className = 'msg ' + (role === 'user' ? 'user' : 'bot');
-    node.textContent = text;
-    target.appendChild(node); target.scrollTop = target.scrollHeight;
+  
+    // Détecter et formater le code
+    if (text.includes('```')) {
+      const parts = text.split('```');
+      let html = '';
+  
+      parts.forEach((part, i) => {
+        if (i % 2 === 0) {
+          // Texte normal
+          html += part.replace(/\n/g, '<br>');
+        } else {
+          // Bloc de code
+          const lines = part.split('\n');
+          const lang = lines[0].trim();
+          const code = lines.slice(1).join('\n');
+          html += `<pre style="background: rgba(0,0,0,0.1); padding: 10px; border-radius: 6px; overflow-x: auto; margin: 8px 0;"><code>${escapeHtml(code)}</code></pre>`;
+        }
+      });
+  
+      node.innerHTML = html;
+    } else {
+      node.textContent = text;
+    }
+  
+    target.appendChild(node);
+    target.scrollTop = target.scrollHeight;
   };
+  
+  // Fonction helper pour échapper HTML
+  function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+
+  // MODIFICATION 3: Nouvelle fonction pour afficher les suggestions
+  const displaySuggestions = (suggestions) => {
+    const container = el('proactive-suggestion');
+    if (!container) return;
+  
+    container.innerHTML = suggestions.map(s => `
+      <div class="suggestion-card" style="background: ${
+        s.type === 'warning' ? 'rgba(243, 156, 18, 0.1)' :
+        s.type === 'action' ? 'rgba(52, 152, 219, 0.1)' :
+        'rgba(46, 204, 113, 0.1)'
+      }; border-left: 4px solid ${
+        s.type === 'warning' ? 'var(--warning)' :
+        s.type === 'action' ? 'var(--info)' :
+        'var(--success)'
+      }; padding: 12px; margin: 8px 0; border-radius: 8px;">
+        <h4 style="margin: 0 0 6px 0; font-size: 14px; color: var(--dark);">
+          <i class="fas fa-lightbulb"></i> Suggestion
+        </h4>
+        <p style="margin: 0; font-size: 13px;">${s.message}</p>
+        ${s.context ? `<small style="color: var(--muted); font-size: 11px;">→ ${s.context}</small>` : ''}
+      </div>
+    `).join('');
+  };
+
 
   const handleTextInput = async () => {
     const txt = (el('chatFullInput').value || '').trim();
@@ -1021,8 +1122,23 @@
       document.body.classList.toggle('night-mode', e.target.checked);
     });
     
-    el('notificationsToggle').addEventListener('change', (e) => localStorage.setItem('notifications', e.target.checked));
-    el('voiceNotificationsToggle').addEventListener('change', (e) => localStorage.setItem('voiceNotifications', e.target.checked));
+    // Modification ici pour lier la variable d'état
+    el('notificationsToggle').checked = appState.notificationsEnabled;
+    el('notificationsToggle').addEventListener('change', (e) => {
+        appState.notificationsEnabled = e.target.checked;
+        localStorage.setItem('notifications', e.target.checked);
+        // Demander la permission immédiatement si activé
+        if (e.target.checked) {
+            sendBrowserNotification("Notifications", "Les notifications sont maintenant activées !");
+        }
+    });
+    
+    // Modification ici pour lier la variable d'état
+    el('voiceNotificationsToggle').checked = appState.voiceNotifications;
+    el('voiceNotificationsToggle').addEventListener('change', (e) => {
+        appState.voiceNotifications = e.target.checked;
+        localStorage.setItem('voiceNotifications', e.target.checked);
+    });
     
     el('resetBtn').addEventListener('click', () => { if (confirm("Réinitialiser l'application ?")) { localStorage.clear(); location.reload(); } });
     
@@ -1085,26 +1201,33 @@
                 console.warn("[WS] Message non JSON reçu:", event.data);
             }
         };
-        appState.websocket.onclose = () => {
-            logActivity("WebSocket déconnecté.");
-            el('ws-status').textContent = 'Statut: Déconnecté';
-            el('ws-status').style.backgroundColor = '';
-            el('connect-ws').style.display = 'block';
-            el('disconnect-ws').style.display = 'none';
-            appState.websocket = null;
-            appState.connectionType = 'none';
-            appState.isConnected = false;
-        };
-        appState.websocket.onerror = (error) => {
-            console.error("Erreur WebSocket:", error);
-            logActivity("Erreur de connexion WebSocket.");
-            el('ws-status').textContent = 'Statut: Erreur';
-            el('ws-status').style.backgroundColor = 'var(--danger)';
-            if (appState.websocket) {
-                appState.websocket.close();
-            }
-            appState.websocket = null;
-        };
+       appState.websocket.onclose = () => {
+              logActivity("WebSocket déconnecté.");
+              
+              // Ne pas écraser le message "Indisponible" s'il vient d'être défini par onerror
+              if (el('ws-status').textContent !== 'Connexion locale: Indisponible') {
+                el('ws-status').textContent = 'Statut: Déconnecté';
+                el('ws-status').style.backgroundColor = '';
+              }
+              
+              el('connect-ws').style.display = 'block';
+              el('disconnect-ws').style.display = 'none';
+              appState.websocket = null;
+              appState.connectionType = 'none';
+              appState.isConnected = false;
+          };
+    appState.websocket.onerror = (error) => {
+              console.error("Erreur WebSocket locale:", error);
+              logActivity("Connexion locale (WS) impossible. Firebase prend le relais.");
+              // Message plus clair et moins effrayant
+              el('ws-status').textContent = 'Connexion locale: Indisponible';
+              // Utiliser 'warning' (orange) au lieu de 'danger' (rouge)
+              el('ws-status').style.backgroundColor = 'var(--warning)'; 
+              if (appState.websocket) {
+                  appState.websocket.close();
+              }
+              appState.websocket = null;
+          };
     } catch (e) {
         console.error("Impossible de créer le WebSocket:", e);
         logActivity("Erreur: Impossible de créer le WebSocket.");
@@ -1121,16 +1244,29 @@
   el('connect-ws')?.addEventListener('click', connectWebSocket);
   el('disconnect-ws')?.addEventListener('click', disconnectWebSocket);
 
-  // ======= Schedule Execution =======
+  // ======= Schedule Execution (Modifié avec Notifications) =======
   setInterval(() => {
     const now = new Date();
     const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
     const duePlans = appState.plans.filter(p => p.time === currentTime);
+    
     if (duePlans.length > 0) {
         logActivity(`Exécution de ${duePlans.length} tâche(s) planifiée(s).`);
         duePlans.forEach(plan => {
             sendCommand(plan.device, plan.action, plan.power);
             appendChat("bot", `⏰ Exécution planifiée : ${plan.device} ${plan.action}`);
+
+            // ✅ NOUVELLE LIGNE AJOUTÉE CI-DESSOUS
+            try {
+              const deviceName = appState.devices.find(d => d.id === plan.device)?.name || plan.device;
+              const actionText = plan.action === 'ON' ? 'allumé' : 'éteint';
+              sendBrowserNotification(
+                'Tâche planifiée exécutée',
+                `L'appareil "${deviceName}" a été ${actionText}.`
+              );
+            } catch(e) { console.error('Erreur envoi notification:', e); }
+
+            // Suite du code (suppression de la tâche)
             const planId = plan.firebaseId || plan.createdAt;
             if (db) remove(ref(db, `${planningRefPath}/${planId}`));
             else appState.plans = appState.plans.filter(p => (p.firebaseId || p.createdAt) !== planId);
