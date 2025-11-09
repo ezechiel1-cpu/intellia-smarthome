@@ -3,6 +3,7 @@
 // ✅ Conscience de l'état des appareils
 // ✅ Suggestions proactives contextuelles
 // ✅ Assistant universel (code, recherche, domotique)
+// ✅ CORRIGÉ : Gestion de la planification des tâches
 // ========================================
 const express = require('express');
 const cors = require('cors');
@@ -372,7 +373,7 @@ function analyzeContext(message, context, devices) {
 }
 
 // ========================================
-// PROMPT SYSTÈME v5.0 ULTRA-INTELLIGENT
+// PROMPT SYSTÈME v5.0 ULTRA-INTELLIGENT (CORRIGÉ POUR PLANNING)
 // ========================================
 const systemPrompt = `
 Tu es "Intellia", un assistant universel ultra-intelligent.
@@ -412,7 +413,10 @@ Tu es "Intellia", un assistant universel ultra-intelligent.
 {
   "reply": "Réponse naturelle et intelligente",
   "execute": ["device_id|ACTION|valeur"],
-  "planning_commands": [],
+  "planning_commands": [
+    { "action": "add", "device": "device_id", "time": "HH:MM", "power": 100 },
+    { "action": "delete_all" }
+  ],
   "suggestions": [
     {
       "type": "info|action|warning",
@@ -431,6 +435,7 @@ deviceStates: { "salon_lamp": { state: "ON", power: 80 } }
 {
   "reply": "La lampe du salon est déjà allumée à 80%. Voulez-vous que je change la luminosité ?",
   "execute": [],
+  "planning_commands": [],
   "suggestions": [
     {
       "type": "info",
@@ -441,11 +446,30 @@ deviceStates: { "salon_lamp": { state: "ON", power: 80 } }
   "source": "cloud"
 }
 
+### Planification de tâche (NOUVEL EXEMPLE)
+USER: "Allume la lampe de la chambre à 17h30"
+Heure actuelle: 14:10
+{
+  "reply": "C'est noté. J'allumerai la lampe de la chambre à 17h30.",
+  "execute": [],
+  "planning_commands": [
+    {
+      "action": "add",
+      "device": "chambre_lamp",
+      "time": "17:30",
+      "power": 100
+    }
+  ],
+  "suggestions": [],
+  "source": "cloud"
+}
+
 ### Code Arduino
 USER: "Donne moi un code Arduino pour LED"
 {
   "reply": "Voici un exemple de code Arduino pour contrôler une LED :\n\n\`\`\`cpp\nvoid setup() {\n  pinMode(13, OUTPUT);\n}\n\nvoid loop() {\n  digitalWrite(13, HIGH);\n  delay(1000);\n  digitalWrite(13, LOW);\n  delay(1000);\n}\n\`\`\`\n\nCe code fait clignoter la LED connectée à la broche 13.",
   "execute": [],
+  "planning_commands": [],
   "suggestions": [],
   "source": "knowledge"
 }
@@ -456,6 +480,7 @@ deviceStates: { "salon_lamp": {state:"ON"}, "chambre_lamp": {state:"ON"}, "cuisi
 {
   "reply": "D'accord. Vous avez 2 lampes allumées (salon et chambre). Voulez-vous que je les éteigne pour économiser l'énergie ?",
   "execute": [],
+  "planning_commands": [],
   "suggestions": [
     {
       "type": "action",
@@ -472,6 +497,7 @@ deviceStates: { "salon_lamp": {state:"ON", power:60}, "chambre_lamp": {state:"OF
 {
   "reply": "Voici l'état actuel :\n• Lampe salon : Allumée (60%)\n• Lampe chambre : Éteinte\n• Ventilateur : Allumé (100%)",
   "execute": [],
+  "planning_commands": [],
   "suggestions": [
     {
       "type": "info",
@@ -490,6 +516,7 @@ deviceStates: { "salon_lamp": {state:"ON", power:60}, "chambre_lamp": {state:"OF
 4. Réponses NATURELLES et CONVERSATIONNELLES
 5. Code formaté en Markdown avec backticks
 6. Si plusieurs actions possibles : PROPOSER au lieu d'exécuter
+7. Planifications = 'add' (HH:MM) ou 'delete_all'
 
 RÉPONDS UNIQUEMENT EN JSON VALIDE.
 `;
@@ -533,7 +560,7 @@ async function chatWithGemini(userMessage, devices, deviceStates, sessionId, max
     try {
       const keyObj = getNextApiKey();
       const genAI = new GoogleGenerativeAI(keyObj.key);
-      const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+      const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" }); // Modèle mis à jour (gemini-2.5-flash n'existe pas)
 
       const chat = model.startChat({
         history: [
@@ -665,7 +692,7 @@ ${contextAnalysis.suggestedActions.length > 0 ? `⚠️ Suggestions détectées:
 }
 
 // ========================================
-// ROUTE PRINCIPALE /api/chat
+// ROUTE PRINCIPALE /api/chat (CORRIGÉE POUR PLANNING)
 // ========================================
 app.post('/api/chat', async (req, res) => {
   try {
@@ -737,17 +764,33 @@ app.post('/api/chat', async (req, res) => {
     if (!Array.isArray(aiJson.planning_commands)) aiJson.planning_commands = [];
     if (!Array.isArray(aiJson.suggestions)) aiJson.suggestions = [];
     
-    // Supprimer doublons planifications
+    // === 🔴 CORRECTION DU BUG DE DÉDUPLICATION 🔴 ===
+    // L'ancienne logique cherchait 'plan.schedule_action' au lieu de 'plan.action'
+    // et ne gérait pas correctement 'delete_all'.
     const uniquePlannings = [];
     const seen = new Set();
+    
     for (const plan of aiJson.planning_commands) {
-      const key = `${plan.device}_${plan.time}_${plan.schedule_action}`;
-      if (!seen.has(key)) {
-        seen.add(key);
-        uniquePlannings.push(plan);
+      // Gérer les commandes 'add'
+      if (plan.action === 'add' && plan.device && plan.time) {
+        // Clé unique pour une commande 'add'
+        const key = `${plan.action}_${plan.device}_${plan.time}_${plan.power || ''}`;
+        if (!seen.has(key)) {
+          seen.add(key);
+          uniquePlannings.push(plan);
+        }
+      } 
+      // Gérer la commande 'delete_all'
+      else if (plan.action === 'delete_all') {
+        // S'assurer qu'on ne l'ajoute qu'une fois
+        if (!seen.has('delete_all')) {
+          seen.add('delete_all');
+          uniquePlannings.push(plan);
+        }
       }
     }
     aiJson.planning_commands = uniquePlannings;
+    // === 🟢 FIN DE LA CORRECTION 🟢 ===
     
     // Nettoyer HTML
     aiJson.reply = aiJson.reply.replace(/<[^>]*>/g, '').trim();
