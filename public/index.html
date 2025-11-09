@@ -258,6 +258,23 @@
     #proactive-suggestion.fade-out {
       opacity: 0;
     }
+
+    /* ==== MODIFICATIONS CSS (fix-websocket-ui.md) ==== */
+    
+    /* Animation douce pour les changements de statut */
+    #ws-status, #firebase-status, #connection-mode {
+      transition: all 0.3s ease;
+    }
+
+    /* Icône qui pulse pour le mode local actif */
+    @keyframes connection-pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    #ws-status-icon.active {
+      animation: connection-pulse 2s infinite;
+    }
   </style>
 </head>
 <body>
@@ -284,6 +301,10 @@
           <span id="statusOnline" class="chip">Assistant : -</span>
           <span id="intelliaLatency" class="chip">latence: -</span>
           <span id="db-count" class="chip">on: 0</span>
+          
+          <span id="connection-mode" class="chip" style="background: rgba(46, 204, 113, 0.1); color: #2ecc71;">
+            <i class="fas fa-cloud"></i> Mode distant
+          </span>
         </div>
       </header>
 
@@ -316,15 +337,36 @@
               </div>
 
               <div style="margin-top:12px; border-top: 1px solid rgba(0,0,0,0.1); padding-top:12px;">
-                <strong>📡 Connexion directe ESP32</strong>
+                <strong>📡 Mode de Connexion</strong>
+                <p style="font-size:12px; color:var(--muted); margin:8px 0;">
+                  <i class="fas fa-info-circle"></i> L'application fonctionne en mode <strong>hybride</strong> :
+                  <br>• <strong>À distance</strong> : Via Firebase (toujours disponible)
+                  <br>• <strong>Local</strong> : Via ESP32 (uniquement sur le même réseau Wi-Fi)
+                </p>
+                
                 <div class="flex" style="flex-wrap:wrap; justify-content: center;">
-                  <button class="btn primary" id="connect-ws">Connecter à l'ESP32</button>
-                  <button class="btn warn" id="disconnect-ws" style="display:none;">Déconnecter</button>
+                  <button 
+                    class="btn primary" 
+                    id="connect-ws"
+                    title="Active le contrôle direct de l'ESP32 quand vous êtes sur le même réseau Wi-Fi. Firebase reste actif en permanence.">
+                    <i class="fas fa-wifi"></i> Activer connexion locale
+                  </button>
+                  <button class="btn warn" id="disconnect-ws" style="display:none;">
+                    <i class="fas fa-times-circle"></i> Désactiver local
+                  </button>
                 </div>
-                <div id="ws-status" class="chip" style="margin-top:8px;">Statut: Déconnecté</div>
+                
+                <div id="ws-status" class="chip" style="margin-top:8px; display:flex; align-items:center; gap:8px;">
+                  <i class="fas fa-circle" id="ws-status-icon" style="font-size:10px; color:#94a3b8;"></i>
+                  <span id="ws-status-text">Local: Non activé</span>
+                </div>
+                
+                <div id="firebase-status" class="chip" style="margin-top:4px; display:flex; align-items:center; gap:8px;">
+                  <i class="fas fa-circle" style="font-size:10px; color:#2ecc71;"></i>
+                  <span>À distance: Actif (Firebase)</span>
+                </div>
               </div>
-
-            </div>
+              </div>
             
             <div class="card" style="margin-top:12px">
               <h3>💡 Suggestions Proactives</h3>
@@ -435,8 +477,14 @@
               <span>Notifications vocales de l'Assistant</span>
               <label class="switch-3d"><input type="checkbox" id="voiceNotificationsToggle" checked><span class="slider-3d"></span></label>
             </div>
+            
+            <button class="btn primary" id="testNotificationBtn" style="margin-top: 10px; width: 100%; justify-content: center;">
+              <i class="fas fa-bell"></i> Tester les notifications
+            </button>
+            <p style="margin-top:8px;font-size:12px;color:var(--muted)">
+              💡 Les notifications apparaissent uniquement lors de l'exécution des tâches planifiées.
+            </p>
           </div>
-          
           <div class="settings-group">
               <h3>👤 Profil Utilisateur</h3>
               <div id="user-profile-card">
@@ -474,8 +522,7 @@
   </div> <script type="module">
   /*************************************************
    * SmartHome Intelligence - Version Finale Corrigée
-   * Connexion obligatoire + Raccourci Vocal + Suggestions Dynamiques
-   * Synchro UI boutons vocaux
+   * Intégration fix-websocket-ui.md
    *************************************************/
 
   // ======= CONFIG =======
@@ -519,7 +566,7 @@
     plans: []
   };
   
-  const defaultAvatar = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iI2FlYWVhZSI+PHBhdGggZD0iTTEyIDJDNi40OCAyIDIgNi40OCAyIDEyczQuNDggMTQgMTAgMTBjNS41MiAwIDEwLTQuNDggMTAtMTBTMjcuNTIgMiAxMiAyem0wIDJjMS42NiAwIDMgMS4zNCAzIDNzLTEuMzQgMy0zIDMtMy0xLjM0LTMtM1MwLjM0IDQgMTIgNHptMCAxNmMtMi42NyAwLTUuNDMtMS4yOS03LTIuODguNTYtMS42NSAzLjU1LTIuNjIgNy0yLjYyczYuNDQgLjk3IDcgMi46MmMtMS41NyAxLjU5LTQuMzMgMi44OC03IDIuODh6Ii8+PC9zdmc+";
+  const defaultAvatar = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iI2FlYWVhZSI+PHBhdGggZD0iTTEyIDJDNi40OCAyIDIgNi40OCAyIDEyczQuNDggMTQgMTAgMTBjNS41MiAwIDEwLTQuNDggMTAtMTBTMjcuNTIgMiAxMiAyem0wIDJjMS42NiAwIDMgMS4zNCAzIDNzLTEuMzQgMy0zIDMtMy0xLjM0LTMtM1MwLjM0IDQgMTIgNHptMCAxNmMtMi42NyAwLTUuNDMtMS4yOS03LTIuODguNTYtMS42NSAzLjU1LTIuNjIgNy0yLjYyczYuNDQgLjk3IDcgMi42MmMtMS41NyAxLjU5LTQuMzMgMi44OC03IDIuODh6Ii8+PC9zdmc+";
 
   const deviceTypes = {
     'lamp': { name: 'Lampe', hasBrightness: true, icon: 'lightbulb' },
@@ -710,22 +757,27 @@
     sendCommand(deviceId, v > 0 ? "ON" : "OFF", v);
   };
 
+  // ==== MODIFIÉ (fix-websocket-ui.md) ====
   window.sendCommand = (deviceId, action, value = null) => {
     const val = (value !== null) ? value : (action === "ON" ? 100 : 0);
     
+    // Tentative d'envoi en local si connecté
     if (appState.websocket && appState.websocket.readyState === WebSocket.OPEN) {
-        const wsPayload = { type: "control", device_id: deviceId, action: action, value: val };
-        appState.websocket.send(JSON.stringify(wsPayload));
-        logActivity(`[WS] Commande envoyée: ${deviceId} -> ${action} (${val})`);
-    } else if (appState.connectionType === 'websocket') {
-         logActivity("Erreur: WS non connecté. Commande non envoyée à l'ESP.");
+      const wsPayload = { type: "control", device_id: deviceId, action: action, value: val };
+      appState.websocket.send(JSON.stringify(wsPayload));
+      logActivity(`📤 [Local] ${deviceId} → ${action} (${val}%)`);
+    } else {
+      // Sinon, Firebase prend le relais automatiquement
+      logActivity(`☁️ [Firebase] ${deviceId} → ${action} (${val}%)`);
     }
 
+    // Mise à jour de l'état local et Firebase
     appState.deviceStates[deviceId] = { etat: action, luminosite: val };
     renderDevices();
     writeDeviceStateToBackend(deviceId, action, val);
-    logActivity(`Commande: ${deviceId} -> ${action} ${value !== null ? `(${value}%)` : ''}`);
   };
+  // ==== FIN MODIFICATION ====
+
 
   // ======= Planning =======
   function populatePlanDeviceSelect() {
@@ -832,49 +884,120 @@
     window.speechSynthesis.speak(u);
   }
 
-  // ======= Notification de Bureau (Nouveau) =======
-  function sendBrowserNotification(title, body) {
-    // 1. Vérifier si les notifications sont activées dans les paramètres de l'application
+  // ======= Notification de Bureau (MODIFIÉE fix-websocket-ui.md) =======
+  function sendBrowserNotification(title, body, options = {}) {
+    // 1. Vérifier si les notifications sont activées dans les paramètres
     if (!appState.notificationsEnabled) {
-      logActivity('Notification de bureau ignorée (désactivée dans les paramètres).');
+      logActivity('Notification ignorée (désactivée dans paramètres).');
       return;
     }
 
-    // 2. Vérifier si le navigateur supporte les notifications
+    // 2. Vérifier support navigateur
     if (!('Notification' in window)) {
-      console.warn('Ce navigateur ne supporte pas les notifications de bureau.');
+      console.warn('Notifications non supportées par ce navigateur.');
       return;
     }
 
-    // 3. Gérer les permissions
+    // 3. Configuration par défaut
+    const notificationOptions = {
+      body: body,
+      icon: options.icon || './favicon.ico',
+      badge: './favicon.ico',
+      tag: options.tag || 'smarthome-notification', // Évite les doublons
+      requireInteraction: options.requireInteraction || false, // Auto-fermeture après quelques secondes
+      vibrate: options.vibrate || [200, 100, 200], // Vibration sur mobile
+      timestamp: Date.now(),
+      ...options
+    };
+
+    // 4. Gérer les permissions
     if (Notification.permission === 'granted') {
-      // Permission déjà accordée : envoyer la notif
-      new Notification(title, { body: body, icon: './favicon.ico' }); // Vous pouvez changer l'icône
-    } 
-    else if (Notification.permission !== 'denied') {
-      // Permission non encore demandée (ou 'default') : la demander
+      const notification = new Notification(title, notificationOptions);
+      
+      // Fermeture automatique après 5 secondes
+      setTimeout(() => notification.close(), 5000);
+      
+      // Action au clic (optionnel)
+      notification.onclick = () => {
+        window.focus();
+        notification.close();
+      };
+      
+    } else if (Notification.permission !== 'denied') {
+      // Demander la permission
       Notification.requestPermission().then(permission => {
         if (permission === 'granted') {
-          new Notification(title, { body: body, icon: './favicon.ico' });
+          const notification = new Notification(title, notificationOptions);
+          setTimeout(() => notification.close(), 5000);
         }
       });
     }
-    // 4. Si 'denied', ne rien faire.
   }
 
-  // MODIFIÉ: VoiceEngine avec synchro UI améliorée
+
+  // MODIFIÉ: VoiceEngine avec corrections PDF (Microphone mobile)
   const VoiceEngine = {
     recognition: null, isPushToTalkActive: false, isContinuousActive: false, isPausedForSpeech: false,
+    
+    // ===== SECTION MODIFIÉE SELON LE PDF (Microphone) =====
     init() {
       if (!("webkitSpeechRecognition" in window || "SpeechRecognition" in window)) {
-        el('voicePushToTalk').disabled = true; el('voiceContinuous').disabled = true;
-        el('quickVoiceToggleBtn').disabled = true; el('quickVoiceToggleBtn').textContent = 'Voix non supportée';
-        el('voiceStatus').textContent = 'Voix: Non supportée'; return;
+        el('voicePushToTalk').disabled = true;
+        el('voiceContinuous').disabled = true;
+        el('quickVoiceToggleBtn').disabled = true;
+        el('quickVoiceToggleBtn').textContent = 'Voix non supportée';
+        el('voiceStatus').textContent = 'Voix: Non supportée';
+        return;
       }
-      el('voicePushToTalk').addEventListener('click', () => this.togglePushToTalk());
-      el('voiceContinuous').addEventListener('click', () => this.toggleContinuousConversation());
-      el('quickVoiceToggleBtn').addEventListener('click', () => this.toggleContinuousConversation());
+      
+      // AJOUT: Demander la permission du micro au démarrage
+      this.requestMicrophonePermission();
+
+      // MODIFICATION: Ajouter touchstart/touchend pour mobile
+      const pushBtn = el('voicePushToTalk');
+      const continuousBtn = el('voiceContinuous');
+      const quickBtn = el('quickVoiceToggleBtn');
+
+      // Push to Talk Support tactile
+      pushBtn.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        this.togglePushToTalk();
+      });
+      pushBtn.addEventListener('click', () => this.togglePushToTalk());
+
+      // Conversation Continue Support tactile
+      continuousBtn.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        this.toggleContinuousConversation();
+      });
+      continuousBtn.addEventListener('click', () => this.toggleContinuousConversation());
+
+      // Raccourci Accueil Support tactile
+      quickBtn.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        this.toggleContinuousConversation();
+      });
+      // On garde le click listener original pour le bureau
+      quickBtn.addEventListener('click', () => this.toggleContinuousConversation());
     },
+    
+    // NOUVELLE FONCTION (impliquée par le PDF)
+    requestMicrophonePermission() {
+      // Demande simple pour débloquer l'API sur mobile
+      navigator.mediaDevices.getUserMedia({ audio: true })
+        .then(stream => {
+          console.log('Permission micro accordée et API débloquée.');
+          // On n'a pas besoin de garder le stream, on le relâche
+          stream.getTracks().forEach(track => track.stop());
+        })
+        .catch(err => {
+          // L'utilisateur a refusé ou une erreur est survenue
+          console.error("Erreur de permission micro:", err);
+          el('voiceStatus').textContent = 'Voix: Permission requise';
+        });
+    },
+    // ===== FIN DE LA SECTION MODIFIÉE (Microphone) =====
+    
     createRecognitionInstance(continuous = false) {
       const Rec = window.SpeechRecognition || window.webkitSpeechRecognition;
       const rec = new Rec();
@@ -987,12 +1110,11 @@
       const t0 = Date.now();
       const r = await fetch(`${RENDER_API}/api/chat`, {
         method: "POST", headers: { "Content-Type": "application/json" },
-        // MODIFICATION 1: Envoi des états et de la session
         body: JSON.stringify({
           message,
           key: AUTH_KEY,
           devices: appState.devices.map(d => ({ id: d.id, name: d.name, type: d.type, room: d.room })),
-          deviceStates: appState.deviceStates, // NOUVEAU : envoyer les états
+          deviceStates: appState.deviceStates, 
           sessionId: 'default'
         }),
       });
@@ -1000,7 +1122,6 @@
       if (!r.ok) throw new Error(`Server error ${r.status}`);
       const j = await r.json();
       
-      // MODIFICATION 2: Afficher les suggestions si présentes
       if (j.suggestions && j.suggestions.length > 0) {
         displaySuggestions(j.suggestions);
       }
@@ -1033,7 +1154,6 @@
   }
 
   // ======= Chat Interface =======
-  // MODIFICATION 4: Amélioration de appendChat pour le code Markdown
   const appendChat = (role, text) => {
     const target = el('chatFullWindow');
     if (!target) return;
@@ -1041,17 +1161,14 @@
     const node = document.createElement('div');
     node.className = 'msg ' + (role === 'user' ? 'user' : 'bot');
   
-    // Détecter et formater le code
     if (text.includes('```')) {
       const parts = text.split('```');
       let html = '';
   
       parts.forEach((part, i) => {
         if (i % 2 === 0) {
-          // Texte normal
           html += part.replace(/\n/g, '<br>');
         } else {
-          // Bloc de code
           const lines = part.split('\n');
           const lang = lines[0].trim();
           const code = lines.slice(1).join('\n');
@@ -1068,14 +1185,12 @@
     target.scrollTop = target.scrollHeight;
   };
   
-  // Fonction helper pour échapper HTML
   function escapeHtml(text) {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
   }
 
-  // MODIFICATION 3: Nouvelle fonction pour afficher les suggestions
   const displaySuggestions = (suggestions) => {
     const container = el('proactive-suggestion');
     if (!container) return;
@@ -1122,22 +1237,36 @@
       document.body.classList.toggle('night-mode', e.target.checked);
     });
     
-    // Modification ici pour lier la variable d'état
     el('notificationsToggle').checked = appState.notificationsEnabled;
     el('notificationsToggle').addEventListener('change', (e) => {
         appState.notificationsEnabled = e.target.checked;
         localStorage.setItem('notifications', e.target.checked);
-        // Demander la permission immédiatement si activé
         if (e.target.checked) {
-            sendBrowserNotification("Notifications", "Les notifications sont maintenant activées !");
+            // Demander la permission si on active
+            requestNotificationPermission();
         }
     });
     
-    // Modification ici pour lier la variable d'état
     el('voiceNotificationsToggle').checked = appState.voiceNotifications;
     el('voiceNotificationsToggle').addEventListener('change', (e) => {
         appState.voiceNotifications = e.target.checked;
         localStorage.setItem('voiceNotifications', e.target.checked);
+    });
+
+    // ✅ NOUVEAU : Listener pour bouton test (fix-websocket-ui.md)
+    el('testNotificationBtn')?.addEventListener('click', () => {
+      if (!appState.notificationsEnabled) {
+        alert('❌ Activez d\'abord les notifications dans les paramètres.');
+        return;
+      }
+      
+      sendBrowserNotification(
+        '🔔 Test de Notification',
+        'Si vous voyez ce message, les notifications fonctionnent correctement !',
+        { requireInteraction: false }
+      );
+      
+      logActivity('Test de notification envoyé.');
     });
     
     el('resetBtn').addEventListener('click', () => { if (confirm("Réinitialiser l'application ?")) { localStorage.clear(); location.reload(); } });
@@ -1164,74 +1293,125 @@
   // ======= WebSocket (ESP32) Logic =======
   const HARDCODED_ESP_IP = "192.168.43.248";
 
+  // ==== MODIFIÉ (fix-websocket-ui.md) ====
   function connectWebSocket() {
     if (appState.websocket && appState.websocket.readyState === WebSocket.OPEN) {
-        logActivity("Déjà connecté au WebSocket.");
-        return;
+      logActivity("✅ Déjà connecté en local.");
+      return;
     }
+    
     const wsUrl = `ws://${HARDCODED_ESP_IP}/ws`;
-    logActivity(`Tentative de connexion à ${wsUrl}...`);
-    el('ws-status').textContent = 'Statut: Connexion...';
+    logActivity(`🔄 Tentative de connexion locale à ${HARDCODED_ESP_IP}...`);
+    
+    // Mise à jour UI : En cours
+    const statusText = el('ws-status-text');
+    const statusIcon = el('ws-status-icon');
+    statusText.textContent = 'Local: Connexion en cours...';
+    statusIcon.style.color = '#f39c12'; // Orange
+    el('ws-status').style.backgroundColor = 'rgba(243, 156, 18, 0.1)';
+    
     try {
-        appState.websocket = new WebSocket(wsUrl);
-        appState.websocket.onopen = () => {
-            logActivity("✅ WebSocket connecté !");
-            el('ws-status').textContent = 'Statut: Connecté';
-            el('ws-status').style.backgroundColor = 'var(--success)';
-            el('connect-ws').style.display = 'none';
-            el('disconnect-ws').style.display = 'block';
-            appState.connectionType = 'websocket';
-            appState.isConnected = true;
-            appState.websocket.send(JSON.stringify({ type: 'hello', client: 'web' }));
-        };
-        appState.websocket.onmessage = (event) => {
-            logActivity(`[WS] Message reçu: ${event.data}`);
-            try {
-                const data = JSON.parse(event.data);
-                if (data.type === 'state_update' && data.device_id && data.state) {
-                    const { device_id, state, power } = data;
-                    appState.deviceStates[device_id] = { etat: state, luminosite: power };
-                    renderDevices(); 
-                }
-                if (data.type === 'ping') {
-                    logActivity("[WS] Ping reçu, envoi du pong.");
-                    appState.websocket.send(JSON.stringify({type: 'pong'}));
-                }
-            } catch (e) {
-                console.warn("[WS] Message non JSON reçu:", event.data);
-            }
-        };
-       appState.websocket.onclose = () => {
-              logActivity("WebSocket déconnecté.");
-              
-              // Ne pas écraser le message "Indisponible" s'il vient d'être défini par onerror
-              if (el('ws-status').textContent !== 'Connexion locale: Indisponible') {
-                el('ws-status').textContent = 'Statut: Déconnecté';
-                el('ws-status').style.backgroundColor = '';
-              }
-              
-              el('connect-ws').style.display = 'block';
-              el('disconnect-ws').style.display = 'none';
-              appState.websocket = null;
-              appState.connectionType = 'none';
-              appState.isConnected = false;
-          };
-    appState.websocket.onerror = (error) => {
-              console.error("Erreur WebSocket locale:", error);
-              logActivity("Connexion locale (WS) impossible. Firebase prend le relais.");
-              // Message plus clair et moins effrayant
-              el('ws-status').textContent = 'Connexion locale: Indisponible';
-              // Utiliser 'warning' (orange) au lieu de 'danger' (rouge)
-              el('ws-status').style.backgroundColor = 'var(--warning)'; 
-              if (appState.websocket) {
-                  appState.websocket.close();
-              }
-              appState.websocket = null;
-          };
+      appState.websocket = new WebSocket(wsUrl);
+      
+      // Timeout de 3 secondes si pas de réponse
+      const connectionTimeout = setTimeout(() => {
+        if (appState.websocket && appState.websocket.readyState !== WebSocket.OPEN) {
+          console.log('⏱️ Timeout de connexion locale');
+          appState.websocket.close();
+        }
+      }, 3000);
+      
+      appState.websocket.onopen = () => {
+        clearTimeout(connectionTimeout);
+        logActivity("✅ Mode local activé ! Contrôle direct de l'ESP32.");
+        
+        // UI : Succès
+        statusText.textContent = 'Local: Connecté (ESP32)';
+        statusIcon.style.color = '#2ecc71'; // Vert
+        statusIcon.classList.add('active'); // Ajoute l'animation pulse
+        el('ws-status').style.backgroundColor = 'rgba(46, 204, 113, 0.1)';
+        
+        el('connect-ws').style.display = 'none';
+        el('disconnect-ws').style.display = 'block';
+        
+        appState.connectionType = 'websocket';
+        appState.isConnected = true;
+        appState.websocket.send(JSON.stringify({ type: 'hello', client: 'web' }));
+        
+        // 🎉 Notification positive
+        speak("Mode local activé. Contrôle direct de vos appareils.");
+        updateConnectionModeIndicator();
+      };
+      
+      appState.websocket.onmessage = (event) => {
+        logActivity(`📥 [Local] ${event.data}`);
+        try {
+          const data = JSON.parse(event.data);
+          if (data.type === 'state_update' && data.device_id && data.state) {
+            const { device_id, state, power } = data;
+            appState.deviceStates[device_id] = { etat: state, luminosite: power };
+            renderDevices(); 
+          }
+          if (data.type === 'ping') {
+            logActivity("[Local] Ping reçu → Envoi pong");
+            appState.websocket.send(JSON.stringify({type: 'pong'}));
+          }
+        } catch (e) {
+          console.warn("[Local] Message non-JSON:", event.data);
+        }
+      };
+      
+      appState.websocket.onclose = () => {
+        clearTimeout(connectionTimeout);
+        logActivity("🔌 Connexion locale fermée.");
+        
+        // UI : Déconnecté
+        statusText.textContent = 'Local: Non activé';
+        statusIcon.style.color = '#94a3b8'; // Gris
+        statusIcon.classList.remove('active');
+        el('ws-status').style.backgroundColor = '';
+        
+        el('connect-ws').style.display = 'block';
+        el('disconnect-ws').style.display = 'none';
+        
+        appState.websocket = null;
+        appState.connectionType = 'none';
+        appState.isConnected = false;
+        updateConnectionModeIndicator();
+      };
+      
+      appState.websocket.onerror = (error) => {
+        clearTimeout(connectionTimeout);
+        console.log("ℹ️ ESP32 non disponible (normal si vous n'êtes pas chez vous)");
+        
+        logActivity("ℹ️ Mode local indisponible. Firebase prend le relais.");
+        
+        // ✅ UI : Message rassurant (pas "Erreur")
+        statusText.textContent = 'Local: Indisponible (hors réseau)';
+        statusIcon.style.color = '#94a3b8'; // Gris neutre
+        statusIcon.classList.remove('active');
+        el('ws-status').style.backgroundColor = 'rgba(148, 163, 184, 0.1)';
+        
+        // Fermer proprement
+        if (appState.websocket) {
+          appState.websocket.close();
+        }
+        appState.websocket = null;
+        
+        // 💡 Message explicatif (PAS d'alerte invasive)
+        speak("Mode distant actif via Firebase. Vous pouvez contrôler vos appareils depuis n'importe où.");
+        updateConnectionModeIndicator();
+      };
+      
     } catch (e) {
-        console.error("Impossible de créer le WebSocket:", e);
-        logActivity("Erreur: Impossible de créer le WebSocket.");
-        el('ws-status').textContent = 'Statut: Erreur';
+      console.error("❌ Impossible de créer WebSocket:", e);
+      logActivity("⚠️ Erreur technique lors de la création du WebSocket.");
+      
+      statusText.textContent = 'Local: Erreur technique';
+      statusIcon.style.color = '#e74c3c';
+      statusIcon.classList.remove('active');
+      el('ws-status').style.backgroundColor = 'rgba(231, 76, 60, 0.1)';
+      updateConnectionModeIndicator();
     }
   }
 
@@ -1243,37 +1423,85 @@
 
   el('connect-ws')?.addEventListener('click', connectWebSocket);
   el('disconnect-ws')?.addEventListener('click', disconnectWebSocket);
+  
+  // ✅ NOUVEAU : (fix-websocket-ui.md)
+  function updateConnectionModeIndicator() {
+    const indicator = el('connection-mode');
+    if (!indicator) return;
+    
+    if (appState.websocket && appState.websocket.readyState === WebSocket.OPEN) {
+      // Mode Local actif
+      indicator.innerHTML = '<i class="fas fa-wifi"></i> Mode local + distant';
+      indicator.style.background = 'rgba(52, 152, 219, 0.1)';
+      indicator.style.color = '#3498db';
+    } else {
+      // Mode Firebase uniquement
+      indicator.innerHTML = '<i class="fas fa-cloud"></i> Mode distant';
+      indicator.style.background = 'rgba(46, 204, 113, 0.1)';
+      indicator.style.color = '#2ecc71';
+    }
+  }
+  // ==== FIN MODIFICATION ====
 
-  // ======= Schedule Execution (Modifié avec Notifications) =======
+
+  // ======= Exécution Automatique des Planifications (MODIFIÉ fix-websocket-ui.md) =======
   setInterval(() => {
     const now = new Date();
     const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
     const duePlans = appState.plans.filter(p => p.time === currentTime);
     
     if (duePlans.length > 0) {
-        logActivity(`Exécution de ${duePlans.length} tâche(s) planifiée(s).`);
-        duePlans.forEach(plan => {
-            sendCommand(plan.device, plan.action, plan.power);
-            appendChat("bot", `⏰ Exécution planifiée : ${plan.device} ${plan.action}`);
-
-            // ✅ NOUVELLE LIGNE AJOUTÉE CI-DESSOUS
-            try {
-              const deviceName = appState.devices.find(d => d.id === plan.device)?.name || plan.device;
-              const actionText = plan.action === 'ON' ? 'allumé' : 'éteint';
-              sendBrowserNotification(
-                'Tâche planifiée exécutée',
-                `L'appareil "${deviceName}" a été ${actionText}.`
-              );
-            } catch(e) { console.error('Erreur envoi notification:', e); }
-
-            // Suite du code (suppression de la tâche)
-            const planId = plan.firebaseId || plan.createdAt;
-            if (db) remove(ref(db, `${planningRefPath}/${planId}`));
-            else appState.plans = appState.plans.filter(p => (p.firebaseId || p.createdAt) !== planId);
-        });
-        if (!db) { savePlansToLocalStorage(); renderPlanningListUI(appState.plans); }
+      logActivity(`⏰ Exécution de ${duePlans.length} tâche(s) planifiée(s).`);
+      
+      duePlans.forEach(plan => {
+        const deviceName = appState.devices.find(d => d.id === plan.device)?.name || plan.device;
+        const actionText = plan.action === 'ON' ? 'allumé' : 'éteint';
+        const powerText = plan.power !== null ? ` à ${plan.power}%` : '';
+        
+        // ✅ EXÉCUTION DE LA COMMANDE
+        sendCommand(plan.device, plan.action, plan.power);
+        
+        // 📝 MESSAGE DANS LE CHAT
+        const chatMessage = `⏰ Tâche planifiée : ${deviceName} ${actionText}${powerText}`;
+        appendChat("bot", chatMessage);
+        
+        // 🔊 ANNONCE VOCALE (si activée)
+        if (appState.voiceNotifications) {
+          speak(`Exécution planifiée. ${deviceName} ${actionText}.`);
+        }
+        
+        // 🔔 NOTIFICATION NAVIGATEUR
+        sendBrowserNotification(
+          '⏰ Tâche Planifiée Exécutée',
+          `${deviceName} a été ${actionText}${powerText}`,
+          {
+            // icon: '⏰', // Utilise l'icône par défaut
+            tag: `schedule-${plan.device}-${Date.now()}`, // Tag unique pour éviter les doublons
+            requireInteraction: false, // Se ferme automatically
+            vibrate: [200, 100, 200], // Vibration sur mobile
+            actions: [] // Pas d'actions pour simplifier
+          }
+        );
+        
+        // 🗑️ SUPPRESSION DE LA TÂCHE EXÉCUTÉE
+        const planId = plan.firebaseId || plan.createdAt;
+        if (db) {
+          remove(ref(db, `${planningRefPath}/${planId}`));
+        } else {
+          appState.plans = appState.plans.filter(p => (p.firebaseId || p.createdAt) !== planId);
+        }
+        
+        logActivity(`✅ Tâche exécutée : ${deviceName} ${actionText}`);
+      });
+      
+      // Mise à jour de l'UI si mode local
+      if (!db) { 
+        savePlansToLocalStorage(); 
+        renderPlanningListUI(appState.plans); 
+      }
     }
-  }, 15000);
+  }, 15000); // Vérification toutes les 15 secondes
+
 
   // ======= Auth State Change Listener (Le "Gardien") =======
   if (auth) {
@@ -1337,6 +1565,9 @@
     appendChat('bot', 'Bonjour ! Je suis votre Assistant Hybride Autonome.');
     logActivity("Application initialisée.");
     
+    // ✅ DEMANDER PERMISSION NOTIFICATIONS (fix-websocket-ui.md)
+    requestNotificationPermission();
+    
     // Démarrer le cycle des suggestions
     updateProactiveSuggestion(); // Afficher la première suggestion
     setInterval(updateProactiveSuggestion, 10000); // Changer toutes les 10 secondes
@@ -1349,6 +1580,34 @@
       form.style.display = isHidden ? 'block' : 'none';
       btn.innerHTML = isHidden ? '➖ Masquer le formulaire' : '➕ Ajouter un appareil';
     });
+  }
+
+  // ✅ NOUVELLE FONCTION (fix-websocket-ui.md)
+  function requestNotificationPermission() {
+    if (!('Notification' in window)) {
+      console.log('Notifications non supportées.');
+      return;
+    }
+    
+    if (Notification.permission === 'default' && appState.notificationsEnabled) {
+      // Demander après un court délai pour ne pas être intrusif
+      setTimeout(() => {
+        Notification.requestPermission().then(permission => {
+          if (permission === 'granted') {
+            logActivity('✅ Notifications activées');
+            
+            // Notification de test
+            sendBrowserNotification(
+              '🏠 SmartHome Intelligence',
+              'Notifications activées ! Vous serez alerté lors de l\'exécution des tâches planifiées.',
+              { requireInteraction: false }
+            );
+          } else {
+            logActivity('ℹ️ Notifications refusées par l\'utilisateur');
+          }
+        });
+      }, 3000); // Attendre 3 secondes après le chargement
+    }
   }
 
   initUI(); // Appel initial pour attacher les listeners
