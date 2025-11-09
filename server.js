@@ -1,5 +1,8 @@
 // ========================================
-// INTELLIA v4.1 - BUGS CORRIGÉS
+// INTELLIA v5.0 - ASSISTANT UNIVERSEL ULTRA-INTELLIGENT
+// ✅ Conscience de l'état des appareils
+// ✅ Suggestions proactives contextuelles
+// ✅ Assistant universel (code, recherche, domotique)
 // ========================================
 const express = require('express');
 const cors = require('cors');
@@ -46,7 +49,7 @@ if (API_KEYS.length === 0) {
 console.log(`🔑 ${API_KEYS.length} clé(s) Gemini chargée(s)`);
 
 // ========================================
-// CONTEXTE DE CONVERSATION (Mémoire améliorée)
+// CONTEXTE DE CONVERSATION ENRICHI
 // ========================================
 const conversationContexts = new Map();
 
@@ -54,11 +57,18 @@ function getOrCreateContext(sessionId = 'default') {
   if (!conversationContexts.has(sessionId)) {
     conversationContexts.set(sessionId, {
       history: [],
-      lastSearches: new Map(), // Cache des recherches web
+      lastSearches: new Map(),
       userPreferences: {
-        showTime: true, // Peut être désactivé par l'utilisateur
+        showTime: true,
+        lastLocation: null,
+        lastTopic: null
       },
-      topics: [], // Sujets discutés
+      userBehavior: {
+        frequentCommands: [],
+        activeHours: [],
+        preferredDevices: []
+      },
+      deviceStates: {}, // NOUVEAU : Stockage de l'état des appareils
       createdAt: Date.now()
     });
   }
@@ -74,7 +84,6 @@ function addToContext(sessionId, userMsg, aiResponse, webResults = null) {
     timestamp: Date.now()
   });
   
-  // Sauvegarder les recherches web pour éviter les doublons
   if (webResults && webResults.length > 0) {
     const searchKey = userMsg.toLowerCase().trim();
     context.lastSearches.set(searchKey, {
@@ -83,33 +92,49 @@ function addToContext(sessionId, userMsg, aiResponse, webResults = null) {
     });
   }
   
-  // Garder seulement les 15 derniers messages
-  if (context.history.length > 15) {
+  // Garder 20 derniers messages
+  if (context.history.length > 20) {
     context.history.shift();
   }
   
-  // Nettoyer les vieilles recherches (> 5 min)
+  // Nettoyer vieilles recherches
   for (const [key, data] of context.lastSearches.entries()) {
-    if (Date.now() - data.timestamp > 300000) {
+    if (Date.now() - data.timestamp > 600000) { // 10 min
       context.lastSearches.delete(key);
     }
   }
 }
 
-// Extraire les préférences utilisateur du message
 function updateUserPreferences(sessionId, message) {
   const context = getOrCreateContext(sessionId);
   const lowerMsg = message.toLowerCase();
   
   if (lowerMsg.includes('ne repete plus') && lowerMsg.includes('heure')) {
     context.userPreferences.showTime = false;
-    console.log('⚙️ Préférence: affichage heure désactivé');
   }
   
   if (lowerMsg.includes('affiche') && lowerMsg.includes('heure')) {
     context.userPreferences.showTime = true;
-    console.log('⚙️ Préférence: affichage heure activé');
   }
+}
+
+// NOUVEAU : Mise à jour de l'état des appareils
+function updateDeviceStates(sessionId, devices) {
+  const context = getOrCreateContext(sessionId);
+  
+  devices.forEach(device => {
+    if (!context.deviceStates[device.id]) {
+      context.deviceStates[device.id] = {
+        id: device.id,
+        name: device.name,
+        type: device.type,
+        room: device.room,
+        state: 'OFF',
+        power: 0,
+        lastChanged: null
+      };
+    }
+  });
 }
 
 // ========================================
@@ -137,7 +162,6 @@ function markKeyAsFailed(keyObj, isQuotaError = false) {
   keyObj.failures++;
   if (isQuotaError) {
     keyObj.quotaExceeded = true;
-    console.error(`❌ Clé épuisée (quota)`);
     setTimeout(() => {
       keyObj.quotaExceeded = false;
       keyObj.failures = 0;
@@ -186,20 +210,21 @@ function getBeninTime() {
 }
 
 // ========================================
-// RECHERCHE WEB RÉELLE (Améliorée)
+// RECHERCHE WEB INTELLIGENTE
 // ========================================
 async function performWebSearch(query, context) {
-  // Vérifier le cache
   const searchKey = query.toLowerCase().trim();
+  
+  // Cache 10 minutes
   if (context.lastSearches.has(searchKey)) {
     const cached = context.lastSearches.get(searchKey);
-    if (Date.now() - cached.timestamp < 300000) { // 5 min cache
-      console.log(`💾 Utilisation cache pour: "${query}"`);
+    if (Date.now() - cached.timestamp < 600000) {
+      console.log(`💾 Cache: "${query}"`);
       return cached.results;
     }
   }
   
-  console.log(`🔍 Recherche web: "${query}"`);
+  console.log(`🔍 Recherche: "${query}"`);
   
   try {
     const searchUrl = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`;
@@ -223,26 +248,25 @@ async function performWebSearch(query, context) {
       }
     });
 
-    console.log(`✅ Trouvé ${results.length} résultats web`);
+    console.log(`✅ ${results.length} résultats`);
     return results;
     
   } catch (error) {
-    console.error('❌ Erreur recherche web:', error.message);
+    console.error('❌ Erreur recherche:', error.message);
     return [];
   }
 }
 
 // ========================================
-// DÉTECTION DU BESOIN DE RECHERCHE WEB (Corrigée)
+// DÉTECTION INTELLIGENTE BESOIN RECHERCHE
 // ========================================
 function needsWebSearch(message, context) {
   const lowerMsg = message.toLowerCase().trim();
   
-  // ❌ PAS DE RECHERCHE pour ces cas
+  // ❌ JAMAIS rechercher pour :
   const noSearchPatterns = [
-    /^(c'est quoi|quel est) (ton|votre) nom/i,
+    /^(c'est quoi|quel est) (ton|votre|le) nom/i,
     /^qui es-tu/i,
-    /^tu t'appelles comment/i,
     /^bonjour/i,
     /^salut/i,
     /^merci/i,
@@ -251,23 +275,31 @@ function needsWebSearch(message, context) {
     /^allume/i,
     /^eteins/i,
     /^règle/i,
+    /^je (sort|sors|pars)/i,
+    /^je (suis|reviens|rentre)/i,
+    /^il fait (nuit|jour|sombre|chaud)/i,
+    /appareil.*état/i,
+    /état.*appareil/i,
+    /code (arduino|python|javascript)/i, // Code = pas de recherche
+    /génère.*code/i,
+    /écris.*code/i
   ];
   
   if (noSearchPatterns.some(pattern => pattern.test(lowerMsg))) {
     return false;
   }
   
-  // ✅ RECHERCHE pour ces cas
+  // ✅ Rechercher pour :
   const webKeywords = [
-    'météo', 'temps', 'température', 'pluie', 'soleil',
+    'météo', 'temps qu\'il fait', 'température', 'pluie', 'soleil',
     'actualité', 'news', 'nouvelles',
     'recherche', 'cherche', 'trouve',
-    'où se trouve', 'où est',
+    'où se trouve', 'où est situé',
     'combien coûte', 'prix de',
-    'qui est', // Seulement pour les personnalités publiques
+    'qui est', 'c\'est qui'
   ];
   
-  // Si "qui est" + nom propre (commence par majuscule)
+  // "qui est" uniquement pour personnalités publiques
   if (lowerMsg.includes('qui est')) {
     const words = message.split(' ');
     const hasProperNoun = words.some(w => w.length > 2 && w[0] === w[0].toUpperCase());
@@ -278,100 +310,218 @@ function needsWebSearch(message, context) {
 }
 
 // ========================================
-// PROMPT SYSTÈME AMÉLIORÉ v4.1
+// ANALYSE CONTEXTUELLE INTELLIGENTE
+// ========================================
+function analyzeContext(message, context, devices) {
+  const analysis = {
+    isDomoticCommand: false,
+    needsDeviceState: false,
+    isCodeRequest: false,
+    isGeneralQuestion: false,
+    suggestedActions: []
+  };
+  
+  const lowerMsg = message.toLowerCase();
+  
+  // Détection commande domotique
+  if (/allume|éteins|règle|luminosité|appareil/i.test(lowerMsg)) {
+    analysis.isDomoticCommand = true;
+  }
+  
+  // Détection demande d'état
+  if (/état|status|allumé|éteint|quel.*appareil/i.test(lowerMsg)) {
+    analysis.needsDeviceState = true;
+  }
+  
+  // Détection demande de code
+  if (/code|programme|script|arduino|python|javascript/i.test(lowerMsg)) {
+    analysis.isCodeRequest = true;
+  }
+  
+  // Question générale
+  if (/qui est|c'est quoi|comment|pourquoi|qu'est-ce/i.test(lowerMsg)) {
+    analysis.isGeneralQuestion = true;
+  }
+  
+  // Suggestions contextuelles
+  if (lowerMsg.includes('je sors') || lowerMsg.includes('je pars')) {
+    const onDevices = Object.values(context.deviceStates).filter(d => d.state === 'ON');
+    if (onDevices.length > 0) {
+      analysis.suggestedActions.push({
+        type: 'security_check',
+        message: `Vous avez ${onDevices.length} appareil(s) allumé(s). Voulez-vous que je les éteigne ?`,
+        devices: onDevices.map(d => d.id)
+      });
+    }
+  }
+  
+  if (lowerMsg.includes('il fait nuit') || lowerMsg.includes('sombre')) {
+    const offLights = Object.values(context.deviceStates)
+      .filter(d => d.type === 'lamp' && d.state === 'OFF');
+    
+    if (offLights.length > 0) {
+      analysis.suggestedActions.push({
+        type: 'lighting_suggestion',
+        message: `Il fait sombre. Je peux allumer : ${offLights.map(d => d.name).join(', ')}`,
+        devices: offLights.map(d => d.id)
+      });
+    }
+  }
+  
+  return analysis;
+}
+
+// ========================================
+// PROMPT SYSTÈME v5.0 ULTRA-INTELLIGENT
 // ========================================
 const systemPrompt = `
-Tu es "Intellia", un assistant domotique intelligent basé au BÉNIN.
+Tu es "Intellia", un assistant universel ultra-intelligent.
 
-## 🎯 RÈGLES FONDAMENTALES
+## 🎯 CAPACITÉS
 
-### 1. AFFICHAGE DE L'HEURE
-- Si user_preferences.showTime = true : mentionne l'heure dans ta réponse
-- Si user_preferences.showTime = false : NE MENTIONNE JAMAIS l'heure
-- Format (si activé): "Il est actuellement [heure exacte]"
+### 1. ASSISTANT UNIVERSEL
+- Domotique : contrôle appareils
+- Code : génère Arduino, Python, JavaScript, etc.
+- Recherche : informations web en temps réel
+- Conversation : questions générales, aide
 
-### 2. RECHERCHE WEB
-- Si webResults fournis : utilise-les comme SOURCE PRINCIPALE
-- Si webResults vides : réponds avec tes connaissances générales
-- Pour Lokossa : cite les quartiers comme Agbodji, Hozin, Koudo si aucun résultat web
-- JAMAIS répéter la même recherche web 2 fois de suite
+### 2. CONSCIENCE DES APPAREILS
+- Tu CONNAIS l'état réel de tous les appareils (fourni dans deviceStates)
+- Si appareil déjà allumé : informe l'utilisateur intelligemment
+- Propose des alternatives pertinentes
 
-### 3. CONTEXTE DE CONVERSATION
-- Utilise l'historique pour comprendre les références
-- Si sujet déjà discuté : ne pas re-chercher, approfondir
-- Exemple: "Lokossa" déjà mentionné → "quartiers" = quartiers de Lokossa
+### 3. SUGGESTIONS PROACTIVES
+- Analyse le contexte (heure, état appareils, historique)
+- Propose des actions AVANT qu'on te les demande
+- Exemples :
+  * "Je sors" → "Voulez-vous que j'éteigne les 3 lampes allumées ?"
+  * "Il fait sombre" → "Je peux allumer les lampes du salon et de la chambre"
+  * "Il fait chaud" → "Le ventilateur du salon est éteint, voulez-vous que je l'allume ?"
 
-### 4. IDENTITÉ
-- Ton nom est "Intellia"
-- Réponds directement sans recherche web pour "c'est quoi ton nom"
+### 4. GESTION HEURE
+- Si showTime = true : mentionne l'heure
+- Si showTime = false : NE JAMAIS mentionner l'heure
 
-### 5. RÉPONSES CONCISES
-- Domotique : 1-2 phrases max
-- Questions générales : 2-4 phrases
-- Pas de listes à puces en vocal
+### 5. RECHERCHE WEB
+- Utilise webResults si fournis
+- Ne recherche PAS pour : code, domotique, identité
+- Recherche pour : météo, actualités, personnalités
 
-## 📋 FORMAT DE RÉPONSE JSON
+## 📋 FORMAT RÉPONSE JSON
 
 {
-  "reply": "Réponse naturelle en français",
+  "reply": "Réponse naturelle et intelligente",
   "execute": ["device_id|ACTION|valeur"],
   "planning_commands": [],
-  "source": "cloud" | "web" | "knowledge"
+  "suggestions": [
+    {
+      "type": "info|action|warning",
+      "message": "Suggestion pertinente",
+      "context": "Raison de la suggestion"
+    }
+  ],
+  "source": "cloud|web|knowledge"
 }
 
 ## 💡 EXEMPLES
 
-### Identité (SANS recherche web)
-USER: "C'est quoi ton nom ?"
+### Appareil déjà allumé
+USER: "Allume la lampe du salon"
+deviceStates: { "salon_lamp": { state: "ON", power: 80 } }
 {
-  "reply": "Je m'appelle Intellia.",
+  "reply": "La lampe du salon est déjà allumée à 80%. Voulez-vous que je change la luminosité ?",
   "execute": [],
-  "planning_commands": [],
+  "suggestions": [
+    {
+      "type": "info",
+      "message": "Je peux régler à 100% si vous voulez plus de lumière",
+      "context": "Appareil déjà actif"
+    }
+  ],
+  "source": "cloud"
+}
+
+### Code Arduino
+USER: "Donne moi un code Arduino pour LED"
+{
+  "reply": "Voici un exemple de code Arduino pour contrôler une LED :\n\n\`\`\`cpp\nvoid setup() {\n  pinMode(13, OUTPUT);\n}\n\nvoid loop() {\n  digitalWrite(13, HIGH);\n  delay(1000);\n  digitalWrite(13, LOW);\n  delay(1000);\n}\n\`\`\`\n\nCe code fait clignoter la LED connectée à la broche 13.",
+  "execute": [],
+  "suggestions": [],
   "source": "knowledge"
 }
 
-### Contexte (Lokossa déjà discuté)
-HISTORIQUE: [...discussion sur Lokossa...]
-USER: "trouve les quartiers"
+### Suggestion proactive
+USER: "Je sors"
+deviceStates: { "salon_lamp": {state:"ON"}, "chambre_lamp": {state:"ON"}, "cuisine_lamp": {state:"OFF"} }
 {
-  "reply": "Les principaux quartiers de Lokossa sont Agbodji, Hozin, Koudo et le centre-ville.",
+  "reply": "D'accord. Vous avez 2 lampes allumées (salon et chambre). Voulez-vous que je les éteigne pour économiser l'énergie ?",
   "execute": [],
-  "planning_commands": [],
-  "source": "knowledge"
+  "suggestions": [
+    {
+      "type": "action",
+      "message": "Éteindre salon_lamp et chambre_lamp",
+      "context": "Sécurité et économie d'énergie"
+    }
+  ],
+  "source": "cloud"
 }
 
-### Heure désactivée
-user_preferences.showTime = false
-USER: "Quelle heure ?"
+### État des appareils
+USER: "Les appareils sont à quel état ?"
+deviceStates: { "salon_lamp": {state:"ON", power:60}, "chambre_lamp": {state:"OFF"}, "ventilateur": {state:"ON", power:100} }
 {
-  "reply": "1 heure 35.",
+  "reply": "Voici l'état actuel :\n• Lampe salon : Allumée (60%)\n• Lampe chambre : Éteinte\n• Ventilateur : Allumé (100%)",
   "execute": [],
-  "planning_commands": [],
-  "source": "knowledge"
+  "suggestions": [
+    {
+      "type": "info",
+      "message": "2 appareils sur 3 sont actifs",
+      "context": "Vue d'ensemble"
+    }
+  ],
+  "source": "cloud"
 }
+
+## 🚨 RÈGLES CRITIQUES
+
+1. TOUJOURS vérifier deviceStates avant toute action
+2. JAMAIS rechercher pour code/domotique/identité
+3. Suggestions basées sur CONTEXTE RÉEL (heure, état, historique)
+4. Réponses NATURELLES et CONVERSATIONNELLES
+5. Code formaté en Markdown avec backticks
+6. Si plusieurs actions possibles : PROPOSER au lieu d'exécuter
 
 RÉPONDS UNIQUEMENT EN JSON VALIDE.
 `;
 
 // ========================================
-// FONCTION CHAT AVEC GEMINI + WEB
+// FONCTION CHAT AVEC GEMINI
 // ========================================
-async function chatWithGemini(userMessage, devices, sessionId, maxRetries = API_KEYS.length) {
+async function chatWithGemini(userMessage, devices, deviceStates, sessionId, maxRetries = API_KEYS.length) {
   if (API_KEYS.length === 0) {
     return { 
       success: false, 
-      error: "Aucune clé Gemini disponible",
-      useWebOnly: true 
+      error: "Aucune clé Gemini disponible"
     };
   }
 
   const context = getOrCreateContext(sessionId);
   const beninTime = getBeninTime();
   
-  // Mettre à jour les préférences utilisateur
   updateUserPreferences(sessionId, userMessage);
+  updateDeviceStates(sessionId, devices);
   
-  // Vérifier si recherche web nécessaire
+  // Fusionner états UI avec contexte
+  Object.keys(deviceStates).forEach(deviceId => {
+    if (context.deviceStates[deviceId]) {
+      context.deviceStates[deviceId].state = deviceStates[deviceId].etat || 'OFF';
+      context.deviceStates[deviceId].power = deviceStates[deviceId].luminosite || 0;
+      context.deviceStates[deviceId].lastChanged = Date.now();
+    }
+  });
+  
+  const contextAnalysis = analyzeContext(userMessage, context, devices);
+  
   let webResults = [];
   if (needsWebSearch(userMessage, context)) {
     webResults = await performWebSearch(userMessage, context);
@@ -395,9 +545,10 @@ async function chatWithGemini(userMessage, devices, sessionId, maxRetries = API_
             role: "model", 
             parts: [{ 
               text: JSON.stringify({
-                reply: "Je suis Intellia. Prêt à vous aider !",
+                reply: "Je suis Intellia v5.0, votre assistant universel ultra-intelligent !",
                 execute: [],
                 planning_commands: [],
+                suggestions: [],
                 source: "cloud"
               })
             }] 
@@ -405,18 +556,18 @@ async function chatWithGemini(userMessage, devices, sessionId, maxRetries = API_
         ],
         generationConfig: {
           responseMimeType: "application/json",
-          temperature: 0.7,
-          maxOutputTokens: 4096,
+          temperature: 0.8,
+          maxOutputTokens: 8192,
         },
       });
 
       const fullPrompt = `
 ╔═══════════════════════════════════════╗
-║      HEURE ACTUELLE BÉNIN (PRÉCISE)   ║
+║      HEURE BÉNIN PRÉCISE              ║
 ╚═══════════════════════════════════════╝
 
 ${beninTime.formatted}
-Il est EXACTEMENT ${beninTime.hoursStr}:${beninTime.minutesStr}
+Heure exacte: ${beninTime.hoursStr}:${beninTime.minutesStr}
 
 ╔═══════════════════════════════════════╗
 ║      PRÉFÉRENCES UTILISATEUR          ║
@@ -425,31 +576,48 @@ Il est EXACTEMENT ${beninTime.hoursStr}:${beninTime.minutesStr}
 ${JSON.stringify(context.userPreferences, null, 2)}
 
 ╔═══════════════════════════════════════╗
-║         APPAREILS DISPONIBLES         ║
+║   ÉTAT RÉEL DES APPAREILS (TEMPS RÉEL)║
+╚═══════════════════════════════════════╝
+
+${JSON.stringify(context.deviceStates, null, 2)}
+
+IMPORTANT: Ces états sont EN TEMPS RÉEL. Utilise-les pour :
+- Détecter si appareil déjà allumé/éteint
+- Proposer suggestions intelligentes
+- Éviter actions inutiles
+
+╔═══════════════════════════════════════╗
+║      MÉTADONNÉES APPAREILS            ║
 ╚═══════════════════════════════════════╝
 
 ${JSON.stringify(devices, null, 2)}
 
 ╔═══════════════════════════════════════╗
+║      ANALYSE CONTEXTUELLE             ║
+╚═══════════════════════════════════════╝
+
+${JSON.stringify(contextAnalysis, null, 2)}
+
+╔═══════════════════════════════════════╗
 ║      HISTORIQUE CONVERSATION          ║
 ╚═══════════════════════════════════════╝
 
-${context.history.slice(-8).map(h => 
+${context.history.slice(-10).map(h => 
   `User: ${h.user}\nAssistant: ${h.assistant}`
 ).join('\n---\n')}
 
 ${webResults.length > 0 ? `
 ╔═══════════════════════════════════════╗
-║      RÉSULTATS RECHERCHE WEB          ║
+║      RÉSULTATS WEB                    ║
 ╚═══════════════════════════════════════╝
 
 ${JSON.stringify(webResults, null, 2)}
 
-(Utilise ces résultats comme source principale)
+UTILISE ces résultats comme source principale.
 ` : ''}
 
 ╔═══════════════════════════════════════╗
-║         MESSAGE UTILISATEUR           ║
+║      MESSAGE UTILISATEUR              ║
 ╚═══════════════════════════════════════╝
 
 "${userMessage}"
@@ -457,12 +625,16 @@ ${JSON.stringify(webResults, null, 2)}
 ────────────────────────────────────────
 
 ANALYSE ET RÉPONDS EN JSON VALIDE.
-${!context.userPreferences.showTime ? 'IMPORTANT: Ne mentionne PAS l\'heure dans ta réponse.' : ''}
-${webResults.length > 0 ? 'IMPORTANT: Utilise les résultats web fournis.' : ''}
+
+RAPPELS CRITIQUES:
+${!context.userPreferences.showTime ? '⚠️ NE PAS mentionner l\'heure dans la réponse !' : ''}
+${contextAnalysis.isDomoticCommand ? '⚠️ Vérifier deviceStates avant toute action !' : ''}
+${contextAnalysis.isCodeRequest ? '⚠️ Générer le code demandé sans recherche web !' : ''}
+${contextAnalysis.suggestedActions.length > 0 ? `⚠️ Suggestions détectées: ${JSON.stringify(contextAnalysis.suggestedActions)}` : ''}
 `;
 
       const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 15000);
+      const timeout = setTimeout(() => controller.abort(), 20000);
 
       const result = await chat.sendMessage(fullPrompt, { signal: controller.signal });
       clearTimeout(timeout);
@@ -472,7 +644,8 @@ ${webResults.length > 0 ? 'IMPORTANT: Utilise les résultats web fournis.' : ''}
         data: result.response.text(), 
         keyObj,
         hadWebResults: webResults.length > 0,
-        webResults
+        webResults,
+        contextAnalysis
       };
 
     } catch (error) {
@@ -496,13 +669,14 @@ ${webResults.length > 0 ? 'IMPORTANT: Utilise les résultats web fournis.' : ''}
 // ========================================
 app.post('/api/chat', async (req, res) => {
   try {
-    const { message, key, devices = [], sessionId = 'default' } = req.body;
+    const { message, key, devices = [], deviceStates = {}, sessionId = 'default' } = req.body;
 
     if (key !== AUTH_KEY) {
       return res.status(401).json({ 
         reply: "Clé d'authentification invalide", 
         execute: [], 
         planning_commands: [],
+        suggestions: [],
         source: "error"
       });
     }
@@ -512,22 +686,26 @@ app.post('/api/chat', async (req, res) => {
         reply: "Message requis", 
         execute: [], 
         planning_commands: [],
+        suggestions: [],
         source: "error"
       });
     }
 
     console.log('┌────────────────────────────────────────┐');
-    console.log('🔥 MESSAGE:', message);
+    console.log('💬 MESSAGE:', message);
+    console.log('📊 APPAREILS:', devices.length);
+    console.log('🔌 ÉTATS:', Object.keys(deviceStates).length);
 
     const startTime = Date.now();
-    const result = await chatWithGemini(message, devices, sessionId);
+    const result = await chatWithGemini(message, devices, deviceStates, sessionId);
 
     if (!result.success) {
-      console.log('⚠️ Gemini indisponible, réponse de secours');
+      console.log('⚠️ Gemini indisponible');
       return res.json({
-        reply: "Le service est temporairement indisponible. Veuillez réessayer.",
+        reply: "Service temporairement indisponible. Veuillez réessayer.",
         execute: [],
         planning_commands: [],
+        suggestions: [],
         source: "error"
       });
     }
@@ -547,6 +725,7 @@ app.post('/api/chat', async (req, res) => {
           reply: "Désolé, reformulez votre demande ?", 
           execute: [], 
           planning_commands: [],
+          suggestions: [],
           source: "error"
         });
       }
@@ -556,8 +735,9 @@ app.post('/api/chat', async (req, res) => {
     if (!aiJson.reply) aiJson.reply = "Commande reçue.";
     if (!Array.isArray(aiJson.execute)) aiJson.execute = [];
     if (!Array.isArray(aiJson.planning_commands)) aiJson.planning_commands = [];
+    if (!Array.isArray(aiJson.suggestions)) aiJson.suggestions = [];
     
-    // Supprimer doublons
+    // Supprimer doublons planifications
     const uniquePlannings = [];
     const seen = new Set();
     for (const plan of aiJson.planning_commands) {
@@ -579,7 +759,10 @@ app.post('/api/chat', async (req, res) => {
     // Sauvegarder contexte
     addToContext(sessionId, message, aiJson.reply, result.webResults);
 
-    console.log('✅ RÉPONSE FINALE');
+    console.log('✅ RÉPONSE GÉNÉRÉE');
+    console.log(`📤 Execute: ${aiJson.execute.length}`);
+    console.log(`📅 Planning: ${aiJson.planning_commands.length}`);
+    console.log(`💡 Suggestions: ${aiJson.suggestions.length}`);
     console.log('└────────────────────────────────────────┘\n');
 
     res.json(aiJson);
@@ -590,6 +773,7 @@ app.post('/api/chat', async (req, res) => {
       reply: "Désolé, une erreur s'est produite.", 
       execute: [], 
       planning_commands: [],
+      suggestions: [],
       source: "error"
     });
   }
@@ -604,12 +788,16 @@ app.get('/api/health', (req, res) => {
   
   res.json({ 
     status: 'ok', 
-    version: '4.1-fixed', 
+    version: '5.0-ultra', 
     features: {
       gemini: API_KEYS.length > 0,
       webSearch: true,
       contextMemory: true,
-      userPreferences: true
+      userPreferences: true,
+      deviceStateAwareness: true,
+      proactiveSuggestions: true,
+      universalAssistant: true,
+      codeGeneration: true
     },
     keys: { 
       total: API_KEYS.length, 
@@ -627,7 +815,7 @@ app.get('/api/health', (req, res) => {
 // ========================================
 setInterval(() => {
   const now = Date.now();
-  const maxAge = 3600000; // 1 heure
+  const maxAge = 7200000; // 2 heures
   
   for (const [sessionId, context] of conversationContexts.entries()) {
     if (now - context.createdAt > maxAge) {
@@ -635,18 +823,22 @@ setInterval(() => {
       console.log(`🧹 Contexte ${sessionId} nettoyé`);
     }
   }
-}, 600000);
+}, 600000); // Toutes les 10 minutes
 
 // ========================================
 // DÉMARRAGE
 // ========================================
 app.listen(PORT, () => {
   console.log('\n🏠 ╔═══════════════════════════════════════╗');
-  console.log('   ║  INTELLIA v4.1 - BUGS CORRIGÉS       ║');
+  console.log('   ║  INTELLIA v5.0 - ULTRA-INTELLIGENT   ║');
   console.log('   ╚═══════════════════════════════════════╝');
   console.log(`\n   🚀 Serveur: http://localhost:${PORT}`);
   console.log(`   🔑 Clés Gemini: ${API_KEYS.length}`);
   console.log(`   🔍 Recherche web: Optimisée`);
-  console.log(`   💾 Mémoire contextuelle: Améliorée`);
-  console.log(`   ⚙️ Préférences utilisateur: Activées\n`);
+  console.log(`   💾 Mémoire contextuelle: Avancée`);
+  console.log(`   ⚙️ Préférences utilisateur: Activées`);
+  console.log(`   🧠 Conscience état appareils: Activée`);
+  console.log(`   💡 Suggestions proactives: Activées`);
+  console.log(`   🌐 Assistant universel: Activé`);
+  console.log(`   💻 Génération code: Activée\n`);
 });
