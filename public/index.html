@@ -241,7 +241,8 @@
       /* Bouton pour ouvrir la sidebar */
       #sidebar-toggle-btn {
         display: block; position: absolute; top: 16px; left: 12px;
-        z-index: 900; background: var(--panel); color: white;
+        z-index: 960; /* CORRECTION: Doit être > z-index (950) de #sec-intelligence */
+        background: var(--panel); color: white;
         border: 0; border-radius: 8px; width: 40px; height: 40px;
       }
       /* Fond sombre quand sidebar ouverte */
@@ -1085,6 +1086,7 @@
    * ✅ NOUVELLE FONCTION PRINCIPALE D'ENVOI
    * C'est le point d'entrée pour le texte et la voix
    */
+  // ✅ 2. REMPLACER CETTE FONCTION
   async function handleChatSubmit(message, attachments = []) {
     if (appState.chatInProgress) return;
     if (!message && attachments.length === 0) return;
@@ -1092,13 +1094,10 @@
     appState.chatInProgress = true;
     el('intelliaStatus').textContent = "Assistant: En cours...";
     
-    // 1. Afficher le message utilisateur
-    let userMsgHtml = escapeHtml(message);
-    if (attachments.length > 0) {
-      userMsgHtml += `<br><small style="color: #d1eaff;"><i>${attachments.map(a => a.name).join(', ')}</i></small>`;
-    }
-    appendChat('user', userMsgHtml);
-    
+    // 1. Afficher le message utilisateur (Corrigé)
+    // On passe le texte et les pièces jointes à appendChat
+    appendChat('user', message, false, attachments); 
+
     // 2. Vider les inputs
     el('chatFullInput').value = '';
     appState.attachments = [];
@@ -1215,19 +1214,20 @@
     });
   }
   
-  function appendChat(role, text, returnElement = false) {
+  // ✅ 1. REMPLACER CETTE FONCTION
+  function appendChat(role, text, returnElement = false, attachments = []) {
     const target = el('chatFullWindow');
     if (!target) return;
     const node = document.createElement('div');
     node.className = 'msg ' + (role === 'user' ? 'user' : 'bot');
-    
-    // Gérer le Markdown de code (```)
-    if (text.includes('```')) {
+
+    // Gérer le texte
+    if (text && text.includes('```')) {
       const parts = text.split('```');
       let html = '';
       parts.forEach((part, i) => {
         if (i % 2 === 0) {
-          html += part.replace(/\n/g, '<br>'); // Texte normal
+          html += escapeHtml(part).replace(/\n/g, '<br>');
         } else {
           const lines = part.split('\n');
           const lang = lines[0].trim();
@@ -1236,10 +1236,40 @@
         }
       });
       node.innerHTML = html;
-    } else {
+    } else if (text) {
       node.innerHTML = escapeHtml(text).replace(/\n/g, '<br>');
     }
-  
+
+    // ✅ NOUVEAU : Gérer l'affichage des pièces jointes
+    if (attachments && attachments.length > 0) {
+      const attachmentsDiv = document.createElement('div');
+      attachmentsDiv.style.cssText = 'margin-top: 8px; display: flex; flex-wrap: wrap; gap: 8px;';
+      
+      attachments.forEach(att => {
+        if (att.type === 'image' && att.data) { // att.data vient de l'upload local
+          const img = document.createElement('img');
+          img.src = att.data;
+          img.style.cssText = 'max-width: 150px; max-height: 150px; border-radius: 8px; object-fit: cover; cursor: pointer; border: 2px solid rgba(255,255,255,0.2);';
+          img.onclick = () => window.open(att.data, '_blank');
+          img.title = att.name;
+          attachmentsDiv.appendChild(img);
+        } else if (att.type === 'file' || (att.type === 'image' && !att.data)) { // !att.data vient de l'historique Firebase
+          const fileDiv = document.createElement('div');
+          fileDiv.style.cssText = 'display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: rgba(0,0,0,0.1); border-radius: 6px; font-size: 13px;';
+          
+          let iconClass = 'fa-file';
+          if (att.name.endsWith('.pdf')) iconClass = 'fa-file-pdf';
+          else if (att.name.endsWith('.docx') || att.name.endsWith('.doc')) iconClass = 'fa-file-word';
+          else if (att.name.endsWith('.txt')) iconClass = 'fa-file-alt';
+          else if (att.type === 'image') iconClass = 'fa-file-image';
+
+          fileDiv.innerHTML = `<i class="fas ${iconClass}"></i> <span>${escapeHtml(att.name)}</span>`;
+          attachmentsDiv.appendChild(fileDiv);
+        }
+      });
+      node.appendChild(attachmentsDiv);
+    }
+
     target.appendChild(node);
     target.scrollTop = target.scrollHeight;
     if (returnElement) return node;
@@ -1341,6 +1371,7 @@
   }
   el('new-chat-btn').addEventListener('click', createNewChatSession);
 
+  // ✅ 3. REMPLACER CETTE FONCTION
   async function loadChatSession(sessionId) {
     if (!appState.currentUser || !db) return;
     appState.currentSessionId = sessionId;
@@ -1350,13 +1381,11 @@
     const snapshot = await get(messagesRef);
     if (snapshot.exists()) {
       const messages = snapshot.val();
-      Object.values(messages).forEach(msg => {
-        let userMsgHtml = escapeHtml(msg.user);
-        if (msg.attachments && msg.attachments.length > 0) {
-          userMsgHtml += `<br><small style="color: #d1eaff;"><i>${msg.attachments.map(a => a.name).join(', ')}</i></small>`;
-        }
-        appendChat('user', userMsgHtml);
-        appendChat('bot', msg.bot);
+      Object.values(messages).sort((a, b) => a.timestamp - b.timestamp).forEach(msg => { // Tri par timestamp
+        // CORRIGÉ : On passe les métadonnées des fichiers à appendChat
+        const attachmentsMeta = msg.attachments || [];
+        appendChat('user', msg.user, false, attachmentsMeta);
+        appendChat('bot', msg.bot, false); // Ne pas retourner l'élément
       });
     } else {
       appendChat('bot', 'C\'est le début de notre conversation.');
@@ -1367,16 +1396,37 @@
     el('sidebar-overlay').classList.remove('open');
   }
   
+  // ✅ 4. REMPLACER CETTE FONCTION
   async function saveMessageToFirebase(userMsg, botMsg, attachments) {
     if (!appState.currentUser || !db || !appState.currentSessionId) return;
-    const sessionRef = getChatHistoryRef(appState.currentUser.uid, appState.currentSessionId);
+
     const messagesRef = ref(db, `${userChatsRefPath}/${appState.currentUser.uid}/${appState.currentSessionId}/messages`);
+
+    // CORRIGÉ : Sauvegarder uniquement les métadonnées (nom, type)
+    const attachmentsMeta = attachments.map(att => ({
+      name: att.name,
+      type: att.type
+      // On ne sauvegarde PAS att.data
+    }));
+
     push(messagesRef, {
-      user: userMsg, bot: botMsg, attachments: attachments, timestamp: serverTimestamp()
+      user: userMsg, // Sauvegarder le message textuel
+      bot: botMsg, 
+      attachments: attachmentsMeta, // Sauvegarder les métadonnées
+      timestamp: serverTimestamp()
     });
+
     const chatWindow = el('chatFullWindow');
-    if (chatWindow.children.length <= 3) { // 1er échange
-      const newTitle = userMsg.substring(0, 30) + (userMsg.length > 30 ? '...' : '');
+    if (chatWindow.children.length <= 2) { // 1er échange (user + bot)
+      // Créer un titre
+      let newTitle = userMsg;
+      if (!newTitle && attachments.length > 0) {
+        newTitle = `📎 ${attachments[0].name}`; // Titre basé sur le fichier
+      }
+      if (!newTitle) newTitle = "Nouvelle discussion"; // Fallback
+      
+      newTitle = newTitle.substring(0, 30) + (newTitle.length > 30 ? '...' : '');
+
       await set(ref(db, `${userChatsRefPath}/${appState.currentUser.uid}/${appState.currentSessionId}/title`), newTitle);
       const item = document.querySelector(`.chat-history-item[data-session-id="${appState.currentSessionId}"]`);
       if (item) item.textContent = newTitle;
