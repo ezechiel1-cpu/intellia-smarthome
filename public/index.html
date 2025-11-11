@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>SmartHome Intelligence - Mon Assistant Hybride Autonome</title>
+  <title>SmartHome Intelligence - Mon Assistant Autonome</title>
   <meta name="theme-color" content="#06b6d4" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
   <style>
@@ -71,12 +71,13 @@
     .section { display: none; }
     .section.active { display: block; }
     
+    /* ===== SECTION CHAT (PLEIN ÉCRAN) ===== */
     #sec-intelligence {
-      height: calc(100vh - 88px); 
+      height: calc(100vh - 88px); /* Fallback pour Desktop */
       padding-top: 0; margin-top: -16px;
       display: none; flex-direction: row;
     }
-    #sec-intelligence.active { display: flex; } 
+    #sec-intelligence.active { display: flex; }
     
     #chat-sidebar {
       width: 260px; height: 100%; background: #f8f9fa;
@@ -126,6 +127,7 @@
     #chat-input-container {
       padding: 12px; border-top: 1px solid rgba(0,0,0,0.1);
       background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(10px);
+      flex-shrink: 0; /* Important pour le mobile */
     }
     #chat-input-flex { display: flex; gap: 8px; }
     #chatFullInput {
@@ -135,6 +137,7 @@
     #chat-input-buttons { display: flex; gap: 8px; }
     #chatFullSend { padding: 0 16px; }
     
+    /* Prévisualisation des pièces jointes */
     #attachment-preview-container {
       display: flex; gap: 8px; margin-bottom: 8px; flex-wrap: wrap;
     }
@@ -145,6 +148,7 @@
     .attachment-preview img { width: 32px; height: 32px; object-fit: cover; border-radius: 4px; }
     .remove-attachment { cursor: pointer; font-size: 14px; color: var(--danger); }
     #file-input { display: none; }
+    /* ===== FIN SECTION CHAT ===== */
 
     .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
     .card { background: var(--card-bg); border-radius: 12px; padding: 14px; box-shadow: var(--shadow); }
@@ -238,63 +242,114 @@
       100% { transform: scale(1); opacity: 1; }
     }
     
+    /* ================================================= */
+    /* ✅ CORRECTION MOBILE (Clavier + UI) */
+    /* ================================================= */
     @media (max-width: 760px) {
       .grid { grid-template-columns: 1fr; }
       .controls { flex-direction: column; }
       .btn { width: 100%; justify-content: center; }
       .flex { flex-direction: column; align-items: stretch; }
       .two-column { grid-template-columns: 1fr; }
-      .container { padding-bottom: 88px; }
+      .container { padding-bottom: 88px; } /* Espace pour le footer */
 
+      /* ✅ NOUVEAU : Chat UI responsive */
       #sec-intelligence {
-        height: 100vh !important;
+        /* ✅ CORRECTION CLAVIER: Utilise 100dvh (Dynamic Viewport Height) */
+        height: 100dvh !important; 
         position: fixed;
         top: 0; left: 0; right: 0; bottom: 0;
-        z-index: 999;
+        z-index: 999; 
         margin-top: 0 !important;
         padding-top: 0 !important;
       }
       
-      body:has(#sec-intelligence.active) #main-header { display: none !important; }
-      body:has(#sec-intelligence.active) #main-footer { display: none !important; }
+      /* Cacher le header et le footer quand on est sur le chat */
+      body:has(#sec-intelligence.active) #main-header {
+        display: none !important;
+      }
+      body:has(#sec-intelligence.active) #main-footer {
+        display: none !important;
+      }
       
+      /* Sidebar mobile */
       #chat-sidebar {
-        position: fixed; left: -100%; top: 0; bottom: 0;
-        width: 80%; max-width: 300px;
-        z-index: 10000;
+        position: fixed;
+        left: -100%;
+        top: 0; bottom: 0;
+        width: 80%;
+        max-width: 300px;
+        z-index: 10000; /* Au-dessus de tout */
         transition: left 0.3s ease;
         box-shadow: 2px 0 10px rgba(0,0,0,0.3);
       }
-      #chat-sidebar.open { left: 0; }
+      #chat-sidebar.open {
+        left: 0;
+      }
       
+      /* Overlay sombre */
       #sidebar-overlay {
-        display: none; position: fixed;
+        display: none;
+        position: fixed;
         top: 0; left: 0; right: 0; bottom: 0;
         background: rgba(0,0,0,0.5);
-        z-index: 9999;
+        z-index: 9999; /* Juste en dessous de la sidebar */
       }
-      #sidebar-overlay.open { display: block; }
+      #sidebar-overlay.open {
+        display: block;
+      }
       
+      /* Bouton pour ouvrir la sidebar */
       #sidebar-toggle-btn {
-        display: flex; position: fixed;
-        top: 16px; left: 16px;
-        z-index: 1000;
-        background: var(--primary); color: white;
-        border: 0; border-radius: 8px;
-        width: 48px; height: 48px;
-        align-items: center; justify-content: center;
+        display: flex; 
+        position: fixed; 
+        top: 16px;
+        left: 16px;
+        z-index: 1000; 
+        background: var(--primary);
+        color: white;
+        border: 0;
+        border-radius: 8px;
+        width: 48px;
+        height: 48px;
+        align-items: center;
+        justify-content: center;
         box-shadow: 0 4px 8px rgba(0,0,0,0.2);
       }
       
+      /* Agrandir les boutons vocaux */
       #chat-input-buttons button {
-        min-width: 48px; min-height: 48px; font-size: 18px;
+        min-width: 48px;
+        min-height: 48px;
+        font-size: 18px;
       }
-      #chatFullSend { min-width: 56px; min-height: 48px; }
-      #chatFullInput { min-height: 48px; font-size: 16px; }
-      #chat-section-container { height: 100%; }
-      #chatFullWindow { padding: 80px 12px 12px; }
-      #chat-input-container { padding: 16px 12px; }
-      .msg { max-width: 90%; font-size: 15px; }
+      #chatFullSend {
+        min-width: 56px;
+        min-height: 48px;
+      }
+      
+      /* Zone de texte plus grande */
+      #chatFullInput {
+        min-height: 48px;
+        font-size: 16px; /* Évite le zoom automatique sur iOS */
+      }
+      
+      /* Container des messages : prend toute la hauteur disponible */
+      #chat-section-container {
+        height: 100%; /* Prend 100% de #sec-intelligence (qui est 100dvh) */
+      }
+      #chatFullWindow {
+        padding: 80px 12px 12px; /* Espace en haut pour le bouton sidebar */
+      }
+      #chat-input-container {
+        padding: 16px 12px;
+      }
+      
+      /* Messages plus lisibles */
+      .msg {
+        max-width: 90%;
+        font-size: 15px;
+      }
     }
     
     @media (min-width: 761px) {
@@ -303,6 +358,7 @@
       #sidebar-overlay { display: none; }
     }
 
+    /* ==== Écran de connexion ==== */
     #login-overlay {
       position: fixed; top: 0; left: 0; right: 0; bottom: 0;
       background: linear-gradient(135deg, #f5f7fa, #c3cfe2);
@@ -319,8 +375,9 @@
     .login-box h2 { margin-bottom: 8px; }
     .login-box p { color: var(--muted); margin-bottom: 24px; }
     
+    /* ==== Application Principale (Masquée par défaut) ==== */
     .main-app { 
-      display: none;
+      display: none; 
       height: 100%; 
     }
     
@@ -361,7 +418,7 @@
       <header id="main-header">
         <h1 id="section-header-title">Domotique</h1>
         <div style="margin-top:8px; display:flex; flex-wrap: wrap; justify-content: center; gap: 8px;">
-          <span id="statusLocal" class="chip">Firebase : -</span>
+          <span id="statusFirebase" class="chip">Firebase : -</span> 
           <span id="statusOnline" class="chip">Assistant : -</span>
           <span id="intelliaLatency" class="chip">latence: -</span>
           <span id="db-count" class="chip">on: 0</span>
@@ -435,12 +492,12 @@
             </button>
           </div>
           <div id="chat-history-list">
-          </div>
+             </div>
         </div>
         
         <div id="chat-section-container">
           <div id="chatFullWindow">
-          </div>
+             </div>
           <div id="chat-input-container">
             <div id="chat-loading" style="display:none; padding-bottom: 8px; text-align:center; font-style:italic; color:var(--muted); font-size: 14px;">
               <i class="fas fa-spinner fa-spin"></i> Assistant en train de réfléchir...
@@ -564,12 +621,10 @@
       
   </div> <script type="module">
   /*************************************************
-   * SmartHome Intelligence - Version 8.2 (Firebase Seulement)
-   * - Logique WebSocket SUPPRIMÉE
-   * - Correction CSS Mobile (Plein écran)
-   * - Suppression de chats
-   * - Indicateur de chargement
-   * - Note sur HTTPS pour le micro
+   * SmartHome Intelligence - Version 8.3 (Mobile Fix + Firebase-Only)
+   * - Correction CSS Mobile (100dvh) pour le clavier
+   * - Suppression totale de la logique WebSocket
+   * - Conservation de l'UI multi-chat v8.1
    *************************************************/
 
   // ======= CONFIG =======
@@ -601,7 +656,7 @@
 
   const el = id => document.getElementById(id);
 
-  // ======= APP STATE (Simplifié) =======
+  // ======= APP STATE (Simplifié: sans WebSocket) =======
   const appState = {
     devices: [], deviceStates: {},
     isNightMode: localStorage.getItem('nightMode') === 'true',
@@ -643,17 +698,14 @@
     document.querySelectorAll(`[data-target="${targetSection}"]`).forEach(b => b.classList.add('active'));
     
     const header = el('main-header');
-    if (targetSection === 'sec-intelligence') {
-        header.style.display = 'none';
-    } else {
-        header.style.display = 'block';
-        const titleMap = {
-          'sec-domotique': 'Domotique',
-          'sec-planning': 'Planning',
-          'sec-params': 'Paramètres'
-        };
-        el('section-header-title').textContent = titleMap[targetSection] || 'Accueil';
-    }
+    
+    // La logique CSS (body:has) gère maintenant l'affichage du header/footer
+    const titleMap = {
+      'sec-domotique': 'Domotique',
+      'sec-planning': 'Planning',
+      'sec-params': 'Paramètres'
+    };
+    el('section-header-title').textContent = titleMap[targetSection] || 'Domotique';
   }
 
   document.querySelectorAll('.btn-nav').forEach(btn => {
@@ -681,10 +733,10 @@
     const app = initializeApp(firebaseConfig);
     db = getDatabase(app);
     auth = getAuth(app);
-    el('statusLocal').textContent = 'Firebase : OK';
+    el('statusFirebase').textContent = 'Firebase : OK'; // ✅ Renommé
   } catch (e) {
     db = null;
-    el('statusLocal').textContent = 'Firebase : Échec';
+    el('statusFirebase').textContent = 'Firebase : Échec'; // ✅ Renommé
     console.error("Erreur d'initialisation de Firebase:", e);
   }
 
@@ -807,7 +859,7 @@
 
   el('btnRefreshDevices')?.addEventListener('click', () => { if(db) onValue(ref(db, metaRefPath), s => {}, { onlyOnce: true }); });
 
-  // ======= Device Control (Firebase Seulement) =======
+  // ======= Device Control (✅ Firebase Seulement) =======
   async function writeDeviceStateToBackend(deviceId, etat, value = null) {
     const payload = { etat };
     if (value !== null) payload.luminosite = parseInt(value, 10);
@@ -829,16 +881,15 @@
 
   /**
    * ✅ sendCommand (Simplifié)
-   * Enlève toute la logique WebSocket.
+   * Logique WebSocket totalement supprimée.
    */
   window.sendCommand = (deviceId, action, value = null) => {
     const val = (value !== null) ? value : (action === "ON" ? 100 : 0);
-
-    // Ne garde que la logique Firebase
+    
+    // Uniquement la logique Firebase
     logActivity(`☁️ [Firebase] ${deviceId} → ${action} (${val}%)`);
     writeDeviceStateToBackend(deviceId, action, val);
     
-    // Mettre à jour l'état local (pour la réactivité)
     appState.deviceStates[deviceId] = { etat: action, luminosite: val };
     renderDevices();
   };
@@ -965,9 +1016,6 @@
    *
    * Si vous testez via une adresse IP (ex: http://192.168.1.10),
    * le navigateur bloquera l'accès au micro.
-   *
-   * Le seul 'http://' qui fonctionne est 'http://localhost'.
-   * Pour les tests mobiles, vous DEVEZ utiliser une connexion sécurisée (HTTPS).
    *******************************************************************/
   const VoiceEngine = {
     recognition: null, isPushToTalkRecording: false,
@@ -1579,11 +1627,11 @@
   }
   function handleSignOut() { if (auth) signOut(auth).catch((error) => console.error("Erreur Déco:", error)); }
   
-  // ======= WebSocket (ESP32) Logic (SUPPRIMÉ) =======
+  // ======= WebSocket (ESP32) Logic (✅ TOTALEMENT SUPPRIMÉ) =======
   // ...
-  // ... Toute la logique WebSocket a été enlevée.
   // ...
-
+  // ...
+  
   // ======= Exécution Automatique des Planifications =======
   setInterval(() => {
     const now = new Date();
