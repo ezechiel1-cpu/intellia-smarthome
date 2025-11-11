@@ -16,6 +16,7 @@
     
     * { box-sizing: border-box; margin: 0; padding: 0; }
     
+    /* Structure principale de l'application */
     html, body { height: 100%; overflow: hidden; }
     
     body {
@@ -58,8 +59,14 @@
     body.night-mode .chat-history-item .btn.warn { background: var(--danger); color: white; border: none; }
     body.night-mode .chat-history-item .btn.warn:hover { background: #c0392b; }
 
-
-    .container { max-width: 1200px; margin: 0 auto; padding: 16px 12px 100px; height: 100%; overflow-y: auto; }
+    /* Container principal qui gère le défilement */
+    .container { 
+      max-width: 1200px; margin: 0 auto; 
+      padding: 16px 12px 100px; /* Padding bas pour le footer */
+      height: 100%; 
+      overflow-y: auto; /* C'est ce container qui scrolle */
+      -webkit-overflow-scrolling: touch; /* Scroll fluide sur iOS */
+    }
     
     header {
       background: linear-gradient(90deg, #4b6cb7, #1f3b8a);
@@ -73,9 +80,13 @@
     
     /* ===== SECTION CHAT (PLEIN ÉCRAN) ===== */
     #sec-intelligence {
-      height: calc(100vh - 88px); /* Fallback pour Desktop */
-      padding-top: 0; margin-top: -16px;
-      display: none; flex-direction: row;
+      /* ✅ CORRECTION: La hauteur est 100% du container, pas du viewport */
+      height: 100%; 
+      padding-top: 0; 
+      margin-top: -16px; /* Compense le padding du container */
+      display: none; 
+      flex-direction: row;
+      position: relative; /* Ancre pour la sidebar mobile */
     }
     #sec-intelligence.active { display: flex; }
     
@@ -127,7 +138,7 @@
     #chat-input-container {
       padding: 12px; border-top: 1px solid rgba(0,0,0,0.1);
       background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(10px);
-      flex-shrink: 0; /* Important pour le mobile */
+      flex-shrink: 0;
     }
     #chat-input-flex { display: flex; gap: 8px; }
     #chatFullInput {
@@ -137,7 +148,6 @@
     #chat-input-buttons { display: flex; gap: 8px; }
     #chatFullSend { padding: 0 16px; }
     
-    /* Prévisualisation des pièces jointes */
     #attachment-preview-container {
       display: flex; gap: 8px; margin-bottom: 8px; flex-wrap: wrap;
     }
@@ -195,6 +205,7 @@
     table { width: 100%; border-collapse: collapse; }
     th, td { padding: 8px; border-bottom: 1px solid rgba(0,0,0,0.06); }
     
+    /* Footer (Barre de navigation) */
     footer {
       position: fixed; left: 0; right: 0; bottom: 0; height: 72px;
       background: linear-gradient(90deg, #14151a, #1a1c23);
@@ -243,7 +254,7 @@
     }
     
     /* ================================================= */
-    /* ✅ CORRECTION MOBILE (Clavier + UI) */
+    /* ✅ CORRECTION MOBILE (Clavier + UI) v8.4 */
     /* ================================================= */
     @media (max-width: 760px) {
       .grid { grid-template-columns: 1fr; }
@@ -251,35 +262,29 @@
       .btn { width: 100%; justify-content: center; }
       .flex { flex-direction: column; align-items: stretch; }
       .two-column { grid-template-columns: 1fr; }
-      .container { padding-bottom: 88px; } /* Espace pour le footer */
+      .container { padding-bottom: 88px; }
 
-      /* ✅ NOUVEAU : Chat UI responsive */
+      /* ✅ CORRECTION: L'onglet Chat n'est PLUS en 'position: fixed' */
       #sec-intelligence {
-        /* ✅ CORRECTION CLAVIER: Utilise 100dvh (Dynamic Viewport Height) */
-        height: 100dvh !important; 
-        position: fixed;
-        top: 0; left: 0; right: 0; bottom: 0;
-        z-index: 999; 
-        margin-top: 0 !important;
-        padding-top: 0 !important;
+        height: 100%; /* Il prend 100% du .container (qui scrolle) */
+        /* Toutes les anciennes règles 'fixed' sont supprimées */
       }
       
-      /* Cacher le header et le footer quand on est sur le chat */
-      body:has(#sec-intelligence.active) #main-header {
-        display: none !important;
-      }
-      body:has(#sec-intelligence.active) #main-footer {
-        display: none !important;
-      }
+      /* ✅ CORRECTION: Ces règles sont SUPPRIMÉES car la navigation doit rester visible */
+      /*
+      body:has(#sec-intelligence.active) #main-header { display: none !important; }
+      body:has(#sec-intelligence.active) #main-footer { display: none !important; }
+      */
       
       /* Sidebar mobile */
       #chat-sidebar {
-        position: fixed;
+        /* ✅ CORRECTION: Position 'absolute' (relatif à #sec-intelligence) */
+        position: absolute; 
         left: -100%;
         top: 0; bottom: 0;
         width: 80%;
         max-width: 300px;
-        z-index: 10000; /* Au-dessus de tout */
+        z-index: 10000;
         transition: left 0.3s ease;
         box-shadow: 2px 0 10px rgba(0,0,0,0.3);
       }
@@ -290,10 +295,11 @@
       /* Overlay sombre */
       #sidebar-overlay {
         display: none;
-        position: fixed;
+        /* ✅ CORRECTION: Position 'absolute' */
+        position: absolute; 
         top: 0; left: 0; right: 0; bottom: 0;
         background: rgba(0,0,0,0.5);
-        z-index: 9999; /* Juste en dessous de la sidebar */
+        z-index: 9999;
       }
       #sidebar-overlay.open {
         display: block;
@@ -302,7 +308,8 @@
       /* Bouton pour ouvrir la sidebar */
       #sidebar-toggle-btn {
         display: flex; 
-        position: fixed; 
+        /* ✅ CORRECTION: Position 'absolute' */
+        position: absolute; 
         top: 16px;
         left: 16px;
         z-index: 1000; 
@@ -317,39 +324,17 @@
         box-shadow: 0 4px 8px rgba(0,0,0,0.2);
       }
       
-      /* Agrandir les boutons vocaux */
       #chat-input-buttons button {
-        min-width: 48px;
-        min-height: 48px;
-        font-size: 18px;
+        min-width: 48px; min-height: 48px; font-size: 18px;
       }
-      #chatFullSend {
-        min-width: 56px;
-        min-height: 48px;
-      }
+      #chatFullSend { min-width: 56px; min-height: 48px; }
+      #chatFullInput { min-height: 48px; font-size: 16px; }
       
-      /* Zone de texte plus grande */
-      #chatFullInput {
-        min-height: 48px;
-        font-size: 16px; /* Évite le zoom automatique sur iOS */
-      }
+      #chat-section-container { height: 100%; }
+      #chatFullWindow { padding: 80px 12px 12px; }
+      #chat-input-container { padding: 16px 12px; }
       
-      /* Container des messages : prend toute la hauteur disponible */
-      #chat-section-container {
-        height: 100%; /* Prend 100% de #sec-intelligence (qui est 100dvh) */
-      }
-      #chatFullWindow {
-        padding: 80px 12px 12px; /* Espace en haut pour le bouton sidebar */
-      }
-      #chat-input-container {
-        padding: 16px 12px;
-      }
-      
-      /* Messages plus lisibles */
-      .msg {
-        max-width: 90%;
-        font-size: 15px;
-      }
+      .msg { max-width: 90%; font-size: 15px; }
     }
     
     @media (min-width: 761px) {
@@ -375,11 +360,7 @@
     .login-box h2 { margin-bottom: 8px; }
     .login-box p { color: var(--muted); margin-bottom: 24px; }
     
-    /* ==== Application Principale (Masquée par défaut) ==== */
-    .main-app { 
-      display: none; 
-      height: 100%; 
-    }
+    .main-app { display: none; height: 100%; }
     
     #user-profile-card {
       display: flex; align-items: center; gap: 15px;
@@ -492,12 +473,12 @@
             </button>
           </div>
           <div id="chat-history-list">
-             </div>
+          </div>
         </div>
         
         <div id="chat-section-container">
           <div id="chatFullWindow">
-             </div>
+          </div>
           <div id="chat-input-container">
             <div id="chat-loading" style="display:none; padding-bottom: 8px; text-align:center; font-style:italic; color:var(--muted); font-size: 14px;">
               <i class="fas fa-spinner fa-spin"></i> Assistant en train de réfléchir...
@@ -621,10 +602,10 @@
       
   </div> <script type="module">
   /*************************************************
-   * SmartHome Intelligence - Version 8.3 (Mobile Fix + Firebase-Only)
-   * - Correction CSS Mobile (100dvh) pour le clavier
+   * SmartHome Intelligence - Version 8.4 (Mobile UI Fix)
+   * - Correction CSS Mobile (les onglets ne sont plus 'fixed')
    * - Suppression totale de la logique WebSocket
-   * - Conservation de l'UI multi-chat v8.1
+   * - Conservation de l'UI multi-chat v8.1 (Historique, Renommage, Suppression)
    *************************************************/
 
   // ======= CONFIG =======
@@ -634,7 +615,8 @@
     RENDER_API = 'http://localhost:3000';
     console.log('Environnement local détecté. API ->', RENDER_API);
   } else {
-    RENDER_API = 'https://intellia-smarthome.onrender.com';
+    // NOTE: Assurez-vous que c'est votre URL de serveur Render
+    RENDER_API = 'https://intellia-smarthome.onrender.com'; 
     console.log('Environnement de production détecté. API ->', RENDER_API);
   }
   const AUTH_KEY = "cle-secrete-intellia";
@@ -697,13 +679,11 @@
     document.querySelectorAll('.btn-nav').forEach(b => b.classList.remove('active'));
     document.querySelectorAll(`[data-target="${targetSection}"]`).forEach(b => b.classList.add('active'));
     
-    const header = el('main-header');
-    
-    // La logique CSS (body:has) gère maintenant l'affichage du header/footer
     const titleMap = {
       'sec-domotique': 'Domotique',
       'sec-planning': 'Planning',
-      'sec-params': 'Paramètres'
+      'sec-params': 'Paramètres',
+      'sec-intelligence': 'Assistant IA'
     };
     el('section-header-title').textContent = titleMap[targetSection] || 'Domotique';
   }
@@ -733,10 +713,10 @@
     const app = initializeApp(firebaseConfig);
     db = getDatabase(app);
     auth = getAuth(app);
-    el('statusFirebase').textContent = 'Firebase : OK'; // ✅ Renommé
+    el('statusFirebase').textContent = 'Firebase : OK';
   } catch (e) {
     db = null;
-    el('statusFirebase').textContent = 'Firebase : Échec'; // ✅ Renommé
+    el('statusFirebase').textContent = 'Firebase : Échec';
     console.error("Erreur d'initialisation de Firebase:", e);
   }
 
@@ -859,7 +839,7 @@
 
   el('btnRefreshDevices')?.addEventListener('click', () => { if(db) onValue(ref(db, metaRefPath), s => {}, { onlyOnce: true }); });
 
-  // ======= Device Control (✅ Firebase Seulement) =======
+  // ======= Device Control (Firebase Seulement) =======
   async function writeDeviceStateToBackend(deviceId, etat, value = null) {
     const payload = { etat };
     if (value !== null) payload.luminosite = parseInt(value, 10);
@@ -879,17 +859,10 @@
     sendCommand(deviceId, v > 0 ? "ON" : "OFF", v);
   };
 
-  /**
-   * ✅ sendCommand (Simplifié)
-   * Logique WebSocket totalement supprimée.
-   */
   window.sendCommand = (deviceId, action, value = null) => {
     const val = (value !== null) ? value : (action === "ON" ? 100 : 0);
-    
-    // Uniquement la logique Firebase
     logActivity(`☁️ [Firebase] ${deviceId} → ${action} (${val}%)`);
     writeDeviceStateToBackend(deviceId, action, val);
-    
     appState.deviceStates[deviceId] = { etat: action, luminosite: val };
     renderDevices();
   };
@@ -1008,14 +981,9 @@
   /*******************************************************************
    * ⚠️ NOTE IMPORTANTE SUR LE MICRO (Android/iOS) ⚠️
    *
-   * L'API 'SpeechRecognition' (webkitSpeechRecognition) que ce code
-   * utilise est soumise à des règles de sécurité de navigateur strictes.
-   *
-   * Pour que le micro fonctionne sur mobile (en particulier Android),
+   * Pour que le micro fonctionne sur mobile,
    * l'application doit OBLIGATOIREMENT être servie via HTTPS.
    *
-   * Si vous testez via une adresse IP (ex: http://192.168.1.10),
-   * le navigateur bloquera l'accès au micro.
    *******************************************************************/
   const VoiceEngine = {
     recognition: null, isPushToTalkRecording: false,
@@ -1627,10 +1595,7 @@
   }
   function handleSignOut() { if (auth) signOut(auth).catch((error) => console.error("Erreur Déco:", error)); }
   
-  // ======= WebSocket (ESP32) Logic (✅ TOTALEMENT SUPPRIMÉ) =======
-  // ...
-  // ...
-  // ...
+  // ======= WebSocket (ESP32) Logic (TOTALEMENT SUPPRIMÉ) =======
   
   // ======= Exécution Automatique des Planifications =======
   setInterval(() => {
