@@ -219,16 +219,38 @@ async function getHistoryFromFirebase(userId, sessionId) {
 // ========================================
 // FORMATAGE DE LA RÉPONSE (Demande utilisateur)
 // ========================================
+/**
+ * Formate correctement les réponses AI avec retours à la ligne
+ */
 function formatAIResponse(text) {
   if (typeof text !== 'string') return text;
   return text
-    .replace(/<br\s*\/?>/gi, '\n').replace(/<\/p>/gi, '\n\n').replace(/<\/div>/gi, '\n')
-    .replace(/<\/li>/gi, '\n').replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ')
-    .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"')
-    .replace(/\r\n/g, '\n').replace(/\r/g, '\n').replace(/\n{3,}/g, '\n\n')
-    .replace(/[ \t]+\n/g, '\n').replace(/\n[ \t]+/g, '\n').trim();
+    // Convertir balises HTML en retours à la ligne
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/p>/gi, '\n\n')
+    .replace(/<\/div>/gi, '\n')
+    .replace(/<\/li>/gi, '\n')
+    
+    // Supprimer toutes les balises HTML restantes
+    .replace(/<[^>]*>/g, '')
+    
+    // Nettoyer les espaces
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    
+    // Normaliser les retours à la ligne
+    .replace(/\r\n/g, '\n')       // Windows → Unix
+    .replace(/\r/g, '\n')         // Mac → Unix
+    .replace(/\n{3,}/g, '\n\n')   // Max 2 retours consécutifs
+    .replace(/[ \t]+\n/g, '\n')   // Supprimer espaces avant retours
+    .replace(/\n[ \t]+/g, '\n')   // Supprimer espaces après retours
+    
+    // Nettoyer début et fin
+    .trim();
 }
-
 // ========================================
 // RECHERCHE WEB INTELLIGENTE (Inchangé)
 // ========================================
