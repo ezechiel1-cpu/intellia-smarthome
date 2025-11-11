@@ -55,6 +55,9 @@
     body.night-mode #chat-input-container { background: rgba(30, 41, 59, 0.95); border-top: 1px solid rgba(255, 255, 255, 0.1); }
     body.night-mode #chatFullInput { background: rgba(15, 23, 42, 0.8); }
     body.night-mode .attachment-preview { background: rgba(51, 65, 85, 0.8); border: 1px solid rgba(255, 255, 255, 0.1); }
+    body.night-mode .chat-history-item .btn.warn { background: var(--danger); color: white; border: none; }
+    body.night-mode .chat-history-item .btn.warn:hover { background: #c0392b; }
+
 
     .container { max-width: 1200px; margin: 0 auto; padding: 16px 12px 100px; height: 100%; overflow-y: auto; }
     
@@ -68,13 +71,12 @@
     .section { display: none; }
     .section.active { display: block; }
     
-    /* ===== NOUVELLE SECTION CHAT (DANS L'ONGLET) ===== */
     #sec-intelligence {
-      height: calc(100vh - 88px); /* Hauteur totale - padding bas du container */
-      padding-top: 0; margin-top: -16px; /* Ajuster pour prendre l'écran */
+      height: calc(100vh - 88px); 
+      padding-top: 0; margin-top: -16px;
       display: none; flex-direction: row;
     }
-    #sec-intelligence.active { display: flex; } /* Activer le flex quand visible */
+    #sec-intelligence.active { display: flex; } 
     
     #chat-sidebar {
       width: 260px; height: 100%; background: #f8f9fa;
@@ -85,18 +87,26 @@
     #chat-sidebar-header { padding: 12px; border-bottom: 1px solid rgba(0,0,0,0.1); }
     #new-chat-btn { width: 100%; justify-content: center; }
     #chat-history-list { flex: 1; overflow-y: auto; padding: 8px; }
+    
     .chat-history-item {
       padding: 10px 12px; border-radius: 8px; cursor: pointer; margin-bottom: 4px;
-      font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      font-size: 14px;
       transition: background 0.2s ease;
-      /* ✅ CORRECTION 1: Ajout de flex pour le bouton supprimer */
       display: flex; align-items: center; justify-content: space-between;
+      gap: 8px;
     }
+    .chat-history-item-title {
+      flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .chat-history-item .btn.warn {
+      padding: 4px 8px; font-size: 12px; margin-left: 8px;
+      line-height: 1; border-radius: 6px;
+    }
+
     .chat-history-item:hover { background: #e9ecef; }
     .chat-history-item.active { background: var(--primary); color: white; }
-    /* Style pour le titre du chat dans l'historique */
-    .chat-history-item-title {
-        flex: 1; overflow: hidden; text-overflow: ellipsis;
+    .chat-history-item.active .btn.warn { 
+      background: rgba(255,255,255,0.2); color: white; 
     }
     
     #chat-section-container {
@@ -125,7 +135,6 @@
     #chat-input-buttons { display: flex; gap: 8px; }
     #chatFullSend { padding: 0 16px; }
     
-    /* Prévisualisation des pièces jointes */
     #attachment-preview-container {
       display: flex; gap: 8px; margin-bottom: 8px; flex-wrap: wrap;
     }
@@ -136,7 +145,6 @@
     .attachment-preview img { width: 32px; height: 32px; object-fit: cover; border-radius: 4px; }
     .remove-attachment { cursor: pointer; font-size: 14px; color: var(--danger); }
     #file-input { display: none; }
-    /* ===== FIN SECTION CHAT ===== */
 
     .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
     .card { background: var(--card-bg); border-radius: 12px; padding: 14px; box-shadow: var(--shadow); }
@@ -230,123 +238,71 @@
       100% { transform: scale(1); opacity: 1; }
     }
     
-    /* ✅ ================================================= */
-    /* ✅ CORRECTION 3: NOUVEAU BLOC CSS MOBILE COMPLET   */
-    /* ✅ ================================================= */
     @media (max-width: 760px) {
       .grid { grid-template-columns: 1fr; }
       .controls { flex-direction: column; }
       .btn { width: 100%; justify-content: center; }
       .flex { flex-direction: column; align-items: stretch; }
       .two-column { grid-template-columns: 1fr; }
-      .container { padding-bottom: 88px; } /* Espace pour le footer */
+      .container { padding-bottom: 88px; }
 
-      /* ✅ NOUVEAU : Chat UI responsive */
       #sec-intelligence {
-        height: 100vh !important; /* Prend toute la hauteur de l'écran */
+        height: 100vh !important;
         position: fixed;
         top: 0; left: 0; right: 0; bottom: 0;
-        z-index: 999; /* Se place au-dessus de tout */
+        z-index: 999;
         margin-top: 0 !important;
         padding-top: 0 !important;
       }
       
-      /* Cacher le header et le footer quand on est sur le chat */
-      body:has(#sec-intelligence.active) #main-header {
-        display: none !important;
-      }
-      body:has(#sec-intelligence.active) #main-footer {
-        display: none !important;
-      }
+      body:has(#sec-intelligence.active) #main-header { display: none !important; }
+      body:has(#sec-intelligence.active) #main-footer { display: none !important; }
       
-      /* Sidebar mobile */
       #chat-sidebar {
-        position: fixed;
-        left: -100%;
-        top: 0; bottom: 0;
-        width: 80%;
-        max-width: 300px;
+        position: fixed; left: -100%; top: 0; bottom: 0;
+        width: 80%; max-width: 300px;
         z-index: 10000;
         transition: left 0.3s ease;
         box-shadow: 2px 0 10px rgba(0,0,0,0.3);
       }
-      #chat-sidebar.open {
-        left: 0;
-      }
+      #chat-sidebar.open { left: 0; }
       
-      /* Overlay sombre */
       #sidebar-overlay {
-        display: none;
-        position: fixed;
+        display: none; position: fixed;
         top: 0; left: 0; right: 0; bottom: 0;
         background: rgba(0,0,0,0.5);
-        z-index: 9999; /* Juste en dessous de la sidebar */
+        z-index: 9999;
       }
-      #sidebar-overlay.open {
-        display: block;
-      }
+      #sidebar-overlay.open { display: block; }
       
-      /* Bouton pour ouvrir la sidebar */
       #sidebar-toggle-btn {
-        display: flex; /* Remplacer display: block */
-        position: fixed; /* Le bouton est fixe sur l'écran */
-        top: 16px;
-        left: 16px;
-        z-index: 1000; /* Au-dessus de la fenêtre de chat (999) */
-        background: var(--primary);
-        color: white;
-        border: 0;
-        border-radius: 8px;
-        width: 48px;
-        height: 48px;
-        align-items: center;
-        justify-content: center;
+        display: flex; position: fixed;
+        top: 16px; left: 16px;
+        z-index: 1000;
+        background: var(--primary); color: white;
+        border: 0; border-radius: 8px;
+        width: 48px; height: 48px;
+        align-items: center; justify-content: center;
         box-shadow: 0 4px 8px rgba(0,0,0,0.2);
       }
       
-      /* Agrandir les boutons vocaux */
       #chat-input-buttons button {
-        min-width: 48px;
-        min-height: 48px;
-        font-size: 18px;
+        min-width: 48px; min-height: 48px; font-size: 18px;
       }
-      #chatFullSend {
-        min-width: 56px;
-        min-height: 48px;
-      }
-      
-      /* Zone de texte plus grande */
-      #chatFullInput {
-        min-height: 48px;
-        font-size: 16px; /* Évite le zoom automatique sur iOS */
-      }
-      
-      /* Container des messages : prend toute la hauteur disponible */
-      #chat-section-container {
-        height: 100%; /* Prend 100% de #sec-intelligence */
-      }
-      #chatFullWindow {
-        padding: 80px 12px 12px; /* Espace en haut pour le bouton sidebar */
-      }
-      #chat-input-container {
-        padding: 16px 12px;
-      }
-      
-      /* Messages plus lisibles */
-      .msg {
-        max-width: 90%;
-        font-size: 15px;
-      }
+      #chatFullSend { min-width: 56px; min-height: 48px; }
+      #chatFullInput { min-height: 48px; font-size: 16px; }
+      #chat-section-container { height: 100%; }
+      #chatFullWindow { padding: 80px 12px 12px; }
+      #chat-input-container { padding: 16px 12px; }
+      .msg { max-width: 90%; font-size: 15px; }
     }
     
     @media (min-width: 761px) {
       .two-column { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-      /* ✅ CORRECTION 3: Assurer que ces éléments sont cachés sur Desktop */
       #sidebar-toggle-btn { display: none; }
       #sidebar-overlay { display: none; }
     }
 
-    /* ==== Écran de connexion ==== */
     #login-overlay {
       position: fixed; top: 0; left: 0; right: 0; bottom: 0;
       background: linear-gradient(135deg, #f5f7fa, #c3cfe2);
@@ -363,9 +319,8 @@
     .login-box h2 { margin-bottom: 8px; }
     .login-box p { color: var(--muted); margin-bottom: 24px; }
     
-    /* ==== Application Principale (Masquée par défaut) ==== */
     .main-app { 
-      display: none; /* Le script le mettra en 'block' après connexion */
+      display: none;
       height: 100%; 
     }
     
@@ -384,9 +339,6 @@
     
     #proactive-suggestion { transition: opacity 0.5s ease-in-out; }
     #proactive-suggestion.fade-out { opacity: 0; }
-
-    @keyframes connection-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
-    #ws-status-icon.active { animation: connection-pulse 2s infinite; }
   </style>
 </head>
 <body>
@@ -409,13 +361,10 @@
       <header id="main-header">
         <h1 id="section-header-title">Domotique</h1>
         <div style="margin-top:8px; display:flex; flex-wrap: wrap; justify-content: center; gap: 8px;">
-          <span id="statusLocal" class="chip">Local : -</span>
+          <span id="statusLocal" class="chip">Firebase : -</span>
           <span id="statusOnline" class="chip">Assistant : -</span>
           <span id="intelliaLatency" class="chip">latence: -</span>
           <span id="db-count" class="chip">on: 0</span>
-          <span id="connection-mode" class="chip" style="background: rgba(46, 204, 113, 0.1); color: #2ecc71;">
-            <i class="fas fa-cloud"></i> Mode distant
-          </span>
         </div>
       </header>
 
@@ -440,31 +389,7 @@
                 </button>
               </div>
 
-              <div style="margin-top:12px; border-top: 1px solid rgba(0,0,0,0.1); padding-top:12px;">
-                <strong>📡 Mode de Connexion</strong>
-                <p style="font-size:12px; color:var(--muted); margin:8px 0;">
-                  <i class="fas fa-info-circle"></i> L'application fonctionne en mode <strong>hybride</strong> :
-                  <br>• <strong>À distance</strong> : Via Firebase (toujours disponible)
-                  <br>• <strong>Local</strong> : Via ESP32 (uniquement sur le même réseau Wi-Fi)
-                </p>
-                <div class="flex" style="flex-wrap:wrap; justify-content: center;">
-                  <button class="btn primary" id="connect-ws" title="Active le contrôle direct de l'ESP32...">
-                    <i class="fas fa-wifi"></i> Activer connexion locale
-                  </button>
-                  <button class="btn warn" id="disconnect-ws" style="display:none;">
-                    <i class="fas fa-times-circle"></i> Désactiver local
-                  </button>
-                </div>
-                <div id="ws-status" class="chip" style="margin-top:8px; display:flex; align-items:center; gap:8px;">
-                  <i class="fas fa-circle" id="ws-status-icon" style="font-size:10px; color:#94a3b8;"></i>
-                  <span id="ws-status-text">Local: Non activé</span>
-                </div>
-                <div id="firebase-status" class="chip" style="margin-top:4px; display:flex; align-items:center; gap:8px;">
-                  <i class="fas fa-circle" style="font-size:10px; color:#2ecc71;"></i>
-                  <span>À distance: Actif (Firebase)</span>
-                </div>
               </div>
-            </div>
             
             <div class="card" style="margin-top:12px">
               <h3>💡 Suggestions Proactives</h3>
@@ -510,17 +435,17 @@
             </button>
           </div>
           <div id="chat-history-list">
-            </div>
+          </div>
         </div>
         
         <div id="chat-section-container">
           <div id="chatFullWindow">
-            </div>
+          </div>
           <div id="chat-input-container">
-            <div id="chat-loading" style="display:none; padding: 8px; text-align:center; font-style:italic; color:var(--muted); font-size: 14px;">
+            <div id="chat-loading" style="display:none; padding-bottom: 8px; text-align:center; font-style:italic; color:var(--muted); font-size: 14px;">
               <i class="fas fa-spinner fa-spin"></i> Assistant en train de réfléchir...
             </div>
-            
+          
             <div id="attachment-preview-container"></div>
             
             <div id="chat-input-flex">
@@ -639,7 +564,8 @@
       
   </div> <script type="module">
   /*************************************************
-   * SmartHome Intelligence - Version 8.1 (Corrigée)
+   * SmartHome Intelligence - Version 8.2 (Firebase Seulement)
+   * - Logique WebSocket SUPPRIMÉE
    * - Correction CSS Mobile (Plein écran)
    * - Suppression de chats
    * - Indicateur de chargement
@@ -675,20 +601,18 @@
 
   const el = id => document.getElementById(id);
 
-  // ======= APP STATE =======
+  // ======= APP STATE (Simplifié) =======
   const appState = {
     devices: [], deviceStates: {},
     isNightMode: localStorage.getItem('nightMode') === 'true',
-    connectionType: 'none', isConnected: false,
     intelliaOnline: false,
     notificationsEnabled: localStorage.getItem('notifications') !== 'false',
     voiceNotifications: localStorage.getItem('voiceNotifications') !== 'false',
-    websocket: null,
     plans: [],
     currentUser: null,
     currentSessionId: null,
-    attachments: [], // ✅ Fichiers à envoyer
-    chatInProgress: false, // Sémaphore
+    attachments: [], 
+    chatInProgress: false,
   };
   
   const defaultAvatar = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iI2FlYWVhZSI+PHBhdGggZD0iTTEyIDJDNi40OCAyIDIgNi40OCAyIDEyczQuNDggMTQgMTAgMTBjNS41MiAwIDEwLTQuNDggMTAtMTBTMjcuNTIgMiAxMiAyem0wIDJjMS42NiAwIDMgMS4zNCAzIDNzLTEuMzQgMy0zIDMtMy0xLjM0LTMtM1MwLjM0IDQgMTIgNHptMCAxNmMtMi42NyAwLTUuNDMtMS4yOS03LTIuODguNTYtMS42NSAzLjU1LTIuNjIgNy0yLjYyczYuNDQgLjk3IDcgMi42MmMtMS41NyAxLjU5LTQuMzMgMi44OC03IDIuODh6Ii8+PC9zdmc+";
@@ -709,27 +633,20 @@
   ];
   let suggestionIndex = 0;
 
-  // ======= UI: Navigation (Ancienne logique restaurée) =======
+  // ======= UI: Navigation =======
   function navigateTo(targetSection) {
-    // 1. Cacher toutes les sections
     document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-    
-    // 2. Afficher la section cible
     const targetEl = el(targetSection);
     if (targetEl) targetEl.classList.add('active');
     
-    // 3. Gérer l'état actif des boutons du footer
     document.querySelectorAll('.btn-nav').forEach(b => b.classList.remove('active'));
     document.querySelectorAll(`[data-target="${targetSection}"]`).forEach(b => b.classList.add('active'));
     
-    // 4. Gérer l'affichage du header (masqué pour le chat sur DESKTOP)
-    // Le CSS s'en occupe sur mobile désormais
     const header = el('main-header');
     if (targetSection === 'sec-intelligence') {
         header.style.display = 'none';
     } else {
         header.style.display = 'block';
-        // Mettre à jour le titre du header
         const titleMap = {
           'sec-domotique': 'Domotique',
           'sec-planning': 'Planning',
@@ -746,7 +663,6 @@
     });
   });
 
-  // Gestion sidebar mobile (maintenant relative à #sec-intelligence)
   el('sidebar-toggle-btn').addEventListener('click', () => {
     el('chat-sidebar').classList.toggle('open');
     el('sidebar-overlay').classList.toggle('open');
@@ -765,10 +681,10 @@
     const app = initializeApp(firebaseConfig);
     db = getDatabase(app);
     auth = getAuth(app);
-    el('statusLocal').textContent = 'Local : Firebase ok';
+    el('statusLocal').textContent = 'Firebase : OK';
   } catch (e) {
     db = null;
-    el('statusLocal').textContent = 'Local : simulation';
+    el('statusLocal').textContent = 'Firebase : Échec';
     console.error("Erreur d'initialisation de Firebase:", e);
   }
 
@@ -891,7 +807,7 @@
 
   el('btnRefreshDevices')?.addEventListener('click', () => { if(db) onValue(ref(db, metaRefPath), s => {}, { onlyOnce: true }); });
 
-  // ======= Device Control (Logique Hybride) =======
+  // ======= Device Control (Firebase Seulement) =======
   async function writeDeviceStateToBackend(deviceId, etat, value = null) {
     const payload = { etat };
     if (value !== null) payload.luminosite = parseInt(value, 10);
@@ -911,16 +827,18 @@
     sendCommand(deviceId, v > 0 ? "ON" : "OFF", v);
   };
 
+  /**
+   * ✅ sendCommand (Simplifié)
+   * Enlève toute la logique WebSocket.
+   */
   window.sendCommand = (deviceId, action, value = null) => {
     const val = (value !== null) ? value : (action === "ON" ? 100 : 0);
-    if (appState.websocket && appState.websocket.readyState === WebSocket.OPEN) {
-      const wsPayload = { type: "control", device_id: deviceId, action: action, value: val };
-      appState.websocket.send(JSON.stringify(wsPayload));
-      logActivity(`📤 [Local] ${deviceId} → ${action} (${val}%)`);
-    } else {
-      logActivity(`☁️ [Firebase] ${deviceId} → ${action} (${val}%)`);
-    }
+
+    // Ne garde que la logique Firebase
+    logActivity(`☁️ [Firebase] ${deviceId} → ${action} (${val}%)`);
     writeDeviceStateToBackend(deviceId, action, val);
+    
+    // Mettre à jour l'état local (pour la réactivité)
     appState.deviceStates[deviceId] = { etat: action, luminosite: val };
     renderDevices();
   };
@@ -990,7 +908,7 @@
   const saveDevicesToLocalStorage = () => localStorage.setItem('sh_devices', JSON.stringify(appState.devices));
   const loadDevicesFromLocalStorage = () => { appState.devices = JSON.parse(localStorage.getItem('sh_devices') || '[]'); };
   const savePlansToLocalStorage = () => localStorage.setItem('sh_plans', JSON.stringify(appState.plans));
-  const loadPlansToLocalStorage = () => { appState.plans = JSON.parse(localStorage.getItem('sh_plans') || '[]'); };
+  const loadPlansFromLocalStorage = () => { appState.plans = JSON.parse(localStorage.getItem('sh_plans') || '[]'); };
 
   // ======= Voice Synthesis & Recognition =======
   let preferredVoice = null;
@@ -1036,17 +954,19 @@
     }
   }
 
-  // ======= Moteur Vocal (v2) =======
-            
   /*******************************************************************
-   * ⚠️ CORRECTION 2: NOTE IMPORTANTE SUR LE MICRO (Android/iOS) ⚠️
-   * * L'API 'SpeechRecognition' (webkitSpeechRecognition) que ce code
+   * ⚠️ NOTE IMPORTANTE SUR LE MICRO (Android/iOS) ⚠️
+   *
+   * L'API 'SpeechRecognition' (webkitSpeechRecognition) que ce code
    * utilise est soumise à des règles de sécurité de navigateur strictes.
-   * * Pour que le micro fonctionne sur mobile (en particulier Android),
+   *
+   * Pour que le micro fonctionne sur mobile (en particulier Android),
    * l'application doit OBLIGATOIREMENT être servie via HTTPS.
-   * * Si vous testez via une adresse IP (ex: http://192.168.1.10),
+   *
+   * Si vous testez via une adresse IP (ex: http://192.168.1.10),
    * le navigateur bloquera l'accès au micro.
-   * * Le seul 'http://' qui fonctionne est 'http://localhost'.
+   *
+   * Le seul 'http://' qui fonctionne est 'http://localhost'.
    * Pour les tests mobiles, vous DEVEZ utiliser une connexion sécurisée (HTTPS).
    *******************************************************************/
   const VoiceEngine = {
@@ -1179,42 +1099,32 @@
   
   // ======= Assistant Communication (v8.1) =======
   
-  /**
-   * ✅ CORRECTION 4.2: Ajout du 'chat-loading'
-   */
   async function handleChatSubmit(message, attachments = []) {
     if (appState.chatInProgress) return;
     if (!message && attachments.length === 0) return;
     
     appState.chatInProgress = true;
     el('intelliaStatus').textContent = "Assistant: En cours...";
-    el('chat-loading').style.display = 'block'; // ✅ LIGNE AJOUTÉE
+    el('chat-loading').style.display = 'block';
 
-    // 1. Afficher le message utilisateur
     appendChat('user', message, false, attachments); 
-
-    // 2. Vider les inputs
     el('chatFullInput').value = '';
     appState.attachments = [];
     renderAttachmentPreviews();
     
-    // 3. Envoyer et attendre la réponse
     const reply = await sendToOnline(message, attachments);
     
-    // 4. Afficher et parler la réponse
-    const botMsgElement = appendChat('bot', '', true); // Crée un msg vide
-    await simulateTyping(botMsgElement, reply); // Remplit avec effet
-    speak(reply);
+    const botMsgElement = appendChat('bot', '', true);
+    await simulateTyping(botMsgElement, reply);
     
     appState.chatInProgress = false;
-    el('chat-loading').style.display = 'none'; // ✅ LIGNE AJOUTÉE
+    el('chat-loading').style.display = 'none';
+    
+    speak(reply);
   }
   
-  // Géré par le vocal
   async function handleVoiceSubmit(command) {
     if (!command) return;
-    
-    // N'exécutez pas la soumission vocale si le chat est déjà en cours
     if (appState.chatInProgress) {
       logActivity(`Voix ignorée (chat en cours): "${command}"`);
       return;
@@ -1222,34 +1132,28 @@
     
     appState.chatInProgress = true;
     el('intelliaStatus').textContent = "Assistant: En cours...";
-    el('chat-loading').style.display = 'block'; // ✅ LIGNE AJOUTÉE
-
+    el('chat-loading').style.display = 'block';
+    
     appendChat('user', command);
     logActivity(`Commande vocale: "${command}"`);
     
-    // Envoyer (sans pièces jointes)
     const reply = await sendToOnline(command, []);
     
-    // Afficher et parler
     const botMsgElement = appendChat('bot', '', true);
     await simulateTyping(botMsgElement, reply);
     
     appState.chatInProgress = false;
-    el('chat-loading').style.display = 'none'; // ✅ LIGNE AJOUTÉE
+    el('chat-loading').style.display = 'none';
     
-    speak(reply); // 'speak' gère la reprise de la reconnaissance
+    speak(reply);
   }
 
-  /**
-   * Cœur de la logique - gère le fetch et les commandes
-   */
   async function sendToOnline(message, attachments = []) {
     if (!appState.currentUser) {
         alert("Erreur: Utilisateur non connecté. Veuillez rafraîchir.");
         return "Erreur d'authentification.";
     }
     
-    // Créer un nouvel ID de session si c'est un nouveau chat
     if (!appState.currentSessionId) {
       createNewChatSession();
     }
@@ -1261,7 +1165,7 @@
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           message,
-          attachments: attachments, 
+          attachments: attachments,
           key: AUTH_KEY,
           devices: appState.devices.map(d => ({ id: d.id, name: d.name, type: d.type, room: d.room })),
           deviceStates: appState.deviceStates,
@@ -1277,10 +1181,8 @@
       if (!response.ok) throw new Error(`Server error ${response.status}`);
       const j = await response.json();
       
-      // Sauvegarder dans l'historique Firebase
       await saveMessageToFirebase(message, j.reply, attachments);
       
-      // Gérer les commandes
       if (j.suggestions && j.suggestions.length > 0) displaySuggestions(j.suggestions);
       if (j.planning_commands) handlePlanningCommands(j.planning_commands);
       if (j.execute) handleExecuteCommands(j.execute);
@@ -1290,7 +1192,7 @@
       el('statusOnline').textContent = "Assistant : disponible";
       logActivity(`Assistant a répondu.`);
       
-      return j.reply || "OK"; // Renvoyer le texte pour 'speak()' et 'simulateTyping'
+      return j.reply || "OK";
       
     } catch (e) {
       console.warn("sendToOnline error", e);
@@ -1331,7 +1233,6 @@
     const node = document.createElement('div');
     node.className = 'msg ' + (role === 'user' ? 'user' : 'bot');
 
-    // Gérer le texte
     if (text && text.includes('```')) {
       const parts = text.split('```');
       let html = '';
@@ -1350,29 +1251,26 @@
       node.innerHTML = escapeHtml(text).replace(/\n/g, '<br>');
     }
 
-    // Gérer l'affichage des pièces jointes
     if (attachments && attachments.length > 0) {
       const attachmentsDiv = document.createElement('div');
       attachmentsDiv.style.cssText = 'margin-top: 8px; display: flex; flex-wrap: wrap; gap: 8px;';
       
       attachments.forEach(att => {
-        if (att.type === 'image' && att.data) { // att.data vient de l'upload local
+        if (att.type === 'image' && att.data) {
           const img = document.createElement('img');
           img.src = att.data;
           img.style.cssText = 'max-width: 150px; max-height: 150px; border-radius: 8px; object-fit: cover; cursor: pointer; border: 2px solid rgba(255,255,255,0.2);';
           img.onclick = () => window.open(att.data, '_blank');
           img.title = att.name;
           attachmentsDiv.appendChild(img);
-        } else if (att.type === 'file' || (att.type === 'image' && !att.data)) { // !att.data vient de l'historique Firebase
+        } else if (att.type === 'file' || (att.type === 'image' && !att.data)) {
           const fileDiv = document.createElement('div');
           fileDiv.style.cssText = 'display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: rgba(0,0,0,0.1); border-radius: 6px; font-size: 13px;';
-          
           let iconClass = 'fa-file';
           if (att.name.endsWith('.pdf')) iconClass = 'fa-file-pdf';
           else if (att.name.endsWith('.docx') || att.name.endsWith('.doc')) iconClass = 'fa-file-word';
           else if (att.name.endsWith('.txt')) iconClass = 'fa-file-alt';
           else if (att.type === 'image') iconClass = 'fa-file-image';
-
           fileDiv.innerHTML = `<i class="fas ${iconClass}"></i> <span>${escapeHtml(att.name)}</span>`;
           attachmentsDiv.appendChild(fileDiv);
         }
@@ -1413,7 +1311,7 @@
   function displaySuggestions(suggestions) {
     const container = el('proactive-suggestion');
     if (!container || !suggestions.length > 0) return;
-    container.textContent = suggestions[0].message; // Afficher la première suggestion
+    container.textContent = suggestions[0].message;
   }
 
   el('chatFullSend')?.addEventListener('click', () => {
@@ -1431,7 +1329,6 @@
     return ref(db, path);
   }
 
-  // ✅ CORRECTION 1: Ajout du bouton supprimer
   async function loadChatHistorySidebar() {
     if (!appState.currentUser || !db) return;
     const historyList = el('chat-history-list');
@@ -1443,6 +1340,7 @@
       const sortedSessions = Object.keys(sessions).sort((a, b) => {
         return (sessions[b].lastUpdated || 0) - (sessions[a].lastUpdated || 0);
       });
+      
       sortedSessions.forEach(sessionId => {
         const session = sessions[sessionId];
         const title = session.title || `Chat du ${new Date(session.createdAt || Date.now()).toLocaleDateString()}`;
@@ -1457,15 +1355,11 @@
         titleSpan.onclick = () => loadChatSession(sessionId);
         
         const deleteBtn = document.createElement('button');
-        deleteBtn.innerHTML = '<i class="fas fa-trash-alt" style="color:white;"></i>';
-        deleteBtn.className = 'btn warn'; // Réutilise le style des boutons
-        deleteBtn.style.padding = '4px 8px';
-        deleteBtn.style.fontSize = '12px';
-        deleteBtn.style.marginLeft = '8px';
-        deleteBtn.style.lineHeight = '1';
-        deleteBtn.style.borderRadius = '6px';
+        deleteBtn.innerHTML = '<i class="fas fa-trash-alt"></i>';
+        deleteBtn.className = 'btn warn';
+        deleteBtn.title = "Supprimer la discussion";
         deleteBtn.onclick = (e) => {
-          e.stopPropagation(); // Empêche de charger le chat
+          e.stopPropagation();
           deleteChatSession(sessionId, item);
         };
 
@@ -1490,31 +1384,24 @@
     el('chatFullWindow').innerHTML = '';
     appendChat('bot', 'Bonjour ! Je suis prêt pour notre nouvelle discussion.');
     
-    loadChatHistorySidebar(); // Recharger la sidebar pour afficher le nouveau chat
+    loadChatHistorySidebar();
     
-    // Activer le nouveau chat
     setTimeout(() => {
         document.querySelectorAll('.chat-history-item').forEach(i => i.classList.remove('active'));
         const newItem = document.querySelector(`.chat-history-item[data-session-id="${newSessionId}"]`);
         if(newItem) newItem.classList.add('active');
-    }, 100); // Léger délai pour laisser Firebase se synchroniser
+    }, 100);
   }
   el('new-chat-btn').addEventListener('click', createNewChatSession);
 
-  // ✅ CORRECTION 1: Nouvelle fonction pour supprimer un chat
   async function deleteChatSession(sessionId, itemElement) {
     if (!appState.currentUser || !db) return;
     if (!confirm("Voulez-vous vraiment supprimer cette discussion ? L'action est irréversible.")) return;
 
     try {
-      // Supprimer de Firebase
       const sessionRef = getChatHistoryRef(appState.currentUser.uid, sessionId);
-      await set(sessionRef, null); // set(ref, null) équivaut à une suppression
-
-      // Supprimer de l'UI
+      await set(sessionRef, null);
       itemElement.remove();
-
-      // Si le chat supprimé était le chat actif, démarrer un nouveau chat
       if (appState.currentSessionId === sessionId) {
         createNewChatSession();
       }
@@ -1524,7 +1411,7 @@
       logActivity("Erreur de suppression du chat.");
     }
   }
-
+  
   async function loadChatSession(sessionId) {
     if (!appState.currentUser || !db) return;
     appState.currentSessionId = sessionId;
@@ -1534,7 +1421,7 @@
     const snapshot = await get(messagesRef);
     if (snapshot.exists()) {
       const messages = snapshot.val();
-      Object.values(messages).sort((a, b) => a.timestamp - b.timestamp).forEach(msg => { // Tri par timestamp
+      Object.values(messages).sort((a, b) => a.timestamp - b.timestamp).forEach(msg => {
         const attachmentsMeta = msg.attachments || [];
         appendChat('user', msg.user, false, attachmentsMeta);
         appendChat('bot', msg.bot, false); 
@@ -1565,30 +1452,36 @@
     });
 
     const chatWindow = el('chatFullWindow');
-    const isNewChat = (chatWindow.children.length <= 2); // 1 msg user, 1 msg bot
+    const isNewChat = (chatWindow.children.length <= 2);
 
-    // Mettre à jour le titre uniquement si c'est un nouveau chat
-    if (isNewChat) {
+    if (isNewChat) { 
       let newTitle = userMsg;
       if (!newTitle && attachments.length > 0) {
-        newTitle = `📎 ${attachments[0].name}`; 
+        newTitle = `📎 ${attachments[0].name}`;
       }
-      if (!newTitle) newTitle = "Discussion"; // Fallback
+      if (!newTitle) newTitle = "Nouvelle discussion";
       
       newTitle = newTitle.substring(0, 30) + (newTitle.length > 30 ? '...' : '');
 
       await set(ref(db, `${userChatsRefPath}/${appState.currentUser.uid}/${appState.currentSessionId}/title`), newTitle);
       
-      // Mettre à jour le titre dans la sidebar
-      const item = document.querySelector(`.chat-history-item[data-session-id="${appState.currentSessionId}"] .chat-history-item-title`);
-      if (item) item.textContent = newTitle;
+      const itemTitle = document.querySelector(`.chat-history-item[data-session-id="${appState.currentSessionId}"] .chat-history-item-title`);
+      if (itemTitle) itemTitle.textContent = newTitle;
     }
     
-    // Toujours mettre à jour 'lastUpdated' pour faire remonter le chat
     await set(ref(db, `${userChatsRefPath}/${appState.currentUser.uid}/${appState.currentSessionId}/lastUpdated`), serverTimestamp());
+    
+    if (!isNewChat) {
+        loadChatHistorySidebar();
+        setTimeout(() => {
+            document.querySelectorAll('.chat-history-item').forEach(i => i.classList.remove('active'));
+            const item = document.querySelector(`.chat-history-item[data-session-id="${appState.currentSessionId}"]`);
+            if (item) item.classList.add('active');
+        }, 100);
+    }
   }
   
-  // ======= Gestion des Pièces Jointes (Upload) (v8.0) =======
+  // ======= Gestion des Pièces Jointes (Upload) =======
   
   el('attach-file-btn').addEventListener('click', () => {
     el('file-input').click();
@@ -1605,7 +1498,7 @@
         appState.attachments.push({
           name: file.name,
           type: file.type.startsWith('image/') ? 'image' : 'file',
-          data: dataUrl 
+          data: dataUrl
         });
         renderAttachmentPreviews();
       };
@@ -1686,79 +1579,11 @@
   }
   function handleSignOut() { if (auth) signOut(auth).catch((error) => console.error("Erreur Déco:", error)); }
   
-  // ======= WebSocket (ESP32) Logic (Inchangé) =======
-  const HARDCODED_ESP_IP = "192.168.43.248";
-  function connectWebSocket() {
-    if (appState.websocket && appState.websocket.readyState === WebSocket.OPEN) return;
-    const wsUrl = `ws://${HARDCODED_ESP_IP}/ws`;
-    logActivity(`🔄 Tentative connexion locale à ${HARDCODED_ESP_IP}...`);
-    const statusText = el('ws-status-text');
-    const statusIcon = el('ws-status-icon');
-    statusText.textContent = 'Local: Connexion...';
-    statusIcon.style.color = '#f39c12';
-    el('ws-status').style.backgroundColor = 'rgba(243, 156, 18, 0.1)';
-    try {
-      appState.websocket = new WebSocket(wsUrl);
-      const connectionTimeout = setTimeout(() => {
-        if (appState.websocket && appState.websocket.readyState !== WebSocket.OPEN) appState.websocket.close();
-      }, 3000);
-      appState.websocket.onopen = () => {
-        clearTimeout(connectionTimeout);
-        logActivity("✅ Mode local activé !");
-        statusText.textContent = 'Local: Connecté (ESP32)';
-        statusIcon.style.color = '#2ecc71'; statusIcon.classList.add('active');
-        el('ws-status').style.backgroundColor = 'rgba(46, 204, 113, 0.1)';
-        el('connect-ws').style.display = 'none'; el('disconnect-ws').style.display = 'block';
-        appState.connectionType = 'websocket'; appState.isConnected = true;
-        appState.websocket.send(JSON.stringify({ type: 'hello', client: 'web' }));
-        speak("Mode local activé."); updateConnectionModeIndicator();
-      };
-      appState.websocket.onmessage = (event) => {
-        logActivity(`📥 [Local] ${event.data}`);
-        try {
-          const data = JSON.parse(event.data);
-          if (data.type === 'state_update' && data.device_id && data.state) {
-            writeDeviceStateToBackend(data.device_id, data.state, data.power);
-          }
-          if (data.type === 'ping') appState.websocket.send(JSON.stringify({type: 'pong'}));
-        } catch (e) {}
-      };
-      appState.websocket.onclose = () => {
-        clearTimeout(connectionTimeout);
-        logActivity("🔌 Connexion locale fermée.");
-        statusText.textContent = 'Local: Non activé';
-        statusIcon.style.color = '#94a3b8'; statusIcon.classList.remove('active');
-        el('ws-status').style.backgroundColor = '';
-        el('connect-ws').style.display = 'block'; el('disconnect-ws').style.display = 'none';
-        appState.websocket = null; appState.connectionType = 'none'; appState.isConnected = false;
-        updateConnectionModeIndicator();
-      };
-      appState.websocket.onerror = (error) => {
-        clearTimeout(connectionTimeout);
-        logActivity("ℹ️ Mode local indisponible. Firebase prend le relais.");
-        statusText.textContent = 'Local: Indisponible';
-        statusIcon.style.color = '#94a3b8'; statusIcon.classList.remove('active');
-        el('ws-status').style.backgroundColor = 'rgba(148, 163, 184, 0.1)';
-        if (appState.websocket) appState.websocket.close();
-        appState.websocket = null; updateConnectionModeIndicator();
-      };
-    } catch (e) { console.error("WS Erreur:", e); logActivity("⚠️ Erreur WebSocket."); updateConnectionModeIndicator(); }
-  }
-  function disconnectWebSocket() { if (appState.websocket) appState.websocket.close(); }
-  el('connect-ws')?.addEventListener('click', connectWebSocket);
-  el('disconnect-ws')?.addEventListener('click', disconnectWebSocket);
-  function updateConnectionModeIndicator() {
-    const indicator = el('connection-mode');
-    if (!indicator) return;
-    if (appState.websocket && appState.websocket.readyState === WebSocket.OPEN) {
-      indicator.innerHTML = '<i class="fas fa-wifi"></i> Mode local + distant';
-      indicator.style.background = 'rgba(52, 152, 219, 0.1)'; indicator.style.color = '#3498db';
-    } else {
-      indicator.innerHTML = '<i class="fas fa-cloud"></i> Mode distant';
-      indicator.style.background = 'rgba(46, 204, 113, 0.1)'; indicator.style.color = '#2ecc71';
-    }
-  }
-  
+  // ======= WebSocket (ESP32) Logic (SUPPRIMÉ) =======
+  // ...
+  // ... Toute la logique WebSocket a été enlevée.
+  // ...
+
   // ======= Exécution Automatique des Planifications =======
   setInterval(() => {
     const now = new Date();
@@ -1787,34 +1612,32 @@
       });
       if (!db) { savePlansToLocalStorage(); renderPlanningListUI(appState.plans); }
     }
-  }, 15000); // Vérifie toutes les 15 sec
+  }, 15000); 
 
 
-  // ======= Auth State Change Listener (Le "Gardien") (v8.0) =======
+  // ======= Auth State Change Listener (Le "Gardien") =======
   if (auth) {
     onAuthStateChanged(auth, (user) => {
       if (user) {
         // --- Utilisateur connecté ---
         appState.currentUser = user;
-     document.querySelector('.main-app').style.display = 'block'; // Afficher l'app
-        el('login-overlay').style.display = 'none'; // C'est la ligne 1590
+        document.querySelector('.main-app').style.display = 'block';
+        el('login-overlay').style.display = 'none';
         const userPhoto = el('user-photo');
         userPhoto.src = user.photoURL || defaultAvatar;
         userPhoto.onerror = () => { userPhoto.src = defaultAvatar; }; 
         el('user-name-display').textContent = user.displayName || 'Utilisateur';
         el('user-email-display').textContent = user.email;
         
-        // Charger l'historique et démarrer un nouveau chat
         loadChatHistorySidebar();
         createNewChatSession();
         
-        // Naviguer vers l'accueil
         navigateTo('sec-domotique');
 
       } else {
         // --- Utilisateur déconnecté ---
         appState.currentUser = null;
-      document.querySelector('.main-app').style.display = 'none';
+        document.querySelector('.main-app').style.display = 'none';
         el('login-overlay').style.display = 'flex';
       }
     });
@@ -1861,7 +1684,7 @@
       btn.innerHTML = isHidden ? '➖ Masquer le formulaire' : '➕ Ajouter un appareil';
     });
     
-    navigateTo('sec-domotique'); // Démarrer sur l'onglet domotique
+    navigateTo('sec-domotique');
   }
 
   function requestNotificationPermission() {
@@ -1880,11 +1703,8 @@
     }
   }
 
-  // L'initialisation est maintenant appelée *après* que le DOM soit chargé
-  // en plaçant le script à la fin du <body>.
   initUI(); 
 
-  // For debugging
   window.appState = appState;
   </script>
 </body>
