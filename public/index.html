@@ -265,7 +265,7 @@
       #sidebar-overlay { display: none; }
     }
 
-    /* ==== Écran de connexion ==== */
+    /* ==== Écran de connexion (C'EST LE NOUVEL ÉLÉMENT HTML IMPORTANT) ==== */
     #login-overlay {
       position: fixed; top: 0; left: 0; right: 0; bottom: 0;
       background: linear-gradient(135deg, #f5f7fa, #c3cfe2);
@@ -281,7 +281,12 @@
     .login-box .app-icon { font-size: 48px; color: var(--primary); margin-bottom: 16px; }
     .login-box h2 { margin-bottom: 8px; }
     .login-box p { color: var(--muted); margin-bottom: 24px; }
-    .main-app { display: none; height: 100%; } /* Masqué par défaut */
+    
+    /* ==== Application Principale (Masquée par défaut) ==== */
+    .main-app { 
+      display: none; /* Le script le mettra en 'block' après connexion */
+      height: 100%; 
+    }
     
     #user-profile-card {
       display: flex; align-items: center; gap: 15px;
@@ -1588,7 +1593,7 @@
         // --- Utilisateur connecté ---
         appState.currentUser = user;
         el('main-app').style.display = 'block'; // Afficher l'app
-        el('login-overlay').style.display = 'none';
+        el('login-overlay').style.display = 'none'; // C'est la ligne 1590
         const userPhoto = el('user-photo');
         userPhoto.src = user.photoURL || defaultAvatar;
         userPhoto.onerror = () => { userPhoto.src = defaultAvatar; }; 
@@ -1671,7 +1676,9 @@
     }
   }
 
-  initUI(); // Appel initial
+  // L'initialisation est maintenant appelée *après* que le DOM soit chargé
+  // en plaçant le script à la fin du <body>.
+  initUI(); 
 
   // For debugging
   window.appState = appState;
