@@ -89,9 +89,15 @@
       padding: 10px 12px; border-radius: 8px; cursor: pointer; margin-bottom: 4px;
       font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
       transition: background 0.2s ease;
+      /* ✅ CORRECTION 1: Ajout de flex pour le bouton supprimer */
+      display: flex; align-items: center; justify-content: space-between;
     }
     .chat-history-item:hover { background: #e9ecef; }
     .chat-history-item.active { background: var(--primary); color: white; }
+    /* Style pour le titre du chat dans l'historique */
+    .chat-history-item-title {
+        flex: 1; overflow: hidden; text-overflow: ellipsis;
+    }
     
     #chat-section-container {
       flex: 1; height: 100%;
@@ -224,49 +230,123 @@
       100% { transform: scale(1); opacity: 1; }
     }
     
+    /* ✅ ================================================= */
+    /* ✅ CORRECTION 3: NOUVEAU BLOC CSS MOBILE COMPLET   */
+    /* ✅ ================================================= */
     @media (max-width: 760px) {
       .grid { grid-template-columns: 1fr; }
       .controls { flex-direction: column; }
       .btn { width: 100%; justify-content: center; }
       .flex { flex-direction: column; align-items: stretch; }
       .two-column { grid-template-columns: 1fr; }
+      .container { padding-bottom: 88px; } /* Espace pour le footer */
 
-      /* Responsive Chat UI */
-      #chat-sidebar {
-        position: absolute; left: -280px; top: 0; bottom: 0;
-        z-index: 1100; box-shadow: 0 0 20px rgba(0,0,0,0.2);
+      /* ✅ NOUVEAU : Chat UI responsive */
+      #sec-intelligence {
+        height: 100vh !important; /* Prend toute la hauteur de l'écran */
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        z-index: 999; /* Se place au-dessus de tout */
+        margin-top: 0 !important;
+        padding-top: 0 !important;
       }
-      #chat-sidebar.open { left: 0; }
+      
+      /* Cacher le header et le footer quand on est sur le chat */
+      body:has(#sec-intelligence.active) #main-header {
+        display: none !important;
+      }
+      body:has(#sec-intelligence.active) #main-footer {
+        display: none !important;
+      }
+      
+      /* Sidebar mobile */
+      #chat-sidebar {
+        position: fixed;
+        left: -100%;
+        top: 0; bottom: 0;
+        width: 80%;
+        max-width: 300px;
+        z-index: 10000;
+        transition: left 0.3s ease;
+        box-shadow: 2px 0 10px rgba(0,0,0,0.3);
+      }
+      #chat-sidebar.open {
+        left: 0;
+      }
+      
+      /* Overlay sombre */
+      #sidebar-overlay {
+        display: none;
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0,0,0,0.5);
+        z-index: 9999; /* Juste en dessous de la sidebar */
+      }
+      #sidebar-overlay.open {
+        display: block;
+      }
       
       /* Bouton pour ouvrir la sidebar */
       #sidebar-toggle-btn {
-        display: block; position: absolute; top: 16px; left: 12px;
-        z-index: 960; /* CORRECTION: Doit être > z-index (950) de #sec-intelligence */
-        background: var(--panel); color: white;
-        border: 0; border-radius: 8px; width: 40px; height: 40px;
+        display: flex; /* Remplacer display: block */
+        position: fixed; /* Le bouton est fixe sur l'écran */
+        top: 16px;
+        left: 16px;
+        z-index: 1000; /* Au-dessus de la fenêtre de chat (999) */
+        background: var(--primary);
+        color: white;
+        border: 0;
+        border-radius: 8px;
+        width: 48px;
+        height: 48px;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
       }
-      /* Fond sombre quand sidebar ouverte */
-      #sidebar-overlay {
-        display: none; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
-        background: rgba(0,0,0,0.5); z-index: 1050;
+      
+      /* Agrandir les boutons vocaux */
+      #chat-input-buttons button {
+        min-width: 48px;
+        min-height: 48px;
+        font-size: 18px;
       }
-      #sidebar-overlay.open { display: block; }
-      /* L'onglet chat prend tout l'espace */
-      #sec-intelligence {
-        width: 100%;
-        position: fixed; top: 0; left: 0; right: 0; bottom: 72px; /* 72px = hauteur footer */
-        margin-top: 0; z-index: 950;
+      #chatFullSend {
+        min-width: 56px;
+        min-height: 48px;
       }
-      .container { padding-bottom: 88px; } /* Plus d'espace pour le footer */
+      
+      /* Zone de texte plus grande */
+      #chatFullInput {
+        min-height: 48px;
+        font-size: 16px; /* Évite le zoom automatique sur iOS */
+      }
+      
+      /* Container des messages : prend toute la hauteur disponible */
+      #chat-section-container {
+        height: 100%; /* Prend 100% de #sec-intelligence */
+      }
+      #chatFullWindow {
+        padding: 80px 12px 12px; /* Espace en haut pour le bouton sidebar */
+      }
+      #chat-input-container {
+        padding: 16px 12px;
+      }
+      
+      /* Messages plus lisibles */
+      .msg {
+        max-width: 90%;
+        font-size: 15px;
+      }
     }
     
     @media (min-width: 761px) {
       .two-column { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+      /* ✅ CORRECTION 3: Assurer que ces éléments sont cachés sur Desktop */
       #sidebar-toggle-btn { display: none; }
       #sidebar-overlay { display: none; }
     }
 
-    /* ==== Écran de connexion (C'EST LE NOUVEL ÉLÉMENT HTML IMPORTANT) ==== */
+    /* ==== Écran de connexion ==== */
     #login-overlay {
       position: fixed; top: 0; left: 0; right: 0; bottom: 0;
       background: linear-gradient(135deg, #f5f7fa, #c3cfe2);
@@ -437,6 +517,10 @@
           <div id="chatFullWindow">
             </div>
           <div id="chat-input-container">
+            <div id="chat-loading" style="display:none; padding: 8px; text-align:center; font-style:italic; color:var(--muted); font-size: 14px;">
+              <i class="fas fa-spinner fa-spin"></i> Assistant en train de réfléchir...
+            </div>
+            
             <div id="attachment-preview-container"></div>
             
             <div id="chat-input-flex">
@@ -544,7 +628,9 @@
           </div>
         </div>
       </section>
-    </div> <footer id="main-footer">
+    </div> 
+    
+    <footer id="main-footer">
       <button data-target="sec-domotique" class="btn-nav active"><i class="fas fa-home"></i><span>Accueil</span></button>
       <button data-target="sec-intelligence" class="btn-nav"><i class="fas fa-robot"></i><span>Assistant</span></button>
       <button data-target="sec-planning" class="btn-nav"><i class="fas fa-calendar-alt"></i><span>Planning</span></button>
@@ -553,13 +639,11 @@
       
   </div> <script type="module">
   /*************************************************
-   * SmartHome Intelligence - Version 8.0 (Corrigée)
-   * - UI Onglets (ancienne logique)
-   * - Auth Firebase
-   * - UI Multi-chat (dans onglet Assistant)
-   * - Envoi de fichiers (CORRIGÉ)
-   * - Streaming (Typewriter)
-   * - Logique vocale (Continu + Push-to-Send)
+   * SmartHome Intelligence - Version 8.1 (Corrigée)
+   * - Correction CSS Mobile (Plein écran)
+   * - Suppression de chats
+   * - Indicateur de chargement
+   * - Note sur HTTPS pour le micro
    *************************************************/
 
   // ======= CONFIG =======
@@ -638,7 +722,8 @@
     document.querySelectorAll('.btn-nav').forEach(b => b.classList.remove('active'));
     document.querySelectorAll(`[data-target="${targetSection}"]`).forEach(b => b.classList.add('active'));
     
-    // 4. Gérer l'affichage du header (masqué pour le chat)
+    // 4. Gérer l'affichage du header (masqué pour le chat sur DESKTOP)
+    // Le CSS s'en occupe sur mobile désormais
     const header = el('main-header');
     if (targetSection === 'sec-intelligence') {
         header.style.display = 'none';
@@ -952,6 +1037,18 @@
   }
 
   // ======= Moteur Vocal (v2) =======
+            
+  /*******************************************************************
+   * ⚠️ CORRECTION 2: NOTE IMPORTANTE SUR LE MICRO (Android/iOS) ⚠️
+   * * L'API 'SpeechRecognition' (webkitSpeechRecognition) que ce code
+   * utilise est soumise à des règles de sécurité de navigateur strictes.
+   * * Pour que le micro fonctionne sur mobile (en particulier Android),
+   * l'application doit OBLIGATOIREMENT être servie via HTTPS.
+   * * Si vous testez via une adresse IP (ex: http://192.168.1.10),
+   * le navigateur bloquera l'accès au micro.
+   * * Le seul 'http://' qui fonctionne est 'http://localhost'.
+   * Pour les tests mobiles, vous DEVEZ utiliser une connexion sécurisée (HTTPS).
+   *******************************************************************/
   const VoiceEngine = {
     recognition: null, isPushToTalkRecording: false,
     isContinuousActive: false, isPausedForSpeech: false,
@@ -1080,22 +1177,20 @@
     }
   };
   
-  // ======= Assistant Communication (v8.0) =======
+  // ======= Assistant Communication (v8.1) =======
   
   /**
-   * ✅ NOUVELLE FONCTION PRINCIPALE D'ENVOI
-   * C'est le point d'entrée pour le texte et la voix
+   * ✅ CORRECTION 4.2: Ajout du 'chat-loading'
    */
-  // ✅ 2. REMPLACER CETTE FONCTION
   async function handleChatSubmit(message, attachments = []) {
     if (appState.chatInProgress) return;
     if (!message && attachments.length === 0) return;
     
     appState.chatInProgress = true;
     el('intelliaStatus').textContent = "Assistant: En cours...";
-    
-    // 1. Afficher le message utilisateur (Corrigé)
-    // On passe le texte et les pièces jointes à appendChat
+    el('chat-loading').style.display = 'block'; // ✅ LIGNE AJOUTÉE
+
+    // 1. Afficher le message utilisateur
     appendChat('user', message, false, attachments); 
 
     // 2. Vider les inputs
@@ -1112,11 +1207,23 @@
     speak(reply);
     
     appState.chatInProgress = false;
+    el('chat-loading').style.display = 'none'; // ✅ LIGNE AJOUTÉE
   }
   
   // Géré par le vocal
   async function handleVoiceSubmit(command) {
     if (!command) return;
+    
+    // N'exécutez pas la soumission vocale si le chat est déjà en cours
+    if (appState.chatInProgress) {
+      logActivity(`Voix ignorée (chat en cours): "${command}"`);
+      return;
+    }
+    
+    appState.chatInProgress = true;
+    el('intelliaStatus').textContent = "Assistant: En cours...";
+    el('chat-loading').style.display = 'block'; // ✅ LIGNE AJOUTÉE
+
     appendChat('user', command);
     logActivity(`Commande vocale: "${command}"`);
     
@@ -1126,11 +1233,15 @@
     // Afficher et parler
     const botMsgElement = appendChat('bot', '', true);
     await simulateTyping(botMsgElement, reply);
-    speak(reply);
+    
+    appState.chatInProgress = false;
+    el('chat-loading').style.display = 'none'; // ✅ LIGNE AJOUTÉE
+    
+    speak(reply); // 'speak' gère la reprise de la reconnaissance
   }
 
   /**
-   * ✅ NOUVEAU: Cœur de la logique - gère le fetch et les commandes
+   * Cœur de la logique - gère le fetch et les commandes
    */
   async function sendToOnline(message, attachments = []) {
     if (!appState.currentUser) {
@@ -1150,7 +1261,7 @@
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           message,
-          attachments: attachments, // ✅ CORRIGÉ: Envoi des pièces jointes
+          attachments: attachments, 
           key: AUTH_KEY,
           devices: appState.devices.map(d => ({ id: d.id, name: d.name, type: d.type, room: d.room })),
           deviceStates: appState.deviceStates,
@@ -1191,7 +1302,7 @@
     }
   }
 
-  // ======= Chat Interface & Helpers (v8.0) =======
+  // ======= Chat Interface & Helpers (v8.1) =======
   
   function simulateTyping(element, text) {
     return new Promise(resolve => {
@@ -1214,7 +1325,6 @@
     });
   }
   
-  // ✅ 1. REMPLACER CETTE FONCTION
   function appendChat(role, text, returnElement = false, attachments = []) {
     const target = el('chatFullWindow');
     if (!target) return;
@@ -1240,7 +1350,7 @@
       node.innerHTML = escapeHtml(text).replace(/\n/g, '<br>');
     }
 
-    // ✅ NOUVEAU : Gérer l'affichage des pièces jointes
+    // Gérer l'affichage des pièces jointes
     if (attachments && attachments.length > 0) {
       const attachmentsDiv = document.createElement('div');
       attachmentsDiv.style.cssText = 'margin-top: 8px; display: flex; flex-wrap: wrap; gap: 8px;';
@@ -1306,7 +1416,6 @@
     container.textContent = suggestions[0].message; // Afficher la première suggestion
   }
 
-  // ✅ CORRIGÉ: Listeners pour le chat
   el('chatFullSend')?.addEventListener('click', () => {
     handleChatSubmit(el('chatFullInput').value, appState.attachments);
   });
@@ -1314,7 +1423,7 @@
     if (e.key === 'Enter') handleChatSubmit(el('chatFullInput').value, appState.attachments);
   });
 
-  // ======= Multi-Session & Historique Firebase (v8.0) =======
+  // ======= Multi-Session & Historique Firebase (v8.1) =======
   
   function getChatHistoryRef(userId, sessionId = null) {
     let path = `${userChatsRefPath}/${userId}`;
@@ -1322,6 +1431,7 @@
     return ref(db, path);
   }
 
+  // ✅ CORRECTION 1: Ajout du bouton supprimer
   async function loadChatHistorySidebar() {
     if (!appState.currentUser || !db) return;
     const historyList = el('chat-history-list');
@@ -1336,11 +1446,31 @@
       sortedSessions.forEach(sessionId => {
         const session = sessions[sessionId];
         const title = session.title || `Chat du ${new Date(session.createdAt || Date.now()).toLocaleDateString()}`;
+        
         const item = document.createElement('div');
         item.className = 'chat-history-item';
-        item.textContent = title;
         item.dataset.sessionId = sessionId;
-        item.onclick = () => loadChatSession(sessionId);
+
+        const titleSpan = document.createElement('span');
+        titleSpan.textContent = title;
+        titleSpan.className = 'chat-history-item-title';
+        titleSpan.onclick = () => loadChatSession(sessionId);
+        
+        const deleteBtn = document.createElement('button');
+        deleteBtn.innerHTML = '<i class="fas fa-trash-alt" style="color:white;"></i>';
+        deleteBtn.className = 'btn warn'; // Réutilise le style des boutons
+        deleteBtn.style.padding = '4px 8px';
+        deleteBtn.style.fontSize = '12px';
+        deleteBtn.style.marginLeft = '8px';
+        deleteBtn.style.lineHeight = '1';
+        deleteBtn.style.borderRadius = '6px';
+        deleteBtn.onclick = (e) => {
+          e.stopPropagation(); // Empêche de charger le chat
+          deleteChatSession(sessionId, item);
+        };
+
+        item.appendChild(titleSpan);
+        item.appendChild(deleteBtn);
         historyList.appendChild(item);
       });
     }
@@ -1359,19 +1489,42 @@
     }
     el('chatFullWindow').innerHTML = '';
     appendChat('bot', 'Bonjour ! Je suis prêt pour notre nouvelle discussion.');
-    const historyList = el('chat-history-list');
-    const item = document.createElement('div');
-    item.className = 'chat-history-item active';
-    item.textContent = 'Nouvelle discussion...';
-    item.dataset.sessionId = newSessionId;
-    item.onclick = () => loadChatSession(newSessionId);
-    historyList.prepend(item);
-    document.querySelectorAll('.chat-history-item').forEach(i => i.classList.remove('active'));
-    item.classList.add('active');
+    
+    loadChatHistorySidebar(); // Recharger la sidebar pour afficher le nouveau chat
+    
+    // Activer le nouveau chat
+    setTimeout(() => {
+        document.querySelectorAll('.chat-history-item').forEach(i => i.classList.remove('active'));
+        const newItem = document.querySelector(`.chat-history-item[data-session-id="${newSessionId}"]`);
+        if(newItem) newItem.classList.add('active');
+    }, 100); // Léger délai pour laisser Firebase se synchroniser
   }
   el('new-chat-btn').addEventListener('click', createNewChatSession);
 
-  // ✅ 3. REMPLACER CETTE FONCTION
+  // ✅ CORRECTION 1: Nouvelle fonction pour supprimer un chat
+  async function deleteChatSession(sessionId, itemElement) {
+    if (!appState.currentUser || !db) return;
+    if (!confirm("Voulez-vous vraiment supprimer cette discussion ? L'action est irréversible.")) return;
+
+    try {
+      // Supprimer de Firebase
+      const sessionRef = getChatHistoryRef(appState.currentUser.uid, sessionId);
+      await set(sessionRef, null); // set(ref, null) équivaut à une suppression
+
+      // Supprimer de l'UI
+      itemElement.remove();
+
+      // Si le chat supprimé était le chat actif, démarrer un nouveau chat
+      if (appState.currentSessionId === sessionId) {
+        createNewChatSession();
+      }
+      logActivity(`Discussion ${sessionId} supprimée.`);
+    } catch (error) {
+      console.error("Erreur lors de la suppression du chat:", error);
+      logActivity("Erreur de suppression du chat.");
+    }
+  }
+
   async function loadChatSession(sessionId) {
     if (!appState.currentUser || !db) return;
     appState.currentSessionId = sessionId;
@@ -1382,10 +1535,9 @@
     if (snapshot.exists()) {
       const messages = snapshot.val();
       Object.values(messages).sort((a, b) => a.timestamp - b.timestamp).forEach(msg => { // Tri par timestamp
-        // CORRIGÉ : On passe les métadonnées des fichiers à appendChat
         const attachmentsMeta = msg.attachments || [];
         appendChat('user', msg.user, false, attachmentsMeta);
-        appendChat('bot', msg.bot, false); // Ne pas retourner l'élément
+        appendChat('bot', msg.bot, false); 
       });
     } else {
       appendChat('bot', 'C\'est le début de notre conversation.');
@@ -1396,41 +1548,43 @@
     el('sidebar-overlay').classList.remove('open');
   }
   
-  // ✅ 4. REMPLACER CETTE FONCTION
   async function saveMessageToFirebase(userMsg, botMsg, attachments) {
     if (!appState.currentUser || !db || !appState.currentSessionId) return;
 
     const messagesRef = ref(db, `${userChatsRefPath}/${appState.currentUser.uid}/${appState.currentSessionId}/messages`);
 
-    // CORRIGÉ : Sauvegarder uniquement les métadonnées (nom, type)
     const attachmentsMeta = attachments.map(att => ({
       name: att.name,
       type: att.type
-      // On ne sauvegarde PAS att.data
     }));
 
     push(messagesRef, {
-      user: userMsg, // Sauvegarder le message textuel
-      bot: botMsg, 
-      attachments: attachmentsMeta, // Sauvegarder les métadonnées
+      user: userMsg, bot: botMsg, 
+      attachments: attachmentsMeta, 
       timestamp: serverTimestamp()
     });
 
     const chatWindow = el('chatFullWindow');
-    if (chatWindow.children.length <= 2) { // 1er échange (user + bot)
-      // Créer un titre
+    const isNewChat = (chatWindow.children.length <= 2); // 1 msg user, 1 msg bot
+
+    // Mettre à jour le titre uniquement si c'est un nouveau chat
+    if (isNewChat) {
       let newTitle = userMsg;
       if (!newTitle && attachments.length > 0) {
-        newTitle = `📎 ${attachments[0].name}`; // Titre basé sur le fichier
+        newTitle = `📎 ${attachments[0].name}`; 
       }
-      if (!newTitle) newTitle = "Nouvelle discussion"; // Fallback
+      if (!newTitle) newTitle = "Discussion"; // Fallback
       
       newTitle = newTitle.substring(0, 30) + (newTitle.length > 30 ? '...' : '');
 
       await set(ref(db, `${userChatsRefPath}/${appState.currentUser.uid}/${appState.currentSessionId}/title`), newTitle);
-      const item = document.querySelector(`.chat-history-item[data-session-id="${appState.currentSessionId}"]`);
+      
+      // Mettre à jour le titre dans la sidebar
+      const item = document.querySelector(`.chat-history-item[data-session-id="${appState.currentSessionId}"] .chat-history-item-title`);
       if (item) item.textContent = newTitle;
     }
+    
+    // Toujours mettre à jour 'lastUpdated' pour faire remonter le chat
     await set(ref(db, `${userChatsRefPath}/${appState.currentUser.uid}/${appState.currentSessionId}/lastUpdated`), serverTimestamp());
   }
   
@@ -1451,7 +1605,7 @@
         appState.attachments.push({
           name: file.name,
           type: file.type.startsWith('image/') ? 'image' : 'file',
-          data: dataUrl // data:mime/type;base64,DATA...
+          data: dataUrl 
         });
         renderAttachmentPreviews();
       };
