@@ -1,13 +1,9 @@
 // ========================================
-// INTELLIA v5.0 - ASSISTANT UNIVERSEL ULTRA-INTELLIGENT
-// ✅ Conscience de l'état des appareils
-// ✅ Suggestions proactives contextuelles
-// ✅ Assistant universel (code, recherche, domotique)
-// ✅ CORRIGÉ : Gestion de la planification des tâches
+// INTELLIA v7.0 - ASSISTANT MULTIMODAL (FINAL)
 //
-// 🚀 VERSION FINALE (CORRECTION FIREBASE)
-// ✅ Le serveur demande l'état réel à Firebase avant de contacter Gemini
-// ✅ Correction des encodages (é, ✅, 💬)
+// ✅ Lit les PDF, DOCX, TXT, et Images
+// ✅ Prêt pour les sessions multiples (Multi-chat)
+// ✅ Inclut TOUTES les corrections (Analyse, Firebase, Bugs)
 // ========================================
 const express = require('express');
 const cors = require('cors');
@@ -16,16 +12,19 @@ const axios = require('axios');
 const cheerio = require('cheerio');
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 
-// ✅ AJOUT FIREBASE (Basé sur index.html)
-// Assurez-vous d'avoir fait : npm install firebase
+// ✅ AJOUT FIREBASE
 const { initializeApp } = require("firebase/app");
 const { getDatabase, ref, get } = require("firebase/database");
+
+// ✅ AJOUT DES PARSERS DE FICHIERS
+const pdf = require('pdf-parse');
+const mammoth = require('mammoth');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '50mb' })); // Augmenter la limite pour les fichiers
 app.use(express.static('public'));
 
 app.get('/', (req, res) => {
@@ -57,9 +56,7 @@ try {
     console.error("❌ ERREUR CRITIQUE: Impossible d'initialiser Firebase. L'IA n'aura pas l'état réel.", e);
 }
 
-// Noms des "dossiers" (Ref) dans Firebase (tiré de index.html)
-const DEVICES_STATES_REF = "devices"; // Ligne 638 de index.html
-
+const DEVICES_STATES_REF = "devices";
 
 const API_KEYS = [];
 let currentKeyIndex = 0;
@@ -83,7 +80,7 @@ if (API_KEYS.length === 0) {
 console.log(`🔑 ${API_KEYS.length} clé(s) Gemini chargée(s)`);
 
 // ========================================
-// CONTEXTE DE CONVERSATION ENRICHI (✅ AMÉLIORÉ - Analyse Point 2)
+// CONTEXTE DE CONVERSATION ENRICHI
 // ========================================
 const conversationContexts = new Map();
 
@@ -97,25 +94,25 @@ function getOrCreateContext(sessionId = 'default') {
         lastLocation: null,
         lastTopic: null
       },
-      // ❌ 'userBehavior' supprimé car non utilisé (Analyse Point 2.A)
-      deviceStates: {}, // Stockage de l'état des appareils
+      deviceStates: {},
       createdAt: Date.now(),
-      lastAccessed: Date.now() // Pour futures optimisations
+      lastAccessed: Date.now()
     });
   }
   return conversationContexts.get(sessionId);
 }
 
-function addToContext(sessionId, userMsg, aiResponse, webResults = null) {
+function addToContext(sessionId, userMsg, aiResponse, webResults = null, attachments = []) {
   const context = getOrCreateContext(sessionId);
   
   context.history.push({
     user: userMsg,
     assistant: aiResponse,
-    timestamp: Date.now()
+    timestamp: Date.now(),
+    attachments: attachments // ✅ Stocke les pièces jointes
   });
   
-  context.lastAccessed = Date.now(); // Mettre à jour l'accès
+  context.lastAccessed = Date.now();
   
   if (webResults && webResults.length > 0) {
     const searchKey = userMsg.toLowerCase().trim();
@@ -125,12 +122,10 @@ function addToContext(sessionId, userMsg, aiResponse, webResults = null) {
     });
   }
   
-  // ✅ Garder 50 derniers messages (Analyse Point 2.C)
-  if (context.history.length > 50) {
+  // ✅ Augmentation de la limite (Point 2.C)
+  if (context.history.length > 100) {
     context.history.shift();
   }
-  
-  // ❌ Nettoyage 'lastSearches' déplacé en tâche de fond (Analyse Point 2.B)
 }
 
 function updateUserPreferences(sessionId, message) {
@@ -146,8 +141,6 @@ function updateUserPreferences(sessionId, message) {
   }
 }
 
-// NOUVEAU : Mise à jour de l'état des appareils (✅ AMÉLIORÉ - Analyse Point 3)
-// Note: Ceci initialise la *structure* du contexte. La *mise à jour* se fait avec Firebase.
 function updateDeviceStates(sessionId, devices) {
   const context = getOrCreateContext(sessionId);
   
@@ -161,7 +154,7 @@ function updateDeviceStates(sessionId, devices) {
         state: 'OFF',
         power: 0,
         lastChanged: null,
-        history: [] // ✅ NOUVEAU: Historique des états (Analyse Point 3)
+        history: [] 
       };
     }
   });
@@ -200,36 +193,53 @@ function markKeyAsFailed(keyObj, isQuotaError = false) {
 }
 
 // ========================================
-// HEURE PRÉCISE DU BÉNIN
+// HEURE PRÉCISE DU BÉNIN (✅ CORRIGÉE)
 // ========================================
 function getBeninTime() {
+  const timeZone = 'Africa/Porto-Novo';
   const now = new Date();
-  const utcHours = now.getUTCHours();
-  const utcMinutes = now.getUTCMinutes();
-  
-  let beninHours = utcHours + 1;
-  let beninMinutes = utcMinutes;
-  
-  if (beninHours >= 24) {
-    beninHours -= 24;
-  }
-  
-  const formatted = new Date(now);
-  formatted.setUTCHours(beninHours);
-  formatted.setUTCMinutes(beninMinutes);
-  
-  const timeString = formatted.toLocaleString('fr-FR', {
-    timeZone: 'Africa/Porto-Novo',
+
+  const optionsDate = {
+    timeZone,
     weekday: 'long',
     year: 'numeric',
     month: 'long',
     day: 'numeric',
+  };
+  
+  const optionsTime = {
+    timeZone,
     hour: '2-digit',
     minute: '2-digit',
     second: '2-digit',
-    hour12: false
+    hour12: false,
+  };
+
+  const dateFormatter = new Intl.DateTimeFormat('fr-FR', optionsDate);
+  const timeFormatter = new Intl.DateTimeFormat('fr-FR', optionsTime);
+
+  const partsFormatter = new Intl.DateTimeFormat('en-US', {
+    timeZone,
+    hour: 'numeric',
+    minute: 'numeric',
+    hour12: false,
   });
+
+  const parts = partsFormatter.formatToParts(now);
+  let hoursPart = parts.find(p => p.type === 'hour')?.value;
+  let minutesPart = parts.find(p => p.type === 'minute')?.value;
+
+  if (hoursPart === '24') {
+      hoursPart = '00';
+  }
   
+  const beninHours = parseInt(hoursPart, 10);
+  const beninMinutes = parseInt(minutesPart, 10);
+  
+  const formattedDate = dateFormatter.format(now);
+  const formattedTime = timeFormatter.format(now);
+  const timeString = `${formattedDate} ${formattedTime}`;
+
   return {
     formatted: timeString,
     hours: beninHours,
@@ -239,37 +249,118 @@ function getBeninTime() {
   };
 }
 
-// ✅ NOUVEAU: Formatage avancé des réponses AI (demande utilisateur)
+// ========================================
+// HELPERS POUR LE MULTIMODAL (Fichiers/Images)
+// ========================================
+
 /**
-* Formate correctement les réponses AI avec retours à la ligne
-*/
+ * Parse un Data URI (ex: data:image/jpeg;base64,...)
+ */
+function parseDataUri(dataUri) {
+  try {
+    const regex = /^data:(.+);base64,(.*)$/;
+    const match = dataUri.match(regex);
+    if (!match) return null;
+    
+    return {
+      mimeType: match[1],
+      data: match[2]
+    };
+  } catch (e) {
+    console.error("Erreur parsing Data URI:", e.message);
+    return null;
+  }
+}
+
+/**
+ * ✅ NOUVEAU: Parse le contenu des fichiers (TXT, PDF, DOCX)
+ */
+async function parseFileAttachment(attachment) {
+  try {
+    const parsedData = parseDataUri(attachment.data);
+    if (!parsedData) throw new Error("Invalid Data URI");
+
+    const buffer = Buffer.from(parsedData.data, 'base64');
+    let text = "";
+    const MAX_CHARS = 8000; // Limiter la taille du contenu
+
+    console.log(`Parsing file: ${attachment.name}, MIME: ${parsedData.mimeType}`);
+
+    switch (parsedData.mimeType) {
+      case 'text/plain':
+        text = buffer.toString('utf-8');
+        break;
+      
+      case 'application/pdf':
+        const data = await pdf(buffer);
+        text = data.text;
+        break;
+      
+      case 'application/vnd.openxmlformats-officedocument.wordprocessingml.document': // DOCX
+        const result = await mammoth.extractRawText({ buffer });
+        text = result.value;
+        break;
+
+      default:
+        console.warn(`Type de fichier non supporté pour le parsing: ${parsedData.mimeType}`);
+        return `[Contenu du fichier '${attachment.name}' non supporté (${parsedData.mimeType})]`;
+    }
+    
+    // Tronquer le texte pour éviter de surcharger le prompt
+    return text.substring(0, MAX_CHARS) + (text.length > MAX_CHARS ? "... [Contenu tronqué]" : "");
+
+  } catch (error) {
+    console.error(`Erreur parsing ${attachment.name}:`, error.message);
+    return `[Erreur lors de la lecture du fichier '${attachment.name}']`;
+  }
+}
+
+
+/**
+ * Construit l'objet 'parts' pour l'historique de Gemini
+ */
+async function createHistoryEntry(role, text, attachments = []) {
+  const parts = [{ text: text || '' }];
+  
+  for (const att of attachments) {
+    if (att.type === 'image') {
+      const parsed = parseDataUri(att.data);
+      if (parsed) {
+        parts.push({ inlineData: { mimeType: parsed.mimeType, data: parsed.data } });
+      }
+    } 
+    // ✅ ACTIVÉ: Gérer les fichiers (TXT, PDF, DOCX)
+    else if (att.type === 'file') {
+      const fileContent = await parseFileAttachment(att);
+      parts.push({ text: `\n[DEBUT CONTENU FICHIER: ${att.name}]\n${fileContent}\n[FIN CONTENU FICHIER]\n` });
+    }
+  }
+  
+  return { role, parts };
+}
+
+
+// ========================================
+// FORMATAGE DE LA RÉPONSE (Demande utilisateur)
+// ========================================
 function formatAIResponse(text) {
-  if (typeof text !== 'string') return text; // Garde-fou
+  if (typeof text !== 'string') return text;
   return text
-    // Convertir balises HTML en retours à la ligne
     .replace(/<br\s*\/?>/gi, '\n')
     .replace(/<\/p>/gi, '\n\n')
     .replace(/<\/div>/gi, '\n')
     .replace(/<\/li>/gi, '\n')
-    
-    // Supprimer toutes les balises HTML restantes
     .replace(/<[^>]*>/g, '')
-    
-    // Nettoyer les espaces
     .replace(/&nbsp;/g, ' ')
     .replace(/&amp;/g, '&')
     .replace(/&lt;/g, '<')
     .replace(/&gt;/g, '>')
     .replace(/&quot;/g, '"')
-    
-    // Normaliser les retours à la ligne
-    .replace(/\r\n/g, '\n')       // Windows → Unix
-    .replace(/\r/g, '\n')         // Mac → Unix
-    .replace(/\n{3,}/g, '\n\n')   // Max 2 retours consécutifs
-    .replace(/[ \t]+\n/g, '\n')   // Supprimer espaces avant retours
-    .replace(/\n[ \t]+/g, '\n')   // Supprimer espaces après retours
-    
-    // Nettoyer début et fin
+    .replace(/\r\n/g, '\n')
+    .replace(/\r/g, '\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .replace(/[ \t]+\n/g, '\n')
+    .replace(/\n[ \t]+/g, '\n')
     .trim();
 }
 
@@ -279,7 +370,6 @@ function formatAIResponse(text) {
 async function performWebSearch(query, context) {
   const searchKey = query.toLowerCase().trim();
   
-  // Cache 10 minutes
   if (context.lastSearches.has(searchKey)) {
     const cached = context.lastSearches.get(searchKey);
     if (Date.now() - cached.timestamp < 600000) {
@@ -327,7 +417,6 @@ async function performWebSearch(query, context) {
 function needsWebSearch(message, context) {
   const lowerMsg = message.toLowerCase().trim();
   
-  // ❌ JAMAIS rechercher pour :
   const noSearchPatterns = [
     /^(c'est quoi|quel est) (ton|votre|le) nom/i,
     /^qui es-tu/i,
@@ -337,14 +426,14 @@ function needsWebSearch(message, context) {
     /^ok$/i,
     /^d'accord$/i,
     /^allume/i,
-    /^éteins/i, // Correction encodage
-    /^règle/i, // Correction encodage
+    /^éteins/i,
+    /^règle/i,
     /^je (sort|sors|pars)/i,
     /^je (suis|reviens|rentre)/i,
     /^il fait (nuit|jour|sombre|chaud)/i,
     /appareil.*état/i,
     /état.*appareil/i,
-    /code (arduino|python|javascript)/i, // Code = pas de recherche
+    /code (arduino|python|javascript)/i,
     /génère.*code/i,
     /écris.*code/i
   ];
@@ -353,7 +442,6 @@ function needsWebSearch(message, context) {
     return false;
   }
   
-  // ✅ Rechercher pour :
   const webKeywords = [
     'météo', 'temps qu\'il fait', 'température', 'pluie', 'soleil',
     'actualité', 'news', 'nouvelles',
@@ -363,7 +451,6 @@ function needsWebSearch(message, context) {
     'qui est', 'c\'est qui'
   ];
   
-  // "qui est" uniquement pour personnalités publiques
   if (lowerMsg.includes('qui est')) {
     const words = message.split(' ');
     const hasProperNoun = words.some(w => w.length > 2 && w[0] === w[0].toUpperCase());
@@ -374,7 +461,7 @@ function needsWebSearch(message, context) {
 }
 
 // ========================================
-// ANALYSE CONTEXTUELLE INTELLIGENTE (✅ AMÉLIORÉE - Analyse Point 4 & 5)
+// ANALYSE CONTEXTUELLE INTELLIGENTE (✅ Analyse Point 4 & 5)
 // ========================================
 function analyzeContext(message, context, devices, beninTime) {
   const analysis = {
@@ -387,7 +474,6 @@ function analyzeContext(message, context, devices, beninTime) {
   
   const lowerMsg = message.toLowerCase();
 
-  // --- Logique existante ---
   if (/allume|éteins|règle|luminosité|appareil/i.test(lowerMsg)) {
     analysis.isDomoticCommand = true;
   }
@@ -401,7 +487,7 @@ function analyzeContext(message, context, devices, beninTime) {
     analysis.isGeneralQuestion = true;
   }
 
-  // --- Suggestions existantes ---
+  // --- Suggestions ---
   if (lowerMsg.includes('je sors') || lowerMsg.includes('je pars')) {
     const onDevices = Object.values(context.deviceStates).filter(d => d.state === 'ON');
     if (onDevices.length > 0) {
@@ -426,8 +512,8 @@ function analyzeContext(message, context, devices, beninTime) {
     }
   }
 
-  // --- ✅ NOUVEAU : Détection patterns temporels (Analyse Point 4.A) ---
-  if (/comme (hier|ce matin|la dernière fois|avant)/.test(lowerMsg)) {
+  // --- ✅ Détection patterns temporels (Analyse Point 4.A) ---
+  if (/(comme (hier|ce matin|la dernière fois|avant|d'habitude|d'hab))/i.test(lowerMsg)) {
     analysis.needsHistoricalData = true;
     const match = lowerMsg.match(/comme ([^,\.]+)/);
     if (match) {
@@ -435,14 +521,14 @@ function analyzeContext(message, context, devices, beninTime) {
     }
   }
   
-  // --- ✅ NOUVEAU : Détection intentions multiples (Analyse Point 4.B) ---
+  // --- ✅ Détection intentions multiples (Analyse Point 4.B) ---
   const actions = lowerMsg.match(/allume|éteins|règle|ouvre|ferme/g);
   if (actions && actions.length > 1) {
     analysis.multipleActions = true;
     analysis.actionCount = actions.length;
   }
   
-  // --- ✅ NOUVEAU : Détection contradictions récentes (Analyse Point 4.C) ---
+  // --- ✅ Détection contradictions récentes (Analyse Point 4.C) ---
   const recentMessages = context.history.slice(-3);
   if (recentMessages.some(h => 
     h.user.includes('éteins') && lowerMsg.includes('noir'))) {
@@ -450,8 +536,7 @@ function analyzeContext(message, context, devices, beninTime) {
     analysis.contradictionHint = "Vous venez d'éteindre les lumières";
   }
 
-  // --- ✅ NOUVEAU : Suggestions basées sur l'heure (Analyse Point 5.A) ---
-  // beninTime est requis ici
+  // --- ✅ Suggestions basées sur l'heure (Analyse Point 5.A) ---
   if (beninTime && (beninTime.hours >= 22 || beninTime.hours < 6)) {
     const brightDevices = Object.values(context.deviceStates)
       .filter(d => d.type === 'lamp' && d.state === 'ON' && d.power > 50);
@@ -465,7 +550,7 @@ function analyzeContext(message, context, devices, beninTime) {
     }
   }
 
-  // --- ✅ NOUVEAU : Suggestions basées sur la durée d'allumage (Analyse Point 5.B) ---
+  // --- ✅ Suggestions basées sur la durée d'allumage (Analyse Point 5.B) ---
   const now = Date.now();
   const longRunningDevices = Object.values(context.deviceStates)
     .filter(d => d.state === 'ON' && 
@@ -479,19 +564,17 @@ function analyzeContext(message, context, devices, beninTime) {
     });
   }
   
-  // Note: Point 5.C (Patterns d'utilisation) n'est pas implémenté car `detectRoutineDevices` n'est pas défini.
-  
   return analysis;
 }
 
 // ========================================
-// PROMPT SYSTÈME v5.0 (✅ OPTIMISÉ - Analyse Point 7)
+// PROMPT SYSTÈME v7.0 (✅ CORRIGÉ - Contexte + Heure)
 // ========================================
 const systemPrompt = `
 Tu es Intellia v5.0, assistant universel ultra-intelligent.
 
 ## CAPACITÉS
-Domotique, Code (Arduino/Python/JS), Recherche web, Conversation naturelle
+Domotique, Code (Arduino/Python/JS), Recherche web, Conversation naturelle, Analyse de Fichiers (PDF, TXT, DOCX) et Images.
 
 ## FORMAT JSON
 {
@@ -502,17 +585,41 @@ Domotique, Code (Arduino/Python/JS), Recherche web, Conversation naturelle
   "source": "cloud|web|knowledge"
 }
 
-## RÈGLES CRITIQUES
-1. Vérifie deviceStates AVANT toute action
-2. Ne recherche PAS pour code/domotique
-3. Suggestions basées sur CONTEXTE RÉEL
-4. Si showTime=false, NE JAMAIS mentionner l'heure
-5. Réponses NATURELLES et CONVERSATIONNELLES
+## 📌 RÈGLES CRITIQUES (TRÈS IMPORTANT)
 
-## EXEMPLES (seulement 2)
-[Exemple 1: Appareil déjà allumé]
+1. **Vérification:** Vérifie [États] (deviceStates) AVANT toute action. Si un appareil est déjà dans l'état demandé, informe l'utilisateur au lieu de l'exécuter.
+
+2. **Recherche:** Ne recherche PAS pour code/domotique.
+
+3. **Suggestions:** Base tes suggestions sur le CONTEXTE RÉEL ([États], [Heure]).
+
+4. **Gestion de l'heure (✅ NOUVELLE RÈGLE):** Mentionne l'heure SEULEMENT si l'utilisateur la demande (ex: "quelle heure est-il ?") ou si c'est pertinent (ex: une planification, ou un "Bonjour" le matin). ÉVITE de répéter l'heure à chaque message.
+
+5. **Naturalité:** Réponses NATURELLES et CONVERSATIONNELLES.
+
+6. **CONTEXTE CONVERSATIONNEL (✅ NOUVELLE RÈGLE):** Si le message de l'utilisateur est court (ex: "les", "oui", "non", "tout les appareils", "ceux du salon"), il répond TRÈS PROBABLEMENT à ta question précédente. Analyse l'historique récent (fourni dans 'history') pour comprendre l'intention complète.
+   - EXEMPLE: (User: "Allume les") -> (AI: "Lesquels?") -> (User: "ceux du salon") => Intention = "Allumer ceux du salon".
+
+7. **Fichiers & Images:** Si l'utilisateur envoie un fichier (PDF, TXT, DOCX) ou une image, le contenu sera fourni dans le prompt. Base ta réponse sur ce contenu.
+
+## EXEMPLES
+
+[Exemple 1: Contexte conversationnel (Nouvel exemple)]
+USER: "Allume les"
+AI: {"reply": "Quels appareils souhaitez-vous allumer ?"}
+USER: "tout les appareils"
+CONTEXTE: [États: {"salon_lampe":{"state":"OFF"}, "chambre_prise":{"state":"OFF"}}]
+{
+  "reply": "Entendu, j'allume tous les appareils.",
+  "execute": ["salon_lampe|ON|100", "chambre_prise|ON|100"],
+  "planning_commands": [],
+  "suggestions": [],
+  "source": "cloud"
+}
+
+[Exemple 2: Appareil déjà allumé]
 USER: "Allume la lampe du salon"
-CONTEXTE: [États: {"salon_lamp":{"state":"ON","power":80}}]
+CONTEXTE: [États: {"salon_lampe":{"state":"ON","power":80}}]
 {
   "reply": "La lampe du salon est déjà allumée à 80%. Voulez-vous que je change la luminosité ?",
   "execute": [],
@@ -521,29 +628,17 @@ CONTEXTE: [États: {"salon_lamp":{"state":"ON","power":80}}]
   "source": "cloud"
 }
 
-[Exemple 2: Suggestion proactive]
-USER: "Je sors"
-CONTEXTE: [États: {"salon_lamp":{"state":"ON"},"chambre_lamp":{"state":"ON"}}]
-{
-  "reply": "D'accord. Vous avez 2 lampes allumées. Voulez-vous que je les éteigne ?",
-  "execute": [],
-  "planning_commands": [],
-  "suggestions": [{"type":"action", "message":"Éteindre salon_lamp et chambre_lamp", "context":"Sécurité"}],
-  "source": "cloud"
-}
-
 RÉPONDS EN JSON VALIDE.
 `;
 
 
 // ========================================
-// FONCTION CHAT AVEC GEMINI (✅ CORRECTION FINALE - Lecture Firebase)
+// FONCTION CHAT AVEC GEMINI (✅ Prêt pour Multimodal/Firebase)
 // ========================================
-async function chatWithGemini(userMessage, devices, deviceStates, sessionId, maxRetries = API_KEYS.length) {
+async function chatWithGemini(userMessage, devices, deviceStates, sessionId, attachments = [], maxRetries = API_KEYS.length) {
     // -----------------------------------------------------------------
     // ✅ CORRECTION (DEMANDE UTILISATEUR)
-    // Au lieu de faire confiance à 'deviceStates' (venant du client),
-    // nous demandons l'état réel à Firebase avant de parler à l'IA.
+    // Lecture de l'état réel depuis Firebase
     // -----------------------------------------------------------------
     let realDeviceStates = {};
     try {
@@ -553,7 +648,6 @@ async function chatWithGemini(userMessage, devices, deviceStates, sessionId, max
         console.log(`🔥 États réels récupérés de Firebase pour ${Object.keys(realDeviceStates).length} appareils.`);
     } catch (e) {
         console.error("❌ ERREUR FIREBASE: Impossible de lire les états. Utilisation des états (potentiellement obsolètes) du client.", e.message);
-        // En cas d'échec, on se rabat sur les états envoyés par le client
         realDeviceStates = deviceStates; 
     }
     // -----------------------------------------------------------------
@@ -566,29 +660,21 @@ async function chatWithGemini(userMessage, devices, deviceStates, sessionId, max
   }
 
   const context = getOrCreateContext(sessionId);
-  
-  // ✅ Heure calculée d'abord (pour Analyse Point 5)
   const beninTime = getBeninTime();
   
   updateUserPreferences(sessionId, userMessage);
-  updateDeviceStates(sessionId, devices); // Initialise les nouveaux appareils
+  updateDeviceStates(sessionId, devices);
   
   // ✅ Fusion des états avec historique (Analyse Point 3)
-  // -----------------------------------------------------------------
-  // ✅ MODIFIÉ: On n'utilise plus 'deviceStates' (du client) mais 'realDeviceStates' (de Firebase)
-  // -----------------------------------------------------------------
   Object.keys(realDeviceStates).forEach(deviceId => {
-    // On vérifie que l'appareil est connu (métadonnées)
     if (context.deviceStates[deviceId]) {
       const currentState = context.deviceStates[deviceId];
-      const firebaseState = realDeviceStates[deviceId]; // Ex: { etat: "ON", luminosite: 80 }
+      const firebaseState = realDeviceStates[deviceId];
       
       const newState = firebaseState.etat || 'OFF';
       const newPower = firebaseState.luminosite || firebaseState.vitesse || 0;
       
-      // Si changement détecté
       if (currentState.state !== newState || currentState.power !== newPower) {
-        // Sauvegarder dans l'historique
         if (!currentState.history) currentState.history = [];
         currentState.history.push({
           state: currentState.state,
@@ -596,20 +682,17 @@ async function chatWithGemini(userMessage, devices, deviceStates, sessionId, max
           timestamp: currentState.lastChanged || Date.now()
         });
         
-        // Garder seulement les 50 derniers changements
         if (currentState.history.length > 50) {
           currentState.history.shift();
         }
       }
       
-      // Mettre à jour l'état actuel dans le contexte du serveur
       currentState.state = newState;
       currentState.power = newPower;
-      currentState.lastChanged = Date.now(); // Date de *notre* vérification
+      currentState.lastChanged = Date.now();
     }
   });
   
-  // ✅ Analyse contextuelle améliorée (Analyse Point 4)
   const contextAnalysis = analyzeContext(userMessage, context, devices, beninTime);
   
   let webResults = [];
@@ -623,9 +706,16 @@ async function chatWithGemini(userMessage, devices, deviceStates, sessionId, max
     try {
       const keyObj = getNextApiKey();
       const genAI = new GoogleGenerativeAI(keyObj.key);
-      const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" }); // Modèle NON MODIFIÉ (par demande)
+      const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
-      // ✅ NOUVEAU: Historique conversationnel structuré (Analyse Point 1)
+      // ✅ Construction de l'historique multimodal (Analyse Point 1 + Futur)
+      const historyParts = await Promise.all(
+        context.history.slice(-10).flatMap(async (h) => [
+          await createHistoryEntry("user", h.user, h.attachments),
+          await createHistoryEntry("model", h.assistant)
+        ])
+      );
+
       const chat = model.startChat({
         history: [
           { 
@@ -644,12 +734,7 @@ async function chatWithGemini(userMessage, devices, deviceStates, sessionId, max
               })
             }] 
           },
-          
-          // ✅ AJOUT : Historique réel comme messages structurés
-          ...context.history.slice(-10).flatMap(h => [
-            { role: "user", parts: [{ text: h.user }] },
-            { role: "model", parts: [{ text: h.assistant }] }
-          ])
+          ...historyParts.flat()
         ],
         generationConfig: {
           responseMimeType: "application/json",
@@ -658,8 +743,8 @@ async function chatWithGemini(userMessage, devices, deviceStates, sessionId, max
         },
       });
 
-      // ✅ NOUVEAU: Prompt simplifié (juste les métadonnées) (Analyse Point 1)
-      const fullPrompt = `
+      // ✅ Prompt simplifié (Analyse Point 1)
+      const metadataPrompt = `
 [Heure: ${beninTime.formatted}]
 [Préfs: ${JSON.stringify(context.userPreferences)}]
 [États: ${JSON.stringify(context.deviceStates)}]
@@ -670,10 +755,29 @@ ${webResults.length > 0 ? `[Web: ${JSON.stringify(webResults.slice(0, 3))}]` : '
 MESSAGE: "${userMessage}"
 `;
 
+      // ✅ Construction du message multimodal (Texte + Fichiers)
+      const promptParts = [
+        { text: metadataPrompt }
+      ];
+
+      for (const att of attachments) {
+        if (att.type === 'image') {
+          const parsed = parseDataUri(att.data);
+          if (parsed) {
+            promptParts.push({ inlineData: { mimeType: parsed.mimeType, data: parsed.data } });
+          }
+        } 
+        // ✅ ACTIVÉ: Gérer les fichiers (TXT, PDF, DOCX)
+        else if (att.type === 'file') {
+          const fileContent = await parseFileAttachment(att);
+          promptParts.push({ text: `\n[DEBUT CONTENU FICHIER: ${att.name}]\n${fileContent}\n[FIN CONTENU FICHIER]\n` });
+        }
+      }
+
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 20000);
 
-      const result = await chat.sendMessage(fullPrompt, { signal: controller.signal });
+      const result = await chat.sendMessage(promptParts, { signal: controller.signal });
       clearTimeout(timeout);
 
       return { 
@@ -702,15 +806,13 @@ MESSAGE: "${userMessage}"
 }
 
 // ========================================
-// ROUTE PRINCIPALE /api/chat
+// ROUTE PRINCIPALE /api/chat (✅ Prêt pour Multimodal)
 // ========================================
 app.post('/api/chat', async (req, res) => {
   try {
-    // ✅ 'let' au lieu de 'const' pour sessionId (Analyse Point 6)
-    // 'deviceStates' est reçu mais NE SERA PAS UTILISÉ pour la logique (voir chatWithGemini)
-    let { message, key, devices = [], deviceStates = {}, sessionId = 'default' } = req.body;
+    // ✅ Accepte 'attachments' et 'sessionId'
+    let { message, key, devices = [], deviceStates = {}, sessionId = 'default', attachments = [] } = req.body;
 
-    // ✅ NOUVEAU: Générer sessionId côté serveur si absent (Analyse Point 6)
     if (!sessionId || sessionId === 'default') {
       sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       console.log(`📝 Nouvelle session créée: ${sessionId}`);
@@ -726,9 +828,9 @@ app.post('/api/chat', async (req, res) => {
       });
     }
 
-    if (!message) {
+    if (!message && attachments.length === 0) {
       return res.status(400).json({ 
-        reply: "Message requis", 
+        reply: "Message ou pièce jointe requis", 
         execute: [], 
         planning_commands: [],
         suggestions: [],
@@ -737,13 +839,14 @@ app.post('/api/chat', async (req, res) => {
     }
 
     console.log('┌────────────────────────────────────────┐');
-    console.log(`💬 MESSAGE: ${message}`); // Correction encodage
+    console.log(`💬 MESSAGE: ${message || '(Pas de texte)'}`);
+    console.log(`🖼️ ATTACHMENTS: ${attachments.length}`);
     console.log(`📊 APPAREILS: ${devices.length}`);
     console.log(`🔌 ÉTATS (Client): ${Object.keys(deviceStates).length} (Note: L'IA lira l'état de Firebase)`);
+    console.log(`🏷️ SESSION: ${sessionId}`);
 
     const startTime = Date.now();
-    // 'deviceStates' (du client) est passé, mais sera ignoré par la nouvelle logique au profit de Firebase
-    const result = await chatWithGemini(message, devices, deviceStates, sessionId);
+    const result = await chatWithGemini(message, devices, deviceStates, sessionId, attachments);
 
     if (!result.success) {
       console.log('⚠️ Gemini indisponible');
@@ -783,37 +886,29 @@ app.post('/api/chat', async (req, res) => {
     if (!Array.isArray(aiJson.planning_commands)) aiJson.planning_commands = [];
     if (!Array.isArray(aiJson.suggestions)) aiJson.suggestions = [];
     
-    // === 🔴 CORRECTION DU BUG DE DÉDUPLICATION (✅ AMÉLIORÉE - Analyse Point 8) 🔴 ===
+    // === ✅ Déduplication Robuste (Analyse Point 8) ===
     const uniquePlannings = [];
     const seen = new Set();
     
     for (const plan of aiJson.planning_commands) {
-      // Validation de base
       if (!plan.action) continue;
-      
       let key;
-      
       switch(plan.action) {
         case 'add':
           if (!plan.device || !plan.time) continue;
-          // Utiliser 100 comme valeur par défaut si power n'est pas fourni
           key = `add_${plan.device}_${plan.time}_${plan.power || 100}`;
           break;
-          
         case 'delete_all':
           key = 'delete_all';
           break;
-          
-        case 'delete': // ✅ NOUVEAU : Support suppression unitaire
+        case 'delete':
           if (!plan.device) continue;
           key = `delete_${plan.device}`;
           break;
-          
         default:
           console.warn(`⚠️ Action inconnue: ${plan.action}`);
           continue;
       }
-      
       if (!seen.has(key)) {
         seen.add(key);
         uniquePlannings.push(plan);
@@ -829,10 +924,10 @@ app.post('/api/chat', async (req, res) => {
       aiJson.source = result.hadWebResults ? "web" : "cloud";
     }
 
-    // Sauvegarder contexte
-    addToContext(sessionId, message, aiJson.reply, result.webResults);
+    // ✅ Sauvegarde du contexte (avec attachments)
+    addToContext(sessionId, message, aiJson.reply, result.webResults, attachments);
 
-    console.log('✅ RÉPONSE GÉNÉRÉE'); // Correction encodage
+    console.log('✅ RÉPONSE GÉNÉRÉE');
     console.log(`📤 Execute: ${aiJson.execute.length}`);
     console.log(`📅 Planning: ${aiJson.planning_commands.length}`);
     console.log(`💡 Suggestions: ${aiJson.suggestions.length}`);
@@ -861,7 +956,7 @@ app.get('/api/health', (req, res) => {
   
   res.json({ 
     status: 'ok', 
-    version: '5.0-ultra-firebase-v2', // Version mise à jour
+    version: '7.0-multimodal-complete', // Version mise à jour
     features: {
       gemini: API_KEYS.length > 0,
       webSearch: true,
@@ -871,9 +966,11 @@ app.get('/api/health', (req, res) => {
       proactiveSuggestions: true,
       universalAssistant: true,
       codeGeneration: true,
-      deviceStateHistory: true, // ✅ Ajout
-      contextualAnalysisV2: true, // ✅ Ajout
-      firebaseStateSync: true // ✅ Ajout
+      deviceStateHistory: true,
+      contextualAnalysisV2: true,
+      firebaseStateSync: true,
+      multimodal_Image: true,
+      multimodal_Files: true // ✅ Activé !
     },
     keys: { 
       total: API_KEYS.length, 
@@ -887,46 +984,42 @@ app.get('/api/health', (req, res) => {
 });
 
 // ========================================
-// NETTOYAGE CONTEXTES (✅ AMÉLIORÉ - Analyse Point 2.B)
+// NETTOYAGE CONTEXTES (✅ Analyse Point 2.B)
 // ========================================
 setInterval(() => {
   const now = Date.now();
-  const maxSessionAge = 7200000; // 2 heures (existant)
-  const maxSearchAge = 600000; // 10 minutes (Analyse Point 2.B)
+  const maxSessionAge = 7200000; // 2 heures
+  const maxSearchAge = 600000; // 10 minutes
   
   for (const [sessionId, context] of conversationContexts.entries()) {
-    // Nettoyage session (existant)
-    if (now - context.createdAt > maxSessionAge) {
+    if (now - context.lastAccessed > maxSessionAge) {
       conversationContexts.delete(sessionId);
       console.log(`🧹 Contexte ${sessionId} nettoyé (session expirée)`);
-      continue; // Session supprimée, pas besoin de nettoyer le cache
+      continue;
     }
 
-    // ✅ NOUVEAU: Nettoyage cache 'lastSearches' en tâche de fond (Analyse Point 2.B)
     for (const [key, data] of context.lastSearches.entries()) {
       if (now - data.timestamp > maxSearchAge) {
         context.lastSearches.delete(key);
       }
     }
   }
-}, 120000); // Toutes les 2 minutes (Analyse Point 2.B)
+}, 120000); // Toutes les 2 minutes
 
 // ========================================
 // DÉMARRAGE
 // ========================================
 app.listen(PORT, () => {
   console.log('\n🏠 ╔═══════════════════════════════════════╗');
-  console.log('   ║  INTELLIA v5.0 - ULTRA-INTELLIGENT   ║');
-  console.log('   ║      (Version FIREBASE Sync)         ║');
+  console.log('   ║  INTELLIA v7.0 - MULTIMODAL COMPLET  ║');
   console.log('   ╚═══════════════════════════════════════╝');
   console.log(`\n   🚀 Serveur: http://localhost:${PORT}`);
   console.log(`   🔑 Clés Gemini: ${API_KEYS.length}`);
-  console.log(`   🔍 Recherche web: Optimisée`);
-  console.log(`   💾 Mémoire contextuelle: Avancée (50 messages)`);
-  console.log(`   ⚙️ Préférences utilisateur: Activées`);
+  console.log(`   🔥 Synchro Firebase: Activée`);
+  console.log(`   💾 Mémoire contextuelle: Avancée (100 messages)`);
   console.log(`   🧠 Conscience état appareils: Activée (via Firebase)`);
-  console.log(`   💡 Suggestions proactives: Avancées (temps, durée)`);
-  console.log(`   🌐 Assistant universel: Activé`);
-  console.log(`   💻 Génération code: Activée`);
+  console.log(`   💡 Suggestions proactives: Avancées`);
+  console.log(`   🖼️ Multimodal (Images): Prêt`);
+  console.log(`   📁 Multimodal (PDF, DOCX, TXT): Prêt`);
   console.log(`   🔐 Sessions: Sécurisées (ID unique serveur)\n`);
 });
