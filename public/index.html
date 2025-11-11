@@ -1592,7 +1592,7 @@
       if (user) {
         // --- Utilisateur connecté ---
         appState.currentUser = user;
-        el('main-app').style.display = 'block'; // Afficher l'app
+     document.querySelector('.main-app').style.display = 'block'; // Afficher l'app
         el('login-overlay').style.display = 'none'; // C'est la ligne 1590
         const userPhoto = el('user-photo');
         userPhoto.src = user.photoURL || defaultAvatar;
@@ -1610,7 +1610,7 @@
       } else {
         // --- Utilisateur déconnecté ---
         appState.currentUser = null;
-        el('main-app').style.display = 'none';
+      document.querySelector('.main-app').style.display = 'none';
         el('login-overlay').style.display = 'flex';
       }
     });
