@@ -1731,14 +1731,15 @@
    * - Correction de l'erreur d'importation (liens markdown)
    *************************************************/
 
-  // ======= CONFIG =======
+// ======= CONFIG =======
   let RENDER_API;
 
   if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
     RENDER_API = 'http://localhost:3000';
     console.log('Environnement local détecté. API ->', RENDER_API);
   } else {
-    RENDER_API = '[https://intellia-smarthome.onrender.com](https://intellia-smarthome.onrender.com)';
+    // ✅ CORRIGÉ
+    RENDER_API = 'https://intellia-smarthome.onrender.com';
     console.log('Environnement de production détecté. API ->', RENDER_API);
   }
   const AUTH_KEY = "cle-secrete-intellia";
@@ -1746,20 +1747,19 @@
   const firebaseConfig = {
     apiKey: "AIzaSyA5oYEu4-nOUtjOe2JJ4C9VwNniNSBdjqI",
     authDomain: "mamaisonintelligente-14485.firebaseapp.com",
-    databaseURL: "[https://mamaisonintelligente-14485-default-rtdb.firebaseio.com](https://mamaisonintelligente-14485-default-rtdb.firebaseio.com)",
+    // ✅ CORRIGÉ
+    databaseURL: "https://mamaisonintelligente-14485-default-rtdb.firebaseio.com",
     projectId: "mamaisonintelligente-14485",
     storageBucket: "mamaisonintelligente-14485.firebasestorage.app",
     messagingSenderId: "197281963087",
     appId: "1:197281963087:web:da680779479391d91f1e3a"
   };
 
-  // ======= ✅✅✅ CORRECTION ✅✅✅  =======
-  // Voici les imports corrigés, sans le formatage Markdown.
-  // C'est ce qui causait l'erreur et bloquait le login.
-  import { initializeApp } from "[https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js](https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js)";
-  import { getDatabase, ref, set, push, onValue, remove, get, serverTimestamp } from "[https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js](https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js)";
-  import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "[https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js](https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js)";
-
+  // ======= ✅✅✅ CORRECTION ✅✅✅ =======
+  // ✅ CORRIGÉ : Imports Firebase (liens Markdown supprimés)
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getDatabase, ref, set, push, onValue, remove, get, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+  import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
   const el = id => document.getElementById(id);
 
   // ======= APP STATE (Global, pour la domotique et React) =======
@@ -2553,7 +2553,7 @@
     }
   }
   
-  // ✅ CORRECTION: Appeler initUI() immédiatement à la fin
+  // ✅ Appel de initUI() pour attacher tous les listeners
   initUI();
   
 
