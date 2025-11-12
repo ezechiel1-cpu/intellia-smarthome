@@ -3,20 +3,27 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>SmartHome Intelligence - Mon Assistant Hybride Autonome</title>
+  <title>SmartHome Intelligence - Mon Assistant Autonome</title>
   <meta name="theme-color" content="#06b6d4" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
-  
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-  
   <style>
     :root {
       --primary:#4361ee; --accent-cyan:#06b6d4; --panel:#14151a; 
       --card-bg:rgba(255,255,255,0.95); --muted:#9aa3b2; --dark:#212529; 
       --light:#f8f9fa; --shadow:0 10px 20px rgba(0,0,0,0.08);
       --danger: #e74c3c; --success: #2ecc71; --warning: #f39c12;
+      
+      /* Variables pour la nouvelle UI React (pour correspondre) */
+      --bg-primary: #f5f7fa;
+      --bg-secondary: #FFFFFF;
+      --bg-tertiary: #E5E5E5;
+      --bg-hover: #E0E0E0;
+      --text-primary: #1A1A1A;
+      --text-secondary: #52525B;
+      --text-muted: #A1A1AA;
+      --border: rgba(0, 0, 0, 0.1);
+      --glass-bg: rgba(247, 247, 247, 0.8);
+      --glass-border: rgba(0, 0, 0, 0.05);
     }
     
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -32,6 +39,18 @@
     
     body.night-mode {
       background: linear-gradient(135deg, #0e0f13, #0f1724); color: #e2e8f0;
+      
+      /* Variables React pour le mode nuit */
+      --bg-primary: #0A0A0A;
+      --bg-secondary: #1A1A1A;
+      --bg-tertiary: #2A2A2A;
+      --bg-hover: #2F2F2F;
+      --text-primary: #FFFFFF;
+      --text-secondary: #A1A1AA;
+      --text-muted: #71717A;
+      --border: rgba(255, 255, 255, 0.1);
+      --glass-bg: rgba(26, 26, 26, 0.8);
+      --glass-border: rgba(255, 255, 255, 0.05);
     }
     body.night-mode .card, body.night-mode .device-card,
     body.night-mode #login-overlay .login-box {
@@ -48,20 +67,19 @@
     body.night-mode .btn.warn { background: var(--danger); color: white; }
     body.night-mode .btn.success { background: var(--success); color: white; }
     body.night-mode .btn.warning { background: var(--warning); color: white; }
-    body.night-mode .chat-window { background: rgba(15, 23, 42, 0.6); }
-    body.night-mode .msg.bot { background: rgba(30, 41, 59, 0.9); color: #e2e8f0; border: 1px solid rgba(255, 255, 255, 0.1); }
     body.night-mode table th, body.night-mode table td { border-bottom: 1px solid rgba(255, 255, 255, 0.1); color: #e2e8f0; }
     body.night-mode .chip { background: rgba(51, 65, 85, 0.6); color: #e2e8f0; }
     body.night-mode .settings-group { border-bottom: 1px solid rgba(255, 255, 255, 0.1); }
     body.night-mode .device-status { color: #cbd5e1; }
-    body.night-mode #chat-sidebar { background: #0f1724; border-right: 1px solid rgba(255, 255, 255, 0.1); }
-    body.night-mode .chat-history-item:hover { background: rgba(30, 41, 59, 0.9); }
-    body.night-mode #chat-sidebar-header { border-bottom: 1px solid rgba(255, 255, 255, 0.1); }
-    body.night-mode #chat-input-container { background: rgba(30, 41, 59, 0.95); border-top: 1px solid rgba(255, 255, 255, 0.1); }
-    body.night-mode #chatFullInput { background: rgba(15, 23, 42, 0.8); }
-    body.night-mode .attachment-preview { background: rgba(51, 65, 85, 0.8); border: 1px solid rgba(255, 255, 255, 0.1); }
 
-    .container { max-width: 1200px; margin: 0 auto; padding: 16px 12px 100px; height: 100%; overflow-y: auto; }
+    /* Container principal qui gère le défilement */
+    .container { 
+      max-width: 1200px; margin: 0 auto; 
+      padding: 16px 12px 100px; /* Padding bas pour le footer */
+      height: 100%; 
+      overflow-y: auto; /* C'est ce container qui scrolle */
+      -webkit-overflow-scrolling: touch;
+    }
     
     header {
       background: linear-gradient(90deg, #4b6cb7, #1f3b8a);
@@ -73,71 +91,16 @@
     .section { display: none; }
     .section.active { display: block; }
     
+    /* ===== SECTION CHAT (React) ===== */
     #sec-intelligence {
-      height: calc(100vh - 88px); 
-      padding-top: 0; margin-top: -16px; 
-      display: none; flex-direction: row;
+      height: 100%; 
+      padding-top: 0; 
+      margin: -16px -12px 0;
     }
-    #sec-intelligence.active { display: flex; } 
-    
-    #chat-sidebar {
-      width: 260px; height: 100%; background: #f8f9fa;
-      border-right: 1px solid rgba(0,0,0,0.1); display: flex;
-      flex-direction: column; flex-shrink: 0;
-      transition: all 0.3s ease;
+    #react-ia-root {
+      height: 100%;
     }
-    #chat-sidebar-header { padding: 12px; border-bottom: 1px solid rgba(0,0,0,0.1); }
-    #new-chat-btn { width: 100%; justify-content: center; }
-    #chat-history-list { flex: 1; overflow-y: auto; padding: 8px; }
-    .chat-history-item {
-      padding: 10px 12px; border-radius: 8px; cursor: pointer; margin-bottom: 4px;
-      font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-      transition: background 0.2s ease;
-      display: flex; align-items: center; justify-content: space-between;
-    }
-    .chat-history-item:hover { background: #e9ecef; }
-    .chat-history-item.active { background: var(--primary); color: white; }
-    .chat-history-item-title {
-        flex: 1; overflow: hidden; text-overflow: ellipsis;
-    }
-    
-    #chat-section-container {
-      flex: 1; height: 100%;
-      display: flex; flex-direction: column;
-      background: linear-gradient(135deg, #f5f7fa, #c3cfe2);
-      position: relative;
-    }
-    body.night-mode #chat-section-container {
-      background: linear-gradient(135deg, #0e0f13, #0f1724);
-    }
-    
-    #chatFullWindow {
-      flex: 1; overflow-y: auto; padding: 16px;
-      display: flex; flex-direction: column;
-    }
-    #chat-input-container {
-      padding: 12px; border-top: 1px solid rgba(0,0,0,0.1);
-      background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(10px);
-    }
-    #chat-loading { display:none; padding: 8px; text-align:center; font-style:italic; color:var(--muted); font-size: 14px; }
-    #chat-input-flex { display: flex; gap: 8px; }
-    #chatFullInput {
-      flex: 1; padding: 12px; border-radius: 8px;
-      border: 1px solid #ddd; font-size: 15px;
-    }
-    #chat-input-buttons { display: flex; gap: 8px; }
-    #chatFullSend { padding: 0 16px; }
-    
-    #attachment-preview-container {
-      display: flex; gap: 8px; margin-bottom: 8px; flex-wrap: wrap;
-    }
-    .attachment-preview {
-      display: flex; align-items: center; gap: 8px;
-      background: #e9ecef; padding: 6px 10px; border-radius: 6px; font-size: 13px;
-    }
-    .attachment-preview img { width: 32px; height: 32px; object-fit: cover; border-radius: 4px; }
-    .remove-attachment { cursor: pointer; font-size: 14px; color: var(--danger); }
-    #file-input { display: none; }
+    /* FIN SECTION CHAT */
 
     .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
     .card { background: var(--card-bg); border-radius: 12px; padding: 14px; box-shadow: var(--shadow); }
@@ -170,14 +133,6 @@
     .btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
     
     input[type=range] { width: 100%; }
-    
-    .msg { padding: 10px 14px; border-radius: 12px; max-width: 85%; margin-bottom: 10px; word-wrap: break-word; line-height: 1.4; }
-    .msg.user { align-self: flex-end; background: linear-gradient(135deg, #4895ef, #4361ee); color: white; }
-    .msg.bot { align-self: flex-start; background: var(--card-bg); border: 1px solid rgba(0,0,0,0.06); }
-    .msg.bot.typing::after {
-      content: '▋'; animation: blink 1s step-end infinite; color: var(--primary);
-    }
-    @keyframes blink { 50% { opacity: 0; } }
     
     .flex { display: flex; gap: 10px; align-items: center; }
     label { display: block; margin: 6px 0; font-size: 13px; }
@@ -237,103 +192,18 @@
       .btn { width: 100%; justify-content: center; }
       .flex { flex-direction: column; align-items: stretch; }
       .two-column { grid-template-columns: 1fr; }
-      .container { padding-bottom: 88px; } 
-
+      .container { padding-bottom: 88px; }
+      
       #sec-intelligence {
-        height: 100vh !important; 
-        position: fixed;
-        top: 0; left: 0; right: 0; bottom: 0;
-        z-index: 999; 
-        margin-top: 0 !important;
-        padding-top: 0 !important;
-      }
-      
-      body:has(#sec-intelligence.active) #main-header {
-        display: none !important;
-      }
-      body:has(#sec-intelligence.active) #main-footer {
-        display: none !important;
-      }
-      
-      #chat-sidebar {
-        position: fixed;
-        left: -100%;
-        top: 0; bottom: 0;
-        width: 80%;
-        max-width: 300px;
-        z-index: 10000;
-        transition: left 0.3s ease;
-        box-shadow: 2px 0 10px rgba(0,0,0,0.3);
-      }
-      #chat-sidebar.open {
-        left: 0;
-      }
-      
-      #sidebar-overlay {
-        display: none;
-        position: fixed;
-        top: 0; left: 0; right: 0; bottom: 0;
-        background: rgba(0,0,0,0.5);
-        z-index: 9999; 
-      }
-      #sidebar-overlay.open {
-        display: block;
-      }
-      
-      #sidebar-toggle-btn {
-        display: flex; 
-        position: fixed; 
-        top: 16px;
-        left: 16px;
-        z-index: 1000; 
-        background: var(--primary);
-        color: white;
-        border: 0;
-        border-radius: 8px;
-        width: 48px;
-        height: 48px;
-        align-items: center;
-        justify-content: center;
-        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-      }
-      
-      #chat-input-buttons button {
-        min-width: 48px;
-        min-height: 48px;
-        font-size: 18px;
-      }
-      #chatFullSend {
-        min-width: 56px;
-        min-height: 48px;
-      }
-      
-      #chatFullInput {
-        min-height: 48px;
-        font-size: 16px; 
-      }
-      
-      #chat-section-container {
-        height: 100%; 
-      }
-      #chatFullWindow {
-        padding: 80px 12px 12px; 
-      }
-      #chat-input-container {
-        padding: 16px 12px;
-      }
-      
-      .msg {
-        max-width: 90%;
-        font-size: 15px;
+        margin: -16px -8px 0;
       }
     }
     
     @media (min-width: 761px) {
       .two-column { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-      #sidebar-toggle-btn { display: none; }
-      #sidebar-overlay { display: none; }
     }
 
+    /* ==== Écran de connexion ==== */
     #login-overlay {
       position: fixed; top: 0; left: 0; right: 0; bottom: 0;
       background: linear-gradient(135deg, #f5f7fa, #c3cfe2);
@@ -350,10 +220,7 @@
     .login-box h2 { margin-bottom: 8px; }
     .login-box p { color: var(--muted); margin-bottom: 24px; }
     
-    .main-app { 
-      display: none; 
-      height: 100%; 
-    }
+    .main-app { display: none; height: 100%; }
     
     #user-profile-card {
       display: flex; align-items: center; gap: 15px;
@@ -370,9 +237,6 @@
     
     #proactive-suggestion { transition: opacity 0.5s ease-in-out; }
     #proactive-suggestion.fade-out { opacity: 0; }
-
-    @keyframes connection-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
-    #ws-status-icon.active { animation: connection-pulse 2s infinite; }
   </style>
 </head>
 <body>
@@ -395,13 +259,10 @@
       <header id="main-header">
         <h1 id="section-header-title">Domotique</h1>
         <div style="margin-top:8px; display:flex; flex-wrap: wrap; justify-content: center; gap: 8px;">
-          <span id="statusLocal" class="chip">Local : -</span>
+          <span id="statusFirebase" class="chip">Firebase : -</span> 
           <span id="statusOnline" class="chip">Assistant : -</span>
           <span id="intelliaLatency" class="chip">latence: -</span>
           <span id="db-count" class="chip">on: 0</span>
-          <span id="connection-mode" class="chip" style="background: rgba(46, 204, 113, 0.1); color: #2ecc71;">
-            <i class="fas fa-cloud"></i> Mode distant
-          </span>
         </div>
       </header>
 
@@ -421,35 +282,12 @@
               
               <div style="margin-top:12px; border-top: 1px solid rgba(0,0,0,0.1); padding-top:12px;">
                 <strong><i class="fas fa-robot"></i> Assistant Vocal (Raccourci)</strong>
+                <p style="font-size:13px; color:var(--muted)">Utilisez le mode continu pour une conversation fluide (disponible aussi dans l'onglet Assistant).</p>
                 <button class="btn primary" id="quickVoiceToggleBtn" style="width:100%; justify-content:center; margin-top:8px; font-size: 15px;">
                   <i class="fas fa-waveform"></i> Lancer la conversation
                 </button>
               </div>
-
-              <div style="margin-top:12px; border-top: 1px solid rgba(0,0,0,0.1); padding-top:12px;">
-                <strong>📡 Mode de Connexion</strong>
-                <p style="font-size:12px; color:var(--muted); margin:8px 0;">
-                  <i class="fas fa-info-circle"></i> L'application fonctionne en mode <strong>hybride</strong> :
-                  <br>• <strong>À distance</strong> : Via Firebase (toujours disponible)
-                  <br>• <strong>Local</strong> : Via ESP32 (uniquement sur le même réseau Wi-Fi)
-                </p>
-                <div class="flex" style="flex-wrap:wrap; justify-content: center;">
-                  <button class="btn primary" id="connect-ws" title="Active le contrôle direct de l'ESP32...">
-                    <i class="fas fa-wifi"></i> Activer connexion locale
-                  </button>
-                  <button class="btn warn" id="disconnect-ws" style="display:none;">
-                    <i class="fas fa-times-circle"></i> Désactiver local
-                  </button>
-                </div>
-                <div id="ws-status" class="chip" style="margin-top:8px; display:flex; align-items:center; gap:8px;">
-                  <i class="fas fa-circle" id="ws-status-icon" style="font-size:10px; color:#94a3b8;"></i>
-                  <span id="ws-status-text">Local: Non activé</span>
-                </div>
-                <div id="firebase-status" class="chip" style="margin-top:4px; display:flex; align-items:center; gap:8px;">
-                  <i class="fas fa-circle" style="font-size:10px; color:#2ecc71;"></i>
-                  <span>À distance: Actif (Firebase)</span>
-                </div>
-              </div>
+              
             </div>
             
             <div class="card" style="margin-top:12px">
@@ -486,56 +324,7 @@
       </section>
 
       <section id="sec-intelligence" class="section">
-        <button id="sidebar-toggle-btn"><i class="fas fa-bars"></i></button>
-        <div id="sidebar-overlay"></div>
-        
-        <div id="chat-sidebar">
-          <div id="chat-sidebar-header">
-            <button class="btn primary" id="new-chat-btn">
-              <i class="fas fa-plus"></i> Nouvelle Discussion
-            </button>
-          </div>
-          <div id="chat-history-list">
-            </div>
-        </div>
-        
-        <div id="chat-section-container">
-          <div id="chatFullWindow">
-            </div>
-          <div id="chat-input-container">
-            <div id="chat-loading" style="display:none; padding: 8px; text-align:center; font-style:italic; color:var(--muted); font-size: 14px;">
-              <i class="fas fa-spinner fa-spin"></i> Assistant en train de réfléchir...
-            </div>
-            
-            <div id="attachment-preview-container"></div>
-            
-            <div id="chat-input-flex">
-              <input type="file" id="file-input" accept="image/*,application/pdf,.txt,.docx" multiple>
-              <button class="btn" id="attach-file-btn" title="Joindre un fichier">
-                <i class="fas fa-paperclip"></i>
-              </button>
-              
-              <input id="chatFullInput" placeholder="Posez une question à l'Assistant..." />
-              
-              <div id="chat-input-buttons">
-                <button class="btn" id="voicePushToTalk" title="Appuyer pour enregistrer, réappuyer pour envoyer">
-                  <i class="fas fa-microphone-alt"></i>
-                </button>
-                <button class="btn" id="voiceContinuous" title="Mode conversation continue">
-                  <i class="fa-solid fa-waveform"></i>
-                </button>
-                <button class="btn primary" id="chatFullSend">
-                  <i class="fas fa-paper-plane"></i>
-                </button>
-              </div>
-            </div>
-            <div style="margin-top:8px; display:flex; flex-wrap:wrap; gap: 8px;">
-              <span class="chip">Mode Conversation: <span id="continuousStatus">Désactivé</span></span>
-              <span class="chip" id="intelliaStatus">Assistant: Non connecté</span>
-              <span class="chip" id="voiceStatus">Voix: Inactive</span>
-            </div>
-          </div>
-        </div>
+        <div id="react-ia-root"></div>
       </section>
 
       <section id="sec-planning" class="section">
@@ -625,12 +414,1301 @@
       
   </div> 
 
-  <script type="text/javascript">
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  
+  <script type="text/babel">
+    const { useState, useEffect, useRef } = React;
+
+    const SmartHomeIASection = () => {
+      // ============ STATE MANAGEMENT ============
+      const [sessions, setSessions] = useState([]);
+      const [currentSessionId, setCurrentSessionId] = useState(null);
+      const [currentMessages, setCurrentMessages] = useState([]);
+      
+      const [inputValue, setInputValue] = useState('');
+      const [attachments, setAttachments] = useState([]);
+      const [isLoading, setIsLoading] = useState(false);
+      const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+      const [searchQuery, setSearchQuery] = useState('');
+      
+      const [editingSessionId, setEditingSessionId] = useState(null);
+      
+      const [isDarkMode, setIsDarkMode] = useState(document.body.classList.contains('night-mode'));
+      
+      const [isRecording, setIsRecording] = useState(false);
+      const [isContinuousMode, setIsContinuousMode] = useState(false);
+      
+      const messagesEndRef = useRef(null);
+      const fileInputRef = useRef(null);
+      const textareaRef = useRef(null);
+
+      // ============ COMPUTED VALUES ============
+      const currentSession = sessions.find(s => s.id === currentSessionId);
+
+      const groupedSessions = () => {
+        const now = Date.now();
+        const today = new Date().setHours(0, 0, 0, 0);
+        const yesterday = today - 86400000;
+        const lastWeek = today - 7 * 86400000;
+
+        const pinned = sessions.filter(s => s.pinned && !s.archived);
+        const filtered = sessions.filter(s => 
+          !s.archived && 
+          !s.pinned &&
+          (s.title.toLowerCase().includes(searchQuery.toLowerCase()))
+        );
+
+        return {
+          pinned,
+          today: filtered.filter(s => s.lastUpdated >= today),
+          yesterday: filtered.filter(s => s.lastUpdated >= yesterday && s.lastUpdated < today),
+          lastWeek: filtered.filter(s => s.lastUpdated >= lastWeek && s.lastUpdated < yesterday),
+          older: filtered.filter(s => s.lastUpdated < lastWeek)
+        };
+      };
+
+      // ============ EFFECTS ============
+      
+      useEffect(() => {
+        const loadData = async () => {
+          if (window.getFirebaseSessions) {
+            setIsLoading(true);
+            const data = await window.getFirebaseSessions();
+            setSessions(data);
+            if (data.length > 0) {
+              await selectSession(data[0].id);
+            } else {
+              await createNewSession(true); // Créer et sélectionner une nouvelle session
+            }
+            setIsLoading(false);
+          }
+        };
+        // Attend que l'utilisateur soit connecté pour charger les données
+        const checkAuth = setInterval(() => {
+          if (window.appState && window.appState.currentUser) {
+            clearInterval(checkAuth);
+            loadData();
+          }
+        }, 100);
+        
+        const observer = new MutationObserver((mutations) => {
+          mutations.forEach(mutation => {
+            if (mutation.attributeName === 'class') {
+              const isDark = document.body.classList.contains('night-mode');
+              setIsDarkMode(isDark);
+            }
+          });
+        });
+        observer.observe(document.body, { attributes: true });
+        
+        // Listeners pour les événements globaux
+        const handleVoiceSubmit = (e) => setInputValue(e.detail);
+        const handleSystemMessage = (e) => {
+          const systemMessage = {
+            role: 'assistant',
+            bot: e.detail,
+            timestamp: Date.now()
+          };
+          setCurrentMessages(prev => [...prev, systemMessage]);
+        };
+        
+        window.addEventListener('voiceSubmit', handleVoiceSubmit);
+        window.addEventListener('systemMessage', handleSystemMessage);
+        
+        return () => {
+          observer.disconnect();
+          clearInterval(checkAuth);
+          window.removeEventListener('voiceSubmit', handleVoiceSubmit);
+          window.removeEventListener('systemMessage', handleSystemMessage);
+        };
+      }, []);
+      
+      useEffect(() => {
+        scrollToBottom();
+      }, [currentMessages]);
+
+      useEffect(() => {
+        adjustTextareaHeight();
+      }, [inputValue]);
+      
+      // ============ HELPER FUNCTIONS ============
+      const scrollToBottom = () => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      };
+
+      const adjustTextareaHeight = () => {
+        const textarea = textareaRef.current;
+        if (textarea) {
+          textarea.style.height = 'auto';
+          textarea.style.height = Math.min(textarea.scrollHeight, 200) + 'px';
+        }
+      };
+
+      const formatTime = (timestamp) => {
+        if (!timestamp) return '';
+        const date = new Date(timestamp);
+        return date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+      };
+
+      // ============ SESSION MANAGEMENT (Connecté à Firebase) ============
+      
+      const selectSession = async (sessionId) => {
+        if (!sessionId) {
+          setCurrentSessionId(null);
+          setCurrentMessages([]);
+          return;
+        }
+        setIsLoading(true);
+        setCurrentSessionId(sessionId);
+        window.setCurrentSession(sessionId); // Met à jour l'état global
+        const messages = await window.getFirebaseMessages(sessionId);
+        setCurrentMessages(messages || []);
+        setIsLoading(false);
+        if (window.innerWidth <= 768) setIsSidebarOpen(false);
+      };
+      
+      const createNewSession = async (select = true) => {
+        const newSessionId = await window.createNewFirebaseSession();
+        const newSession = {
+          id: newSessionId,
+          title: 'Nouvelle discussion...',
+          lastUpdated: Date.now(),
+          messages: []
+        };
+        setSessions(prev => [newSession, ...prev]);
+        if (select) {
+          await selectSession(newSessionId);
+        }
+      };
+
+      const deleteSession = async (sessionId) => {
+        if (confirm('Voulez-vous vraiment supprimer cette conversation ?')) {
+          await window.deleteFirebaseSession(sessionId);
+          const newSessions = sessions.filter(s => s.id !== sessionId);
+          setSessions(newSessions);
+          if (currentSessionId === sessionId) {
+            if (newSessions.length > 0) {
+              await selectSession(newSessions[0].id);
+            } else {
+              await createNewSession(true); // Créer une nouvelle si la liste est vide
+            }
+          }
+        }
+      };
+      
+      const renameSession = async (sessionId, newTitle) => {
+        await window.renameFirebaseSession(sessionId, newTitle);
+        setSessions(sessions.map(s => 
+          s.id === sessionId ? { ...s, title: newTitle } : s
+        ));
+        setEditingSessionId(null);
+      };
+
+      const togglePinSession = (sessionId) => {
+        setSessions(sessions.map(s => 
+          s.id === sessionId ? { ...s, pinned: !s.pinned } : s
+        ));
+      };
+      const archiveSession = (sessionId) => {
+        setSessions(sessions.map(s => 
+          s.id === sessionId ? { ...s, archived: true } : s
+        ));
+      };
+
+      // ============ MESSAGE HANDLING (Connecté à Firebase) ============
+      const sendMessage = async (options = {}) => {
+        const messageText = options.customInput || inputValue;
+        
+        if (!messageText.trim() && attachments.length === 0) return;
+        
+        let currentSessId = currentSessionId;
+        // Si aucune session n'est sélectionnée (cas rare), en créer une
+        if (!currentSessId) {
+          await createNewSession(true);
+          currentSessId = window.appState.currentSessionId;
+        }
+        
+        if (isLoading || !currentSessId) return;
+
+        const userMessage = {
+          role: 'user',
+          user: messageText,
+          attachments: attachments,
+          timestamp: Date.now()
+        };
+
+        setCurrentMessages(prev => [...prev, userMessage]);
+        
+        const isFirstMessage = currentMessages.length === 0;
+        const newSessions = sessions.map(s => 
+          s.id === currentSessId 
+            ? { 
+                ...s, 
+                lastUpdated: Date.now(),
+                title: (isFirstMessage && messageText) ? messageText.substring(0, 30) + '...' : s.title
+              }
+            : s
+        );
+        newSessions.sort((a, b) => (b.lastUpdated || 0) - (a.lastUpdated || 0));
+        setSessions(newSessions);
+
+        const currentAttachments = attachments;
+        setInputValue('');
+        setAttachments([]);
+        setIsLoading(true);
+
+        const reply = await window.sendToOnline(messageText, currentAttachments);
+        
+        setIsLoading(false);
+
+        const assistantMessage = {
+          role: 'assistant',
+          bot: reply,
+          timestamp: Date.now()
+        };
+        setCurrentMessages(prev => [...prev, assistantMessage]);
+      };
+
+      const regenerateMessage = (messageIndex) => {
+        setIsLoading(true);
+        setTimeout(() => {
+          const newMessage = {
+            role: 'assistant',
+            bot: 'Voici une nouvelle version de ma réponse...',
+            timestamp: Date.now()
+          };
+          setCurrentMessages(prev => prev.map((m, i) => i === messageIndex ? newMessage : m));
+          setIsLoading(false);
+        }, 1000);
+      };
+
+      const copyMessage = (content) => {
+        navigator.clipboard.writeText(content);
+      };
+
+      // ============ FILE HANDLING ============
+      const handleFileSelect = (e) => {
+        const files = Array.from(e.target.files);
+        let newAttachments = [...attachments];
+        
+        files.forEach(file => {
+          const reader = new FileReader();
+          reader.onload = (e_reader) => {
+            const dataUrl = e_reader.target.result;
+            newAttachments.push({
+              name: file.name,
+              type: file.type.startsWith('image/') ? 'image' : 'file',
+              data: dataUrl,
+              url: URL.createObjectURL(file)
+            });
+            setAttachments(newAttachments);
+          };
+          reader.readAsDataURL(file);
+        });
+      };
+
+      const removeAttachment = (index) => {
+        setAttachments(attachments.filter((_, i) => i !== index));
+      };
+
+      // ============ VOICE HANDLING (Connecté au moteur global) ============
+      const toggleRecording = () => {
+        if (window.VoiceEngine) {
+          window.VoiceEngine.togglePushToTalk();
+          setIsRecording(!isRecording);
+        }
+      };
+
+      const toggleContinuousMode = () => {
+        if (window.VoiceEngine) {
+          window.VoiceEngine.toggleContinuousConversation();
+          setIsContinuousMode(window.VoiceEngine.isContinuousActive);
+        }
+      };
+      
+      // ============ KEYBOARD SHORTCUTS ============
+      const handleKeyDown = (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          sendMessage();
+        }
+      };
+
+      // ============ RENDER ============
+      return (
+        <div className={`ia-section ${isDarkMode ? 'dark' : 'light'}`}>
+          <style>{`
+            .ia-section * { 
+              box-sizing: border-box; 
+              margin: 0; 
+              padding: 0; 
+              font-family: "Segoe UI", Tahoma, Helvetica, Arial, sans-serif;
+            }
+            
+            .ia-section {
+              width: 100%;
+              height: 100%;
+              display: flex;
+              background: var(--bg-primary);
+              color: var(--text-primary);
+              overflow: hidden;
+            }
+
+            /* ============ SIDEBAR ============ */
+            .sidebar {
+              width: 280px;
+              height: 100%;
+              background: var(--bg-secondary);
+              border-right: 1px solid var(--border);
+              display: flex;
+              flex-direction: column;
+              transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+              position: relative;
+              z-index: 100;
+            }
+
+            .sidebar.closed { transform: translateX(-100%); }
+            .sidebar-header {
+              padding: 16px;
+              border-bottom: 1px solid var(--border);
+              display: flex;
+              flex-direction: column;
+              gap: 12px;
+            }
+
+            .btn-new-chat {
+              width: 100%;
+              padding: 12px 16px;
+              background: var(--primary);
+              color: white;
+              border: none;
+              border-radius: 12px;
+              font-size: 14px;
+              font-weight: 600;
+              cursor: pointer;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              gap: 8px;
+              transition: all 0.2s;
+            }
+
+            .btn-new-chat:hover {
+              background: var(--accent-cyan);
+              transform: translateY(-1px);
+              box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+            }
+
+            .search-box { position: relative; }
+            .search-input {
+              width: 100%;
+              padding: 10px 12px 10px 38px;
+              background: var(--bg-tertiary);
+              border: 1px solid var(--border);
+              border-radius: 10px;
+              color: var(--text-primary);
+              font-size: 14px;
+              transition: all 0.2s;
+            }
+            .search-input:focus {
+              outline: none;
+              border-color: var(--primary);
+              box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+            }
+            .search-icon {
+              position: absolute;
+              left: 12px;
+              top: 50%;
+              transform: translateY(-50%);
+              color: var(--text-muted);
+            }
+
+            .sessions-list { flex: 1; overflow-y: auto; padding: 8px; }
+            .sessions-list::-webkit-scrollbar { width: 6px; }
+            .sessions-list::-webkit-scrollbar-track { background: transparent; }
+            .sessions-list::-webkit-scrollbar-thumb { background: var(--bg-tertiary); border-radius: 3px; }
+            .session-group { margin-bottom: 20px; }
+            .session-group-title {
+              font-size: 11px;
+              font-weight: 700;
+              color: var(--text-muted);
+              text-transform: uppercase;
+              letter-spacing: 0.5px;
+              padding: 8px 12px;
+              margin-bottom: 4px;
+            }
+            .session-item {
+              padding: 12px;
+              border-radius: 10px;
+              cursor: pointer;
+              transition: all 0.2s;
+              margin-bottom: 4px;
+              position: relative;
+              display: flex;
+              align-items: center;
+              gap: 8px;
+            }
+            .session-item:hover { background: var(--bg-hover); }
+            .session-item.active { background: var(--bg-tertiary); }
+            .session-item.pinned::before {
+              content: '';
+              position: absolute;
+              left: 4px; top: 50%;
+              transform: translateY(-50%);
+              width: 3px; height: 16px;
+              background: var(--primary);
+              border-radius: 2px;
+            }
+            .session-title {
+              flex: 1;
+              font-size: 14px;
+              color: var(--text-primary);
+              white-space: nowrap;
+              overflow: hidden;
+              text-overflow: ellipsis;
+            }
+            .session-title-input {
+              flex: 1;
+              padding: 4px 8px;
+              background: var(--bg-primary);
+              border: 1px solid var(--primary);
+              border-radius: 6px;
+              color: var(--text-primary);
+              font-size: 14px;
+            }
+            .session-actions { display: flex; gap: 4px; opacity: 0; transition: opacity 0.2s; }
+            .session-item:hover .session-actions { opacity: 1; }
+            .session-action-btn {
+              padding: 4px;
+              background: transparent;
+              border: none;
+              color: var(--text-secondary);
+              cursor: pointer;
+              border-radius: 6px;
+              transition: all 0.2s;
+            }
+            .session-action-btn:hover { background: var(--bg-primary); color: var(--text-primary); }
+
+            /* ============ MAIN CHAT AREA ============ */
+            .chat-container {
+              flex: 1;
+              display: flex;
+              flex-direction: column;
+              height: 100%;
+              position: relative;
+            }
+            .chat-header {
+              padding: 16px 24px;
+              border-bottom: 1px solid var(--border);
+              display: flex;
+              align-items: center;
+              justify-content: space-between;
+              background: var(--glass-bg);
+              backdrop-filter: blur(20px);
+            }
+            .chat-header-left { display: flex; align-items: center; gap: 12px; }
+            .btn-toggle-sidebar {
+              padding: 8px;
+              background: var(--bg-tertiary);
+              border: none;
+              border-radius: 8px;
+              color: var(--text-primary);
+              cursor: pointer;
+              transition: all 0.2s;
+            }
+            .btn-toggle-sidebar:hover { background: var(--bg-hover); }
+            .chat-title { font-size: 16px; font-weight: 600; color: var(--text-primary); }
+            .chat-header-actions { display: flex; gap: 8px; }
+            .header-action-btn {
+              padding: 8px;
+              background: transparent;
+              border: none;
+              color: var(--text-secondary);
+              cursor: pointer;
+              border-radius: 8px;
+              transition: all 0.2s;
+            }
+            .header-action-btn:hover { background: var(--bg-tertiary); color: var(--text-primary); }
+
+            .messages-container {
+              flex: 1;
+              overflow-y: auto;
+              padding: 24px;
+              display: flex;
+              flex-direction: column;
+              gap: 16px;
+            }
+            .messages-container::-webkit-scrollbar { width: 8px; }
+            .messages-container::-webkit-scrollbar-track { background: transparent; }
+            .messages-container::-webkit-scrollbar-thumb { background: var(--bg-tertiary); border-radius: 4px; }
+
+            .message {
+              display: flex;
+              gap: 12px;
+              max-width: 800px;
+              animation: messageSlideIn 0.3s ease-out;
+            }
+            @keyframes messageSlideIn {
+              from { opacity: 0; transform: translateY(10px); }
+              to { opacity: 1; transform: translateY(0); }
+            }
+            .message.user { align-self: flex-end; flex-direction: row-reverse; }
+            
+            .message-avatar {
+              width: 36px;
+              height: 36px;
+              border-radius: 50%;
+              background: linear-gradient(135deg, var(--primary), var(--accent-cyan));
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              color: white;
+              font-weight: 600;
+              font-size: 14px;
+              flex-shrink: 0;
+              overflow: hidden;
+            }
+            .message-avatar img {
+              width: 100%;
+              height: 100%;
+              object-fit: cover;
+            }
+            
+            .message.user .message-avatar {
+              background: linear-gradient(135deg, var(--success), #16a34a);
+            }
+
+            .message-content { flex: 1; display: flex; flex-direction: column; gap: 8px; }
+            .message-bubble {
+              padding: 12px 16px;
+              border-radius: 16px;
+              background: var(--bg-secondary);
+              color: var(--text-primary);
+              font-size: 14px;
+              line-height: 1.6;
+              word-wrap: break-word;
+            }
+            .message.user .message-bubble {
+              background: var(--primary);
+              color: white;
+            }
+            .message-bubble strong { font-weight: 600; }
+            .message-bubble code {
+              background: var(--bg-tertiary);
+              padding: 2px 6px;
+              border-radius: 4px;
+              font-family: 'Courier New', monospace;
+              font-size: 13px;
+            }
+            .message-bubble pre {
+              background: var(--bg-primary);
+              padding: 12px;
+              border-radius: 8px;
+              overflow-x: auto;
+              margin: 8px 0;
+            }
+            .message-bubble pre code { background: transparent; padding: 0; }
+            .message-attachments { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+            .message-attachment {
+              max-width: 200px;
+              border-radius: 8px;
+              overflow: hidden;
+              border: 1px solid var(--border);
+            }
+            .message-attachment img { width: 100%; height: auto; display: block; }
+            .message-footer {
+              display: flex;
+              align-items: center;
+              gap: 12px;
+              font-size: 12px;
+              color: var(--text-muted);
+            }
+            .message-actions { display: flex; gap: 8px; opacity: 0; transition: opacity 0.2s; }
+            .message:hover .message-actions { opacity: 1; }
+            .message-action-btn {
+              padding: 4px 8px;
+              background: var(--bg-tertiary);
+              border: none;
+              border-radius: 6px;
+              color: var(--text-secondary);
+              cursor: pointer;
+              font-size: 12px;
+              transition: all 0.2s;
+              display: flex;
+              align-items: center;
+              gap: 4px;
+            }
+            .message-action-btn:hover { background: var(--bg-hover); color: var(--text-primary); }
+
+            .typing-indicator { display: flex; gap: 4px; padding: 12px 16px; background: var(--bg-secondary); border-radius: 16px; width: fit-content; }
+            .typing-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text-muted); animation: typingDot 1.4s infinite; }
+            .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+            .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+            @keyframes typingDot {
+              0%, 60%, 100% { transform: translateY(0); opacity: 0.6; }
+              30% { transform: translateY(-8px); opacity: 1; }
+            }
+
+            /* ============ INPUT AREA ============ */
+            .input-container {
+              padding: 16px 24px;
+              border-top: 1px solid var(--border);
+              background: var(--glass-bg);
+              backdrop-filter: blur(20px);
+            }
+            .attachments-preview { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+            .attachment-preview {
+              position: relative;
+              padding: 8px 12px;
+              background: var(--bg-tertiary);
+              border-radius: 8px;
+              display: flex;
+              align-items: center;
+              gap: 8px;
+              font-size: 13px;
+            }
+            .attachment-preview img { width: 40px; height: 40px; object-fit: cover; border-radius: 4px; }
+            .btn-remove-attachment {
+              padding: 4px;
+              background: var(--danger);
+              border: none;
+              border-radius: 4px;
+              color: white;
+              cursor: pointer;
+              transition: all 0.2s;
+            }
+            .btn-remove-attachment:hover { opacity: 0.8; }
+            .input-wrapper { display: flex; gap: 8px; align-items: flex-end; }
+            .input-actions { display: flex; gap: 4px; }
+            .input-action-btn {
+              padding: 10px;
+              background: var(--bg-tertiary);
+              border: none;
+              border-radius: 10px;
+              color: var(--text-secondary);
+              cursor: pointer;
+              transition: all 0.2s;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              height: 48px;
+              width: 48px;
+            }
+            .input-action-btn:hover { background: var(--bg-hover); color: var(--text-primary); }
+            .input-action-btn.recording {
+              background: var(--danger);
+              color: white;
+              animation: pulse 1.5s infinite;
+            }
+            .input-action-btn.continuous-active {
+              background: var(--primary);
+              color: white;
+            }
+            @keyframes pulse {
+              0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+              50% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+            }
+            .input-textarea {
+              flex: 1;
+              padding: 12px 16px;
+              background: var(--bg-tertiary);
+              border: 1px solid var(--border);
+              border-radius: 12px;
+              color: var(--text-primary);
+              font-size: 14px;
+              font-family: inherit;
+              resize: none;
+              min-height: 48px;
+              max-height: 200px;
+              transition: all 0.2s;
+            }
+            .input-textarea:focus {
+              outline: none;
+              border-color: var(--primary);
+              box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+            }
+            .btn-send {
+              padding: 10px 20px;
+              background: var(--primary);
+              border: none;
+              border-radius: 10px;
+              color: white;
+              cursor: pointer;
+              font-weight: 600;
+              transition: all 0.2s;
+              display: flex;
+              align-items: center;
+              gap: 6px;
+              height: 48px;
+            }
+            .btn-send:hover:not(:disabled) {
+              background: var(--accent-cyan);
+              transform: translateY(-1px);
+              box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+            }
+            .btn-send:disabled { opacity: 0.5; cursor: not-allowed; }
+            .input-footer {
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              margin-top: 8px;
+              font-size: 12px;
+              color: var(--text-muted);
+            }
+            .status-indicators { display: flex; gap: 12px; }
+            .status-indicator { display: flex; align-items: center; gap: 4px; }
+            .status-dot {
+              width: 6px;
+              height: 6px;
+              border-radius: 50%;
+              background: var(--success);
+            }
+            .status-dot.inactive { background: var(--text-muted); }
+
+            /* ============ EMPTY STATE ============ */
+            .empty-state {
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              justify-content: center;
+              height: 100%;
+              padding: 40px;
+              text-align: center;
+            }
+            .empty-state-icon {
+              width: 80px;
+              height: 80px;
+              background: linear-gradient(135deg, var(--primary), var(--accent-cyan));
+              border-radius: 20px;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              color: white;
+              margin-bottom: 24px;
+            }
+            .empty-state-title {
+              font-size: 24px;
+              font-weight: 700;
+              color: var(--text-primary);
+              margin-bottom: 12px;
+            }
+            .empty-state-description {
+              font-size: 14px;
+              color: var(--text-secondary);
+              max-width: 400px;
+              line-height: 1.6;
+            }
+            .empty-state-suggestions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 24px; justify-content: center; }
+            .suggestion-chip {
+              padding: 8px 16px;
+              background: var(--bg-tertiary);
+              border: 1px solid var(--border);
+              border-radius: 20px;
+              font-size: 13px;
+              color: var(--text-primary);
+              cursor: pointer;
+              transition: all 0.2s;
+            }
+            .suggestion-chip:hover {
+              background: var(--bg-hover);
+              border-color: var(--primary);
+              transform: translateY(-2px);
+            }
+
+            /* ============ MOBILE RESPONSIVENESS ============ */
+            @media (max-width: 768px) {
+              .sidebar {
+                position: fixed;
+                left: 0;
+                top: 0;
+                height: 100vh;
+                z-index: 200;
+                box-shadow: var(--shadow);
+              }
+              .sidebar-overlay {
+                position: fixed;
+                top: 0; left: 0; right: 0; bottom: 0;
+                background: rgba(0, 0, 0, 0.5);
+                z-index: 199;
+                display: none;
+              }
+              .sidebar-overlay.active { display: block; }
+              .chat-header { padding: 12px 16px; }
+              .messages-container { padding: 16px; }
+              .input-container { padding: 12px 16px; }
+              .message { max-width: 100%; }
+              .empty-state { padding: 20px; }
+              .empty-state-icon { width: 60px; height: 60px; }
+              .empty-state-title { font-size: 20px; }
+              
+              .btn-send {
+                padding: 10px;
+                min-width: 48px;
+                width: 48px;
+              }
+              .btn-send span { display: none; }
+              
+              .input-footer { flex-direction: column; align-items: flex-start; gap: 8px; }
+            }
+
+            .fade-in { animation: fadeIn 0.3s ease-out; }
+            @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+          `}</style>
+
+          {/* Sidebar */}
+          <div className={`sidebar ${!isSidebarOpen ? 'closed' : ''}`}>
+            <div className="sidebar-header">
+              <button className="btn-new-chat" onClick={() => createNewSession(true)}>
+                <i className="fas fa-plus" style={{marginRight: '8px'}}></i>
+                Nouvelle conversation
+              </button>
+              
+              <div className="search-box">
+                <i className="fas fa-search search-icon"></i>
+                <input
+                  type="text"
+                  className="search-input"
+                  placeholder="Rechercher..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="sessions-list">
+              {groupedSessions().pinned.length > 0 && (
+                <div className="session-group">
+                  <div className="session-group-title">Épinglées</div>
+                  {groupedSessions().pinned.map(session => (
+                    <SessionItem
+                      key={session.id}
+                      session={session}
+                      isActive={session.id === currentSessionId}
+                      onSelect={() => selectSession(session.id)}
+                      onDelete={() => deleteSession(session.id)}
+                      onPin={() => togglePinSession(session.id)}
+                      onArchive={() => archiveSession(session.id)}
+                      onRename={(newTitle) => renameSession(session.id, newTitle)}
+                      isEditing={editingSessionId === session.id}
+                      setIsEditing={setEditingSessionId}
+                    />
+                  ))}
+                </div>
+              )}
+              {groupedSessions().today.length > 0 && (
+                <div className="session-group">
+                  <div className="session-group-title">Aujourd'hui</div>
+                  {groupedSessions().today.map(session => (
+                    <SessionItem
+                      key={session.id}
+                      session={session}
+                      isActive={session.id === currentSessionId}
+                      onSelect={() => selectSession(session.id)}
+                      onDelete={() => deleteSession(session.id)}
+                      onPin={() => togglePinSession(session.id)}
+                      onArchive={() => archiveSession(session.id)}
+                      onRename={(newTitle) => renameSession(session.id, newTitle)}
+                      isEditing={editingSessionId === session.id}
+                      setIsEditing={setEditingSessionId}
+                    />
+                  ))}
+                </div>
+              )}
+               {groupedSessions().yesterday.length > 0 && (
+                <div className="session-group">
+                  <div className="session-group-title">Hier</div>
+                  {groupedSessions().yesterday.map(session => (
+                    <SessionItem
+                      key={session.id}
+                      session={session}
+                      isActive={session.id === currentSessionId}
+                      onSelect={() => selectSession(session.id)}
+                      onDelete={() => deleteSession(session.id)}
+                      onPin={() => togglePinSession(session.id)}
+                      onArchive={() => archiveSession(session.id)}
+                      onRename={(newTitle) => renameSession(session.id, newTitle)}
+                      isEditing={editingSessionId === session.id}
+                      setIsEditing={setEditingSessionId}
+                    />
+                  ))}
+                </div>
+              )}
+              {groupedSessions().lastWeek.length > 0 && (
+                <div className="session-group">
+                  <div className="session-group-title">7 derniers jours</div>
+                  {groupedSessions().lastWeek.map(session => (
+                    <SessionItem
+                      key={session.id}
+                      session={session}
+                      isActive={session.id === currentSessionId}
+                      onSelect={() => selectSession(session.id)}
+                      onDelete={() => deleteSession(session.id)}
+                      onPin={() => togglePinSession(session.id)}
+                      onArchive={() => archiveSession(session.id)}
+                      onRename={(newTitle) => renameSession(session.id, newTitle)}
+                      isEditing={editingSessionId === session.id}
+                      setIsEditing={setEditingSessionId}
+                    />
+                  ))}
+                </div>
+              )}
+              {groupedSessions().older.length > 0 && (
+                <div className="session-group">
+                  <div className="session-group-title">Plus ancien</div>
+                  {groupedSessions().older.map(session => (
+                    <SessionItem
+                      key={session.id}
+                      session={session}
+                      isActive={session.id === currentSessionId}
+                      onSelect={() => selectSession(session.id)}
+                      onDelete={() => deleteSession(session.id)}
+                      onPin={() => togglePinSession(session.id)}
+                      onArchive={() => archiveSession(session.id)}
+                      onRename={(newTitle) => renameSession(session.id, newTitle)}
+                      isEditing={editingSessionId === session.id}
+                      setIsEditing={setEditingSessionId}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Main Chat Area */}
+          <div className="chat-container">
+            <div className="chat-header">
+              <div className="chat-header-left">
+                <button 
+                  className="btn-toggle-sidebar"
+                  onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+                >
+                  <i className="fas fa-bars"></i>
+                </button>
+                <h2 className="chat-title">
+                  {currentSession?.title || 'Assistant'}
+                </h2>
+              </div>
+              
+              <div className="chat-header-actions">
+                <button className="header-action-btn" title="Épingler" onClick={() => togglePinSession(currentSessionId)}>
+                  <i className="fas fa-thumbtack"></i>
+                </button>
+                <button className="header-action-btn" title="Partager">
+                  <i className="fas fa-share-alt"></i>
+                </button>
+              </div>
+            </div>
+
+            <div className="messages-container">
+              {currentMessages.length === 0 && !isLoading ? (
+                <div className="empty-state fade-in">
+                  <div className="empty-state-icon">
+                    <i className="fas fa-robot" style={{fontSize: '40px'}}></i>
+                  </div>
+                  <h2 className="empty-state-title">Comment puis-je vous aider ?</h2>
+                  <p className="empty-state-description">
+                    Posez-moi des questions sur vos appareils, créez des planifications, 
+                    ou demandez-moi d'analyser vos données.
+                  </p>
+                  <div className="empty-state-suggestions">
+                    <div className="suggestion-chip" onClick={() => sendMessage({customInput: 'Allume toutes les lumières du salon'})}>
+                      💡 Contrôler les lumières
+                    </div>
+                    <div className="suggestion-chip" onClick={() => sendMessage({customInput: 'Crée une planification pour éteindre les appareils à 23h'})}>
+                      ⏰ Créer une planification
+                    </div>
+                    <div className="suggestion-chip" onClick={() => sendMessage({customInput: 'Quels appareils sont allumés ?'})}>
+                      🏠 État des appareils
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  {currentMessages.map((message, index) => (
+                    <Message
+                      key={index}
+                      message={message}
+                      onCopy={() => copyMessage(message.bot || message.user)}
+                      onRegenerate={() => regenerateMessage(index)}
+                    />
+                  ))}
+                  {isLoading && (
+                    <div className="message">
+                      <div className="message-avatar">AI</div>
+                      <div className="typing-indicator">
+                        <div className="typing-dot"></div>
+                        <div className="typing-dot"></div>
+                        <div className="typing-dot"></div>
+                      </div>
+                    </div>
+                  )}
+                  <div ref={messagesEndRef} />
+                </>
+              )}
+            </div>
+
+            <div className="input-container">
+              {attachments.length > 0 && (
+                <div className="attachments-preview">
+                  {attachments.map((att, index) => (
+                    <div key={index} className="attachment-preview">
+                      {att.type.startsWith('image/') && (
+                        <img src={att.url} alt={att.name} />
+                      )}
+                      {!att.type.startsWith('image/') && (
+                        <i className="fas fa-file-alt" style={{fontSize: '24px', color: 'var(--text-muted)'}}></i>
+                      )}
+                      <span>{att.name}</span>
+                      <button
+                        className="btn-remove-attachment"
+                        onClick={() => removeAttachment(index)}
+                      >
+                        <i className="fas fa-times" style={{fontSize: '12px'}}></i>
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div className="input-wrapper">
+                <div className="input-actions">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    multiple
+                    accept="image/*,application/pdf,.txt,.docx"
+                    onChange={handleFileSelect}
+                    style={{ display: 'none' }}
+                  />
+                  <button
+                    className="input-action-btn"
+                    onClick={() => fileInputRef.current?.click()}
+                    title="Joindre un fichier"
+                  >
+                    <i className="fas fa-paperclip"></i>
+                  </button>
+                  
+                  <button
+                    className={`input-action-btn ${isRecording ? 'recording' : ''}`}
+                    onClick={toggleRecording}
+                    title="Enregistrement vocal"
+                  >
+                    {isRecording ? <i className="fas fa-stop"></i> : <i className="fas fa-microphone"></i>}
+                  </button>
+                </div>
+
+                <textarea
+                  ref={textareaRef}
+                  className="input-textarea"
+                  placeholder="Posez une question à l'Assistant..."
+                  value={inputValue}
+                  onChange={(e) => setInputValue(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  rows={1}
+                />
+
+                <button
+                  className="btn-send"
+                  onClick={sendMessage}
+                  disabled={(!inputValue.trim() && attachments.length === 0) || isLoading}
+                >
+                  <i className="fas fa-paper-plane"></i>
+                  <span>Envoyer</span>
+                </button>
+              </div>
+
+              <div className="input-footer">
+                <div className="status-indicators">
+                  <div className="status-indicator">
+                    <div className={`status-dot ${!isLoading ? 'active' : 'inactive'}`}></div>
+                    <span>Assistant: {isLoading ? 'En cours...' : 'Prêt'}</span>
+                  </div>
+                  <div className="status-indicator">
+                    <div className={`status-dot ${isContinuousMode ? 'active' : 'inactive'}`}></div>
+                    <span>Mode vocal: {isContinuousMode ? 'Activé' : 'Désactivé'}</span>
+                  </div>
+                </div>
+                <button
+                  className={`input-action-btn ${isContinuousMode ? 'continuous-active' : ''}`}
+                  onClick={toggleContinuousMode}
+                  title="Mode conversation continue"
+                  style={{width: 'auto', padding: '0 10px', fontSize: '12px'}}
+                >
+                  <i className="fas fa-waveform" style={{marginRight: '6px'}}></i>
+                  {isContinuousMode ? 'Désactiver' : 'Activer'} mode continu
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div 
+            className={`sidebar-overlay ${isSidebarOpen && window.innerWidth <= 768 ? 'active' : ''}`}
+            onClick={() => setIsSidebarOpen(false)}
+          ></div>
+        </div>
+      );
+    };
+
+    // ============ SUB-COMPONENTS ============
+
+    const SessionItem = ({ session, isActive, onSelect, onDelete, onPin, onArchive, onRename, isEditing, setIsEditing }) => {
+      const [title, setTitle] = useState(session.title);
+
+      const handleRename = (e) => {
+        e.stopPropagation();
+        if (title.trim()) {
+          onRename(session.id, title);
+        }
+        setIsEditing(null);
+      };
+
+      return (
+        <div 
+          className={`session-item ${isActive ? 'active' : ''} ${session.pinned ? 'pinned' : ''}`}
+          onClick={onSelect}
+        >
+          {isEditing ? (
+            <React.Fragment>
+              <input
+                className="session-title-input"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                onBlur={handleRename}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleRename(e);
+                  if (e.key === 'Escape') setIsEditing(null);
+                }}
+                onClick={(e) => e.stopPropagation()}
+                autoFocus
+              />
+              <button
+                className="session-action-btn"
+                onClick={handleRename}
+              >
+                <i className="fas fa-check"></i>
+              </button>
+            </React.Fragment>
+          ) : (
+            <React.Fragment>
+              <div className="session-title">{session.title}</div>
+              <div className="session-actions">
+                <button
+                  className="session-action-btn"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setTitle(session.title);
+                    setIsEditing(session.id);
+                  }}
+                  title="Renommer"
+                >
+                  <i className="fas fa-edit"></i>
+                </button>
+                <button
+                  className="session-action-btn"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDelete();
+                  }}
+                  title="Supprimer"
+                >
+                  <i className="fas fa-trash-alt"></i>
+                </button>
+              </div>
+            </React.Fragment>
+          )}
+        </div>
+      );
+    };
+
+    const Message = ({ message, onCopy, onRegenerate }) => {
+      const content = message.bot || message.user;
+      
+      const renderContent = (content) => {
+        if (!content) return null;
+        const parts = content.split('```');
+        return parts.map((part, index) => {
+          if (index % 2 === 0) {
+            return (
+              <span key={index} dangerouslySetInnerHTML={{
+                __html: part
+                  .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                  .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                  .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                  .replace(/\n/g, '<br>')
+              }} />
+            );
+          } else {
+            const lines = part.split('\n');
+            const lang = lines[0].trim();
+            const code = lines.slice(1).join('\n');
+            return (
+              <pre key={index}>
+                <code>{code}</code>
+              </pre>
+            );
+          }
+        });
+      };
+      
+      const avatarContent = () => {
+        if (message.role === 'user' && window.appState && window.appState.currentUser && window.appState.currentUser.photoURL) {
+          return <img src={window.appState.currentUser.photoURL} alt="User" style={{width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover'}} />;
+        }
+        return message.role === 'user' ? (window.appState?.currentUser?.displayName?.[0] || 'U') : 'AI';
+      };
+
+      return (
+        <div className={`message ${message.role}`}>
+          <div className="message-avatar">
+            {avatarContent()}
+          </div>
+          <div className="message-content">
+            <div className="message-bubble">
+              {renderContent(content)}
+              {message.attachments && message.attachments.length > 0 && (
+                <div className="message-attachments">
+                  {message.attachments.map((att, index) => (
+                    <div key={index} className="message-attachment">
+                      {att.type === 'image' && <img src={att.url || att.data} alt={att.name} />}
+                      {att.type !== 'image' && <i className="fas fa-file-alt" style={{fontSize: '40px', padding: '10px'}}></i>}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            <div className="message-footer">
+              <span>{formatTime(message.timestamp)}</span>
+              <div className="message-actions">
+                <button className="message-action-btn" onClick={onCopy}>
+                  <i className="fas fa-copy" style={{marginRight: '4px'}}></i>
+                  Copier
+                </button>
+                {message.role === 'assistant' && (
+                  <button className="message-action-btn" onClick={onRegenerate}>
+                    <i className="fas fa-sync" style={{marginRight: '4px'}}></i>
+                    Régénérer
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    };
+    
+    ReactDOM.createRoot(document.getElementById('react-ia-root')).render(<SmartHomeIASection />);
+  </script>
+  
+  
+  
+  <script type="module">
   /*************************************************
-   * SmartHome Intelligence - Version 8.2 (Local File Fix)
-   * - Utilise les scripts 'compat' de Firebase
-   * - Supprime les 'import' modules
-   * - Fonctionne en ouvrant le fichier local (file:///)
+   * SmartHome Intelligence - v9.3 (Module Version)
+   * - Utilise 'import' (type="module")
+   * - C'est la version correcte pour Render
+   * - Pour tester en local, utilisez un serveur (ex: 'http-server')
    *************************************************/
 
   // ======= CONFIG =======
@@ -640,7 +1718,7 @@
     RENDER_API = 'http://localhost:3000';
     console.log('Environnement local détecté. API ->', RENDER_API);
   } else {
-    RENDER_API = 'https://intellia-smarthome.onrender.com';
+    RENDER_API = '[https://intellia-smarthome.onrender.com](https://intellia-smarthome.onrender.com)';
     console.log('Environnement de production détecté. API ->', RENDER_API);
   }
   const AUTH_KEY = "cle-secrete-intellia";
@@ -648,41 +1726,34 @@
   const firebaseConfig = {
     apiKey: "AIzaSyA5oYEu4-nOUtjOe2JJ4C9VwNniNSBdjqI",
     authDomain: "mamaisonintelligente-14485.firebaseapp.com",
-    databaseURL: "https://mamaisonintelligente-14485-default-rtdb.firebaseio.com",
+    databaseURL: "[https://mamaisonintelligente-14485-default-rtdb.firebaseio.com](https://mamaisonintelligente-14485-default-rtdb.firebaseio.com)",
     projectId: "mamaisonintelligente-14485",
     storageBucket: "mamaisonintelligente-14485.firebasestorage.app",
     messagingSenderId: "197281963087",
     appId: "1:197281963087:web:da680779479391d91f1e3a"
   };
 
-  // ======= IMPORT FIREBASE (DEPUIS L'OBJET GLOBAL) =======
-  // ✅ MODIFICATION: Suppression des 'import'
-  // On utilise l'objet 'firebase' chargé depuis le <head>
-  
-  // ✅ MODIFICATION: Assignation des fonctions depuis 'firebase.x'
-  // Note: 'app' n'est pas nécessaire pour 'compat'
-  const { getDatabase, ref, set, push, onValue, remove, get, serverTimestamp } = firebase.database;
-  const { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } = firebase.auth;
+  // ======= IMPORT FIREBASE (Module) =======
+  import { initializeApp } from "[https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js](https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js)";
+  import { getDatabase, ref, set, push, onValue, remove, get, serverTimestamp } from "[https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js](https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js)";
+  import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "[https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js](https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js)";
 
   const el = id => document.getElementById(id);
 
-  // ======= APP STATE =======
+  // ======= APP STATE (Simplifié) =======
   const appState = {
     devices: [], deviceStates: {},
     isNightMode: localStorage.getItem('nightMode') === 'true',
-    connectionType: 'none', isConnected: false,
     intelliaOnline: false,
     notificationsEnabled: localStorage.getItem('notifications') !== 'false',
     voiceNotifications: localStorage.getItem('voiceNotifications') !== 'false',
-    websocket: null,
     plans: [],
     currentUser: null,
-    currentSessionId: null,
-    attachments: [], 
-    chatInProgress: false, 
+    currentSessionId: null, // Géré par React ET ce script
+    chatInProgress: false,
   };
   
-  const defaultAvatar = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iI2FlYWVhZSI+PHBhdGggZD0iTTEyIDJDNi40OCAyIDIgNi40OCAyIDEyczQuNDggMTQgMTAgMTBjNS41MiAwIDEwLTQuNDggMTAtMTBTMjcuNTIgMiAxMiAyem0wIDJjMS42NiAwIDMgMS4zNCAzIDNzLTEuMzQgMy0zIDMtMy0xLjM0LTMtM1MwLjM0IDQgMTIgNHptMCAxNmMtMi42NyAwLTUuNDMtMS4yOS03LTIuODguNTYtMS42NSAzLjU1LTIuNjIgNy0yLjYyczYuNDQgLjk3IDcgMi42MmMtMS41NyAxLjU5LTQuMzMgMi44OC03IDIuODh6Ii8+PC9zdmc+";
+  const defaultAvatar = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iI2FlYWVhZSI+PHBhdGggZD0iTTEyIDJDNi40OCAyIDIgNi40OCAyIDEyczQuNDggMTQgMTAgMTBjNS41MiAwIDEwLTQuNDggMTAtMTBTMjcuNTIgMiAxMiAyem0wIDJjMS42NiAwIDMgMS4zNCAzIDNzLTEuMzQgMy0zIDMtMy0xLjM0LTMtM1MwLjM0IDQgMTIgNHptMCAxNmMtMi42NyAwLTUuNDMtMS4yOS03LTIuODguNTYtMS42NSAzLjU1LTIuNjIgNy0yLjYyczYuNDQgLjkTIDcgMi42MmMtMS41NyAxLjU5LTQuMzMgMi44OC03IDIuODh6Ii8+PC9zdmc+";
 
   const deviceTypes = {
     'lamp': { name: 'Lampe', hasBrightness: true, icon: 'lightbulb' },
@@ -700,7 +1771,7 @@
   ];
   let suggestionIndex = 0;
 
-  // ======= UI: Navigation (Inchangé) =======
+  // ======= UI: Navigation =======
   function navigateTo(targetSection) {
     document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
     const targetEl = el(targetSection);
@@ -709,17 +1780,14 @@
     document.querySelectorAll('.btn-nav').forEach(b => b.classList.remove('active'));
     document.querySelectorAll(`[data-target="${targetSection}"]`).forEach(b => b.classList.add('active'));
     
-    const header = el('main-header');
-    if (targetSection === 'sec-intelligence') {
-        header.style.display = 'none';
-    } else {
-        header.style.display = 'block';
-        const titleMap = {
-          'sec-domotique': 'Domotique',
-          'sec-planning': 'Planning',
-          'sec-params': 'Paramètres'
-        };
-        el('section-header-title').textContent = titleMap[targetSection] || 'Accueil';
+    const titleMap = {
+      'sec-domotique': 'Domotique',
+      'sec-planning': 'Planning',
+      'sec-params': 'Paramètres',
+      'sec-intelligence': 'Assistant IA'
+    };
+    if(el('section-header-title')) {
+        el('section-header-title').textContent = titleMap[targetSection] || 'Domotique';
     }
   }
 
@@ -730,39 +1798,24 @@
     });
   });
 
-  el('sidebar-toggle-btn').addEventListener('click', () => {
-    el('chat-sidebar').classList.toggle('open');
-    el('sidebar-overlay').classList.toggle('open');
-  });
-  el('sidebar-overlay').addEventListener('click', () => {
-    el('chat-sidebar').classList.remove('open');
-    el('sidebar-overlay').classList.remove('open');
-  });
-
-
   // ======= Firebase & Listeners =======
   let db = null;
   let auth = null;
   
   try {
-    // ✅ MODIFICATION: Initialisation en mode 'compat'
-    const app = firebase.initializeApp(firebaseConfig);
-    // ✅ MODIFICATION: Obtention des services en mode 'compat'
-    db = firebase.database();
-    auth = firebase.auth();
-    
-    el('statusLocal').textContent = 'Local : Firebase ok';
+    const app = initializeApp(firebaseConfig);
+    db = getDatabase(app);
+    auth = getAuth(app);
   } catch (e) {
     db = null;
     auth = null;
-    el('statusLocal').textContent = 'Local : simulation';
     console.error("Erreur d'initialisation de Firebase:", e);
   }
 
   const metaRefPath = "devicesMeta";
   const devicesRefPath = "devices";
   const planningRefPath = "planning";
-  const userChatsRefPath = "userChats";
+  const userChatsRefPath = "userChats"; 
 
   if (db) {
     onValue(ref(db, metaRefPath), snap => { appState.devices = Object.values(snap.val() || {}); renderDevices(); });
@@ -777,7 +1830,7 @@
     renderDevices(); renderPlanningListUI(appState.plans);
   }
   
-  // ======= Activity Log (Inchangé) =======
+  // ======= Activity Log =======
   function logActivity(message, type = 'info') {
       const logContainer = el('activityLog');
       if (!logContainer) return;
@@ -790,7 +1843,7 @@
       }
   }
 
-  // ======= Device Rendering (Inchangé) =======
+  // ======= Device Rendering =======
   function renderDevices() {
     const grid = el('deviceGrid');
     if (!grid) return;
@@ -838,7 +1891,7 @@
     populatePlanDeviceSelect(); updateCount();
   }
 
-  // ======= Device Management (Inchangé) =======
+  // ======= Device Management =======
   el('btnAddDevice')?.addEventListener('click', async () => {
     const name = el('newDeviceName').value.trim();
     const type = el('newDeviceType').value;
@@ -878,7 +1931,7 @@
 
   el('btnRefreshDevices')?.addEventListener('click', () => { if(db) onValue(ref(db, metaRefPath), s => {}, { onlyOnce: true }); });
 
-  // ======= Device Control (Inchangé) =======
+  // ======= Device Control (Firebase Seulement) =======
   async function writeDeviceStateToBackend(deviceId, etat, value = null) {
     const payload = { etat };
     if (value !== null) payload.luminosite = parseInt(value, 10);
@@ -894,25 +1947,20 @@
 
   window.adjustBrightness = (deviceId, value) => {
     const v = parseInt(value, 10);
-    el(`${deviceId}-value`).textContent = v + '%';
+    const valueEl = el(`${deviceId}-value`);
+    if(valueEl) valueEl.textContent = v + '%';
     sendCommand(deviceId, v > 0 ? "ON" : "OFF", v);
   };
 
   window.sendCommand = (deviceId, action, value = null) => {
     const val = (value !== null) ? value : (action === "ON" ? 100 : 0);
-    if (appState.websocket && appState.websocket.readyState === WebSocket.OPEN) {
-      const wsPayload = { type: "control", device_id: deviceId, action: action, value: val };
-      appState.websocket.send(JSON.stringify(wsPayload));
-      logActivity(`📤 [Local] ${deviceId} → ${action} (${val}%)`);
-    } else {
-      logActivity(`☁️ [Firebase] ${deviceId} → ${action} (${val}%)`);
-    }
+    logActivity(`☁️ [Firebase] ${deviceId} → ${action} (${val}%)`);
     writeDeviceStateToBackend(deviceId, action, val);
     appState.deviceStates[deviceId] = { etat: action, luminosite: val };
     renderDevices();
   };
 
-  // ======= Planning (Inchangé) =======
+  // ======= Planning =======
   function populatePlanDeviceSelect() {
     const sel = el('plan-device');
     if (!sel) return;
@@ -970,16 +2018,16 @@
 
   function updateCount() {
     const onCount = Object.values(appState.deviceStates).filter(s => s?.etat === 'ON').length;
-    el('db-count').textContent = `on: ${onCount}`;
+    if (el('db-count')) el('db-count').textContent = `on: ${onCount}`;
   }
 
-  // ======= Local Persistence (Inchangé) =======
+  // ======= Local Persistence (utilisé uniquement si Firebase échoue) =======
   const saveDevicesToLocalStorage = () => localStorage.setItem('sh_devices', JSON.stringify(appState.devices));
   const loadDevicesFromLocalStorage = () => { appState.devices = JSON.parse(localStorage.getItem('sh_devices') || '[]'); };
   const savePlansToLocalStorage = () => localStorage.setItem('sh_plans', JSON.stringify(appState.plans));
-  const loadPlansToLocalStorage = () => { appState.plans = JSON.parse(localStorage.getItem('sh_plans') || '[]'); };
+  const loadPlansFromLocalStorage = () => { appState.plans = JSON.parse(localStorage.getItem('sh_plans') || '[]'); };
 
-  // ======= Voice Synthesis & Recognition (Inchangé) =======
+  // ======= Voice Synthesis & Recognition =======
   let preferredVoice = null;
   const choosePreferredVoice = () => {
     const voices = window.speechSynthesis.getVoices() || [];
@@ -1001,7 +2049,7 @@
     window.speechSynthesis.speak(u);
   }
 
-  // ======= Notification de Bureau (Inchangé) =======
+  // ======= Notification de Bureau =======
   function sendBrowserNotification(title, body, options = {}) {
     if (!appState.notificationsEnabled) { logActivity('Notification ignorée (désactivée).'); return; }
     if (!('Notification' in window)) return;
@@ -1023,33 +2071,30 @@
     }
   }
 
-  // ======= Moteur Vocal (v2) (Inchangé) =======
+  // ======= Moteur Vocal (Connecté à React) =======
   const VoiceEngine = {
     recognition: null, isPushToTalkRecording: false,
     isContinuousActive: false, isPausedForSpeech: false,
     
     init() {
       if (!("webkitSpeechRecognition" in window || "SpeechRecognition" in window)) {
-        el('voicePushToTalk').disabled = true; el('voiceContinuous').disabled = true;
-        el('quickVoiceToggleBtn').disabled = true; el('quickVoiceToggleBtn').textContent = 'Voix non supportée';
-        el('voiceStatus').textContent = 'Voix: Non supportée';
+        if (el('quickVoiceToggleBtn')) {
+          el('quickVoiceToggleBtn').disabled = true; 
+          el('quickVoiceToggleBtn').textContent = 'Voix non supportée';
+        }
         return;
       }
       this.requestMicrophonePermission();
-      const pushBtn = el('voicePushToTalk');
-      const continuousBtn = el('voiceContinuous');
       const quickBtn = el('quickVoiceToggleBtn');
-      pushBtn.addEventListener('touchstart', (e) => { e.preventDefault(); this.togglePushToTalk(); });
-      pushBtn.addEventListener('click', () => this.togglePushToTalk());
-      continuousBtn.addEventListener('touchstart', (e) => { e.preventDefault(); this.toggleContinuousConversation(); });
-      continuousBtn.addEventListener('click', () => this.toggleContinuousConversation());
-      quickBtn.addEventListener('touchstart', (e) => { e.preventDefault(); this.toggleContinuousConversation(); });
-      quickBtn.addEventListener('click', () => this.toggleContinuousConversation());
+      if (quickBtn) {
+        quickBtn.addEventListener('touchstart', (e) => { e.preventDefault(); this.toggleContinuousConversation(); });
+        quickBtn.addEventListener('click', () => this.toggleContinuousConversation());
+      }
     },
     requestMicrophonePermission() {
       navigator.mediaDevices.getUserMedia({ audio: true })
         .then(stream => { stream.getTracks().forEach(track => track.stop()); })
-        .catch(err => { console.error("Permission micro:", err); el('voiceStatus').textContent = 'Voix: Permission requise'; });
+        .catch(err => { console.error("Permission micro:", err); });
     },
     createRecognitionInstance(continuous = false) {
       const Rec = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -1058,20 +2103,8 @@
       return rec;
     },
     updateContinuousUI() {
-        const btn1 = el('voiceContinuous');
         const btn2 = el('quickVoiceToggleBtn');
-        const status = el('continuousStatus');
         const isActive = this.isContinuousActive;
-        if (status) status.textContent = isActive ? 'Activé' : 'Désactivé';
-        if (btn1) {
-          btn1.classList.toggle('active', isActive); btn1.classList.toggle('warn', isActive);
-          const icon1 = btn1.querySelector('i');
-          if (icon1) {
-            icon1.classList.toggle('icon-pulse', isActive);
-            icon1.classList.toggle('fa-waveform', !isActive);
-            icon1.classList.toggle('fa-stop-circle', isActive);
-          }
-        }
         if (btn2) {
           btn2.classList.toggle('primary', !isActive); btn2.classList.toggle('warn', isActive);
           btn2.innerHTML = isActive ? 
@@ -1081,22 +2114,15 @@
     },
     togglePushToTalk() {
       if (this.isContinuousActive) this.toggleContinuousConversation();
-      const btn = el('voicePushToTalk');
       if (this.isPushToTalkRecording) {
         this.isPushToTalkRecording = false;
         if (this.recognition) this.recognition.stop();
-        btn.classList.remove('pulse');
-        el('voiceStatus').textContent = 'Voix: Traitement...';
       } else {
         this.isPushToTalkRecording = true;
         this.recognition = this.createRecognitionInstance(false);
-        btn.classList.add('pulse');
-        el('voiceStatus').textContent = 'Voix: Enregistrement...';
-        this.recognition.onresult = (e) => { handleVoiceSubmit(e.results[0][0].transcript); };
+        this.recognition.onresult = (e) => handleVoiceSubmit(e.results[0][0].transcript);
         this.recognition.onend = () => {
           this.isPushToTalkRecording = false;
-          btn.classList.remove('pulse');
-          el('voiceStatus').textContent = 'Voix: Inactive';
           this.recognition = null;
         };
         this.recognition.start();
@@ -1115,14 +2141,11 @@
     startContinuousLoop() {
         if (!this.isContinuousActive || this.isPausedForSpeech) return;
         this.recognition = this.createRecognitionInstance(false);
-        el('voiceStatus').textContent = 'Voix: Écoute...';
-        this.recognition.onresult = (e) => { handleVoiceSubmit(e.results[0][0].transcript); };
+        this.recognition.onresult = (e) => handleVoiceSubmit(e.results[0][0].transcript);
         this.recognition.onerror = (e) => { if (e.error !== 'no-speech' && e.error !== 'aborted') console.warn('Voice error:', e.error); };
         this.recognition.onend = () => { 
           if (this.isContinuousActive && !this.isPausedForSpeech) {
             setTimeout(() => this.startContinuousLoop(), 100);
-          } else {
-            el('voiceStatus').textContent = 'Voix: Inactive';
           }
         };
         try { this.recognition.start(); } catch(e) {}
@@ -1130,9 +2153,7 @@
     stopRecognition() {
       if (this.recognition) { try { this.recognition.stop(); } catch(e) {} }
       this.recognition = null; this.isPushToTalkRecording = false; this.isContinuousActive = false;
-      el('voicePushToTalk').classList.remove('pulse');
       this.updateContinuousUI();
-      el('voiceStatus').textContent = 'Voix: Inactive';
     },
     pauseRecognition() {
       if (this.isContinuousActive && !this.isPausedForSpeech) {
@@ -1141,7 +2162,6 @@
           this.recognition.onend = null;
           try { this.recognition.stop(); } catch(e){}
         }
-        el('voiceStatus').textContent = 'Voix: En pause';
       }
     },
     resumeRecognition() {
@@ -1152,31 +2172,7 @@
     }
   };
   
-  // ======= Assistant Communication (v8.1) (Inchangé) =======
-  
-  async function handleChatSubmit(message, attachments = []) {
-    if (appState.chatInProgress) return;
-    if (!message && attachments.length === 0) return;
-    
-    appState.chatInProgress = true;
-    el('intelliaStatus').textContent = "Assistant: En cours...";
-    el('chat-loading').style.display = 'block'; 
-
-    appendChat('user', message, false, attachments); 
-
-    el('chatFullInput').value = '';
-    appState.attachments = [];
-    renderAttachmentPreviews();
-    
-    const reply = await sendToOnline(message, attachments);
-    
-    const botMsgElement = appendChat('bot', '', true); 
-    await simulateTyping(botMsgElement, reply); 
-    speak(reply);
-    
-    appState.chatInProgress = false;
-    el('chat-loading').style.display = 'none'; 
-  }
+  // ======= Assistant Communication (Connecté à React) =======
   
   async function handleVoiceSubmit(command) {
     if (!command) return;
@@ -1185,22 +2181,11 @@
       return;
     }
     
-    appState.chatInProgress = true;
-    el('intelliaStatus').textContent = "Assistant: En cours...";
-    el('chat-loading').style.display = 'block'; 
-
-    appendChat('user', command);
     logActivity(`Commande vocale: "${command}"`);
     
-    const reply = await sendToOnline(command, []);
-    
-    const botMsgElement = appendChat('bot', '', true);
-    await simulateTyping(botMsgElement, reply);
-    
-    appState.chatInProgress = false;
-    el('chat-loading').style.display = 'none'; 
-    
-    speak(reply); 
+    // Informe React d'envoyer le message
+    const event = new CustomEvent('voiceSubmit', { detail: command });
+    window.dispatchEvent(event);
   }
 
   async function sendToOnline(message, attachments = []) {
@@ -1210,9 +2195,12 @@
     }
     
     if (!appState.currentSessionId) {
-      createNewChatSession();
+      const newId = await window.createNewFirebaseSession();
+      appState.currentSessionId = newId;
+      window.setCurrentSession(newId);
     }
     
+    appState.chatInProgress = true;
     const t0 = Date.now();
     
     try {
@@ -1220,7 +2208,7 @@
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           message,
-          attachments: attachments, 
+          attachments: attachments,
           key: AUTH_KEY,
           devices: appState.devices.map(d => ({ id: d.id, name: d.name, type: d.type, room: d.room })),
           deviceStates: appState.deviceStates,
@@ -1232,7 +2220,7 @@
         }),
       });
       
-      el('intelliaLatency').textContent = `latence: ${Date.now() - t0}ms`;
+      if(el('intelliaLatency')) el('intelliaLatency').textContent = `latence: ${Date.now() - t0}ms`;
       if (!response.ok) throw new Error(`Server error ${response.status}`);
       const j = await response.json();
       
@@ -1243,106 +2231,20 @@
       if (j.execute) handleExecuteCommands(j.execute);
       
       appState.intelliaOnline = true; 
-      el('intelliaStatus').textContent = "Assistant: Connecté";
-      el('statusOnline').textContent = "Assistant : disponible";
+      if (el('statusOnline')) el('statusOnline').textContent = "Assistant : disponible";
       logActivity(`Assistant a répondu.`);
       
-      return j.reply || "OK"; 
+      appState.chatInProgress = false;
+      return j.reply || "OK";
       
     } catch (e) {
       console.warn("sendToOnline error", e);
       appState.intelliaOnline = false;
-      el('intelliaStatus').textContent = "Assistant: Hors ligne";
-      el('statusOnline').textContent = "Assistant : indisponible";
+      if (el('statusOnline')) el('statusOnline').textContent = "Assistant : indisponible";
       logActivity(`Erreur de connexion Assistant.`);
+      appState.chatInProgress = false;
       return "Erreur de connexion avec l'Assistant.";
     }
-  }
-
-  // ======= Chat Interface & Helpers (v8.1) (Inchangé) =======
-  
-  function simulateTyping(element, text) {
-    return new Promise(resolve => {
-      element.classList.add('typing');
-      let index = 0;
-      const words = text.split(' ');
-      function addWord() {
-        if (index < words.length) {
-          element.innerHTML += (index > 0 ? ' ' : '') + escapeHtml(words[index]);
-          el('chatFullWindow').scrollTop = el('chatFullWindow').scrollHeight;
-          index++;
-          const typingSpeed = text.length > 200 ? 30 : 70;
-          setTimeout(addWord, typingSpeed);
-        } else {
-          element.classList.remove('typing');
-          resolve();
-        }
-      }
-      addWord();
-    });
-  }
-  
-  function appendChat(role, text, returnElement = false, attachments = []) {
-    const target = el('chatFullWindow');
-    if (!target) return;
-    const node = document.createElement('div');
-    node.className = 'msg ' + (role === 'user' ? 'user' : 'bot');
-
-    if (text && text.includes('```')) {
-      const parts = text.split('```');
-      let html = '';
-      parts.forEach((part, i) => {
-        if (i % 2 === 0) {
-          html += escapeHtml(part).replace(/\n/g, '<br>');
-        } else {
-          const lines = part.split('\n');
-          const lang = lines[0].trim();
-          const code = lines.slice(1).join('\n');
-          html += `<pre style="background: rgba(0,0,0,0.1); padding: 10px; border-radius: 6px; overflow-x: auto; margin: 8px 0;"><code>${escapeHtml(code)}</code></pre>`;
-        }
-      });
-      node.innerHTML = html;
-    } else if (text) {
-      node.innerHTML = escapeHtml(text).replace(/\n/g, '<br>');
-    }
-
-    if (attachments && attachments.length > 0) {
-      const attachmentsDiv = document.createElement('div');
-      attachmentsDiv.style.cssText = 'margin-top: 8px; display: flex; flex-wrap: wrap; gap: 8px;';
-      
-      attachments.forEach(att => {
-        if (att.type === 'image' && att.data) { 
-          const img = document.createElement('img');
-          img.src = att.data;
-          img.style.cssText = 'max-width: 150px; max-height: 150px; border-radius: 8px; object-fit: cover; cursor: pointer; border: 2px solid rgba(255,255,255,0.2);';
-          img.onclick = () => window.open(att.data, '_blank');
-          img.title = att.name;
-          attachmentsDiv.appendChild(img);
-        } else if (att.type === 'file' || (att.type === 'image' && !att.data)) { 
-          const fileDiv = document.createElement('div');
-          fileDiv.style.cssText = 'display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: rgba(0,0,0,0.1); border-radius: 6px; font-size: 13px;';
-          
-          let iconClass = 'fa-file';
-          if (att.name.endsWith('.pdf')) iconClass = 'fa-file-pdf';
-          else if (att.name.endsWith('.docx') || att.name.endsWith('.doc')) iconClass = 'fa-file-word';
-          else if (att.name.endsWith('.txt')) iconClass = 'fa-file-alt';
-          else if (att.type === 'image') iconClass = 'fa-file-image';
-
-          fileDiv.innerHTML = `<i class="fas ${iconClass}"></i> <span>${escapeHtml(att.name)}</span>`;
-          attachmentsDiv.appendChild(fileDiv);
-        }
-      });
-      node.appendChild(attachmentsDiv);
-    }
-
-    target.appendChild(node);
-    target.scrollTop = target.scrollHeight;
-    if (returnElement) return node;
-  }
-  
-  function escapeHtml(text) {
-    if (typeof text !== 'string') return '';
-    return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   }
 
   async function handlePlanningCommands(commands) {
@@ -1368,132 +2270,29 @@
   function displaySuggestions(suggestions) {
     const container = el('proactive-suggestion');
     if (!container || !suggestions.length > 0) return;
-    container.textContent = suggestions[0].message; 
+    container.textContent = suggestions[0].message;
   }
 
-  el('chatFullSend')?.addEventListener('click', () => {
-    handleChatSubmit(el('chatFullInput').value, appState.attachments);
-  });
-  el('chatFullInput')?.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') handleChatSubmit(el('chatFullInput').value, appState.attachments);
-  });
-
-  // ======= Multi-Session & Historique Firebase (v8.1) =======
+  // ======= Multi-Session & Historique (Appelé par React) =======
   
   function getChatHistoryRef(userId, sessionId = null) {
     let path = `${userChatsRefPath}/${userId}`;
     if (sessionId) path += `/${sessionId}`;
     return ref(db, path);
   }
-
-  async function loadChatHistorySidebar() {
-    if (!appState.currentUser || !db) return;
-    const historyList = el('chat-history-list');
-    historyList.innerHTML = '';
-    const sessionsRef = getChatHistoryRef(appState.currentUser.uid);
-    const snapshot = await get(sessionsRef);
-    if (snapshot.exists()) {
-      const sessions = snapshot.val();
-      const sortedSessions = Object.keys(sessions).sort((a, b) => {
-        return (sessions[b].lastUpdated || 0) - (sessions[a].lastUpdated || 0);
-      });
-      sortedSessions.forEach(sessionId => {
-        const session = sessions[sessionId];
-        const title = session.title || `Chat du ${new Date(session.createdAt || Date.now()).toLocaleDateString()}`;
-        
-        const item = document.createElement('div');
-        item.className = 'chat-history-item';
-        item.dataset.sessionId = sessionId;
-
-        const titleSpan = document.createElement('span');
-        titleSpan.textContent = title;
-        titleSpan.className = 'chat-history-item-title';
-        titleSpan.onclick = () => loadChatSession(sessionId);
-        
-        const deleteBtn = document.createElement('button');
-        deleteBtn.innerHTML = '<i class="fas fa-trash-alt" style="color:white;"></i>';
-        deleteBtn.className = 'btn warn'; 
-        deleteBtn.style.padding = '4px 8px';
-        deleteBtn.style.fontSize = '12px';
-        deleteBtn.style.marginLeft = '8px';
-        deleteBtn.style.lineHeight = '1';
-        deleteBtn.style.borderRadius = '6px';
-        deleteBtn.onclick = (e) => {
-          e.stopPropagation(); 
-          deleteChatSession(sessionId, item);
-        };
-
-        item.appendChild(titleSpan);
-        item.appendChild(deleteBtn);
-        historyList.appendChild(item);
-      });
-    }
-  }
   
-  function createNewChatSession() {
+  async function createNewChatSession() {
     const newSessionId = `chat_${Date.now()}`;
     appState.currentSessionId = newSessionId;
     if (appState.currentUser && db) {
       const sessionRef = getChatHistoryRef(appState.currentUser.uid, newSessionId);
-      set(sessionRef, {
+      await set(sessionRef, {
         title: `Nouvelle discussion...`,
-        // ✅ MODIFICATION: Utilisation de la variable 'compat'
-        createdAt: firebase.database.ServerValue.TIMESTAMP,
-        lastUpdated: firebase.database.ServerValue.TIMESTAMP
+        createdAt: serverTimestamp(),
+        lastUpdated: serverTimestamp()
       });
     }
-    el('chatFullWindow').innerHTML = '';
-    appendChat('bot', 'Bonjour ! Je suis prêt pour notre nouvelle discussion.');
-    
-    loadChatHistorySidebar(); 
-    
-    setTimeout(() => {
-        document.querySelectorAll('.chat-history-item').forEach(i => i.classList.remove('active'));
-        const newItem = document.querySelector(`.chat-history-item[data-session-id="${newSessionId}"]`);
-        if(newItem) newItem.classList.add('active');
-    }, 100); 
-  }
-  el('new-chat-btn').addEventListener('click', createNewChatSession);
-
-  async function deleteChatSession(sessionId, itemElement) {
-    if (!appState.currentUser || !db) return;
-    if (!confirm("Voulez-vous vraiment supprimer cette discussion ? L'action est irréversible.")) return;
-
-    try {
-      const sessionRef = getChatHistoryRef(appState.currentUser.uid, sessionId);
-      await set(sessionRef, null); 
-      itemElement.remove();
-      if (appState.currentSessionId === sessionId) {
-        createNewChatSession();
-      }
-      logActivity(`Discussion ${sessionId} supprimée.`);
-    } catch (error) {
-      console.error("Erreur lors de la suppression du chat:", error);
-      logActivity("Erreur de suppression du chat.");
-    }
-  }
-
-  async function loadChatSession(sessionId) {
-    if (!appState.currentUser || !db) return;
-    appState.currentSessionId = sessionId;
-    const chatWindow = el('chatFullWindow');
-    chatWindow.innerHTML = '';
-    const messagesRef = ref(db, `${userChatsRefPath}/${appState.currentUser.uid}/${sessionId}/messages`);
-    const snapshot = await get(messagesRef);
-    if (snapshot.exists()) {
-      const messages = snapshot.val();
-      Object.values(messages).sort((a, b) => a.timestamp - b.timestamp).forEach(msg => { 
-        const attachmentsMeta = msg.attachments || [];
-        appendChat('user', msg.user, false, attachmentsMeta);
-        appendChat('bot', msg.bot, false); 
-      });
-    } else {
-      appendChat('bot', 'C\'est le début de notre conversation.');
-    }
-    document.querySelectorAll('.chat-history-item').forEach(i => i.classList.remove('active'));
-    document.querySelector(`.chat-history-item[data-session-id="${sessionId}"]`)?.classList.add('active');
-    el('chat-sidebar').classList.remove('open');
-    el('sidebar-overlay').classList.remove('open');
+    return newSessionId;
   }
   
   async function saveMessageToFirebase(userMsg, botMsg, attachments) {
@@ -1506,209 +2305,88 @@
       type: att.type
     }));
 
-    push(messagesRef, {
-      user: userMsg, bot: botMsg, 
+    await push(messagesRef, {
+      user: userMsg, 
+      bot: botMsg, 
       attachments: attachmentsMeta, 
-      // ✅ MODIFICATION: Utilisation de la variable 'compat'
-      timestamp: firebase.database.ServerValue.TIMESTAMP
+      timestamp: serverTimestamp()
     });
 
-    const chatWindow = el('chatFullWindow');
-    const isNewChat = (chatWindow.children.length <= 2); 
-
-    if (isNewChat) {
+    const messagesSnapshot = await get(messagesRef);
+    if (Object.keys(messagesSnapshot.val() || {}).length <= 1) { 
       let newTitle = userMsg;
-      if (!newTitle && attachments.length > 0) {
-        newTitle = `📎 ${attachments[0].name}`; 
-      }
-      if (!newTitle) newTitle = "Discussion"; 
-      
+      if (!newTitle && attachments.length > 0) newTitle = `📎 ${attachments[0].name}`;
+      if (!newTitle) newTitle = "Nouvelle discussion";
       newTitle = newTitle.substring(0, 30) + (newTitle.length > 30 ? '...' : '');
-
       await set(ref(db, `${userChatsRefPath}/${appState.currentUser.uid}/${appState.currentSessionId}/title`), newTitle);
-      
-      const item = document.querySelector(`.chat-history-item[data-session-id="${appState.currentSessionId}"] .chat-history-item-title`);
-      if (item) item.textContent = newTitle;
     }
     
-    // ✅ MODIFICATION: Utilisation de la variable 'compat'
-    await set(ref(db, `${userChatsRefPath}/${appState.currentUser.uid}/${appState.currentSessionId}/lastUpdated`), firebase.database.ServerValue.TIMESTAMP);
+    await set(ref(db, `${userChatsRefPath}/${appState.currentUser.uid}/${appState.currentSessionId}/lastUpdated`), serverTimestamp());
   }
   
-  // ======= Gestion des Pièces Jointes (Upload) (v8.0) (Inchangé) =======
-  
-  el('attach-file-btn').addEventListener('click', () => {
-    el('file-input').click();
-  });
-  
-  el('file-input').addEventListener('change', (event) => {
-    for (const file of event.target.files) {
-      if (appState.attachments.length >= 5) {
-        alert("Vous ne pouvez joindre que 5 fichiers maximum."); break;
-      }
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const dataUrl = e.target.result;
-        appState.attachments.push({
-          name: file.name,
-          type: file.type.startsWith('image/') ? 'image' : 'file',
-          data: dataUrl 
-        });
-        renderAttachmentPreviews();
-      };
-      reader.readAsDataURL(file);
-    }
-    event.target.value = null;
-  });
-  
-  function renderAttachmentPreviews() {
-    const container = el('attachment-preview-container');
-    container.innerHTML = '';
-    appState.attachments.forEach((file, index) => {
-      const preview = document.createElement('div');
-      preview.className = 'attachment-preview';
-      let iconHtml = '';
-      if (file.type === 'image') {
-        iconHtml = `<img src="${file.data}" alt="${file.name}">`;
-      } else {
-        const iconClass = file.name.endsWith('.pdf') ? 'fa-file-pdf' : 
-                          file.name.endsWith('.docx') ? 'fa-file-word' : 'fa-file-alt';
-        iconHtml = `<i class="fas ${iconClass}" style="font-size: 24px; color: var(--muted);"></i>`;
-      }
-      preview.innerHTML = `
-        ${iconHtml}
-        <span style="flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${file.name}</span>
-        <i class="fas fa-times-circle remove-attachment" data-index="${index}"></i>
-      `;
-      container.appendChild(preview);
-    });
-    container.querySelectorAll('.remove-attachment').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        const indexToRemove = parseInt(e.target.dataset.index, 10);
-        appState.attachments.splice(indexToRemove, 1);
-        renderAttachmentPreviews();
-      });
-    });
-  }
-
-  // ======= Quick Controls (Inchangé) =======
+  // ======= Quick Controls =======
   el('dayModeBtn')?.addEventListener('click', () => { document.body.classList.remove('night-mode'); localStorage.setItem('nightMode', false); });
   el('nightModeBtn')?.addEventListener('click', () => { document.body.classList.add('night-mode'); localStorage.setItem('nightMode', true); });
   el('allOnBtn')?.addEventListener('click', () => appState.devices.forEach(d => sendCommand(d.id, 'ON', 100)));
   el('allOffBtn')?.addEventListener('click', () => appState.devices.forEach(d => sendCommand(d.id, 'OFF', 0)));
 
-  // ======= Settings Management (Inchangé) =======
+  // ======= Settings Management =======
   function setupSettings() {
     el('darkModeToggle').checked = appState.isNightMode;
     el('darkModeToggle').addEventListener('change', (e) => {
       appState.isNightMode = e.target.checked; localStorage.setItem('nightMode', e.target.checked);
       document.body.classList.toggle('night-mode', e.target.checked);
     });
+    
     el('notificationsToggle').checked = appState.notificationsEnabled;
     el('notificationsToggle').addEventListener('change', (e) => {
         appState.notificationsEnabled = e.target.checked;
         localStorage.setItem('notifications', e.target.checked);
         if (e.target.checked) requestNotificationPermission();
     });
+    
     el('voiceNotificationsToggle').checked = appState.voiceNotifications;
     el('voiceNotificationsToggle').addEventListener('change', (e) => {
         appState.voiceNotifications = e.target.checked;
         localStorage.setItem('voiceNotifications', e.target.checked);
     });
+    
     el('testNotificationBtn')?.addEventListener('click', () => {
       if (!appState.notificationsEnabled) { alert('❌ Activez d\'abord les notifications.'); return; }
       sendBrowserNotification('🔔 Test de Notification', 'Si vous voyez ce message, tout fonctionne !');
       logActivity('Test de notification envoyé.');
     });
+    
     el('resetBtn').addEventListener('click', () => { if (confirm("Réinitialiser l'application ?")) { localStorage.clear(); location.reload(); } });
-    el('googleSignInOverlayBtn').addEventListener('click', handleGoogleSignIn);
+    
+    const googleBtn = el('googleSignInOverlayBtn');
+    if (googleBtn) {
+      googleBtn.addEventListener('click', handleGoogleSignIn);
+    } else {
+      console.warn("Bouton de connexion Google non trouvé lors de l'attachement.");
+    }
+    
     el('signOutBtn').addEventListener('click', handleSignOut);
   }
 
-  // ======= User Profile Functions (Inchangé) =======
+  // ======= User Profile Functions (Real) =======
   function handleGoogleSignIn() {
-    if (!auth) return;
+    if (!auth) {
+      console.error("Auth non initialisé.");
+      return;
+    }
     const provider = new GoogleAuthProvider();
-    // ✅ MODIFICATION: Utilisation de 'firebase.auth.GoogleAuthProvider'
-    // C'est déjà géré par la destructuration en haut.
-    signInWithPopup(auth, provider).catch((error) => { console.error("Erreur Auth:", error); logActivity(`Erreur: ${error.message}`); });
+    signInWithPopup(auth, provider).catch((error) => { 
+      console.error("Erreur Auth:", error); 
+      logActivity(`Erreur: ${error.message}`);
+      if (error.code === 'auth/popup-blocked') {
+        alert("Pop-up de connexion bloquée par le navigateur. Veuillez autoriser les pop-ups pour ce site.");
+      }
+    });
   }
   function handleSignOut() { if (auth) signOut(auth).catch((error) => console.error("Erreur Déco:", error)); }
   
-  // ======= WebSocket (ESP32) Logic (Inchangé) =======
-  const HARDCODED_ESP_IP = "192.168.43.248";
-  function connectWebSocket() {
-    if (appState.websocket && appState.websocket.readyState === WebSocket.OPEN) return;
-    const wsUrl = `ws://${HARDCODED_ESP_IP}/ws`;
-    logActivity(`🔄 Tentative connexion locale à ${HARDCODED_ESP_IP}...`);
-    const statusText = el('ws-status-text');
-    const statusIcon = el('ws-status-icon');
-    statusText.textContent = 'Local: Connexion...';
-    statusIcon.style.color = '#f39c12';
-    el('ws-status').style.backgroundColor = 'rgba(243, 156, 18, 0.1)';
-    try {
-      appState.websocket = new WebSocket(wsUrl);
-      const connectionTimeout = setTimeout(() => {
-        if (appState.websocket && appState.websocket.readyState !== WebSocket.OPEN) appState.websocket.close();
-      }, 3000);
-      appState.websocket.onopen = () => {
-        clearTimeout(connectionTimeout);
-        logActivity("✅ Mode local activé !");
-        statusText.textContent = 'Local: Connecté (ESP32)';
-        statusIcon.style.color = '#2ecc71'; statusIcon.classList.add('active');
-        el('ws-status').style.backgroundColor = 'rgba(46, 204, 113, 0.1)';
-        el('connect-ws').style.display = 'none'; el('disconnect-ws').style.display = 'block';
-        appState.connectionType = 'websocket'; appState.isConnected = true;
-        appState.websocket.send(JSON.stringify({ type: 'hello', client: 'web' }));
-        speak("Mode local activé."); updateConnectionModeIndicator();
-      };
-      appState.websocket.onmessage = (event) => {
-        logActivity(`📥 [Local] ${event.data}`);
-        try {
-          const data = JSON.parse(event.data);
-          if (data.type === 'state_update' && data.device_id && data.state) {
-            writeDeviceStateToBackend(data.device_id, data.state, data.power);
-          }
-          if (data.type === 'ping') appState.websocket.send(JSON.stringify({type: 'pong'}));
-        } catch (e) {}
-      };
-      appState.websocket.onclose = () => {
-        clearTimeout(connectionTimeout);
-        logActivity("🔌 Connexion locale fermée.");
-        statusText.textContent = 'Local: Non activé';
-        statusIcon.style.color = '#94a3b8'; statusIcon.classList.remove('active');
-        el('ws-status').style.backgroundColor = '';
-        el('connect-ws').style.display = 'block'; el('disconnect-ws').style.display = 'none';
-        appState.websocket = null; appState.connectionType = 'none'; appState.isConnected = false;
-        updateConnectionModeIndicator();
-      };
-      appState.websocket.onerror = (error) => {
-        clearTimeout(connectionTimeout);
-        logActivity("ℹ️ Mode local indisponible. Firebase prend le relais.");
-        statusText.textContent = 'Local: Indisponible';
-        statusIcon.style.color = '#94a3b8'; statusIcon.classList.remove('active');
-        el('ws-status').style.backgroundColor = 'rgba(148, 163, 184, 0.1)';
-        if (appState.websocket) appState.websocket.close();
-        appState.websocket = null; updateConnectionModeIndicator();
-      };
-    } catch (e) { console.error("WS Erreur:", e); logActivity("⚠️ Erreur WebSocket."); updateConnectionModeIndicator(); }
-  }
-  function disconnectWebSocket() { if (appState.websocket) appState.websocket.close(); }
-  el('connect-ws')?.addEventListener('click', connectWebSocket);
-  el('disconnect-ws')?.addEventListener('click', disconnectWebSocket);
-  function updateConnectionModeIndicator() {
-    const indicator = el('connection-mode');
-    if (!indicator) return;
-    if (appState.websocket && appState.websocket.readyState === WebSocket.OPEN) {
-      indicator.innerHTML = '<i class="fas fa-wifi"></i> Mode local + distant';
-      indicator.style.background = 'rgba(52, 152, 219, 0.1)'; indicator.style.color = '#3498db';
-    } else {
-      indicator.innerHTML = '<i class="fas fa-cloud"></i> Mode distant';
-      indicator.style.background = 'rgba(46, 204, 113, 0.1)'; indicator.style.color = '#2ecc71';
-    }
-  }
-  
-  // ======= Exécution Automatique des Planifications (Inchangé) =======
+  // ======= Exécution Automatique des Planifications =======
   setInterval(() => {
     const now = new Date();
     const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
@@ -1721,8 +2399,12 @@
         const actionText = plan.action === 'ON' ? 'allumé' : 'éteint';
         const powerText = plan.power !== null ? ` à ${plan.power}%` : '';
         sendCommand(plan.device, plan.action, plan.power);
-        const chatMessage = `⏰ Tâche planifiée : ${deviceName} ${actionText}${powerText}`;
-        if (el('chatFullWindow')) appendChat("bot", chatMessage);
+        
+        const event = new CustomEvent('systemMessage', { 
+          detail: `⏰ Tâche planifiée : ${deviceName} ${actionText}${powerText}`
+        });
+        window.dispatchEvent(event);
+        
         if (appState.voiceNotifications) speak(`Exécution planifiée. ${deviceName} ${actionText}.`);
         sendBrowserNotification(
           '⏰ Tâche Planifiée Exécutée',
@@ -1739,39 +2421,41 @@
   }, 15000); 
 
 
-  // ======= Auth State Change Listener (Inchangé) =======
+  // ======= Auth State Change Listener (Le "Gardien") =======
   if (auth) {
     onAuthStateChanged(auth, (user) => {
       if (user) {
         // --- Utilisateur connecté ---
         appState.currentUser = user;
-     document.querySelector('.main-app').style.display = 'block'; 
-        el('login-overlay').style.display = 'none'; 
+        document.querySelector('.main-app').style.display = 'block';
+        el('login-overlay').style.display = 'none';
+        
         const userPhoto = el('user-photo');
         userPhoto.src = user.photoURL || defaultAvatar;
         userPhoto.onerror = () => { userPhoto.src = defaultAvatar; }; 
         el('user-name-display').textContent = user.displayName || 'Utilisateur';
         el('user-email-display').textContent = user.email;
-        
-        loadChatHistorySidebar();
-        createNewChatSession();
+        if (el('statusFirebase')) el('statusFirebase').textContent = 'Firebase : OK';
         
         navigateTo('sec-domotique');
 
       } else {
         // --- Utilisateur déconnecté ---
         appState.currentUser = null;
-      document.querySelector('.main-app').style.display = 'none';
+        document.querySelector('.main-app').style.display = 'none';
         el('login-overlay').style.display = 'flex';
       }
     });
   } else {
     // Fallback si Firebase échoue
-    el('login-overlay').innerHTML = `
-      <div class="login-box">
-        <h2>Erreur Critique</h2>
-        <p>Impossible de se connecter à la base de données (Firebase). L'application ne peut pas démarrer.</p>
-      </div>`;
+    const loginBox = document.querySelector('#login-overlay .login-box');
+    if (loginBox) {
+        loginBox.innerHTML = `
+          <h2>Erreur Critique</h2>
+          <p>Impossible d'initialiser Firebase. L'application ne peut pas démarrer.</p>
+          <p>Vérifiez la console (F12) et votre connexion.</p>
+        `;
+    }
     el('login-overlay').style.display = 'flex';
   }
   
@@ -1788,10 +2472,13 @@
   }
 
 
-  // ======= Initialisation (Inchangé) =======
+  // ======= Initialisation =======
+  let uiInitialized = false;
   function initUI() {
+    if (uiInitialized) return;
+    
     if (appState.isNightMode) document.body.classList.add('night-mode');
-    setupSettings();
+    setupSettings(); // Attache tous les listeners
     VoiceEngine.init();
     populatePlanDeviceSelect();
     renderDevices();
@@ -1808,7 +2495,7 @@
       btn.innerHTML = isHidden ? '➖ Masquer le formulaire' : '➕ Ajouter un appareil';
     });
     
-    navigateTo('sec-domotique'); 
+    uiInitialized = true;
   }
 
   function requestNotificationPermission() {
@@ -1826,10 +2513,67 @@
       }, 3000);
     }
   }
+  
+  // ✅ CORRECTION: Appeler initUI() immédiatement à la fin
+  // pour que les listeners (y compris le login) soient prêts.
+  initUI();
+  
 
-  initUI(); 
-
+  // ======= EXPOSITION DES FONCTIONS POUR REACT =======
   window.appState = appState;
+  
+  window.getFirebaseSessions = async () => {
+    if (!appState.currentUser || !db) return [];
+    const sessionsRef = getChatHistoryRef(appState.currentUser.uid);
+    const snapshot = await get(sessionsRef);
+    if (snapshot.exists()) {
+      const sessions = snapshot.val();
+      const sortedSessions = Object.keys(sessions).sort((a, b) => (sessions[b].lastUpdated || 0) - (sessions[a].lastUpdated || 0));
+      return sortedSessions.map(sessionId => ({
+        id: sessionId,
+        ...sessions[sessionId]
+      }));
+    }
+    return [];
+  };
+  
+  window.getFirebaseMessages = async (sessionId) => {
+    if (!appState.currentUser || !db || !sessionId) return [];
+    const messagesRef = ref(db, `${userChatsRefPath}/${appState.currentUser.uid}/${sessionId}/messages`);
+    const snapshot = await get(messagesRef);
+    if (snapshot.exists()) {
+      const messages = snapshot.val();
+      return Object.values(messages).sort((a, b) => a.timestamp - b.timestamp);
+    }
+    return [];
+  };
+  
+  window.sendToOnline = sendToOnline;
+  
+  window.deleteFirebaseSession = async (sessionId) => {
+    if (!appState.currentUser || !db) return;
+    const sessionRef = getChatHistoryRef(appState.currentUser.uid, sessionId);
+    await set(sessionRef, null);
+    logActivity(`Session ${sessionId} supprimée.`);
+  };
+  
+  window.renameFirebaseSession = async (sessionId, newTitle) => {
+    if (!appState.currentUser || !db) return;
+    await set(ref(db, `${userChatsRefPath}/${appState.currentUser.uid}/${sessionId}/title`), newTitle);
+    logActivity(`Session ${sessionId} renommée.`);
+  };
+
+  window.createNewFirebaseSession = async () => {
+    const newSessionId = await createNewChatSession();
+    logActivity(`Nouvelle session créée: ${newSessionId}`);
+    return newSessionId;
+  };
+  
+  window.setCurrentSession = (sessionId) => {
+    appState.currentSessionId = sessionId;
+  };
+  
+  window.VoiceEngine = VoiceEngine;
   
   </script>
 </body>
