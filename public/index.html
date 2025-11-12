@@ -93,9 +93,10 @@
     
     /* ===== SECTION CHAT (React) ===== */
     #sec-intelligence {
-      height: 100%; 
+      /* Ajustement pour que React prenne 100% de la hauteur disponible */
+      height: calc(100vh - 88px); /* 100% de la vue moins la hauteur du footer */
       padding-top: 0; 
-      margin: -16px -12px 0;
+      margin: -16px -12px 0; /* Prend tout l'espace, annule le padding du parent */
     }
     #react-ia-root {
       height: 100%;
@@ -194,13 +195,34 @@
       .two-column { grid-template-columns: 1fr; }
       .container { padding-bottom: 88px; }
       
+      /* Ajustement pour que React prenne 100% de la hauteur disponible SUR MOBILE */
+      body:has(#sec-intelligence.active) .container {
+         padding: 0; /* Pas de padding pour le container de React */
+         height: 100vh; /* Prend 100% de la vue */
+         overflow: hidden; /* Empêche le scroll du container principal */
+      }
+      body:has(#sec-intelligence.active) #main-header {
+         display: none; /* Cache le header quand on est sur le chat */
+      }
+      body:has(#sec-intelligence.active) #main-footer {
+         display: none; /* Cache le footer quand on est sur le chat */
+      }
       #sec-intelligence {
-        margin: -16px -8px 0;
+        height: 100%; /* Prend 100% de son parent (qui fait 100vh) */
+        margin: 0;
       }
     }
     
     @media (min-width: 761px) {
       .two-column { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+      /* Sur Desktop, le header est visible, donc on cache le chat s'il n'est pas actif */
+      body:not(:has(#sec-intelligence.active)) #react-ia-root {
+        display: none;
+      }
+      /* Cache le header standard quand on est sur l'onglet chat */
+      body:has(#sec-intelligence.active) #main-header {
+         display: none;
+      }
     }
 
     /* ==== Écran de connexion ==== */
@@ -1559,7 +1581,7 @@
       const handleRename = (e) => {
         e.stopPropagation();
         if (title.trim()) {
-          onRename(session.id, title);
+          onRename(title);
         }
         setIsEditing(null);
       };
@@ -1733,14 +1755,14 @@
     appId: "1:197281963087:web:da680779479391d91f1e3a"
   };
 
-  // ======= IMPORT FIREBASE (Module) =======
+  // ======= IMPORT FIREBASE (Identique à votre v8.1) =======
   import { initializeApp } from "[https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js](https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js)";
   import { getDatabase, ref, set, push, onValue, remove, get, serverTimestamp } from "[https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js](https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js)";
   import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "[https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js](https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js)";
 
   const el = id => document.getElementById(id);
 
-  // ======= APP STATE (Simplifié) =======
+  // ======= APP STATE (Global, pour la domotique et React) =======
   const appState = {
     devices: [], deviceStates: {},
     isNightMode: localStorage.getItem('nightMode') === 'true',
@@ -1780,6 +1802,14 @@
     document.querySelectorAll('.btn-nav').forEach(b => b.classList.remove('active'));
     document.querySelectorAll(`[data-target="${targetSection}"]`).forEach(b => b.classList.add('active'));
     
+    // Cache le header si on est sur le chat (géré par CSS media query aussi)
+    const header = el('main-header');
+    if (targetSection === 'sec-intelligence') {
+        if (header) header.style.display = 'none';
+    } else {
+        if (header) header.style.display = 'block';
+    }
+    
     const titleMap = {
       'sec-domotique': 'Domotique',
       'sec-planning': 'Planning',
@@ -1798,7 +1828,7 @@
     });
   });
 
-  // ======= Firebase & Listeners =======
+  // ======= Firebase & Listeners (Identique à votre v8.1) =======
   let db = null;
   let auth = null;
   
@@ -2369,7 +2399,7 @@
     el('signOutBtn').addEventListener('click', handleSignOut);
   }
 
-  // ======= User Profile Functions (Real) =======
+  // ======= User Profile Functions (Identique à votre v8.1) =======
   function handleGoogleSignIn() {
     if (!auth) {
       console.error("Auth non initialisé.");
@@ -2400,6 +2430,7 @@
         const powerText = plan.power !== null ? ` à ${plan.power}%` : '';
         sendCommand(plan.device, plan.action, plan.power);
         
+        // Envoie le message système à React
         const event = new CustomEvent('systemMessage', { 
           detail: `⏰ Tâche planifiée : ${deviceName} ${actionText}${powerText}`
         });
@@ -2421,7 +2452,7 @@
   }, 15000); 
 
 
-  // ======= Auth State Change Listener (Le "Gardien") =======
+  // ======= AUTH STATE CHANGE (Identique à votre v8.1, mais ne charge pas le chat JS) =======
   if (auth) {
     onAuthStateChanged(auth, (user) => {
       if (user) {
@@ -2437,7 +2468,11 @@
         el('user-email-display').textContent = user.email;
         if (el('statusFirebase')) el('statusFirebase').textContent = 'Firebase : OK';
         
+        // Naviguer vers l'accueil
         navigateTo('sec-domotique');
+        
+        // NOTE: Aucune fonction de chat (comme loadChatHistorySidebar) n'est appelée ici.
+        // React s'en chargera de son côté quand il verra que appState.currentUser existe.
 
       } else {
         // --- Utilisateur déconnecté ---
@@ -2515,7 +2550,6 @@
   }
   
   // ✅ CORRECTION: Appeler initUI() immédiatement à la fin
-  // pour que les listeners (y compris le login) soient prêts.
   initUI();
   
 
