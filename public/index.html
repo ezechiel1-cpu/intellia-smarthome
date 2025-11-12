@@ -92,13 +92,11 @@
     .section.active { display: block; }
     
     /* ===== SECTION CHAT (React) ===== */
-    /* La section prend 100% de la hauteur du container scrollable */
     #sec-intelligence {
       height: 100%; 
       padding-top: 0; 
-      margin: -16px -12px 0; /* Compense le padding du container pour le plein écran */
+      margin: -16px -12px 0;
     }
-    /* Le div root pour React doit prendre toute la hauteur de son parent */
     #react-ia-root {
       height: 100%;
     }
@@ -109,7 +107,7 @@
     .chip { display: inline-block; padding: 6px 10px; border-radius: 999px; background: rgba(0,0,0,0.05); margin-right: 8px; font-size: 13px; }
     .device-card { border-radius: 12px; padding: 14px; background: var(--card-bg); box-shadow: var(--shadow); transition: transform 0.2s ease; }
     .device-card:hover { transform: translateY(-2px); }
-    .device-header { display: flex; align: center; gap: 12px; margin-bottom: 12px; }
+    .device-header { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
     .device-icon {
       width: 48px; height: 48px; border-radius: 10px;
       background: linear-gradient(135deg, #4895ef, #4361ee);
@@ -188,9 +186,6 @@
       100% { transform: scale(1); opacity: 1; }
     }
     
-    /* ================================================= */
-    /* ✅ CSS Mobile (Simplifié) */
-    /* ================================================= */
     @media (max-width: 760px) {
       .grid { grid-template-columns: 1fr; }
       .controls { flex-direction: column; }
@@ -199,7 +194,6 @@
       .two-column { grid-template-columns: 1fr; }
       .container { padding-bottom: 88px; }
       
-      /* L'onglet IA s'adapte au padding mobile */
       #sec-intelligence {
         margin: -16px -8px 0;
       }
@@ -429,7 +423,6 @@
 
     const SmartHomeIASection = () => {
       // ============ STATE MANAGEMENT ============
-      // ✅ ZÉRO SIMULATION: L'état est chargé depuis Firebase
       const [sessions, setSessions] = useState([]);
       const [currentSessionId, setCurrentSessionId] = useState(null);
       const [currentMessages, setCurrentMessages] = useState([]);
@@ -442,7 +435,6 @@
       
       const [editingSessionId, setEditingSessionId] = useState(null);
       
-      // ✅ État réel du mode nuit, lu depuis le body
       const [isDarkMode, setIsDarkMode] = useState(document.body.classList.contains('night-mode'));
       
       const [isRecording, setIsRecording] = useState(false);
@@ -479,7 +471,6 @@
 
       // ============ EFFECTS ============
       
-      // ✅ Chargement initial des sessions depuis Firebase
       useEffect(() => {
         const loadData = async () => {
           if (window.getFirebaseSessions) {
@@ -488,13 +479,20 @@
             setSessions(data);
             if (data.length > 0) {
               await selectSession(data[0].id);
+            } else {
+              await createNewSession(true); // Créer et sélectionner une nouvelle session
             }
             setIsLoading(false);
           }
         };
-        loadData();
+        // Attend que l'utilisateur soit connecté pour charger les données
+        const checkAuth = setInterval(() => {
+          if (window.appState && window.appState.currentUser) {
+            clearInterval(checkAuth);
+            loadData();
+          }
+        }, 100);
         
-        // ✅ Observer le body pour le mode jour/nuit
         const observer = new MutationObserver((mutations) => {
           mutations.forEach(mutation => {
             if (mutation.attributeName === 'class') {
@@ -504,7 +502,27 @@
           });
         });
         observer.observe(document.body, { attributes: true });
-        return () => observer.disconnect();
+        
+        // Listeners pour les événements globaux
+        const handleVoiceSubmit = (e) => setInputValue(e.detail);
+        const handleSystemMessage = (e) => {
+          const systemMessage = {
+            role: 'assistant',
+            bot: e.detail,
+            timestamp: Date.now()
+          };
+          setCurrentMessages(prev => [...prev, systemMessage]);
+        };
+        
+        window.addEventListener('voiceSubmit', handleVoiceSubmit);
+        window.addEventListener('systemMessage', handleSystemMessage);
+        
+        return () => {
+          observer.disconnect();
+          clearInterval(checkAuth);
+          window.removeEventListener('voiceSubmit', handleVoiceSubmit);
+          window.removeEventListener('systemMessage', handleSystemMessage);
+        };
       }, []);
       
       useEffect(() => {
@@ -551,7 +569,7 @@
         if (window.innerWidth <= 768) setIsSidebarOpen(false);
       };
       
-      const createNewSession = async () => {
+      const createNewSession = async (select = true) => {
         const newSessionId = await window.createNewFirebaseSession();
         const newSession = {
           id: newSessionId,
@@ -559,8 +577,10 @@
           lastUpdated: Date.now(),
           messages: []
         };
-        setSessions([newSession, ...sessions]);
-        await selectSession(newSessionId);
+        setSessions(prev => [newSession, ...prev]);
+        if (select) {
+          await selectSession(newSessionId);
+        }
       };
 
       const deleteSession = async (sessionId) => {
@@ -569,7 +589,11 @@
           const newSessions = sessions.filter(s => s.id !== sessionId);
           setSessions(newSessions);
           if (currentSessionId === sessionId) {
-            await selectSession(newSessions.length > 0 ? newSessions[0].id : null);
+            if (newSessions.length > 0) {
+              await selectSession(newSessions[0].id);
+            } else {
+              await createNewSession(true); // Créer une nouvelle si la liste est vide
+            }
           }
         }
       };
@@ -582,7 +606,6 @@
         setEditingSessionId(null);
       };
 
-      // (Pin/Archive non connectés à Firebase, gérés en local)
       const togglePinSession = (sessionId) => {
         setSessions(sessions.map(s => 
           s.id === sessionId ? { ...s, pinned: !s.pinned } : s
@@ -597,30 +620,37 @@
       // ============ MESSAGE HANDLING (Connecté à Firebase) ============
       const sendMessage = async () => {
         if (!inputValue.trim() && attachments.length === 0) return;
-        if (isLoading || !currentSessionId) return;
+        
+        let currentSessId = currentSessionId;
+        // Si aucune session n'est sélectionnée (cas rare), en créer une
+        if (!currentSessId) {
+          await createNewSession(true);
+          // Doit attendre que l'état React se mette à jour, ou obtenir l'ID de retour
+          // On va tricher et utiliser l'état global
+          currentSessId = window.appState.currentSessionId;
+        }
+        
+        if (isLoading || !currentSessId) return;
 
         const userMessage = {
           role: 'user',
-          user: inputValue, // 'user' au lieu de 'content' pour correspondre à Firebase
+          user: inputValue,
           attachments: attachments,
           timestamp: Date.now()
         };
 
-        // 1. Ajouter le message utilisateur à l'état React
         setCurrentMessages([...currentMessages, userMessage]);
         
-        // 2. Mettre à jour la session dans la sidebar
+        const isFirstMessage = currentMessages.length === 0;
         const newSessions = sessions.map(s => 
-          s.id === currentSessionId 
+          s.id === currentSessId 
             ? { 
                 ...s, 
                 lastUpdated: Date.now(),
-                // Le titre est mis à jour par la fonction globale si c'est le 1er message
-                title: (currentMessages.length === 0 && inputValue) ? inputValue.substring(0, 30) + '...' : s.title
+                title: (isFirstMessage && inputValue) ? inputValue.substring(0, 30) + '...' : s.title
               }
             : s
         );
-        // Trier pour remonter la session
         newSessions.sort((a, b) => (b.lastUpdated || 0) - (a.lastUpdated || 0));
         setSessions(newSessions);
 
@@ -630,22 +660,19 @@
         setAttachments([]);
         setIsLoading(true);
 
-        // 3. ✅ Appel RÉEL à la fonction globale (qui sauvegarde aussi sur Firebase)
         const reply = await window.sendToOnline(currentInput, currentAttachments);
         
         setIsLoading(false);
 
-        // 4. Ajouter la réponse de l'assistant à l'état React
         const assistantMessage = {
           role: 'assistant',
-          bot: reply, // 'bot' au lieu de 'content'
+          bot: reply,
           timestamp: Date.now()
         };
         setCurrentMessages(prev => [...prev, assistantMessage]);
       };
 
       const regenerateMessage = (messageIndex) => {
-        // Logique de régénération (non implémentée dans le backend, simulation)
         setIsLoading(true);
         setTimeout(() => {
           const newMessage = {
@@ -674,8 +701,8 @@
             newAttachments.push({
               name: file.name,
               type: file.type.startsWith('image/') ? 'image' : 'file',
-              data: dataUrl, // Requis par sendToOnline
-              url: URL.createObjectURL(file) // Pour la preview React
+              data: dataUrl,
+              url: URL.createObjectURL(file)
             });
             setAttachments(newAttachments);
           };
@@ -689,10 +716,9 @@
 
       // ============ VOICE HANDLING (Connecté au moteur global) ============
       const toggleRecording = () => {
-        // Utilise le moteur vocal de l'app principale
         if (window.VoiceEngine) {
           window.VoiceEngine.togglePushToTalk();
-          setIsRecording(!isRecording); // Note: l'état peut se désynchroniser
+          setIsRecording(!isRecording);
         }
       };
 
@@ -714,8 +740,6 @@
       // ============ RENDER ============
       return (
         <div className={`ia-section ${isDarkMode ? 'dark' : 'light'}`}>
-          {/* ✅ CSS INTÉGRÉ ET ADAPTÉ AUX VARIABLES GLOBALES
-          */}
           <style>{`
             .ia-section * { 
               box-sizing: border-box; 
@@ -726,7 +750,7 @@
             
             .ia-section {
               width: 100%;
-              height: 100%; /* Prend 100% de la section, pas du viewport */
+              height: 100%;
               display: flex;
               background: var(--bg-primary);
               color: var(--text-primary);
@@ -758,7 +782,7 @@
             .btn-new-chat {
               width: 100%;
               padding: 12px 16px;
-              background: var(--primary); /* ✅ Variable Globale */
+              background: var(--primary);
               color: white;
               border: none;
               border-radius: 12px;
@@ -773,7 +797,7 @@
             }
 
             .btn-new-chat:hover {
-              background: var(--accent-cyan); /* ✅ Variable Globale */
+              background: var(--accent-cyan);
               transform: translateY(-1px);
               box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
             }
@@ -791,7 +815,7 @@
             }
             .search-input:focus {
               outline: none;
-              border-color: var(--primary); /* ✅ Variable Globale */
+              border-color: var(--primary);
               box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
             }
             .search-icon {
@@ -835,7 +859,7 @@
               left: 4px; top: 50%;
               transform: translateY(-50%);
               width: 3px; height: 16px;
-              background: var(--primary); /* ✅ Variable Globale */
+              background: var(--primary);
               border-radius: 2px;
             }
             .session-title {
@@ -850,7 +874,7 @@
               flex: 1;
               padding: 4px 8px;
               background: var(--bg-primary);
-              border: 1px solid var(--primary); /* ✅ Variable Globale */
+              border: 1px solid var(--primary);
               border-radius: 6px;
               color: var(--text-primary);
               font-size: 14px;
@@ -937,7 +961,7 @@
               width: 36px;
               height: 36px;
               border-radius: 50%;
-              background: linear-gradient(135deg, var(--primary), var(--accent-cyan)); /* ✅ Variable Globale */
+              background: linear-gradient(135deg, var(--primary), var(--accent-cyan));
               display: flex;
               align-items: center;
               justify-content: center;
@@ -945,7 +969,7 @@
               font-weight: 600;
               font-size: 14px;
               flex-shrink: 0;
-              overflow: hidden; /* Pour l'image de profil */
+              overflow: hidden;
             }
             .message-avatar img {
               width: 100%;
@@ -954,7 +978,7 @@
             }
             
             .message.user .message-avatar {
-              background: linear-gradient(135deg, var(--success), #16a34a); /* ✅ Variable Globale */
+              background: linear-gradient(135deg, var(--success), #16a34a);
             }
 
             .message-content { flex: 1; display: flex; flex-direction: column; gap: 8px; }
@@ -968,7 +992,7 @@
               word-wrap: break-word;
             }
             .message.user .message-bubble {
-              background: var(--primary); /* ✅ Variable Globale */
+              background: var(--primary);
               color: white;
             }
             .message-bubble strong { font-weight: 600; }
@@ -1049,7 +1073,7 @@
             .attachment-preview img { width: 40px; height: 40px; object-fit: cover; border-radius: 4px; }
             .btn-remove-attachment {
               padding: 4px;
-              background: var(--danger); /* ✅ Variable Globale */
+              background: var(--danger);
               border: none;
               border-radius: 4px;
               color: white;
@@ -1070,17 +1094,17 @@
               display: flex;
               align-items: center;
               justify-content: center;
-              height: 48px; /* Hauteur fixe */
-              width: 48px;  /* Largeur fixe */
+              height: 48px;
+              width: 48px;
             }
             .input-action-btn:hover { background: var(--bg-hover); color: var(--text-primary); }
             .input-action-btn.recording {
-              background: var(--danger); /* ✅ Variable Globale */
+              background: var(--danger);
               color: white;
               animation: pulse 1.5s infinite;
             }
             .input-action-btn.continuous-active {
-              background: var(--primary); /* ✅ Variable Globale */
+              background: var(--primary);
               color: white;
             }
             @keyframes pulse {
@@ -1103,12 +1127,12 @@
             }
             .input-textarea:focus {
               outline: none;
-              border-color: var(--primary); /* ✅ Variable Globale */
+              border-color: var(--primary);
               box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
             }
             .btn-send {
               padding: 10px 20px;
-              background: var(--primary); /* ✅ Variable Globale */
+              background: var(--primary);
               border: none;
               border-radius: 10px;
               color: white;
@@ -1118,10 +1142,10 @@
               display: flex;
               align-items: center;
               gap: 6px;
-              height: 48px; /* Hauteur fixe */
+              height: 48px;
             }
             .btn-send:hover:not(:disabled) {
-              background: var(--accent-cyan); /* ✅ Variable Globale */
+              background: var(--accent-cyan);
               transform: translateY(-1px);
               box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
             }
@@ -1140,7 +1164,7 @@
               width: 6px;
               height: 6px;
               border-radius: 50%;
-              background: var(--success); /* ✅ Variable Globale */
+              background: var(--success);
             }
             .status-dot.inactive { background: var(--text-muted); }
 
@@ -1157,7 +1181,7 @@
             .empty-state-icon {
               width: 80px;
               height: 80px;
-              background: linear-gradient(135deg, var(--primary), var(--accent-cyan)); /* ✅ Variable Globale */
+              background: linear-gradient(135deg, var(--primary), var(--accent-cyan));
               border-radius: 20px;
               display: flex;
               align-items: center;
@@ -1190,7 +1214,7 @@
             }
             .suggestion-chip:hover {
               background: var(--bg-hover);
-              border-color: var(--primary); /* ✅ Variable Globale */
+              border-color: var(--primary);
               transform: translateY(-2px);
             }
 
@@ -1200,7 +1224,7 @@
                 position: fixed;
                 left: 0;
                 top: 0;
-                height: 100vh; /* Prend tout l'écran */
+                height: 100vh;
                 z-index: 200;
                 box-shadow: var(--shadow);
               }
@@ -1220,7 +1244,6 @@
               .empty-state-icon { width: 60px; height: 60px; }
               .empty-state-title { font-size: 20px; }
               
-              /* Cacher le texte des boutons sur mobile */
               .btn-send {
                 padding: 10px;
                 min-width: 48px;
@@ -1238,7 +1261,7 @@
           {/* Sidebar */}
           <div className={`sidebar ${!isSidebarOpen ? 'closed' : ''}`}>
             <div className="sidebar-header">
-              <button className="btn-new-chat" onClick={createNewSession}>
+              <button className="btn-new-chat" onClick={() => createNewSession(true)}>
                 <i className="fas fa-plus" style={{marginRight: '8px'}}></i>
                 Nouvelle conversation
               </button>
@@ -1294,7 +1317,6 @@
                   ))}
                 </div>
               )}
-              {/* Autres groupes (Hier, 7 jours, etc.) */}
                {groupedSessions().yesterday.length > 0 && (
                 <div className="session-group">
                   <div className="session-group-title">Hier</div>
@@ -1392,13 +1414,13 @@
                     ou demandez-moi d'analyser vos données.
                   </p>
                   <div className="empty-state-suggestions">
-                    <div className="suggestion-chip" onClick={() => setInputValue('Allume toutes les lumières du salon')}>
+                    <div className="suggestion-chip" onClick={() => sendMessage({customInput: 'Allume toutes les lumières du salon'})}>
                       💡 Contrôler les lumières
                     </div>
-                    <div className="suggestion-chip" onClick={() => setInputValue('Crée une planification pour éteindre les appareils à 23h')}>
+                    <div className="suggestion-chip" onClick={() => sendMessage({customInput: 'Crée une planification pour éteindre les appareils à 23h'})}>
                       ⏰ Créer une planification
                     </div>
-                    <div className="suggestion-chip" onClick={() => setInputValue('Quels appareils sont allumés ?')}>
+                    <div className="suggestion-chip" onClick={() => sendMessage({customInput: 'Quels appareils sont allumés ?'})}>
                       🏠 État des appareils
                     </div>
                   </div>
@@ -1577,7 +1599,7 @@
                   className="session-action-btn"
                   onClick={(e) => {
                     e.stopPropagation();
-                    setTitle(session.title); // Réinitialiser le titre au cas où
+                    setTitle(session.title);
                     setIsEditing(session.id);
                   }}
                   title="Renommer"
@@ -1602,27 +1624,23 @@
     };
 
     const Message = ({ message, onCopy, onRegenerate }) => {
-      // ✅ Contenu réel (user/bot)
       const content = message.bot || message.user;
       
       const renderContent = (content) => {
         if (!content) return null;
-        // Simple Markdown rendering
         const parts = content.split('```');
         return parts.map((part, index) => {
           if (index % 2 === 0) {
-            // Regular text
             return (
               <span key={index} dangerouslySetInnerHTML={{
                 __html: part
-                  .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') // échapper html
+                  .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
                   .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
                   .replace(/\*(.*?)\*/g, '<em>$1</em>')
                   .replace(/\n/g, '<br>')
               }} />
             );
           } else {
-            // Code block
             const lines = part.split('\n');
             const lang = lines[0].trim();
             const code = lines.slice(1).join('\n');
@@ -1635,7 +1653,6 @@
         });
       };
       
-      // ✅ Avatar réel
       const avatarContent = () => {
         if (message.role === 'user' && window.appState && window.appState.currentUser && window.appState.currentUser.photoURL) {
           return <img src={window.appState.currentUser.photoURL} alt="User" style={{width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover'}} />;
@@ -1682,7 +1699,6 @@
       );
     };
     
-    // ✅ ÉTAPE 5: Rendu du composant React dans le DOM
     ReactDOM.createRoot(document.getElementById('react-ia-root')).render(<SmartHomeIASection />);
   </script>
   
@@ -1690,10 +1706,9 @@
   
   <script type="module">
   /*************************************************
-   * SmartHome Intelligence - v9.0 (React UI)
-   * - UI de l'Assistant gérée par React
-   * - Logique backend (Firebase, Commandes) gérée par ce module
-   * - Suppression du WebSocket local
+   * SmartHome Intelligence - v9.2 (Auth Fix)
+   * - initUI() est replacé à la fin pour un chargement
+   * synchrone des listeners de boutons.
    *************************************************/
 
   // ======= CONFIG =======
@@ -1734,7 +1749,7 @@
     voiceNotifications: localStorage.getItem('voiceNotifications') !== 'false',
     plans: [],
     currentUser: null,
-    currentSessionId: null, // Géré par React ET ce script
+    currentSessionId: null,
     chatInProgress: false,
   };
   
@@ -1769,9 +1784,11 @@
       'sec-domotique': 'Domotique',
       'sec-planning': 'Planning',
       'sec-params': 'Paramètres',
-      'sec-intelligence': 'Assistant IA' // Titre pour la nouvelle section
+      'sec-intelligence': 'Assistant IA'
     };
-    el('section-header-title').textContent = titleMap[targetSection] || 'Domotique';
+    if(el('section-header-title')) {
+        el('section-header-title').textContent = titleMap[targetSection] || 'Domotique';
+    }
   }
 
   document.querySelectorAll('.btn-nav').forEach(btn => {
@@ -1789,17 +1806,15 @@
     const app = initializeApp(firebaseConfig);
     db = getDatabase(app);
     auth = getAuth(app);
-    el('statusFirebase').textContent = 'Firebase : OK';
   } catch (e) {
     db = null;
-    el('statusFirebase').textContent = 'Firebase : Échec';
     console.error("Erreur d'initialisation de Firebase:", e);
   }
 
   const metaRefPath = "devicesMeta";
   const devicesRefPath = "devices";
   const planningRefPath = "planning";
-  const userChatsRefPath = "userChats"; // Gardé pour les fonctions de l'assistant
+  const userChatsRefPath = "userChats"; 
 
   if (db) {
     onValue(ref(db, metaRefPath), snap => { appState.devices = Object.values(snap.val() || {}); renderDevices(); });
@@ -1931,7 +1946,8 @@
 
   window.adjustBrightness = (deviceId, value) => {
     const v = parseInt(value, 10);
-    el(`${deviceId}-value`).textContent = v + '%';
+    const valueEl = el(`${deviceId}-value`);
+    if(valueEl) valueEl.textContent = v + '%';
     sendCommand(deviceId, v > 0 ? "ON" : "OFF", v);
   };
 
@@ -2001,7 +2017,7 @@
 
   function updateCount() {
     const onCount = Object.values(appState.deviceStates).filter(s => s?.etat === 'ON').length;
-    el('db-count').textContent = `on: ${onCount}`;
+    if (el('db-count')) el('db-count').textContent = `on: ${onCount}`;
   }
 
   // ======= Local Persistence (utilisé uniquement si Firebase échoue) =======
@@ -2061,14 +2077,18 @@
     
     init() {
       if (!("webkitSpeechRecognition" in window || "SpeechRecognition" in window)) {
-        el('quickVoiceToggleBtn').disabled = true; 
-        el('quickVoiceToggleBtn').textContent = 'Voix non supportée';
+        if (el('quickVoiceToggleBtn')) {
+          el('quickVoiceToggleBtn').disabled = true; 
+          el('quickVoiceToggleBtn').textContent = 'Voix non supportée';
+        }
         return;
       }
       this.requestMicrophonePermission();
       const quickBtn = el('quickVoiceToggleBtn');
-      quickBtn.addEventListener('touchstart', (e) => { e.preventDefault(); this.toggleContinuousConversation(); });
-      quickBtn.addEventListener('click', () => this.toggleContinuousConversation());
+      if (quickBtn) {
+        quickBtn.addEventListener('touchstart', (e) => { e.preventDefault(); this.toggleContinuousConversation(); });
+        quickBtn.addEventListener('click', () => this.toggleContinuousConversation());
+      }
     },
     requestMicrophonePermission() {
       navigator.mediaDevices.getUserMedia({ audio: true })
@@ -2090,24 +2110,18 @@
             '<i class="fas fa-stop-circle icon-pulse"></i> Conversation active' : 
             '<i class="fas fa-waveform"></i> Lancer la conversation';
         }
-        // React gère ses propres boutons
     },
     togglePushToTalk() {
-      // Cette fonction est maintenant appelée par React
       if (this.isContinuousActive) this.toggleContinuousConversation();
-      const btn = el('voicePushToTalk'); // Référence au bouton React (s'il a cet ID)
       if (this.isPushToTalkRecording) {
         this.isPushToTalkRecording = false;
         if (this.recognition) this.recognition.stop();
-        if(btn) btn.classList.remove('pulse');
       } else {
         this.isPushToTalkRecording = true;
         this.recognition = this.createRecognitionInstance(false);
-        if(btn) btn.classList.add('pulse');
-        this.recognition.onresult = (e) => handleVoiceSubmit(e.results[0][0].transcript); // Soumission
+        this.recognition.onresult = (e) => handleVoiceSubmit(e.results[0][0].transcript);
         this.recognition.onend = () => {
           this.isPushToTalkRecording = false;
-          if(btn) btn.classList.remove('pulse');
           this.recognition = null;
         };
         this.recognition.start();
@@ -2159,7 +2173,6 @@
   
   // ======= Assistant Communication (Connecté à React) =======
   
-  // ✅ Gère la soumission vocale (appelé par VoiceEngine)
   async function handleVoiceSubmit(command) {
     if (!command) return;
     if (appState.chatInProgress) {
@@ -2167,21 +2180,13 @@
       return;
     }
     
-    // Simule un clic dans l'interface React
-    // C'est un peu un hack, mais ça force React à gérer la soumission
-    const reactInstance = document.getElementById('react-ia-root');
-    if (reactInstance) {
-      // On pourrait passer la commande à React via un Custom Event
-      // Pour l'instant, on envoie directement
-      logActivity(`Commande vocale: "${command}"`);
-      const reply = await sendToOnline(command, []);
-      speak(reply);
-      // TODO: Dire à React de rafraîchir ses messages
-      // On va supposer que React rafraîchit en cliquant sur la session
-    }
+    logActivity(`Commande vocale: "${command}"`);
+    
+    // Informe React d'envoyer le message
+    const event = new CustomEvent('voiceSubmit', { detail: command });
+    window.dispatchEvent(event);
   }
 
-  // ✅ Fonction principale d'envoi (appelée par React)
   async function sendToOnline(message, attachments = []) {
     if (!appState.currentUser) {
         alert("Erreur: Utilisateur non connecté. Veuillez rafraîchir.");
@@ -2189,7 +2194,9 @@
     }
     
     if (!appState.currentSessionId) {
-      createNewChatSession(); // S'assure qu'on a un ID de session
+      const newId = await window.createNewFirebaseSession();
+      appState.currentSessionId = newId;
+      window.setCurrentSession(newId);
     }
     
     appState.chatInProgress = true;
@@ -2212,11 +2219,10 @@
         }),
       });
       
-      el('intelliaLatency').textContent = `latence: ${Date.now() - t0}ms`;
+      if(el('intelliaLatency')) el('intelliaLatency').textContent = `latence: ${Date.now() - t0}ms`;
       if (!response.ok) throw new Error(`Server error ${response.status}`);
       const j = await response.json();
       
-      // ✅ Sauvegarde le message dans Firebase
       await saveMessageToFirebase(message, j.reply, attachments);
       
       if (j.suggestions && j.suggestions.length > 0) displaySuggestions(j.suggestions);
@@ -2224,7 +2230,7 @@
       if (j.execute) handleExecuteCommands(j.execute);
       
       appState.intelliaOnline = true; 
-      el('statusOnline').textContent = "Assistant : disponible";
+      if (el('statusOnline')) el('statusOnline').textContent = "Assistant : disponible";
       logActivity(`Assistant a répondu.`);
       
       appState.chatInProgress = false;
@@ -2233,14 +2239,13 @@
     } catch (e) {
       console.warn("sendToOnline error", e);
       appState.intelliaOnline = false;
-      el('statusOnline').textContent = "Assistant : indisponible";
+      if (el('statusOnline')) el('statusOnline').textContent = "Assistant : indisponible";
       logActivity(`Erreur de connexion Assistant.`);
       appState.chatInProgress = false;
       return "Erreur de connexion avec l'Assistant.";
     }
   }
 
-  // Fonctions de support (appelées par sendToOnline)
   async function handlePlanningCommands(commands) {
     for (const cmd of commands) {
       if (cmd.action === 'add') {
@@ -2275,17 +2280,18 @@
     return ref(db, path);
   }
   
-  function createNewChatSession() {
+  async function createNewChatSession() {
     const newSessionId = `chat_${Date.now()}`;
     appState.currentSessionId = newSessionId;
     if (appState.currentUser && db) {
       const sessionRef = getChatHistoryRef(appState.currentUser.uid, newSessionId);
-      set(sessionRef, {
+      await set(sessionRef, {
         title: `Nouvelle discussion...`,
         createdAt: serverTimestamp(),
         lastUpdated: serverTimestamp()
       });
     }
+    return newSessionId;
   }
   
   async function saveMessageToFirebase(userMsg, botMsg, attachments) {
@@ -2293,20 +2299,18 @@
 
     const messagesRef = ref(db, `${userChatsRefPath}/${appState.currentUser.uid}/${appState.currentSessionId}/messages`);
 
-    // Ne sauvegarde que les métadonnées des pièces jointes, pas la data base64
     const attachmentsMeta = attachments.map(att => ({
       name: att.name,
       type: att.type
     }));
 
-    push(messagesRef, {
+    await push(messagesRef, {
       user: userMsg, 
       bot: botMsg, 
       attachments: attachmentsMeta, 
       timestamp: serverTimestamp()
     });
 
-    // Mettre à jour le titre si c'est le premier message
     const messagesSnapshot = await get(messagesRef);
     if (Object.keys(messagesSnapshot.val() || {}).length <= 1) { 
       let newTitle = userMsg;
@@ -2332,32 +2336,52 @@
       appState.isNightMode = e.target.checked; localStorage.setItem('nightMode', e.target.checked);
       document.body.classList.toggle('night-mode', e.target.checked);
     });
+    
     el('notificationsToggle').checked = appState.notificationsEnabled;
     el('notificationsToggle').addEventListener('change', (e) => {
         appState.notificationsEnabled = e.target.checked;
         localStorage.setItem('notifications', e.target.checked);
         if (e.target.checked) requestNotificationPermission();
     });
+    
     el('voiceNotificationsToggle').checked = appState.voiceNotifications;
     el('voiceNotificationsToggle').addEventListener('change', (e) => {
         appState.voiceNotifications = e.target.checked;
         localStorage.setItem('voiceNotifications', e.target.checked);
     });
+    
     el('testNotificationBtn')?.addEventListener('click', () => {
       if (!appState.notificationsEnabled) { alert('❌ Activez d\'abord les notifications.'); return; }
       sendBrowserNotification('🔔 Test de Notification', 'Si vous voyez ce message, tout fonctionne !');
       logActivity('Test de notification envoyé.');
     });
+    
     el('resetBtn').addEventListener('click', () => { if (confirm("Réinitialiser l'application ?")) { localStorage.clear(); location.reload(); } });
-    el('googleSignInOverlayBtn').addEventListener('click', handleGoogleSignIn);
+    
+    const googleBtn = el('googleSignInOverlayBtn');
+    if (googleBtn) {
+      googleBtn.addEventListener('click', handleGoogleSignIn);
+    } else {
+      console.warn("Bouton de connexion Google non trouvé lors de l'attachement.");
+    }
+    
     el('signOutBtn').addEventListener('click', handleSignOut);
   }
 
   // ======= User Profile Functions (Real) =======
   function handleGoogleSignIn() {
-    if (!auth) return;
+    if (!auth) {
+      console.error("Auth non initialisé.");
+      return;
+    }
     const provider = new GoogleAuthProvider();
-    signInWithPopup(auth, provider).catch((error) => { console.error("Erreur Auth:", error); logActivity(`Erreur: ${error.message}`); });
+    signInWithPopup(auth, provider).catch((error) => { 
+      console.error("Erreur Auth:", error); 
+      logActivity(`Erreur: ${error.message}`);
+      if (error.code === 'auth/popup-blocked') {
+        alert("Pop-up de connexion bloquée par le navigateur. Veuillez autoriser les pop-ups pour ce site.");
+      }
+    });
   }
   function handleSignOut() { if (auth) signOut(auth).catch((error) => console.error("Erreur Déco:", error)); }
   
@@ -2375,8 +2399,10 @@
         const powerText = plan.power !== null ? ` à ${plan.power}%` : '';
         sendCommand(plan.device, plan.action, plan.power);
         
-        // TODO: Envoyer cette info à React pour affichage ?
-        // Pour l'instant, on log et on parle
+        const event = new CustomEvent('systemMessage', { 
+          detail: `⏰ Tâche planifiée : ${deviceName} ${actionText}${powerText}`
+        });
+        window.dispatchEvent(event);
         
         if (appState.voiceNotifications) speak(`Exécution planifiée. ${deviceName} ${actionText}.`);
         sendBrowserNotification(
@@ -2398,34 +2424,37 @@
   if (auth) {
     onAuthStateChanged(auth, (user) => {
       if (user) {
+        // --- Utilisateur connecté ---
         appState.currentUser = user;
         document.querySelector('.main-app').style.display = 'block';
         el('login-overlay').style.display = 'none';
+        
         const userPhoto = el('user-photo');
         userPhoto.src = user.photoURL || defaultAvatar;
         userPhoto.onerror = () => { userPhoto.src = defaultAvatar; }; 
         el('user-name-display').textContent = user.displayName || 'Utilisateur';
         el('user-email-display').textContent = user.email;
-        
-        // Crée une session par défaut si aucune n'existe
-        if (!appState.currentSessionId) {
-          createNewChatSession();
-        }
+        if (el('statusFirebase')) el('statusFirebase').textContent = 'Firebase : OK';
         
         navigateTo('sec-domotique');
 
       } else {
+        // --- Utilisateur déconnecté ---
         appState.currentUser = null;
         document.querySelector('.main-app').style.display = 'none';
         el('login-overlay').style.display = 'flex';
       }
     });
   } else {
-    el('login-overlay').innerHTML = `
-      <div class="login-box">
-        <h2>Erreur Critique</h2>
-        <p>Impossible de se connecter à la base de données (Firebase). L'application ne peut pas démarrer.</p>
-      </div>`;
+    // Fallback si Firebase échoue
+    const loginBox = document.querySelector('#login-overlay .login-box');
+    if (loginBox) {
+        loginBox.innerHTML = `
+          <h2>Erreur Critique</h2>
+          <p>Impossible d'initialiser Firebase. L'application ne peut pas démarrer.</p>
+          <p>Vérifiez la console (F12) et votre connexion.</p>
+        `;
+    }
     el('login-overlay').style.display = 'flex';
   }
   
@@ -2443,9 +2472,12 @@
 
 
   // ======= Initialisation =======
+  let uiInitialized = false;
   function initUI() {
+    if (uiInitialized) return;
+    
     if (appState.isNightMode) document.body.classList.add('night-mode');
-    setupSettings();
+    setupSettings(); // Attache tous les listeners
     VoiceEngine.init();
     populatePlanDeviceSelect();
     renderDevices();
@@ -2462,7 +2494,7 @@
       btn.innerHTML = isHidden ? '➖ Masquer le formulaire' : '➕ Ajouter un appareil';
     });
     
-    navigateTo('sec-domotique');
+    uiInitialized = true;
   }
 
   function requestNotificationPermission() {
@@ -2480,10 +2512,13 @@
       }, 3000);
     }
   }
+  
+  // ✅ CORRECTION: Appeler initUI() immédiatement à la fin
+  // pour que les listeners (y compris le login) soient prêts.
+  initUI();
+  
 
-  initUI(); 
-
-  // ✅ ÉTAPE 7: EXPOSER LES FONCTIONS NÉCESSAIRES À REACT
+  // ======= EXPOSITION DES FONCTIONS POUR REACT =======
   window.appState = appState;
   
   window.getFirebaseSessions = async () => {
@@ -2526,18 +2561,17 @@
     await set(ref(db, `${userChatsRefPath}/${appState.currentUser.uid}/${sessionId}/title`), newTitle);
     logActivity(`Session ${sessionId} renommée.`);
   };
-  
-  window.createNewFirebaseSession = () => {
-    createNewChatSession(); // Cette fonction met à jour appState.currentSessionId
-    logActivity(`Nouvelle session créée: ${appState.currentSessionId}`);
-    return appState.currentSessionId;
+
+  window.createNewFirebaseSession = async () => {
+    const newSessionId = await createNewChatSession();
+    logActivity(`Nouvelle session créée: ${newSessionId}`);
+    return newSessionId;
   };
   
   window.setCurrentSession = (sessionId) => {
     appState.currentSessionId = sessionId;
   };
   
-  // Exposer le moteur vocal à React
   window.VoiceEngine = VoiceEngine;
   
   </script>
