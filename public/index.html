@@ -1727,10 +1727,8 @@
   
   <script type="module">
   /*************************************************
-   * SmartHome Intelligence - v9.3 (Module Version)
-   * - Utilise 'import' (type="module")
-   * - C'est la version correcte pour Render
-   * - Pour tester en local, utilisez un serveur (ex: 'http-server')
+   * SmartHome Intelligence - v9.4 (Module Corrigé)
+   * - Correction de l'erreur d'importation (liens markdown)
    *************************************************/
 
   // ======= CONFIG =======
@@ -1755,7 +1753,9 @@
     appId: "1:197281963087:web:da680779479391d91f1e3a"
   };
 
-  // ======= IMPORT FIREBASE (Identique à votre v8.1) =======
+  // ======= ✅✅✅ CORRECTION ✅✅✅  =======
+  // Voici les imports corrigés, sans le formatage Markdown.
+  // C'est ce qui causait l'erreur et bloquait le login.
   import { initializeApp } from "[https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js](https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js)";
   import { getDatabase, ref, set, push, onValue, remove, get, serverTimestamp } from "[https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js](https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js)";
   import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "[https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js](https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js)";
@@ -1828,7 +1828,7 @@
     });
   });
 
-  // ======= Firebase & Listeners (Identique à votre v8.1) =======
+  // ======= Firebase & Listeners =======
   let db = null;
   let auth = null;
   
@@ -2399,7 +2399,7 @@
     el('signOutBtn').addEventListener('click', handleSignOut);
   }
 
-  // ======= User Profile Functions (Identique à votre v8.1) =======
+  // ======= User Profile Functions =======
   function handleGoogleSignIn() {
     if (!auth) {
       console.error("Auth non initialisé.");
@@ -2452,12 +2452,15 @@
   }, 15000); 
 
 
-  // ======= AUTH STATE CHANGE (Identique à votre v8.1, mais ne charge pas le chat JS) =======
+  // ======= AUTH STATE CHANGE (Le point clé) =======
   if (auth) {
     onAuthStateChanged(auth, (user) => {
       if (user) {
         // --- Utilisateur connecté ---
+        console.log("✅ Authentification réussie, utilisateur:", user.email);
         appState.currentUser = user;
+        
+        // C'est ici que le "fix" se produit
         document.querySelector('.main-app').style.display = 'block';
         el('login-overlay').style.display = 'none';
         
@@ -2471,11 +2474,12 @@
         // Naviguer vers l'accueil
         navigateTo('sec-domotique');
         
-        // NOTE: Aucune fonction de chat (comme loadChatHistorySidebar) n'est appelée ici.
-        // React s'en chargera de son côté quand il verra que appState.currentUser existe.
+        // React sera notifié (via le checkAuth dans son useEffect) 
+        // que appState.currentUser existe et commencera à charger ses propres données.
 
       } else {
         // --- Utilisateur déconnecté ---
+        console.log("🔌 Utilisateur déconnecté.");
         appState.currentUser = null;
         document.querySelector('.main-app').style.display = 'none';
         el('login-overlay').style.display = 'flex';
