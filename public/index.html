@@ -96,23 +96,47 @@
       flex-direction: column; flex-shrink: 0;
       transition: all 0.3s ease;
     }
-    #chat-sidebar-header { padding: 12px; border-bottom: 1px solid rgba(0,0,0,0.1); }
+    #chat-sidebar-header {
+      padding: 12px;
+      border-bottom: 1px solid rgba(0,0,0,0.1);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
     #new-chat-btn { width: 100%; justify-content: center; }
     #chat-history-list { flex: 1; overflow-y: auto; padding: 8px; }
     
     .chat-history-item {
-      padding: 10px 12px; border-radius: 8px; cursor: pointer; margin-bottom: 4px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      margin-bottom: 4px;
       font-size: 14px;
       transition: background 0.2s ease;
-      display: flex; align-items: center; justify-content: space-between;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
       gap: 8px;
+      min-height: 44px; /* Zone tactile confortable */
     }
+    
     .chat-history-item-title {
-      flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      flex: 1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      min-width: 0; /* Important pour ellipsis */
+      padding-right: 8px;
     }
+    
     .chat-history-item .btn.warn {
-      padding: 4px 8px; font-size: 12px; margin-left: 8px;
-      line-height: 1; border-radius: 6px;
+      padding: 6px 10px;
+      font-size: 14px;
+      line-height: 1;
+      border-radius: 6px;
+      flex-shrink: 0; /* Ne pas rétrécir le bouton */
+      min-width: 36px;
+      min-height: 36px;
     }
 
     .chat-history-item:hover { background: #e9ecef; }
@@ -194,7 +218,28 @@
     
     .msg { padding: 10px 14px; border-radius: 12px; max-width: 85%; margin-bottom: 10px; word-wrap: break-word; line-height: 1.4; }
     .msg.user { align-self: flex-end; background: linear-gradient(135deg, #4895ef, #4361ee); color: white; }
-    .msg.bot { align-self: flex-start; background: var(--card-bg); border: 1px solid rgba(0,0,0,0.06); }
+    .msg.bot {
+      align-self: flex-start;
+      background: var(--card-bg);
+      border: 1px solid rgba(0,0,0,0.06);
+      line-height: 1.6;
+      white-space: normal;
+      overflow-wrap: break-word;
+    }
+    
+    /* Mode nuit - ajustements */
+    body.night-mode .msg.bot strong {
+      color: var(--accent-cyan) !important;
+    }
+    
+    body.night-mode .msg.bot h2,
+    body.night-mode .msg.bot h3 {
+      color: var(--accent-cyan) !important;
+    }
+    
+    body.night-mode .msg.bot code {
+      background: rgba(255, 255, 255, 0.1) !important;
+    }
     .msg.bot.typing::after {
       content: '▋'; animation: blink 1s step-end infinite; color: var(--primary);
     }
@@ -335,6 +380,12 @@
       #chat-input-container { padding: 16px 12px; }
       
       .msg { max-width: 90%; font-size: 15px; }
+      
+      #close-sidebar-btn {
+        display: flex !important;
+        width: 100%;
+        justify-content: center;
+      }
     }
     
     @media (min-width: 761px) {
@@ -468,6 +519,9 @@
         
         <div id="chat-sidebar">
           <div id="chat-sidebar-header">
+            <button class="btn" id="close-sidebar-btn" style="display: none;">
+              <i class="fas fa-arrow-left"></i> Retour
+            </button>
             <button class="btn primary" id="new-chat-btn">
               <i class="fas fa-plus"></i> Nouvelle Discussion
             </button>
@@ -487,7 +541,7 @@
             <div id="attachment-preview-container"></div>
             
             <div id="chat-input-flex">
-              <input type="file" id="file-input" accept="image/*,application/pdf,.txt,.docx" multiple>
+              <input type="file" id="file-input" accept="image/*,application/pdf,text/*,.txt,.docx,.doc,.html,.htm,.js,.json,.css,.xml,.csv,.xlsx,.xls,.pptx,.ppt,.zip,.rar" multiple>
               <button class="btn" id="attach-file-btn" title="Joindre un fichier">
                 <i class="fas fa-paperclip"></i>
               </button>
@@ -503,6 +557,9 @@
                 </button>
                 <button class="btn primary" id="chatFullSend">
                   <i class="fas fa-paper-plane"></i>
+                </button>
+                <button class="btn warn" id="stopAIBtn" style="display: none;">
+                  <i class="fas fa-stop-circle"></i>
                 </button>
               </div>
             </div>
@@ -942,18 +999,61 @@
   };
   if ('speechSynthesis' in window) window.speechSynthesis.onvoiceschanged = () => { preferredVoice = choosePreferredVoice(); };
 
-  function speak(text) {
+  function speak(text, isStreaming = false) {
     if (!appState.voiceNotifications || !text || !('speechSynthesis' in window)) {
-      VoiceEngine.resumeRecognition(); return;
+      VoiceEngine.resumeRecognition();
+      return;
     }
+    
     VoiceEngine.pauseRecognition();
-    const u = new SpeechSynthesisUtterance(text);
-    u.lang = 'fr-FR';
-    if (!preferredVoice) preferredVoice = choosePreferredVoice();
-    if (preferredVoice) u.voice = preferredVoice;
-    u.onend = () => { setTimeout(() => VoiceEngine.resumeRecognition(), 150); };
+    
+    // Annuler toute lecture en cours
     window.speechSynthesis.cancel();
-    window.speechSynthesis.speak(u);
+    
+    if (isStreaming) {
+      // Mode streaming : phrases courtes pour lecture immédiate
+      const sentences = text.match(/[^.!?]+[.!?]+/g) || [text];
+      let currentIndex = 0;
+      
+      function speakNextSentence() {
+        if (currentIndex >= sentences.length) {
+          setTimeout(() => VoiceEngine.resumeRecognition(), 150);
+          return;
+        }
+        
+        const sentence = sentences[currentIndex].trim();
+        if (sentence) {
+          const u = new SpeechSynthesisUtterance(sentence);
+          u.lang = 'fr-FR';
+          if (!preferredVoice) preferredVoice = choosePreferredVoice();
+          if (preferredVoice) u.voice = preferredVoice;
+          u.rate = 1.1; // Légèrement plus rapide
+          
+          u.onend = () => {
+            currentIndex++;
+            speakNextSentence();
+          };
+          
+          window.speechSynthesis.speak(u);
+        } else {
+          currentIndex++;
+          speakNextSentence();
+        }
+      }
+      
+      speakNextSentence();
+      
+    } else {
+      // Mode normal : tout d'un coup
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = 'fr-FR';
+      if (!preferredVoice) preferredVoice = choosePreferredVoice();
+      if (preferredVoice) u.voice = preferredVoice;
+      u.onend = () => {
+        setTimeout(() => VoiceEngine.resumeRecognition(), 150);
+      };
+      window.speechSynthesis.speak(u);
+    }
   }
 
   // ======= Notification de Bureau =======
@@ -1122,21 +1222,30 @@
     appState.chatInProgress = true;
     el('intelliaStatus').textContent = "Assistant: En cours...";
     el('chat-loading').style.display = 'block';
-
+    el('chatFullSend').style.display = 'none';
+    el('stopAIBtn').style.display = 'flex';
+  
     appendChat('user', message, false, attachments); 
     el('chatFullInput').value = '';
     appState.attachments = [];
     renderAttachmentPreviews();
     
-    const reply = await sendToOnline(message, attachments);
-    
-    const botMsgElement = appendChat('bot', '', true);
-    await simulateTyping(botMsgElement, reply);
-    
-    appState.chatInProgress = false;
-    el('chat-loading').style.display = 'none';
-    
-    speak(reply);
+    try {
+      const reply = await sendToOnline(message, attachments);
+      
+      if (appState.chatInProgress) { // Vérifier si pas interrompu
+        const botMsgElement = appendChat('bot', '', true);
+        await simulateTyping(botMsgElement, reply, true);
+      }
+    } catch (error) {
+      console.error("Erreur chat:", error);
+      appendChat('bot', "Désolé, une erreur s'est produite.");
+    } finally {
+      appState.chatInProgress = false;
+      el('chat-loading').style.display = 'none';
+      el('chatFullSend').style.display = 'flex';
+      el('stopAIBtn').style.display = 'none';
+    }
   }
   
   async function handleVoiceSubmit(command) {
@@ -1156,12 +1265,12 @@
     const reply = await sendToOnline(command, []);
     
     const botMsgElement = appendChat('bot', '', true);
-    await simulateTyping(botMsgElement, reply);
+    await simulateTyping(botMsgElement, reply, true); // Voix activée
     
     appState.chatInProgress = false;
     el('chat-loading').style.display = 'none';
     
-    speak(reply);
+    // speak(reply); // Déjà géré par simulateTyping
   }
 
   async function sendToOnline(message, attachments = []) {
@@ -1222,11 +1331,17 @@
 
   // ======= Chat Interface & Helpers (v8.1) =======
   
-  function simulateTyping(element, text) {
+  function simulateTyping(element, text, enableVoice = true) {
     return new Promise(resolve => {
       element.classList.add('typing');
       let index = 0;
       const words = text.split(' ');
+      
+      // 🎤 Démarrer la lecture vocale immédiatement en mode streaming
+      if (enableVoice) {
+        speak(text, true);
+      }
+      
       function addWord() {
         if (index < words.length) {
           element.innerHTML += (index > 0 ? ' ' : '') + escapeHtml(words[index]);
@@ -1249,22 +1364,20 @@
     const node = document.createElement('div');
     node.className = 'msg ' + (role === 'user' ? 'user' : 'bot');
 
-    if (text && text.includes('```')) {
-      const parts = text.split('```');
-      let html = '';
-      parts.forEach((part, i) => {
-        if (i % 2 === 0) {
-          html += escapeHtml(part).replace(/\n/g, '<br>');
-        } else {
-          const lines = part.split('\n');
-          const lang = lines[0].trim();
-          const code = lines.slice(1).join('\n');
-          html += `<pre style="background: rgba(0,0,0,0.1); padding: 10px; border-radius: 6px; overflow-x: auto; margin: 8px 0;"><code>${escapeHtml(code)}</code></pre>`;
-        }
-      });
-      node.innerHTML = html;
-    } else if (text) {
-      node.innerHTML = escapeHtml(text).replace(/\n/g, '<br>');
+    if (text) {
+      // Le texte arrive déjà en HTML depuis le serveur
+      // On ajoute juste les styles inline pour les couleurs
+      const styledHtml = text
+        .replace(/<strong>/g, '<strong style="color: var(--primary); font-weight: 700;">')
+        .replace(/<h3>/g, '<h3 style="color: var(--primary); margin: 12px 0 8px 0; font-size: 16px;">')
+        .replace(/<h2>/g, '<h2 style="color: var(--primary); margin: 16px 0 10px 0; font-size: 18px;">')
+        .replace(/<ul>/g, '<ul style="margin: 10px 0; padding-left: 20px; list-style-type: disc;">')
+        .replace(/<ol>/g, '<ol style="margin: 10px 0; padding-left: 20px;">')
+        .replace(/<li>/g, '<li style="margin: 5px 0; line-height: 1.6;">')
+        .replace(/<code>/g, '<code style="background: rgba(0,0,0,0.1); padding: 2px 6px; border-radius: 4px; font-family: monospace; font-size: 13px;">')
+        .replace(/<hr>/g, '<hr style="margin: 15px 0; border: none; border-top: 1px solid rgba(0,0,0,0.1);">');
+      
+      node.innerHTML = styledHtml;
     }
 
     if (attachments && attachments.length > 0) {
@@ -1336,6 +1449,23 @@
   el('chatFullInput')?.addEventListener('keypress', (e) => {
     if (e.key === 'Enter') handleChatSubmit(el('chatFullInput').value, appState.attachments);
   });
+  
+  el('stopAIBtn')?.addEventListener('click', () => {
+    if (appState.chatInProgress) {
+      appState.chatInProgress = false;
+      window.speechSynthesis.cancel();
+      el('chat-loading').style.display = 'none';
+      el('chatFullSend').style.display = 'flex';
+      el('stopAIBtn').style.display = 'none';
+      appendChat('bot', '⚠️ Réponse interrompue.');
+      logActivity('Réponse IA interrompue par l\'utilisateur');
+    }
+  });
+  
+  el('close-sidebar-btn')?.addEventListener('click', () => {
+    el('chat-sidebar').classList.remove('open');
+    el('sidebar-overlay').classList.remove('open');
+  });
 
   // ======= Multi-Session & Historique Firebase (v8.1) =======
   
@@ -1389,23 +1519,17 @@
   function createNewChatSession() {
     const newSessionId = `chat_${Date.now()}`;
     appState.currentSessionId = newSessionId;
-    if (appState.currentUser && db) {
-      const sessionRef = getChatHistoryRef(appState.currentUser.uid, newSessionId);
-      set(sessionRef, {
-        title: `Nouvelle discussion...`,
-        createdAt: serverTimestamp(),
-        lastUpdated: serverTimestamp()
-      });
-    }
+    
+    // ✅ NE PAS créer dans Firebase immédiatement
+    // Le chat sera créé au premier message seulement
+    
     el('chatFullWindow').innerHTML = '';
     appendChat('bot', 'Bonjour ! Je suis prêt pour notre nouvelle discussion.');
     
-    loadChatHistorySidebar();
+    // Pas de loadChatHistorySidebar ici (évite les doublons)
     
     setTimeout(() => {
-        document.querySelectorAll('.chat-history-item').forEach(i => i.classList.remove('active'));
-        const newItem = document.querySelector(`.chat-history-item[data-session-id="${newSessionId}"]`);
-        if(newItem) newItem.classList.add('active');
+      document.querySelectorAll('.chat-history-item').forEach(i => i.classList.remove('active'));
     }, 100);
   }
   el('new-chat-btn').addEventListener('click', createNewChatSession);
@@ -1432,68 +1556,97 @@
     if (!appState.currentUser || !db) return;
     appState.currentSessionId = sessionId;
     const chatWindow = el('chatFullWindow');
-    chatWindow.innerHTML = '';
-    const messagesRef = ref(db, `${userChatsRefPath}/${appState.currentUser.uid}/${sessionId}/messages`);
-    const snapshot = await get(messagesRef);
-    if (snapshot.exists()) {
-      const messages = snapshot.val();
-      Object.values(messages).sort((a, b) => a.timestamp - b.timestamp).forEach(msg => {
-        const attachmentsMeta = msg.attachments || [];
-        appendChat('user', msg.user, false, attachmentsMeta);
-        appendChat('bot', msg.bot, false); 
-      });
-    } else {
-      appendChat('bot', 'C\'est le début de notre conversation.');
+    chatWindow.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--muted);"><i class="fas fa-spinner fa-spin"></i> Chargement...</div>';
+    
+    try {
+      const messagesRef = ref(db, `${userChatsRefPath}/${appState.currentUser.uid}/${sessionId}/messages`);
+      const snapshot = await get(messagesRef);
+      
+      chatWindow.innerHTML = '';
+      
+      if (snapshot.exists()) {
+        const messages = snapshot.val();
+        const sortedMessages = Object.values(messages).sort((a, b) => a.timestamp - b.timestamp);
+        
+        // ✅ Charger TOUS les messages (pas de limite)
+        sortedMessages.forEach(msg => {
+          const attachmentsMeta = msg.attachments || [];
+          appendChat('user', msg.user, false, attachmentsMeta);
+          appendChat('bot', msg.bot, false);
+        });
+        
+        // Scroll vers le bas
+        setTimeout(() => {
+          chatWindow.scrollTop = chatWindow.scrollHeight;
+        }, 100);
+        
+      } else {
+        appendChat('bot', 'C\'est le début de notre conversation.');
+      }
+      
+      document.querySelectorAll('.chat-history-item').forEach(i => i.classList.remove('active'));
+      document.querySelector(`.chat-history-item[data-session-id="${sessionId}"]`)?.classList.add('active');
+      
+      // Fermer la sidebar sur mobile
+      el('chat-sidebar').classList.remove('open');
+      el('sidebar-overlay').classList.remove('open');
+      
+    } catch (error) {
+      console.error("Erreur chargement chat:", error);
+      chatWindow.innerHTML = '<div class="card" style="text-align: center; color: var(--danger);"><i class="fas fa-exclamation-triangle"></i> Erreur de chargement</div>';
     }
-    document.querySelectorAll('.chat-history-item').forEach(i => i.classList.remove('active'));
-    document.querySelector(`.chat-history-item[data-session-id="${sessionId}"]`)?.classList.add('active');
-    el('chat-sidebar').classList.remove('open');
-    el('sidebar-overlay').classList.remove('open');
   }
   
   async function saveMessageToFirebase(userMsg, botMsg, attachments) {
     if (!appState.currentUser || !db || !appState.currentSessionId) return;
-
-    const messagesRef = ref(db, `${userChatsRefPath}/${appState.currentUser.uid}/${appState.currentSessionId}/messages`);
-
-    const attachmentsMeta = attachments.map(att => ({
-      name: att.name,
-      type: att.type
-    }));
-
-    push(messagesRef, {
-      user: userMsg, bot: botMsg, 
-      attachments: attachmentsMeta, 
-      timestamp: serverTimestamp()
-    });
-
-    const chatWindow = el('chatFullWindow');
-    const isNewChat = (chatWindow.children.length <= 2);
-
-    if (isNewChat) { 
+  
+    // ✅ Vérifier si la session existe déjà
+    const sessionRef = ref(db, `${userChatsRefPath}/${appState.currentUser.uid}/${appState.currentSessionId}`);
+    const sessionSnapshot = await get(sessionRef);
+    
+    const isNewSession = !sessionSnapshot.exists();
+    
+    if (isNewSession) {
+      // Créer la session maintenant
       let newTitle = userMsg;
       if (!newTitle && attachments.length > 0) {
         newTitle = `📎 ${attachments[0].name}`;
       }
       if (!newTitle) newTitle = "Nouvelle discussion";
-      
       newTitle = newTitle.substring(0, 30) + (newTitle.length > 30 ? '...' : '');
-
-      await set(ref(db, `${userChatsRefPath}/${appState.currentUser.uid}/${appState.currentSessionId}/title`), newTitle);
       
-      const itemTitle = document.querySelector(`.chat-history-item[data-session-id="${appState.currentSessionId}"] .chat-history-item-title`);
-      if (itemTitle) itemTitle.textContent = newTitle;
+      await set(sessionRef, {
+        title: newTitle,
+        createdAt: serverTimestamp(),
+        lastUpdated: serverTimestamp()
+      });
     }
-    
+  
+    // Sauvegarder le message
+    const messagesRef = ref(db, `${userChatsRefPath}/${appState.currentUser.uid}/${appState.currentSessionId}/messages`);
+    const attachmentsMeta = attachments.map(att => ({
+      name: att.name,
+      type: att.type
+    }));
+  
+    await push(messagesRef, {
+      user: userMsg,
+      bot: botMsg,
+      attachments: attachmentsMeta,
+      timestamp: serverTimestamp()
+    });
+  
+    // Mettre à jour lastUpdated
     await set(ref(db, `${userChatsRefPath}/${appState.currentUser.uid}/${appState.currentSessionId}/lastUpdated`), serverTimestamp());
     
-    if (!isNewChat) {
-        loadChatHistorySidebar();
-        setTimeout(() => {
-            document.querySelectorAll('.chat-history-item').forEach(i => i.classList.remove('active'));
-            const item = document.querySelector(`.chat-history-item[data-session-id="${appState.currentSessionId}"]`);
-            if (item) item.classList.add('active');
-        }, 100);
+    // Recharger la sidebar si c'était une nouvelle session
+    if (isNewSession) {
+      loadChatHistorySidebar();
+      setTimeout(() => {
+        document.querySelectorAll('.chat-history-item').forEach(i => i.classList.remove('active'));
+        const item = document.querySelector(`.chat-history-item[data-session-id="${appState.currentSessionId}"]`);
+        if (item) item.classList.add('active');
+      }, 200);
     }
   }
   
@@ -1643,7 +1796,7 @@
         el('user-email-display').textContent = user.email;
         
         loadChatHistorySidebar();
-        createNewChatSession();
+        // ✅ Ne pas créer de chat automatiquement
         
         navigateTo('sec-domotique');
 
