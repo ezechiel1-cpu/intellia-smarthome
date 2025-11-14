@@ -706,11 +706,10 @@
       
   </div> <script type="module">
   /*************************************************
-   * SmartHome Intelligence - Version 8.7 (Stop Button Fix)
-   * - `sendCommand` est hybride (WS/Firebase)
-   * - `appendChat` affiche le HTML brut du serveur
-   * - Le bouton STOP interrompt voix + texte
-   * - CSS du bouton STOP amélioré
+   * SmartHome Intelligence - Version 8.8 (Typing Fix)
+   * - `simulateTyping` est maintenant "intelligent"
+   * - Il affiche le HTML d'un coup
+   * - Il simule le "mot à mot" SEULEMENT pour le texte simple
    *************************************************/
 
   // ======= CONFIG =======
@@ -1571,42 +1570,60 @@
 
   // ======= Chat Interface & Helpers (v8.1) =======
   
-  // CORRECTION 3 (Stop Bouton): simulateTyping avec interruption
+  // ✅ NOUVELLE FONCTION: simulateTyping (v8.8)
+  // Corrige l'affichage du HTML en le détectant
   function simulateTyping(element, text, enableVoice = true) {
     return new Promise((resolve, reject) => {
-      element.classList.add('typing');
-      let index = 0;
-      const words = text.split(' ');
-          
-      // 🎤 Démarrer la lecture vocale immédiatement en mode streaming
+      
       if (enableVoice) {
-        speak(text, true);
+        speak(text, true); // ✅ La voix streame, quoi qu'il arrive
       }
-          
-      function addWord() {
-        // ✅ Vérifier si interruption demandée
+      
+      // ✅ VÉRIFICATION : Si le texte contient du HTML, on ne simule pas mot à mot.
+      const isHtml = /<[a-z][\s\S]*>/i.test(text);
+
+      if (isHtml) {
         if (appState.shouldStopResponse) {
-          element.classList.remove('typing');
-          element.innerHTML += '<br><br><em style="color: #e74c3c;">⚠️ Réponse interrompue par l\'utilisateur</em>';
+          element.innerHTML = '<br><br><em style="color: #e74c3c;">⚠️ Réponse interrompue</em>';
           reject(new Error('Interrupted'));
           return;
         }
-              
-        if (index < words.length) {
-          // Note: On assume que le serveur envoie du HTML, donc pas de escapeHtml
-          element.innerHTML += (index > 0 ? ' ' : '') + words[index];
-          el('chatFullWindow').scrollTop = el('chatFullWindow').scrollHeight;
-          index++;
-          const typingSpeed = text.length > 200 ? 30 : 70;
-          setTimeout(addWord, typingSpeed);
-        } else {
-          element.classList.remove('typing');
-          resolve();
+        // Affiche le HTML d'un coup pour un rendu parfait
+        element.innerHTML = text;
+        element.classList.remove('typing');
+        resolve();
+        
+      } else {
+        // --- C'est du texte simple, on simule le typing ---
+        element.classList.add('typing');
+        let index = 0;
+        const words = text.split(' '); // Ceci est maintenant sûr
+        
+        function addWord() {
+          if (appState.shouldStopResponse) {
+            element.classList.remove('typing');
+            element.innerHTML += '<br><br><em style="color: #e74c3c;">⚠️ Réponse interrompue</em>';
+            reject(new Error('Interrupted'));
+            return;
+          }
+          
+          if (index < words.length) {
+            // On utilise escapeHtml au cas où le texte simple contiendrait des < ou >
+            element.innerHTML += (index > 0 ? ' ' : '') + escapeHtml(words[index]);
+            el('chatFullWindow').scrollTop = el('chatFullWindow').scrollHeight;
+            index++;
+            const typingSpeed = text.length > 200 ? 30 : 70;
+            setTimeout(addWord, typingSpeed);
+          } else {
+            element.classList.remove('typing');
+            resolve();
+          }
         }
+        addWord();
       }
-      addWord();
     });
   }
+  
   
   // CORRECTION 2 (HTML Rendu): Fonction appendChat
   function appendChat(role, text, returnElement = false, attachments = []) {
@@ -1616,20 +1633,10 @@
     node.className = 'msg ' + (role === 'user' ? 'user' : 'bot');
 
     if (text) {
-  // ✅ Nettoyer et réparer le HTML avant affichage
-  let cleanedHTML = text
-    .replace(/&nbsp;/g, ' ')
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .trim();
-  
-  // ✅ Réparer les balises orphelines côté client aussi
-  cleanedHTML = cleanedHTML.replace(/^style="([^"]+)">([^<]+)/gm, '<span style="$1">$2</span>');
-  
-  node.innerHTML = cleanedHTML;
-}
+      // ✅ Le serveur envoie du HTML complet avec styles inline
+      // On l'affiche directement sans modification
+      node.innerHTML = text;
+    }
 
     if (attachments && attachments.length > 0) {
       const attachmentsDiv = document.createElement('div');
@@ -1663,6 +1670,7 @@
     if (returnElement) return node;
   }
   
+  // ✅ Fonction escapeHtml (nécessaire pour simulateTyping)
   function escapeHtml(text) {
     if (typeof text !== 'string') return '';
     return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
