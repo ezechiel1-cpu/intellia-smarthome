@@ -1,10 +1,8 @@
 // ========================================
-// INTELLIA v9.2 - ASSISTANT MULTIMODAL (MARKDOWN OUTPUT)
+// INTELLIA v9.3 - ASSISTANT MULTIMODAL (MARKDOWN + PLANNING AI)
 //
-// ✅ Lit l'historique des chats depuis Firebase
-// ✅ Lit TOUS les fichiers (PDF, DOCX, TXT, HTML, JS, XLSX, etc.)
+// ✅ Ajout des règles d'IA pour générer des commandes de planning
 // ✅ Répond en MARKDOWN (le client gère le HTML)
-// ✅ Gère les sessions uniques par utilisateur
 // ========================================
 const express = require('express');
 const cors = require('cors');
@@ -321,11 +319,6 @@ async function getHistoryFromFirebase(userId, sessionId) {
 }
 
 // ========================================
-// ⛔ SUPPRIMÉ: Fonctions 'convertToCleanHTML' et 'formatAIResponse'
-// Le client gère le rendu Markdown
-// ========================================
-
-// ========================================
 // RECHERCHE WEB INTELLIGENTE
 // ========================================
 async function performWebSearch(query) {
@@ -408,7 +401,7 @@ function analyzeContext(message, deviceStates, beninTime) {
 }
 
 // ========================================
-// ✅ PROMPT SYSTÈME v9.2 (MARKDOWN)
+// ✅ PROMPT SYSTÈME v9.3 (MARKDOWN + PLANNING AI)
 // ========================================
 const systemPrompt = `Tu es Intellia v5.0, assistant universel ultra-intelligent.
 
@@ -429,6 +422,33 @@ Le champ "reply" doit contenir du texte en **Markdown (GFM)**.
 * Liens : \`[texte du lien](https://url.com)\`
 * Paragraphes : Laisse une ligne vide pour un nouveau paragraphe.
 
+### 📅 GESTION DU PLANNING (CRITIQUE)
+Si l'utilisateur demande une action à un **moment futur** ("à 16h34", "dans 15 minutes", "à 20h00 demain"), tu dois générer une commande dans le champ **"planning_commands"**.
+
+**Exemple de requête :** "Allume la lampe du salon à 16h34 à 80%"
+**Exemple de JSON à générer :**
+\`\`\`json
+{
+  "reply": "✅ C'est noté ! J'ai ajouté la tâche **Lampe Salon** à votre planning pour 16h34.",
+  "planning_commands": [
+    {
+      "action": "add",
+      "device": "lampe_salon",
+      "time": "16:34",
+      "power": 80
+    }
+  ],
+  "execute": [],
+  "source": "cloud"
+}
+\`\`\`
+
+**Règles de planning :**
+* Le format \`time\` est TOUJOURS \`HH:MM\`.
+* L'ID de l'appareil (\`device\`) doit exister dans [Appareils].
+* Pour une lampe, la \`power\` est obligatoire (entre 0 et 100). Pour une prise (\`plug\`), mets \`power: 100\` pour ON et \`power: 0\` pour OFF ou omet-le.
+* L'\`action\` est \`add\`.
+
 ### ❌ INTERDICTIONS :
 1. ❌ JAMAIS envoyer de balises HTML (<p>, <h2>, <strong style=...>) dans "reply".
 2. ❌ Le client (index.html) s'occupe de transformer le Markdown en HTML.
@@ -445,12 +465,12 @@ Le champ "reply" doit contenir du texte en **Markdown (GFM)**.
 
 ## 📌 RÈGLES GÉNÉRALES (Inchangées)
 
-1. **Vérification:** Vérifie [États] AVANT toute action
-2. **Recherche:** Ne recherche PAS pour code/domotique
-3. **Heure:** Mentionne SEULEMENT si demandé ou pertinent
-4. **Naturalité:** Réponses NATURELLES et CONVERSATIONNELLES
-5. **CONTEXTE:** Si message court ("les", "oui"), analyse l'historique
-6. **Fichiers:** Base ta réponse sur le contenu fourni
+1. **Vérification:** Vérifie [États] AVANT toute action immédiate.
+2. **Recherche:** Ne recherche PAS pour code/domotique.
+3. **Heure:** Mentionne SEULEMENT si demandé ou pertinent.
+4. **Naturalité:** Réponses NATURELLES et CONVERSATIONNELLES.
+5. **CONTEXTE:** Si message court ("les", "oui"), analyse l'historique.
+6. **Fichiers:** Base ta réponse sur le contenu fourni.
 7. **PRÉSENTATION:** Utilise la structure Markdown (titres, listes, gras).
 
 RÉPONDS EN JSON VALIDE AVEC DU MARKDOWN DANS "reply".
@@ -497,7 +517,7 @@ async function chatWithGemini(userMessage, devices, userId, sessionId, attachmen
       const historyParts = await Promise.all(
         historyFromFirebase.flatMap(async (h) => [
           await createHistoryEntry("user", h.user, h.attachments || []),
-          await createHistoryEntry("model", h.bot) // Le 'bot' est déjà du Markdown, c'est OK
+          await createHistoryEntry("model", h.bot)
         ])
       );
 
@@ -637,8 +657,6 @@ app.post('/api/chat', async (req, res) => {
     // ✅ Déduplication des planifications
     aiJson.planning_commands = deduplicatePlanning(aiJson.planning_commands);
     
-    // ✅ (SUPPRIMÉ) Plus de conversion HTML côté serveur. On envoie le Markdown brut.
-    
     if (!aiJson.source) aiJson.source = result.hadWebResults ? "web" : "cloud";
 
     console.log('✅ RÉPONSE GÉNÉRÉE');
@@ -699,7 +717,7 @@ app.get('/api/health', (req, res) => {
   
   res.json({ 
     status: 'ok', 
-    version: '9.2-markdown-output',
+    version: '9.3-markdown-planning',
     features: {
       gemini: API_KEYS.length > 0,
       webSearch: true,
@@ -709,6 +727,7 @@ app.get('/api/health', (req, res) => {
       multimodal_Files: true,
       htmlOutput: false,
       markdownOutput: true,
+      aiPlanning: true, // ✅ NOUVEAU
       supportedFiles: "PDF, DOCX, TXT, HTML, JS, JSON, CSS, XLSX, CSV, Images"
     },
     keys: { total: API_KEYS.length, available: availableKeys },
@@ -724,14 +743,13 @@ app.get('/api/health', (req, res) => {
 // ========================================
 app.listen(PORT, () => {
   console.log('\n🏠 ╔═══════════════════════════════════════╗');
-  console.log('   ║  INTELLIA v9.2 - MARKDOWN OUTPUT       ║');
+  console.log('   ║  INTELLIA v9.3 - PLANNING AI          ║');
   console.log('   ╚═══════════════════════════════════════╝');
   console.log(`\n   🚀 Serveur: http://localhost:${PORT}`);
   console.log(`   🔑 Clés Gemini: ${API_KEYS.length}`);
   console.log(`   🔥 Synchro Firebase (Appareils): Activée`);
   console.log(`   💾 Synchro Firebase (Chats): Activée`);
-  console.log(`   🖼️ Multimodal (Images/Fichiers): Prêt`);
+  console.log(`   📅 Planning AI: Prêt`);
   console.log(`   ✅ Output Markdown: Activé`);
-  console.log(`   📂 Fichiers supportés: PDF, DOCX, TXT, HTML, JS, XLSX, CSV`);
   console.log(`   🔧 Modèle: gemini-2.5-flash\n`);
 });
