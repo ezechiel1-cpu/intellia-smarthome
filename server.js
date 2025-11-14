@@ -1,9 +1,9 @@
 // ========================================
-// INTELLIA v8.2 - ASSISTANT MULTIMODAL (HTML FIXED)
+// INTELLIA v9.2 - ASSISTANT MULTIMODAL (MARKDOWN OUTPUT)
 //
 // ✅ Lit l'historique des chats depuis Firebase
 // ✅ Lit TOUS les fichiers (PDF, DOCX, TXT, HTML, JS, XLSX, etc.)
-// ✅ Répond en HTML CORRECT (balises complètes)
+// ✅ Répond en MARKDOWN (le client gère le HTML)
 // ✅ Gère les sessions uniques par utilisateur
 // ========================================
 const express = require('express');
@@ -321,106 +321,9 @@ async function getHistoryFromFirebase(userId, sessionId) {
 }
 
 // ========================================
-// ✅ FORMATAGE HTML (AVEC RÉPARATION AUTOMATIQUE)
+// ⛔ SUPPRIMÉ: Fonctions 'convertToCleanHTML' et 'formatAIResponse'
+// Le client gère le rendu Markdown
 // ========================================
-function formatAIResponse(text) {
-  if (typeof text !== 'string') return text;
-  
-  // Nettoyer les entités HTML
-  text = text
-    .replace(/&nbsp;/g, ' ')
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .trim();
-  
-  return text;
-}
-// ========================================
-// ✅ CONVERSION MARKDOWN/TEXTE → HTML PROPRE
-// ========================================
-function convertToCleanHTML(text) {
-  if (typeof text !== 'string') return text;
-  
-  // Nettoyer les entités HTML
-  text = text
-    .replace(/&nbsp;/g, ' ')
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .trim();
-  
-  // Si déjà du HTML valide, retourner tel quel
-  if (text.includes('<h2') && text.includes('</h2>') && text.includes('<p') && text.includes('</p>')) {
-    return text;
-  }
-  
-  console.log('⚠️ HTML invalide détecté, conversion automatique...');
-  
-  // ====== CONVERSION MARKDOWN → HTML ======
-  
-  // 1. Titres ## → <h2>
-  text = text.replace(/^##\s+(.+)$/gm, '<h2 style="color: #4361ee; font-size: 18px; margin: 16px 0 10px 0;">$1</h2>');
-  
-  // 2. Sous-titres ### → <h3>
-  text = text.replace(/^###\s+(.+)$/gm, '<h3 style="color: #06b6d4; font-size: 16px; margin: 12px 0 8px 0;">$1</h3>');
-  
-  // 3. Texte en gras **texte** → <strong>
-  text = text.replace(/\*\*(.+?)\*\*/g, '<strong style="color: #4361ee;">$1</strong>');
-  
-  // 4. Texte en italique *texte* → <em>
-  text = text.replace(/\*(.+?)\*/g, '<em>$1</em>');
-  
-  // 5. Listes à puces
-  // Détecter les blocs de liste
-  const listRegex = /^[-*]\s+(.+)$/gm;
-  if (listRegex.test(text)) {
-    // Wrapper les listes
-    text = text.replace(/((?:^[-*]\s+.+$\n?)+)/gm, (match) => {
-      const items = match.split('\n').filter(line => line.trim()).map(line => {
-        const content = line.replace(/^[-*]\s+/, '');
-        return `<li style="margin: 5px 0; line-height: 1.6;">${content}</li>`;
-      }).join('\n');
-      return `<ul style="margin: 10px 0; padding-left: 20px;">\n${items}\n</ul>`;
-    });
-  }
-  
-  // 6. Séparer les paragraphes (double retour à la ligne)
-  const paragraphs = text.split(/\n\n+/);
-  text = paragraphs.map(para => {
-    para = para.trim();
-    if (!para) return '';
-    
-    // Si déjà une balise HTML, ne pas wrapper
-    if (para.startsWith('<h2') || para.startsWith('<h3') || 
-        para.startsWith('<ul') || para.startsWith('<div') ||
-        para.startsWith('<hr')) {
-      return para;
-    }
-    
-    // Sinon, wrapper en paragraphe
-    return `<p style="margin: 10px 0; line-height: 1.6;">${para}</p>`;
-  }).join('<br><br>');
-  
-  // 7. Nettoyer les balises orphelines (style="..." sans balise)
-  text = text.replace(/(?<!<\w+\s)style="([^"]+)">([^<\n]+?)(?=\s|<|$)/g, '<span style="$1">$2</span>');
-  
-  // 8. Ajouter des emojis aux titres si absents
-  text = text.replace(/<h2([^>]*)>(?![\u{1F300}-\u{1F9FF}])(.+?)<\/h2>/gu, '<h2$1>👋 $2</h2>');
-  
-  // 9. Remplacer les sauts de ligne simples par <br>
-  text = text.replace(/\n(?!<)/g, '<br>');
-  
-  return text.trim();
-}
-
-// Fonction de formatage basique (conservée pour compatibilité)
-function formatAIResponse(text) {
-  if (typeof text !== 'string') return text;
-  return text.trim();
-}
 
 // ========================================
 // RECHERCHE WEB INTELLIGENTE
@@ -505,116 +408,42 @@ function analyzeContext(message, deviceStates, beninTime) {
 }
 
 // ========================================
-// ✅ PROMPT SYSTÈME v8.2 (ULTRA-STRICT HTML)
+// ✅ PROMPT SYSTÈME v9.2 (MARKDOWN)
 // ========================================
 const systemPrompt = `Tu es Intellia v5.0, assistant universel ultra-intelligent.
 
 ## CAPACITÉS
-Domotique, Code (Arduino/Python/JS), Recherche web, Conversation naturelle, Analyse de Fichiers (PDF, TXT, DOCX, HTML, JS, etc.) et Images.
+Domotique, Code (Arduino/Python/JS), Recherche web, Conversation naturelle, Analyse de Fichiers (PDF, TXT, DOCX, HTML, JS, XLSX, etc.) et Images.
 
-## ⚠️ FORMAT DE RÉPONSE HTML (CRITIQUE - À RESPECTER ABSOLUMENT)
+## ⚠️ FORMAT DE RÉPONSE (CRITIQUE : MARKDOWN)
 
-Tu dois TOUJOURS répondre en JSON avec "reply" contenant du HTML COMPLET ET VALIDE.
+Tu dois TOUJOURS répondre en JSON.
+Le champ "reply" doit contenir du texte en **Markdown (GFM)**.
 
-### 🎯 STRUCTURES HTML À COPIER-COLLER EXACTEMENT:
+### 🎯 Utilise Markdown pour la structure :
+* \`### Titre\` (ou \`##\`)
+* \`**Texte en gras**\`
+* \`*Texte en italique*\`
+* Listes avec \`*\` ou \`-\` ou \`1.\`
+* Blocs de code avec \`\`\`javascript ... \`\`\`
+* Liens : \`[texte du lien](https://url.com)\`
+* Paragraphes : Laisse une ligne vide pour un nouveau paragraphe.
 
-**1. TITRE PRINCIPAL (h2):**
-<h2 style="color: #4361ee; font-size: 18px; margin: 16px 0 10px 0;">📊 Votre titre ici</h2>
-
-**2. SOUS-TITRE (h3):**
-<h3 style="color: #06b6d4; font-size: 16px; margin: 12px 0 8px 0;">🎯 Sous-titre ici</h3>
-
-**3. PARAGRAPHE:**
-<p style="margin: 10px 0; line-height: 1.6;">Votre texte de paragraphe complet ici.</p>
-
-**4. TEXTE EN GRAS COLORÉ:**
-<strong style="color: #4361ee;">texte important en bleu</strong>
-<strong style="color: #06b6d4;">texte important en cyan</strong>
-
-**5. LISTE À PUCES:**
-<ul style="margin: 10px 0; padding-left: 20px;">
-<li style="margin: 5px 0; line-height: 1.6;">Premier élément de la liste</li>
-<li style="margin: 5px 0; line-height: 1.6;">Deuxième élément de la liste</li>
-<li style="margin: 5px 0; line-height: 1.6;">Troisième élément de la liste</li>
-</ul>
-
-**6. ALERTE/AVERTISSEMENT:**
-<div style="background: rgba(243, 156, 18, 0.1); padding: 12px; border-left: 4px solid #f39c12; margin: 10px 0; border-radius: 4px;">
-⚠️ <strong style="color: #f39c12;">Attention</strong><br><br>
-Votre message d'alerte ici
-</div>
-
-**7. MESSAGE DE SUCCÈS:**
-<div style="background: rgba(46, 204, 113, 0.1); padding: 12px; border-left: 4px solid #2ecc71; margin: 10px 0; border-radius: 4px;">
-✅ <strong style="color: #2ecc71;">Succès</strong><br><br>
-Votre message de succès ici
-</div>
-
-**8. SÉPARATEUR:**
-<hr style="margin: 15px 0; border: none; border-top: 2px solid rgba(67, 97, 238, 0.3);">
-
-**9. ESPACEMENT (retour à la ligne):**
-<br><br>
-
-### ❌ INTERDICTIONS ABSOLUES:
-
-1. ❌ JAMAIS écrire : style="color: #4361ee;">Titre (balise <h2> manquante)
-2. ❌ JAMAIS utiliser Markdown : **, *, ##, -, >
-3. ❌ JAMAIS laisser une balise ouverte sans la fermer
-4. ❌ JAMAIS utiliser des guillemets simples ' dans les attributs (TOUJOURS ")
-5. ❌ JAMAIS écrire du texte sans balise HTML
-
-### ✅ RÈGLES DE VALIDATION:
-
-Avant d'envoyer ta réponse, VÉRIFIE:
-1. ✅ Chaque <h2> a son </h2>
-2. ✅ Chaque <p> a son </p>
-3. ✅ Chaque <strong> a son </strong>
-4. ✅ Chaque <ul> a son </ul>
-5. ✅ Chaque <li> a son </li>
-6. ✅ Chaque <div> a son </div>
-7. ✅ Tous les attributs sont entre guillemets doubles "..."
+### ❌ INTERDICTIONS :
+1. ❌ JAMAIS envoyer de balises HTML (<p>, <h2>, <strong style=...>) dans "reply".
+2. ❌ Le client (index.html) s'occupe de transformer le Markdown en HTML.
 
 ## FORMAT JSON DE RÉPONSE
 
 {
-  "reply": "<h2 style=\"color: #4361ee; font-size: 18px; margin: 16px 0 10px 0;\">Titre</h2><br><p style=\"margin: 10px 0; line-height: 1.6;\">Paragraphe complet.</p>",
+  "reply": "### 💡 État des lampes\n\nVoici l'état actuel :\n\n* **LED 1 (SALON)** : Allumée à 30%\n* **LED 2 (CHAMBRE)** : Éteinte\n",
   "execute": ["device_id|ACTION|valeur"],
   "planning_commands": [],
   "suggestions": [],
   "source": "cloud"
 }
 
-## 📋 EXEMPLES PARFAITS
-
-**Exemple 1: Réponse simple**
-USER: "Bonjour"
-{
-  "reply": "<h2 style=\"color: #4361ee; font-size: 18px; margin: 16px 0 10px 0;\">👋 Bonjour !</h2><br><p style=\"margin: 10px 0; line-height: 1.6;\">Je suis <strong style=\"color: #06b6d4;\">Intellia v5.0</strong>, votre assistant universel.</p><br><p style=\"margin: 10px 0; line-height: 1.6;\">Comment puis-je vous aider aujourd'hui ?</p>",
-  "execute": [],
-  "suggestions": [],
-  "source": "cloud"
-}
-
-**Exemple 2: Liste d'appareils**
-USER: "État des appareils"
-{
-  "reply": "<h2 style=\"color: #4361ee; font-size: 18px; margin: 16px 0 10px 0;\">📊 État des appareils</h2><br><p style=\"margin: 10px 0; line-height: 1.6;\">Voici vos appareils actifs :</p><br><ul style=\"margin: 10px 0; padding-left: 20px;\"><li style=\"margin: 5px 0; line-height: 1.6;\">💡 <strong style=\"color: #4361ee;\">LED 1 (SALON)</strong> : Allumée à 30%</li><li style=\"margin: 5px 0; line-height: 1.6;\">💡 <strong style=\"color: #4361ee;\">LED 2 (CHAMBRE)</strong> : Allumée à 30%</li></ul><br><p style=\"margin: 10px 0; line-height: 1.6; color: #9aa3b2; font-size: 14px;\">Voulez-vous modifier quelque chose ?</p>",
-  "execute": [],
-  "suggestions": [],
-  "source": "cloud"
-}
-
-**Exemple 3: Avec alerte**
-USER: "Allume tout"
-{
-  "reply": "<div style=\"background: rgba(243, 156, 18, 0.1); padding: 12px; border-left: 4px solid #f39c12; margin: 10px 0; border-radius: 4px;\">⚠️ <strong style=\"color: #f39c12;\">Attention</strong><br><br>Vous allez allumer <strong style=\"color: #f39c12;\">7 appareils</strong> simultanément. Cela augmentera votre consommation.</div><br><p style=\"margin: 10px 0; line-height: 1.6;\">Voulez-vous continuer ?</p>",
-  "execute": [],
-  "suggestions": [{"type": "warning", "message": "Consommation élevée"}],
-  "source": "cloud"
-}
-
-## 📌 RÈGLES GÉNÉRALES
+## 📌 RÈGLES GÉNÉRALES (Inchangées)
 
 1. **Vérification:** Vérifie [États] AVANT toute action
 2. **Recherche:** Ne recherche PAS pour code/domotique
@@ -622,9 +451,9 @@ USER: "Allume tout"
 4. **Naturalité:** Réponses NATURELLES et CONVERSATIONNELLES
 5. **CONTEXTE:** Si message court ("les", "oui"), analyse l'historique
 6. **Fichiers:** Base ta réponse sur le contenu fourni
-7. **PRÉSENTATION:** Utilise TOUJOURS des titres, listes et couleurs
+7. **PRÉSENTATION:** Utilise la structure Markdown (titres, listes, gras).
 
-RÉPONDS EN JSON VALIDE AVEC HTML COMPLET ET CORRECT DANS "reply".
+RÉPONDS EN JSON VALIDE AVEC DU MARKDOWN DANS "reply".
 `;
 
 // ========================================
@@ -668,7 +497,7 @@ async function chatWithGemini(userMessage, devices, userId, sessionId, attachmen
       const historyParts = await Promise.all(
         historyFromFirebase.flatMap(async (h) => [
           await createHistoryEntry("user", h.user, h.attachments || []),
-          await createHistoryEntry("model", h.bot)
+          await createHistoryEntry("model", h.bot) // Le 'bot' est déjà du Markdown, c'est OK
         ])
       );
 
@@ -676,7 +505,7 @@ async function chatWithGemini(userMessage, devices, userId, sessionId, attachmen
         history: [
           { role: "user", parts: [{ text: systemPrompt }] },
           { role: "model", parts: [{ text: JSON.stringify({
-                reply: "<h2 style=\"color: #4361ee; font-size: 18px; margin: 16px 0 10px 0;\">👋 Bonjour !</h2><br><p style=\"margin: 10px 0; line-height: 1.6;\">Je suis <strong style=\"color: #06b6d4;\">Intellia v5.0</strong>, votre assistant universel ultra-intelligent !</p>",
+                reply: "### 👋 Bonjour !\n\nJe suis **Intellia v5.0**, votre assistant universel. Comment puis-je vous aider aujourd'hui ?",
                 execute: [], planning_commands: [], suggestions: [], source: "cloud"
               })}] 
           },
@@ -752,13 +581,13 @@ app.post('/api/chat', async (req, res) => {
     } = req.body;
 
     if (key !== AUTH_KEY) {
-      return res.status(401).json({ reply: "<p style=\"margin: 10px 0; color: #e74c3c;\">Clé d'authentification invalide</p>", ...jsonErrorDefaults() });
+      return res.status(401).json({ reply: "Clé d'authentification invalide", ...jsonErrorDefaults() });
     }
     if (!message && attachments.length === 0) {
-      return res.status(400).json({ reply: "<p style=\"margin: 10px 0; color: #e74c3c;\">Message ou pièce jointe requis</p>", ...jsonErrorDefaults() });
+      return res.status(400).json({ reply: "Message ou pièce jointe requis", ...jsonErrorDefaults() });
     }
     if (!userId || !sessionId) {
-      return res.status(400).json({ reply: "<p style=\"margin: 10px 0; color: #e74c3c;\">ID Utilisateur ou ID Session manquant</p>", ...jsonErrorDefaults() });
+      return res.status(400).json({ reply: "ID Utilisateur ou ID Session manquant", ...jsonErrorDefaults() });
     }
 
     console.log('┌────────────────────────────────────────');
@@ -774,7 +603,7 @@ app.post('/api/chat', async (req, res) => {
     if (!result.success) {
       console.log('⚠️ Gemini indisponible');
       return res.json({ 
-        reply: "<div style=\"background: rgba(231, 76, 60, 0.1); padding: 12px; border-left: 4px solid #e74c3c; margin: 10px 0; border-radius: 4px;\">❌ <strong style=\"color: #e74c3c;\">Service temporairement indisponible</strong><br><br>Veuillez réessayer dans quelques instants.</div>", 
+        reply: "### ❌ Service temporairement indisponible\n\nVeuillez réessayer dans quelques instants.", 
         ...jsonErrorDefaults() 
       });
     }
@@ -793,14 +622,14 @@ app.post('/api/chat', async (req, res) => {
       } catch (secondError) { 
         console.error('❌ Parsing JSON impossible:', secondError.message);
         return res.json({ 
-          reply: "<p style=\"margin: 10px 0; line-height: 1.6;\">Désolé, je n'ai pas pu formuler ma réponse correctement. Pouvez-vous reformuler votre demande ?</p>", 
+          reply: "Désolé, je n'ai pas pu formuler ma réponse correctement. Pouvez-vous reformuler votre demande ?", 
           ...jsonErrorDefaults() 
         });
       }
     }
 
     // ✅ Valeurs par défaut et nettoyage
-    aiJson.reply = aiJson.reply || "<p style=\"margin: 10px 0; line-height: 1.6;\">Commande reçue.</p>";
+    aiJson.reply = aiJson.reply || "Commande reçue.";
     aiJson.execute = aiJson.execute || [];
     aiJson.planning_commands = aiJson.planning_commands || [];
     aiJson.suggestions = aiJson.suggestions || [];
@@ -808,14 +637,7 @@ app.post('/api/chat', async (req, res) => {
     // ✅ Déduplication des planifications
     aiJson.planning_commands = deduplicatePlanning(aiJson.planning_commands);
     
-  // ✅ CONVERSION FORCÉE : Markdown/Texte → HTML propre
-aiJson.reply = convertToCleanHTML(aiJson.reply);
-    
-    // ✅ Post-processing de sécurité : Si aucun HTML détecté, wrapper en paragraphe
-    if (!aiJson.reply.includes('<h2') && !aiJson.reply.includes('<p') && !aiJson.reply.includes('<div') && aiJson.reply.trim().length > 0) {
-      console.warn('⚠️ Aucune balise HTML détectée, wrapping en paragraphe');
-      aiJson.reply = `<p style="margin: 10px 0; line-height: 1.6;">${aiJson.reply}</p>`;
-    }
+    // ✅ (SUPPRIMÉ) Plus de conversion HTML côté serveur. On envoie le Markdown brut.
     
     if (!aiJson.source) aiJson.source = result.hadWebResults ? "web" : "cloud";
 
@@ -823,7 +645,7 @@ aiJson.reply = convertToCleanHTML(aiJson.reply);
     console.log(`📤 Execute: ${aiJson.execute.length}`);
     console.log(`📅 Planning: ${aiJson.planning_commands.length}`);
     console.log(`💡 Suggestions: ${aiJson.suggestions.length}`);
-    console.log(`📝 HTML Length: ${aiJson.reply.length} chars`);
+    console.log(`📝 Markdown Length: ${aiJson.reply.length} chars`);
     console.log('└────────────────────────────────────────\n');
 
     res.json(aiJson);
@@ -832,7 +654,7 @@ aiJson.reply = convertToCleanHTML(aiJson.reply);
     console.error('💥 ERREUR:', error.message);
     console.error(error.stack);
     res.status(500).json({ 
-      reply: "<div style=\"background: rgba(231, 76, 60, 0.1); padding: 12px; border-left: 4px solid #e74c3c; margin: 10px 0; border-radius: 4px;\">❌ <strong style=\"color: #e74c3c;\">Erreur interne</strong><br><br>Une erreur s'est produite. Veuillez réessayer.</div>", 
+      reply: "### ❌ Erreur interne\n\nUne erreur s'est produite. Veuillez réessayer.", 
       ...jsonErrorDefaults() 
     });
   }
@@ -877,7 +699,7 @@ app.get('/api/health', (req, res) => {
   
   res.json({ 
     status: 'ok', 
-    version: '8.2-html-fixed-complete',
+    version: '9.2-markdown-output',
     features: {
       gemini: API_KEYS.length > 0,
       webSearch: true,
@@ -885,8 +707,8 @@ app.get('/api/health', (req, res) => {
       firebaseStateSync: true,
       multimodal_Image: true,
       multimodal_Files: true,
-      htmlOutput: true,
-      htmlAutoRepair: true,
+      htmlOutput: false,
+      markdownOutput: true,
       supportedFiles: "PDF, DOCX, TXT, HTML, JS, JSON, CSS, XLSX, CSV, Images"
     },
     keys: { total: API_KEYS.length, available: availableKeys },
@@ -902,14 +724,14 @@ app.get('/api/health', (req, res) => {
 // ========================================
 app.listen(PORT, () => {
   console.log('\n🏠 ╔═══════════════════════════════════════╗');
-  console.log('   ║  INTELLIA v8.2 - HTML FIXED          ║');
+  console.log('   ║  INTELLIA v9.2 - MARKDOWN OUTPUT       ║');
   console.log('   ╚═══════════════════════════════════════╝');
   console.log(`\n   🚀 Serveur: http://localhost:${PORT}`);
   console.log(`   🔑 Clés Gemini: ${API_KEYS.length}`);
   console.log(`   🔥 Synchro Firebase (Appareils): Activée`);
   console.log(`   💾 Synchro Firebase (Chats): Activée`);
   console.log(`   🖼️ Multimodal (Images/Fichiers): Prêt`);
-  console.log(`   ✅ Output HTML avec Auto-Réparation: Activé`);
+  console.log(`   ✅ Output Markdown: Activé`);
   console.log(`   📂 Fichiers supportés: PDF, DOCX, TXT, HTML, JS, XLSX, CSV`);
-  console.log(`   🔧 Modèle: gemini-2.0-flash-exp\n`);
+  console.log(`   🔧 Modèle: gemini-2.5-flash\n`);
 });
