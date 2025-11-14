@@ -1,8 +1,9 @@
 // ========================================
-// INTELLIA v8.0 - ASSISTANT MULTIMODAL (SYNCHRO FIREBASE)
+// INTELLIA v8.1 - ASSISTANT MULTIMODAL (HTML OUTPUT + ALL FILES)
 //
-// ✅ Lit l'historique des chats depuis Firebase (fini le 'conversationContexts')
-// ✅ Lit les PDF, DOCX, TXT, et Images
+// ✅ Lit l'historique des chats depuis Firebase
+// ✅ Lit TOUS les fichiers (PDF, DOCX, TXT, HTML, JS, XLSX, etc.)
+// ✅ Répond en HTML (plus de Markdown **)
 // ✅ Gère les sessions uniques par utilisateur
 // ========================================
 const express = require('express');
@@ -24,7 +25,7 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(cors());
-app.use(express.json({ limit: '50mb' })); // Augmenter la limite pour les fichiers
+app.use(express.json({ limit: '50mb' }));
 app.use(express.static('public'));
 
 app.get('/', (req, res) => {
@@ -36,7 +37,7 @@ app.get('/', (req, res) => {
 // ========================================
 const AUTH_KEY = process.env.AUTH_KEY || "cle-secrete-intellia";
 
-// ✅ CONFIG FIREBASE (Tirée de index.html)
+// ✅ CONFIG FIREBASE
 const firebaseConfig = {
     apiKey: "AIzaSyA5oYEu4-nOUtjOe2JJ4C9VwNniNSBdjqI",
     authDomain: "mamaisonintelligente-14485.firebaseapp.com",
@@ -52,13 +53,13 @@ let db;
 try {
     const firebaseApp = initializeApp(firebaseConfig);
     db = getDatabase(firebaseApp);
-    console.log("🔥 Connexion à Firebase Réussie (Source de vérité)");
+    console.log("🔥 Connexion à Firebase Réussie");
 } catch (e) {
     console.error("❌ ERREUR CRITIQUE: Impossible d'initialiser Firebase.", e);
 }
 
 const DEVICES_STATES_REF = "devices";
-const USER_CHATS_REF = "userChats"; // Chemin de l'historique des chats
+const USER_CHATS_REF = "userChats";
 
 const API_KEYS = [];
 let currentKeyIndex = 0;
@@ -72,12 +73,6 @@ for (let i = 1; i <= 10; i++) {
 
 if (API_KEYS.length === 0) console.warn('⚠️ AUCUNE CLÉ API GEMINI');
 console.log(`🔑 ${API_KEYS.length} clé(s) Gemini chargée(s)`);
-
-
-// ========================================
-// SUPPRESSION de 'conversationContexts'
-// L'historique est maintenant lu depuis Firebase à chaque requête.
-// ========================================
 
 
 // ========================================
@@ -108,7 +103,7 @@ function markKeyAsFailed(keyObj, isQuotaError = false) {
 }
 
 // ========================================
-// HEURE PRÉCISE DU BÉNIN (✅ CORRIGÉE)
+// HEURE PRÉCISE DU BÉNIN
 // ========================================
 function getBeninTime() {
   const timeZone = 'Africa/Porto-Novo';
@@ -149,37 +144,131 @@ function parseDataUri(dataUri) {
   }
 }
 
+// ✅ FONCTION AMÉLIORÉE - Support de TOUS les fichiers
 async function parseFileAttachment(attachment) {
   try {
     const parsedData = parseDataUri(attachment.data);
     if (!parsedData) throw new Error("Invalid Data URI");
+    
     const buffer = Buffer.from(parsedData.data, 'base64');
     let text = "";
-    const MAX_CHARS = 8000;
-    console.log(`Parsing file: ${attachment.name}, MIME: ${parsedData.mimeType}`);
-    switch (parsedData.mimeType) {
-      case 'text/plain':
+    const MAX_CHARS = 15000;
+    
+    console.log(`📄 Parsing: ${attachment.name}, MIME: ${parsedData.mimeType}, Size: ${buffer.length} bytes`);
+    
+    const fileName = attachment.name.toLowerCase();
+    const ext = fileName.split('.').pop();
+    
+    switch (true) {
+      // ===== TEXTE BRUT =====
+      case parsedData.mimeType.startsWith('text/'):
+      case ext === 'txt':
+      case ext === 'log':
+      case ext === 'md':
+      case ext === 'csv':
         text = buffer.toString('utf-8');
         break;
-      case 'application/pdf':
-        const data = await pdf(buffer);
-        text = data.text;
+      
+      // ===== HTML / XML =====
+      case ext === 'html':
+      case ext === 'htm':
+      case ext === 'xml':
+      case parsedData.mimeType.includes('html'):
+      case parsedData.mimeType.includes('xml'):
+        text = buffer.toString('utf-8');
         break;
-      case 'application/vnd.openxmlformats-officedocument.wordprocessingml.document': // DOCX
-        const result = await mammoth.extractRawText({ buffer });
-        text = result.value;
+      
+      // ===== CODE SOURCE =====
+      case ext === 'js':
+      case ext === 'json':
+      case ext === 'css':
+      case ext === 'py':
+      case ext === 'java':
+      case ext === 'c':
+      case ext === 'cpp':
+      case ext === 'h':
+      case parsedData.mimeType.includes('javascript'):
+      case parsedData.mimeType.includes('json'):
+        text = buffer.toString('utf-8');
         break;
+      
+      // ===== PDF =====
+      case parsedData.mimeType === 'application/pdf':
+      case ext === 'pdf':
+        const pdfData = await pdf(buffer);
+        text = pdfData.text;
+        console.log(`✅ PDF extrait: ${pdfData.numpages} pages, ${text.length} caractères`);
+        break;
+      
+      // ===== DOCX =====
+      case parsedData.mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
+      case ext === 'docx':
+        const docxResult = await mammoth.extractRawText({ buffer });
+        text = docxResult.value;
+        console.log(`✅ DOCX extrait: ${text.length} caractères`);
+        break;
+      
+      // ===== DOC (ancien format) =====
+      case ext === 'doc':
+        return `[Fichier .DOC ancien format détecté: ${attachment.name}. Veuillez le convertir en .DOCX pour une meilleure extraction.]`;
+      
+      // ===== EXCEL =====
+      case ext === 'xlsx':
+      case ext === 'xls':
+      case parsedData.mimeType.includes('spreadsheet'):
+        try {
+          const XLSX = require('xlsx');
+          const workbook = XLSX.read(buffer, { type: 'buffer' });
+          const sheetNames = workbook.SheetNames;
+          text = sheetNames.map(name => {
+            const sheet = workbook.Sheets[name];
+            return `[Feuille: ${name}]\n${XLSX.utils.sheet_to_txt(sheet)}`;
+          }).join('\n\n');
+          console.log(`✅ Excel extrait: ${sheetNames.length} feuille(s)`);
+        } catch (xlsxError) {
+          return `[Fichier Excel détecté mais module 'xlsx' non installé. Installez avec: npm install xlsx]`;
+        }
+        break;
+      
+      // ===== POWERPOINT =====
+      case ext === 'pptx':
+      case ext === 'ppt':
+        return `[Fichier PowerPoint détecté: ${attachment.name}. Extraction non supportée. Taille: ${buffer.length} bytes]`;
+      
+      // ===== ARCHIVES =====
+      case ext === 'zip':
+      case ext === 'rar':
+      case ext === '7z':
+        return `[Archive détectée: ${attachment.name}. Extraction non supportée. Taille: ${buffer.length} bytes]`;
+      
+      // ===== FORMAT NON RECONNU =====
       default:
-        return `[Contenu du fichier '${attachment.name}' non supporté (${parsedData.mimeType})]`;
+        try {
+          const textAttempt = buffer.toString('utf-8');
+          if (/^[\x20-\x7E\s]+$/.test(textAttempt.substring(0, 1000))) {
+            text = textAttempt;
+            console.log(`✅ Fichier lu comme texte brut: ${fileName}`);
+          } else {
+            return `[Contenu du fichier '${attachment.name}' non supporté (${parsedData.mimeType}). Type: binaire, Taille: ${buffer.length} bytes]`;
+          }
+        } catch (e) {
+          return `[Impossible de lire '${attachment.name}' (${parsedData.mimeType})]`;
+        }
     }
-    return text.substring(0, MAX_CHARS) + (text.length > MAX_CHARS ? "... [Contenu tronqué]" : "");
+    
+    if (text.length > MAX_CHARS) {
+      console.log(`⚠️ Fichier tronqué: ${text.length} -> ${MAX_CHARS} caractères`);
+      text = text.substring(0, MAX_CHARS) + `\n\n... [Contenu tronqué. Total: ${text.length} caractères]`;
+    }
+    
+    return text;
+    
   } catch (error) {
-    console.error(`Erreur parsing ${attachment.name}:`, error.message);
-    return `[Erreur lors de la lecture du fichier '${attachment.name}']`;
+    console.error(`❌ Erreur parsing ${attachment.name}:`, error.message);
+    return `[Erreur lors de la lecture du fichier '${attachment.name}': ${error.message}]`;
   }
 }
 
-// ✅ NOUVEAU: Construit les 'parts' pour Gemini
 async function createHistoryEntry(role, text, attachments = []) {
   const parts = [{ text: text || '' }];
   for (const att of attachments) {
@@ -194,7 +283,6 @@ async function createHistoryEntry(role, text, attachments = []) {
   return { role, parts };
 }
 
-// ✅ NOUVEAU: Lit l'historique des messages depuis Firebase
 async function getHistoryFromFirebase(userId, sessionId) {
   if (!db || !userId || !sessionId) return [];
   
@@ -204,55 +292,33 @@ async function getHistoryFromFirebase(userId, sessionId) {
     if (!snapshot.exists()) return [];
     
     const messages = snapshot.val();
-    // Convertir l'objet en tableau et prendre les 10 derniers
     const sortedMessages = Object.values(messages).sort((a, b) => a.timestamp - b.timestamp);
-    const recentMessages = sortedMessages.slice(-10); // Prendre les 10 derniers
+    const recentMessages = sortedMessages.slice(-10);
     
     return recentMessages;
   } catch (error) {
-    console.error("Erreur lors de la lecture de l'historique Firebase:", error);
+    console.error("Erreur lecture historique Firebase:", error);
     return [];
   }
 }
 
-
 // ========================================
-// FORMATAGE DE LA RÉPONSE (Demande utilisateur)
+// ✅ FORMATAGE HTML (SIMPLIFIÉ)
 // ========================================
-/**
- * Formate correctement les réponses AI avec retours à la ligne
- */
 function formatAIResponse(text) {
   if (typeof text !== 'string') return text;
+  
   return text
-    // Convertir balises HTML en retours à la ligne
-    .replace(/<br\s*\/?>/gi, '\n')
-    .replace(/<\/p>/gi, '\n\n')
-    .replace(/<\/div>/gi, '\n')
-    .replace(/<\/li>/gi, '\n')
-    
-    // Supprimer toutes les balises HTML restantes
-    .replace(/<[^>]*>/g, '')
-    
-    // Nettoyer les espaces
     .replace(/&nbsp;/g, ' ')
     .replace(/&amp;/g, '&')
     .replace(/&lt;/g, '<')
     .replace(/&gt;/g, '>')
     .replace(/&quot;/g, '"')
-    
-    // Normaliser les retours à la ligne
-    .replace(/\r\n/g, '\n')       // Windows → Unix
-    .replace(/\r/g, '\n')         // Mac → Unix
-    .replace(/\n{3,}/g, '\n\n')   // Max 2 retours consécutifs
-    .replace(/[ \t]+\n/g, '\n')   // Supprimer espaces avant retours
-    .replace(/\n[ \t]+/g, '\n')   // Supprimer espaces après retours
-    
-    // Nettoyer début et fin
     .trim();
 }
+
 // ========================================
-// RECHERCHE WEB INTELLIGENTE (Inchangé)
+// RECHERCHE WEB INTELLIGENTE
 // ========================================
 async function performWebSearch(query) {
   console.log(`🔍 Recherche: "${query}"`);
@@ -302,16 +368,14 @@ function needsWebSearch(message) {
 }
 
 // ========================================
-// ANALYSE CONTEXTUELLE (Simplifié)
+// ANALYSE CONTEXTUELLE
 // ========================================
-// On n'analyse que le message actuel et l'état des appareils
 function analyzeContext(message, deviceStates, beninTime) {
   const analysis = { suggestedActions: [] };
   const lowerMsg = message.toLowerCase();
 
-  // Suggestions (la logique est conservée)
   if (lowerMsg.includes('je sors') || lowerMsg.includes('je pars')) {
-    const onDevices = Object.values(deviceStates).filter(d => d.etat === 'ON'); // Correction: .etat
+    const onDevices = Object.values(deviceStates).filter(d => d.etat === 'ON');
     if (onDevices.length > 0) {
       analysis.suggestedActions.push({
         type: 'security_check',
@@ -320,93 +384,91 @@ function analyzeContext(message, deviceStates, beninTime) {
       });
     }
   }
-  if (lowerMsg.includes('il fait nuit') || lowerMsg.includes('sombre')) {
-    // Note: deviceStates vient de Firebase, il n'a pas .type. On se base sur le nom.
-    // Pour que ça marche, le 'devices' (métadonnées) est requis.
-    // On simplifie : on ne suggère pas si on n'a pas les métadonnées.
-  }
-  // Suggestions basées sur l'heure
+  
   if (beninTime && (beninTime.hours >= 22 || beninTime.hours < 6)) {
     const brightDevices = Object.values(deviceStates).filter(d => d.etat === 'ON' && d.luminosite > 50);
     if (brightDevices.length > 0) {
       analysis.suggestedActions.push({
         type: 'energy_saving',
         message: `Il est ${beninTime.hoursStr}:${beninTime.minutesStr}. Voulez-vous réduire la luminosité ?`,
-        devices: brightDevices.map(d => d.id) // Note: l'ID n'est pas dans l'état, c'est un problème.
+        devices: brightDevices.map(d => d.id)
       });
     }
   }
-  // On va simplifier l'analyse pour l'instant
+  
   return analysis;
 }
 
 // ========================================
-// PROMPT SYSTÈME v8.0 (Inchangé)
+// ✅ PROMPT SYSTÈME v8.1 (HTML OUTPUT)
 // ========================================
 const systemPrompt = `
 Tu es Intellia v5.0, assistant universel ultra-intelligent.
 
 ## CAPACITÉS
-Domotique, Code (Arduino/Python/JS), Recherche web, Conversation naturelle, Analyse de Fichiers (PDF, TXT, DOCX) et Images.
+Domotique, Code (Arduino/Python/JS), Recherche web, Conversation naturelle, Analyse de Fichiers (PDF, TXT, DOCX, HTML, JS, etc.) et Images.
+
+## ⚠️ FORMAT DE RÉPONSE HTML (TRÈS IMPORTANT)
+Tu dois TOUJOURS répondre en JSON avec le champ "reply" contenant du HTML valide.
+
+### Règles de formatage HTML:
+- Texte important: <strong>texte</strong> (jamais **)
+- Listes: <ul><li>élément</li></ul> (jamais *)
+- Titres: <h3>Titre</h3> (jamais ##)
+- Retours à la ligne: <br> ou vrais paragraphes
+- Code inline: <code>code</code> (jamais \`)
+- Séparateurs: <hr>
+
+### INTERDIT:
+❌ N'utilise JAMAIS Markdown (**, *, ##, -, etc.)
+❌ N'utilise JAMAIS d'astérisques ou symboles
+✅ Utilise UNIQUEMENT du HTML valide
 
 ## FORMAT JSON
 {
-  "reply": "Réponse naturelle",
+  "reply": "<strong>Réponse en HTML</strong><br>Avec retours à la ligne.<br><br><ul><li>Liste</li><li>D'éléments</li></ul>",
   "execute": ["device_id|ACTION|valeur"],
   "planning_commands": [{"action":"add", "device":"id", "time":"HH:MM", "power":100}],
   "suggestions": [{"type":"info|action|warning", "message":"...", "context":"..."}],
   "source": "cloud|web|knowledge"
 }
 
-## 📌 RÈGLES CRITIQUES (TRÈS IMPORTANT)
-1. **Vérification:** Vérifie [États] (deviceStates) AVANT toute action.
+## 📌 RÈGLES CRITIQUES
+1. **Vérification:** Vérifie [États] AVANT toute action.
 2. **Recherche:** Ne recherche PAS pour code/domotique.
-3. **Suggestions:** Base tes suggestions sur le CONTEXTE RÉEL ([États], [Heure]).
-4. **Gestion de l'heure:** Mentionne l'heure SEULEMENT si l'utilisateur la demande ou si c'est pertinent. ÉVITE de répéter l'heure.
+3. **Suggestions:** Base sur CONTEXTE RÉEL ([États], [Heure]).
+4. **Heure:** Mentionne SEULEMENT si demandé ou pertinent.
 5. **Naturalité:** Réponses NATURELLES et CONVERSATIONNELLES.
-6. **CONTEXTE CONVERSATIONNEL:** Si le message de l'utilisateur est court (ex: "les", "oui", "tout les appareils"), il répond TRÈS PROBABLEMENT à ta question précédente. Analyse l'historique récent (fourni dans 'history') pour comprendre l'intention complète.
-7. **Fichiers & Images:** Si l'utilisateur envoie un fichier, le contenu sera fourni. Base ta réponse sur ce contenu.
+6. **CONTEXTE:** Si message court ("les", "oui"), analyse l'historique.
+7. **Fichiers:** Base ta réponse sur le contenu fourni.
 
-## EXEMPLES
-[Exemple 1: Contexte conversationnel]
-USER: "Allume les"
-AI: {"reply": "Quels appareils souhaitez-vous allumer ?"}
-USER: "tout les appareils"
-CONTEXTE: [États: {"salon_lampe":{"etat":"OFF"}}]
+## EXEMPLES AVEC HTML
+[Exemple: Liste d'appareils]
+USER: "Donne-moi l'état des appareils"
 {
-  "reply": "Entendu, j'allume tous les appareils.",
-  "execute": ["salon_lampe|ON|100"],
-  "planning_commands": [], "suggestions": [], "source": "cloud"
-}
-
-[Exemple 2: Appareil déjà allumé]
-USER: "Allume la lampe du salon"
-CONTEXTE: [États: {"salon_lampe":{"etat":"ON","luminosite":80}}]
-{
-  "reply": "La lampe du salon est déjà allumée à 80%. Voulez-vous que je change la luminosité ?",
-  "execute": [], "planning_commands": [],
-  "suggestions": [{"type":"info", "message":"Régler à 100% ?", "context":"Appareil déjà actif"}],
+  "reply": "<h3>État des appareils</h3><br>Voici les appareils actifs:<br><br><ul><li><strong>LED 1 (SALON)</strong>: Allumée à 30%</li><li><strong>LED 2 (CHAMBRE)</strong>: Allumée à 30%</li><li><strong>PRISE 1</strong>: Allumée</li></ul><br>Voulez-vous modifier quelque chose?",
+  "execute": [],
+  "planning_commands": [],
+  "suggestions": [],
   "source": "cloud"
 }
 
-RÉPONDS EN JSON VALIDE.
+RÉPONDS EN JSON VALIDE AVEC HTML DANS "reply".
 `;
 
-
 // ========================================
-// FONCTION CHAT AVEC GEMINI (✅ v8.0 - Lit l'historique Firebase)
+// FONCTION CHAT AVEC GEMINI
 // ========================================
 async function chatWithGemini(userMessage, devices, userId, sessionId, attachments = [], preferences = {}, maxRetries = API_KEYS.length) {
     
-  // 1. Obtenir l'état réel des appareils depuis Firebase
   let realDeviceStates = {};
   try {
       if (!db) throw new Error("DB non initialisée");
       const snapshot = await get(ref(db, DEVICES_STATES_REF));
       realDeviceStates = snapshot.val() || {};
-      console.log(`🔥 États réels récupérés de Firebase pour ${Object.keys(realDeviceStates).length} appareils.`);
+      console.log(`🔥 États réels récupérés: ${Object.keys(realDeviceStates).length} appareils`);
   } catch (e) {
-      console.error("❌ ERREUR FIREBASE: Impossible de lire les états.", e.message);
+      console.error("❌ ERREUR FIREBASE:", e.message);
       realDeviceStates = {};
   }
 
@@ -415,12 +477,8 @@ async function chatWithGemini(userMessage, devices, userId, sessionId, attachmen
   }
 
   const beninTime = getBeninTime();
-  
-  // 2. Analyser le contexte actuel
-  // On passe 'devices' (métadonnées) et 'realDeviceStates' (états réels)
   const contextAnalysis = analyzeContext(userMessage, realDeviceStates, beninTime);
   
-  // 3. Recherche Web si nécessaire
   let webResults = [];
   if (needsWebSearch(userMessage)) {
     webResults = await performWebSearch(userMessage);
@@ -432,15 +490,13 @@ async function chatWithGemini(userMessage, devices, userId, sessionId, attachmen
     try {
       const keyObj = getNextApiKey();
       const genAI = new GoogleGenerativeAI(keyObj.key);
-      const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+      const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" });
 
-      // 4. ✅ NOUVEAU: Lire l'historique depuis Firebase
       const historyFromFirebase = await getHistoryFromFirebase(userId, sessionId);
 
-      // 5. ✅ NOUVEAU: Construire les 'parts' d'historique
       const historyParts = await Promise.all(
         historyFromFirebase.flatMap(async (h) => [
-          await createHistoryEntry("user", h.user, h.attachments || []), // Assurer que attachments est un array
+          await createHistoryEntry("user", h.user, h.attachments || []),
           await createHistoryEntry("model", h.bot)
         ])
       );
@@ -453,7 +509,6 @@ async function chatWithGemini(userMessage, devices, userId, sessionId, attachmen
                 execute: [], planning_commands: [], suggestions: [], source: "cloud"
               })}] 
           },
-          // Utiliser l'historique de Firebase
           ...historyParts.flat()
         ],
         generationConfig: {
@@ -463,9 +518,6 @@ async function chatWithGemini(userMessage, devices, userId, sessionId, attachmen
         },
       });
 
-      // 6. ✅ NOUVEAU: Prompt de métadonnées
-      // Note: 'devices' contient les métadonnées (nom, type)
-      // 'realDeviceStates' contient les états (ON/OFF, luminosite)
       const metadataPrompt = `
 [Heure: ${beninTime.formatted}]
 [Préfs: ${JSON.stringify(preferences)}]
@@ -477,7 +529,6 @@ ${webResults.length > 0 ? `[Web: ${JSON.stringify(webResults.slice(0, 3))}]` : '
 MESSAGE: "${userMessage}"
 `;
 
-      // 7. Construire le message multimodal
       const promptParts = [ { text: metadataPrompt } ];
       for (const att of attachments) {
         if (att.type === 'image') {
@@ -491,7 +542,7 @@ MESSAGE: "${userMessage}"
       }
 
       const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 20000); // 20 sec timeout
+      const timeout = setTimeout(() => controller.abort(), 20000);
       const result = await chat.sendMessage(promptParts, { signal: controller.signal });
       clearTimeout(timeout);
 
@@ -514,16 +565,15 @@ MESSAGE: "${userMessage}"
 }
 
 // ========================================
-// ROUTE PRINCIPALE /api/chat (✅ v8.0)
+// ROUTE PRINCIPALE /api/chat
 // ========================================
 app.post('/api/chat', async (req, res) => {
   try {
-    // ✅ Accepte 'userId', 'sessionId', et 'preferences'
     let { 
       message, 
       key, 
-      devices = [], // Métadonnées des appareils
-      deviceStates = {}, // États (ignorés, mais gardés au cas où)
+      devices = [],
+      deviceStates = {},
       userId, 
       sessionId, 
       attachments = [], 
@@ -540,15 +590,14 @@ app.post('/api/chat', async (req, res) => {
       return res.status(400).json({ reply: "ID Utilisateur ou ID Session manquant", ...jsonErrorDefaults() });
     }
 
-    console.log('┌────────────────────────────────────────┐');
+    console.log('┌────────────────────────────────────────');
     console.log(`💬 MESSAGE: ${message || '(Pas de texte)'}`);
     console.log(`🖼️ ATTACHMENTS: ${attachments.length}`);
     console.log(`👤 USER: ${userId.substring(0, 10)}...`);
     console.log(`🏷️ SESSION: ${sessionId}`);
-    console.log(`📡 APPAREILS (Meta): ${devices.length}`);
+    console.log(`📡 APPAREILS: ${devices.length}`);
 
     const startTime = Date.now();
-    // ✅ Appel avec les métadonnées 'devices'
     const result = await chatWithGemini(message, devices, userId, sessionId, attachments, preferences);
 
     if (!result.success) {
@@ -571,7 +620,6 @@ app.post('/api/chat', async (req, res) => {
       }
     }
 
-    // Validation et déduplication
     aiJson.reply = aiJson.reply || "Commande reçue.";
     aiJson.execute = aiJson.execute || [];
     aiJson.planning_commands = aiJson.planning_commands || [];
@@ -580,13 +628,11 @@ app.post('/api/chat', async (req, res) => {
     aiJson.reply = formatAIResponse(aiJson.reply);
     if (!aiJson.source) aiJson.source = result.hadWebResults ? "web" : "cloud";
 
-    // ⛔ Le serveur ne sauvegarde plus l'historique. C'est le client.
-
     console.log('✅ RÉPONSE GÉNÉRÉE');
     console.log(`📤 Execute: ${aiJson.execute.length}`);
     console.log(`📅 Planning: ${aiJson.planning_commands.length}`);
     console.log(`💡 Suggestions: ${aiJson.suggestions.length}`);
-    console.log('└────────────────────────────────────────┘\n');
+    console.log('└────────────────────────────────────────\n');
 
     res.json(aiJson);
     
@@ -596,7 +642,6 @@ app.post('/api/chat', async (req, res) => {
   }
 });
 
-// Helpers pour la route /api/chat
 function jsonErrorDefaults() {
   return { execute: [], planning_commands: [], suggestions: [], source: "error" };
 }
@@ -628,7 +673,7 @@ function deduplicatePlanning(plans) {
 }
 
 // ========================================
-// ROUTE SANTÉ (Mise à jour)
+// ROUTE SANTÉ
 // ========================================
 app.get('/api/health', (req, res) => {
   const availableKeys = API_KEYS.filter(k => !k.quotaExceeded).length;
@@ -636,14 +681,16 @@ app.get('/api/health', (req, res) => {
   
   res.json({ 
     status: 'ok', 
-    version: '8.0-firebase-sync', // Version mise à jour
+    version: '8.1-html-output-allfiles',
     features: {
       gemini: API_KEYS.length > 0,
       webSearch: true,
-      contextMemory: "Firebase", // ✅ NOUVEAU
+      contextMemory: "Firebase",
       firebaseStateSync: true,
       multimodal_Image: true,
-      multimodal_Files: true
+      multimodal_Files: true,
+      htmlOutput: true,
+      supportedFiles: "PDF, DOCX, TXT, HTML, JS, JSON, CSS, XLSX, CSV, Images"
     },
     keys: { total: API_KEYS.length, available: availableKeys },
     time: {
@@ -654,19 +701,17 @@ app.get('/api/health', (req, res) => {
 });
 
 // ========================================
-// SUPPRESSION: Nettoyage 'conversationContexts' (plus nécessaire)
-// ========================================
-
-// ========================================
 // DÉMARRAGE
 // ========================================
 app.listen(PORT, () => {
   console.log('\n🏠 ╔═══════════════════════════════════════╗');
-  console.log('   ║  INTELLIA v8.0 - FIREBASE SYNC         ║');
+  console.log('   ║  INTELLIA v8.1 - HTML OUTPUT         ║');
   console.log('   ╚═══════════════════════════════════════╝');
   console.log(`\n   🚀 Serveur: http://localhost:${PORT}`);
   console.log(`   🔑 Clés Gemini: ${API_KEYS.length}`);
   console.log(`   🔥 Synchro Firebase (Appareils): Activée`);
   console.log(`   💾 Synchro Firebase (Chats): Activée`);
-  console.log(`   🖼️ Multimodal (Images/Fichiers): Prêt\n`);
+  console.log(`   🖼️ Multimodal (Images/Fichiers): Prêt`);
+  console.log(`   ✅ Output HTML (Plus de Markdown): Activé`);
+  console.log(`   📂 Fichiers supportés: PDF, DOCX, TXT, HTML, JS, XLSX, CSV\n`);
 });
