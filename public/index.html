@@ -55,6 +55,8 @@
     body.night-mode #chat-input-container { background: rgba(30, 41, 59, 0.95); border-top: 1px solid rgba(255, 255, 255, 0.1); }
     body.night-mode #chatFullInput { background: rgba(15, 23, 42, 0.8); }
     body.night-mode .attachment-preview { background: rgba(51, 65, 85, 0.8); border: 1px solid rgba(255, 255, 255, 0.1); }
+    
+    /* ✅ NOUVEAU v9.1: Remplacement du bouton rouge */
     body.night-mode .chat-history-item .btn.warn { background: var(--danger); color: white; border: none; }
     body.night-mode .chat-history-item .btn.warn:hover { background: #c0392b; }
 
@@ -79,7 +81,6 @@
     
     /* ===== SECTION CHAT (PLEIN ÉCRAN) ===== */
     #sec-intelligence {
-      /* ✅ CORRECTION: La hauteur est 100% du container, pas du viewport */
       height: 100%; 
       padding-top: 0; 
       margin-top: -16px; /* Compense le padding du container */
@@ -95,7 +96,6 @@
       flex-direction: column; flex-shrink: 0;
       transition: all 0.3s ease;
     }
-    /* CORRECTION 5: CSS Sidebar Mobile */
     #chat-sidebar-header {
       padding: 12px;
       border-bottom: 1px solid rgba(0,0,0,0.1);
@@ -106,7 +106,6 @@
     #new-chat-btn { width: 100%; justify-content: center; }
     #chat-history-list { flex: 1; overflow-y: auto; padding: 8px; }
     
-    /* CORRECTION 4: CSS Titres Sidebar */
     .chat-history-item {
       padding: 10px 12px;
       border-radius: 8px;
@@ -130,15 +129,36 @@
       padding-right: 8px;
     }
     
-    .chat-history-item .btn.warn {
+    /* ✅ NOUVEAU v9.1: Style pour le bouton "..." */
+    .chat-history-item .chat-history-delete {
       padding: 6px 10px;
       font-size: 14px;
       line-height: 1;
       border-radius: 6px;
-      flex-shrink: 0; /* Ne pas rétrécir le bouton */
+      flex-shrink: 0;
       min-width: 36px;
       min-height: 36px;
+      background: rgba(0,0,0,0.05);
+      color: var(--muted);
+      border: none;
     }
+    .chat-history-item .chat-history-delete:hover {
+      background: var(--danger);
+      color: white !important;
+    }
+    body.night-mode .chat-history-item .chat-history-delete {
+      background: rgba(255,255,255,0.05);
+      color: var(--muted);
+    }
+    body.night-mode .chat-history-item .chat-history-delete:hover {
+      background: var(--danger);
+      color: white !important;
+    }
+    /* Masquer l'ancien bouton au cas où */
+    .chat-history-item .btn.warn {
+      display: none;
+    }
+    /* Fin v9.1 */
 
     .chat-history-item:hover { background: #e9ecef; }
     .chat-history-item.active { background: var(--primary); color: white; }
@@ -211,7 +231,16 @@
     .btn.primary { background: var(--primary); color: white; }
     .btn.warn { background: var(--danger); color: white; }
     
-    /* CORRECTION 4 (Stop Bouton): Ancien CSS supprimé d'ici */
+    /* ✅ NOUVEAU v9.0: Style pour le bouton Mute */
+    #toggleVoiceBtn.muted {
+      color: var(--danger);
+      background: rgba(231, 76, 60, 0.1);
+      border: 1px solid var(--danger);
+    }
+    body.night-mode #toggleVoiceBtn.muted {
+      background: rgba(231, 76, 60, 0.3);
+      color: #f0a0a0;
+    }
     
     .btn.success { background: var(--success); color: white; }
     .btn.warning { background: var(--warning); color: white; }
@@ -223,7 +252,6 @@
     .msg { padding: 10px 14px; border-radius: 12px; max-width: 85%; margin-bottom: 10px; word-wrap: break-word; line-height: 1.4; }
     .msg.user { align-self: flex-end; background: linear-gradient(135deg, #4895ef, #4361ee); color: white; }
     
-    /* CORRECTION 3 (HTML Rendu): CSS .msg.bot */
     .msg.bot {
       align-self: flex-start;
       background: var(--card-bg);
@@ -232,7 +260,6 @@
       white-space: normal;
       overflow-wrap: break-word;
     }
-    /* ✅ Pas de override - les styles inline du serveur prennent le dessus */
     body.night-mode .msg.bot {
       background: rgba(30, 41, 59, 0.95);
       color: #e2e8f0;
@@ -298,7 +325,7 @@
     }
     
     /* ================================================= */
-    /* ✅ CORRECTION MOBILE (Clavier + UI) v8.4 */
+    /* Mobile */
     /* ================================================= */
     @media (max-width: 760px) {
       .grid { grid-template-columns: 1fr; }
@@ -308,26 +335,18 @@
       .two-column { grid-template-columns: 1fr; }
       .container { padding-bottom: 88px; }
 
-      /* ✅ CORRECTION: L'onglet Chat n'est PLUS en 'position: fixed' */
       #sec-intelligence {
-        height: 100%; /* Il prend 100% du .container (qui scrolle) */
-        /* Toutes les anciennes règles 'fixed' sont supprimées */
+        height: 100%; 
       }
-      
-      /* ✅ CORRECTION: Ces règles sont SUPPRIMÉES car la navigation doit rester visible */
-      /*
-      body:has(#sec-intelligence.active) #main-header { display: none !important; }
-      body:has(#sec-intelligence.active) #main-footer { display: none !important; }
-      */
       
       /* Sidebar mobile */
       #chat-sidebar {
-        /* ✅ CORRECTION: Position 'absolute' (relatif à #sec-intelligence) */
         position: absolute; 
         left: -100%;
         top: 0; bottom: 0;
-        width: 80%;
-        max-width: 300px;
+        /* ✅ NOUVEAU v9.1: Sidebar plus large */
+        width: 90%;
+        max-width: 350px;
         z-index: 10000;
         transition: left 0.3s ease;
         box-shadow: 2px 0 10px rgba(0,0,0,0.3);
@@ -339,7 +358,6 @@
       /* Overlay sombre */
       #sidebar-overlay {
         display: none;
-        /* ✅ CORRECTION: Position 'absolute' */
         position: absolute; 
         top: 0; left: 0; right: 0; bottom: 0;
         background: rgba(0,0,0,0.5);
@@ -352,7 +370,6 @@
       /* Bouton pour ouvrir la sidebar */
       #sidebar-toggle-btn {
         display: flex; 
-        /* ✅ CORRECTION: Position 'absolute' */
         position: absolute; 
         top: 16px;
         left: 16px;
@@ -411,7 +428,6 @@
       
       .msg { max-width: 90%; font-size: 15px; }
       
-      /* CORRECTION 5: Afficher bouton retour */
       #close-sidebar-btn {
         display: flex !important;
         width: 100%;
@@ -588,6 +604,10 @@
                   <i class="fa-solid fa-waveform"></i>
                 </button>
                 
+                <button class="btn" id="toggleVoiceBtn" title="Activer/Désactiver la synthèse vocale">
+                  <i class="fas fa-volume-up"></i>
+                </button>
+                
                 <button class="btn primary" id="chatFullSend">
                   <i class="fas fa-paper-plane"></i>
                 </button>
@@ -706,10 +726,12 @@
       
   </div> <script type="module">
   /*************************************************
-   * SmartHome Intelligence - Version 8.8 (Typing Fix)
-   * - `simulateTyping` est maintenant "intelligent"
-   * - Il affiche le HTML d'un coup
-   * - Il simule le "mot à mot" SEULEMENT pour le texte simple
+   * SmartHome Intelligence - Version 9.1 (Bug Fixes)
+   * - v8.9: `htmlToPlainText` nettoie le HTML pour la voix
+   * - v9.0: Ajout du bouton Mute Voix (raccourci)
+   * - v9.1: Corrigé: Le premier message utilisateur ne s'affichait pas
+   * - v9.1: Corrigé: Sidebar élargie sur mobile
+   * - v9.1: Corrigé: Bouton "Suppr discussion" remplacé par "..."
    *************************************************/
 
   // ======= CONFIG =======
@@ -754,8 +776,7 @@
     currentSessionId: null,
     attachments: [], 
     chatInProgress: false,
-    shouldStopResponse: false, // ✅ CORRECTION 1 (Stop) : Flag d'interruption
-    // État WebSocket Local
+    shouldStopResponse: false, 
     localWebSocket: null,
     isLocalConnected: false,
     esp32Ip: localStorage.getItem('esp32Ip') || '', 
@@ -838,7 +859,6 @@
 
   if (db) {
     onValue(ref(db, metaRefPath), snap => { appState.devices = Object.values(snap.val() || {}); renderDevices(); });
-    // NOUVEAU: Le listener de Firebase met à jour l'UI
     onValue(ref(db, devicesRefPath), snap => { 
         appState.deviceStates = snap.val() || {}; 
         renderDevices(); 
@@ -971,7 +991,7 @@
     await set(ref(db, `${devicesRefPath}/${deviceId}`), payload);
   }
 
-  // NOUVEAU: ======= ⚡ WebSocket Local Logic =======
+  // ======= ⚡ WebSocket Local Logic =======
   
   function updateStatusUI(type, connected) {
     const element = el(type === 'local' ? 'statusLocal' : 'statusFirebase');
@@ -1018,12 +1038,11 @@
           const state = data.state === "ON";
           const power = data.power || 0;
           
-          // IMPORTANT: Mettre à jour l'état local de l'application principale
           if (appState.deviceStates[device]) {
             appState.deviceStates[device].etat = state ? "ON" : "OFF";
             appState.deviceStates[device].luminosite = power;
             logActivity(`⚡[WS] ${device} mis à jour : ${state ? 'ON' : 'OFF'} (${power}%)`);
-            renderDevices(); // Redessiner la grille
+            renderDevices(); 
           }
         }
       } catch (e) {
@@ -1041,9 +1060,8 @@
       logActivity("🔌 WebSocket LOCAL déconnecté", 'warning');
       appState.isLocalConnected = false;
       updateStatusUI('local', false);
-      // Tentative de reconnexion
       setTimeout(() => {
-        if (appState.currentUser && appState.esp32Ip) { // Seulement si l'utilisateur est loggé
+        if (appState.currentUser && appState.esp32Ip) { 
           connectToESP32();
         }
       }, 5000);
@@ -1064,7 +1082,7 @@
     sendCommand(deviceId, v > 0 ? "ON" : "OFF", v);
   };
 
-  // NOUVEAU: ======= Commande Hybride (WS/Firebase) =======
+  // ======= Commande Hybride (WS/Firebase) =======
   window.sendCommand = (deviceId, action, value = null) => {
     const val = (value !== null) ? parseInt(value) : (action === "ON" ? 100 : 0);
     
@@ -1078,7 +1096,6 @@
         value: val
       }));
       
-      // Mise à jour optimiste pour l'UI (le WS `onmessage` confirmera)
       appState.deviceStates[deviceId] = { etat: action, luminosite: val };
       renderDevices();
       
@@ -1087,7 +1104,6 @@
       logActivity(`☁️ [Firebase] Envoi: ${deviceId} → ${action} (${val}%)`);
       writeDeviceStateToBackend(deviceId, action, val);
       
-      // Mise à jour optimiste pour Firebase
       appState.deviceStates[deviceId] = { etat: action, luminosite: val };
       renderDevices();
     }
@@ -1168,14 +1184,12 @@
   };
   if ('speechSynthesis' in window) window.speechSynthesis.onvoiceschanged = () => { preferredVoice = choosePreferredVoice(); };
 
-  // CORRECTION 2 (Stop Bouton): Fonction speak améliorée
   function speak(text, isStreaming = false) {
     if (!appState.voiceNotifications || !text || !('speechSynthesis' in window)) {
       VoiceEngine.resumeRecognition();
       return;
     }
     
-    // ✅ Vérifier si interrompu
     if (appState.shouldStopResponse) {
       window.speechSynthesis.cancel();
       VoiceEngine.resumeRecognition();
@@ -1183,17 +1197,13 @@
     }
   
     VoiceEngine.pauseRecognition();
-    
-    // Annuler toute lecture en cours
     window.speechSynthesis.cancel();
     
     if (isStreaming) {
-      // Mode streaming : phrases courtes pour lecture immédiate
       const sentences = text.match(/[^.!?]+[.!?]+/g) || [text];
       let currentIndex = 0;
       
       function speakNextSentence() {
-        // ✅ Vérifier interruption à chaque phrase
         if (appState.shouldStopResponse) {
           window.speechSynthesis.cancel();
           VoiceEngine.resumeRecognition();
@@ -1211,14 +1221,13 @@
           u.lang = 'fr-FR';
           if (!preferredVoice) preferredVoice = choosePreferredVoice();
           if (preferredVoice) u.voice = preferredVoice;
-          u.rate = 1.1; // Légèrement plus rapide
+          u.rate = 1.1; 
           
           u.onend = () => {
             currentIndex++;
             speakNextSentence();
           };
           
-          // ✅ Gérer l'interruption pendant la lecture
           u.onerror = () => {
             if (appState.shouldStopResponse) {
               window.speechSynthesis.cancel();
@@ -1231,11 +1240,8 @@
           speakNextSentence();
         }
       }
-      
       speakNextSentence();
-      
     } else {
-      // Mode normal : tout d'un coup
       const u = new SpeechSynthesisUtterance(text);
       u.lang = 'fr-FR';
       if (!preferredVoice) preferredVoice = choosePreferredVoice();
@@ -1269,13 +1275,7 @@
     }
   }
 
-  /*******************************************************************
-   * ⚠️ NOTE IMPORTANTE SUR LE MICRO (Android/iOS) ⚠️
-   *
-   * Pour que le micro fonctionne sur mobile,
-   * l'application doit OBLIGATOIREMENT être servie via HTTPS.
-   *
-   *******************************************************************/
+  // ======= Voice Engine =======
   const VoiceEngine = {
     recognition: null, isPushToTalkRecording: false,
     isContinuousActive: false, isPausedForSpeech: false,
@@ -1404,21 +1404,18 @@
     }
   };
   
-  // ======= Assistant Communication (v8.1) =======
+  // ======= Assistant Communication =======
   
-  // CORRECTION 4 (Stop Bouton) & 6 (Vérification)
   async function handleChatSubmit(message, attachments = []) {
     if (appState.chatInProgress) return;
     if (!message && attachments.length === 0) return;
   
-    // ✅ Réinitialiser le flag d'interruption
     appState.shouldStopResponse = false; 
-  
     appState.chatInProgress = true;
     el('intelliaStatus').textContent = "Assistant: En cours...";
     el('chat-loading').style.display = 'block';
     el('chatFullSend').style.display = 'none';
-    el('stopAIBtn').style.display = 'flex'; // ✅ CORRECTION 6 (Vérifié)
+    el('stopAIBtn').style.display = 'flex'; 
   
     appendChat('user', message, false, attachments); 
     el('chatFullInput').value = '';
@@ -1428,17 +1425,14 @@
     try {
       const reply = await sendToOnline(message, attachments);
       
-      // ✅ Vérifier si pas interrompu avant d'afficher
       if (!appState.shouldStopResponse) {
         const botMsgElement = appendChat('bot', '', true);
         try {
           await simulateTyping(botMsgElement, reply, true);
         } catch (interruptError) {
-          // L'utilisateur a interrompu pendant le typing
           console.log('⚠️ Typing interrompu');
         }
       } else {
-        // L'utilisateur a interrompu pendant la requête
         appendChat('bot', '<em style="color: #e74c3c;">⚠️ Réponse interrompue par l\'utilisateur</em>');
       }
     } catch (error) {
@@ -1448,14 +1442,13 @@
       }
     } finally {
       appState.chatInProgress = false;
-      appState.shouldStopResponse = false; // ✅ Réinitialiser
+      appState.shouldStopResponse = false; 
       el('chat-loading').style.display = 'none';
       el('chatFullSend').style.display = 'flex';
       el('stopAIBtn').style.display = 'none';
     }
   }
   
-  // CORRECTION 5 (Stop Bouton) & 7 (Vérification)
   async function handleVoiceSubmit(command) {
     if (!command) return;
     if (appState.chatInProgress) {
@@ -1463,14 +1456,12 @@
       return;
     }
   
-    // ✅ Réinitialiser le flag d'interruption
     appState.shouldStopResponse = false; 
-  
     appState.chatInProgress = true;
     el('intelliaStatus').textContent = "Assistant: En cours...";
     el('chat-loading').style.display = 'block';
-    el('stopAIBtn').style.display = 'flex'; // ✅ CORRECTION 7 (Vérifié)
-    el('chatFullSend').style.display = 'none'; // ✅ CORRECTION 7 (Vérifié)
+    el('stopAIBtn').style.display = 'flex'; 
+    el('chatFullSend').style.display = 'none'; 
   
     appendChat('user', command);
     logActivity(`Commande vocale: "${command}"`);
@@ -1478,7 +1469,6 @@
     try {
       const reply = await sendToOnline(command, []);
       
-      // ✅ Vérifier si pas interrompu
       if (!appState.shouldStopResponse) {
         const botMsgElement = appendChat('bot', '', true);
         try {
@@ -1500,6 +1490,19 @@
       el('chat-loading').style.display = 'none';
       el('chatFullSend').style.display = 'flex';
       el('stopAIBtn').style.display = 'none';
+    }
+  }
+
+  // ✅ NOUVELLE FONCTION (v8.9) - Nettoie le HTML pour la voix
+  function htmlToPlainText(html) {
+    try {
+      let el = document.createElement('div');
+      // Remplace les <br> et <p> par des espaces pour une lecture plus naturelle
+      html = html.replace(/<br\s*\/?>/gi, ' ').replace(/<\/p>/gi, ' ');
+      el.innerHTML = html;
+      return el.textContent || el.innerText || '';
+    } catch (e) {
+      return html; // Fallback au cas où
     }
   }
 
@@ -1536,8 +1539,6 @@
       if (!response.ok) throw new Error(`Server error ${response.status}`);
       const j = await response.json();
       
-      // N'enregistre pas si la réponse a été interrompue PENDANT la requête
-      // (Bien que ce soit rare, c'est une sécurité)
       if (appState.shouldStopResponse) {
           return "Interrompu.";
       }
@@ -1568,18 +1569,17 @@
     }
   }
 
-  // ======= Chat Interface & Helpers (v8.1) =======
+  // ======= Chat Interface & Helpers =======
   
-  // ✅ NOUVELLE FONCTION: simulateTyping (v8.8)
-  // Corrige l'affichage du HTML en le détectant
+  // ✅ FONCTION (v8.8) - Corrigée
   function simulateTyping(element, text, enableVoice = true) {
     return new Promise((resolve, reject) => {
       
       if (enableVoice) {
-        speak(text, true); // ✅ La voix streame, quoi qu'il arrive
+        const plainText = htmlToPlainText(text); // ✅ v8.9 Nettoyer le HTML
+        speak(plainText, true);                 // ✅ v8.9 Envoyer le texte pur à la voix
       }
       
-      // ✅ VÉRIFICATION : Si le texte contient du HTML, on ne simule pas mot à mot.
       const isHtml = /<[a-z][\s\S]*>/i.test(text);
 
       if (isHtml) {
@@ -1588,7 +1588,6 @@
           reject(new Error('Interrupted'));
           return;
         }
-        // Affiche le HTML d'un coup pour un rendu parfait
         element.innerHTML = text;
         element.classList.remove('typing');
         resolve();
@@ -1597,7 +1596,7 @@
         // --- C'est du texte simple, on simule le typing ---
         element.classList.add('typing');
         let index = 0;
-        const words = text.split(' '); // Ceci est maintenant sûr
+        const words = text.split(' '); 
         
         function addWord() {
           if (appState.shouldStopResponse) {
@@ -1608,7 +1607,6 @@
           }
           
           if (index < words.length) {
-            // On utilise escapeHtml au cas où le texte simple contiendrait des < ou >
             element.innerHTML += (index > 0 ? ' ' : '') + escapeHtml(words[index]);
             el('chatFullWindow').scrollTop = el('chatFullWindow').scrollHeight;
             index++;
@@ -1625,17 +1623,25 @@
   }
   
   
-  // CORRECTION 2 (HTML Rendu): Fonction appendChat
+  // ✅ NOUVEAU v9.1: Corrigé: Le premier message utilisateur ne s'affichait pas
   function appendChat(role, text, returnElement = false, attachments = []) {
     const target = el('chatFullWindow');
     if (!target) return;
     const node = document.createElement('div');
     node.className = 'msg ' + (role === 'user' ? 'user' : 'bot');
 
-    if (text) {
-      // ✅ Le serveur envoie du HTML complet avec styles inline
-      // On l'affiche directement sans modification
-      node.innerHTML = text;
+    if (role === 'user') {
+      // ✅ Les messages utilisateur sont TOUJOURS du texte simple
+      // On utilise textContent pour la sécurité et l'affichage correct
+      if (text) {
+        node.textContent = text;
+      }
+    } else {
+      // ✅ Les messages BOT (serveur) sont du HTML
+      // On utilise innerHTML pour le rendu
+      if (text) {
+        node.innerHTML = text;
+      }
     }
 
     if (attachments && attachments.length > 0) {
@@ -1670,7 +1676,6 @@
     if (returnElement) return node;
   }
   
-  // ✅ Fonction escapeHtml (nécessaire pour simulateTyping)
   function escapeHtml(text) {
     if (typeof text !== 'string') return '';
     return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -1709,35 +1714,24 @@
     if (e.key === 'Enter') handleChatSubmit(el('chatFullInput').value, appState.attachments);
   });
   
-  // CORRECTION 5 (Stop Bouton): Event Listener Stop (remplacé)
   el('stopAIBtn')?.addEventListener('click', () => {
     console.log('🛑 ARRÊT DEMANDÉ');
-  
-    // ✅ Activer le flag d'interruption
     appState.shouldStopResponse = true;
   
-    // ✅ Arrêter la voix immédiatement
     if (window.speechSynthesis) {
       window.speechSynthesis.cancel();
     }
-  
-    // ✅ Arrêter la reconnaissance vocale
     if (VoiceEngine && VoiceEngine.pauseRecognition) {
       VoiceEngine.pauseRecognition();
     }
-  
-    // ✅ Marquer comme non en cours
     appState.chatInProgress = false;
   
-    // ✅ Réinitialiser l'UI
     el('chat-loading').style.display = 'none';
     el('chatFullSend').style.display = 'flex';
     el('stopAIBtn').style.display = 'none';
     el('intelliaStatus').textContent = "Assistant: Interrompu";
   
     logActivity('⚠️ Réponse IA interrompue par l\'utilisateur');
-    
-    // ✅ Le texte sera arrêté par simulateTyping qui vérifie shouldStopResponse
   });
   
   el('close-sidebar-btn')?.addEventListener('click', () => {
@@ -1745,7 +1739,7 @@
     el('sidebar-overlay').classList.remove('open');
   });
 
-  // ======= Multi-Session & Historique Firebase (v8.1) =======
+  // ======= Multi-Session & Historique Firebase =======
   
   function getChatHistoryRef(userId, sessionId = null) {
     let path = `${userChatsRefPath}/${userId}`;
@@ -1778,9 +1772,10 @@
         titleSpan.className = 'chat-history-item-title';
         titleSpan.onclick = () => loadChatSession(sessionId);
         
+        // ✅ NOUVEAU v9.1: Bouton "..."
         const deleteBtn = document.createElement('button');
-        deleteBtn.innerHTML = '<i class="fas fa-trash-alt"></i>';
-        deleteBtn.className = 'btn warn';
+        deleteBtn.innerHTML = '<i class="fas fa-ellipsis-v"></i>'; // Icône "trois points"
+        deleteBtn.className = 'btn chat-history-delete'; // Nouvelle classe CSS
         deleteBtn.title = "Supprimer la discussion";
         deleteBtn.onclick = (e) => {
           e.stopPropagation();
@@ -1794,18 +1789,12 @@
     }
   }
   
-  // CORRECTION 11: Créer nouveau chat (ne pas sauver)
   function createNewChatSession() {
     const newSessionId = `chat_${Date.now()}`;
     appState.currentSessionId = newSessionId;
     
-    // ✅ NE PAS créer dans Firebase immédiatement
-    // Le chat sera créé au premier message seulement
-    
     el('chatFullWindow').innerHTML = '';
     appendChat('bot', 'Bonjour ! Je suis prêt pour notre nouvelle discussion.');
-    
-    // Pas de loadChatHistorySidebar ici (évite les doublons)
     
     setTimeout(() => {
       document.querySelectorAll('.chat-history-item').forEach(i => i.classList.remove('active'));
@@ -1831,7 +1820,6 @@
     }
   }
   
-  // CORRECTION 10: loadChatSession (charger TOUT)
   async function loadChatSession(sessionId) {
     if (!appState.currentUser || !db) return;
     appState.currentSessionId = sessionId;
@@ -1848,14 +1836,12 @@
         const messages = snapshot.val();
         const sortedMessages = Object.values(messages).sort((a, b) => a.timestamp - b.timestamp);
         
-        // ✅ Charger TOUS les messages (pas de limite)
         sortedMessages.forEach(msg => {
           const attachmentsMeta = msg.attachments || [];
           appendChat('user', msg.user, false, attachmentsMeta);
           appendChat('bot', msg.bot, false);
         });
         
-        // Scroll vers le bas
         setTimeout(() => {
           chatWindow.scrollTop = chatWindow.scrollHeight;
         }, 100);
@@ -1867,7 +1853,6 @@
       document.querySelectorAll('.chat-history-item').forEach(i => i.classList.remove('active'));
       document.querySelector(`.chat-history-item[data-session-id="${sessionId}"]`)?.classList.add('active');
       
-      // Fermer la sidebar sur mobile
       el('chat-sidebar').classList.remove('open');
       el('sidebar-overlay').classList.remove('open');
       
@@ -1877,18 +1862,15 @@
     }
   }
   
-  // CORRECTION 12: saveMessageToFirebase (créer si n'existe pas)
   async function saveMessageToFirebase(userMsg, botMsg, attachments) {
     if (!appState.currentUser || !db || !appState.currentSessionId) return;
   
-    // ✅ Vérifier si la session existe déjà
     const sessionRef = ref(db, `${userChatsRefPath}/${appState.currentUser.uid}/${appState.currentSessionId}`);
     const sessionSnapshot = await get(sessionRef);
     
     const isNewSession = !sessionSnapshot.exists();
     
     if (isNewSession) {
-      // Créer la session maintenant
       let newTitle = userMsg;
       if (!newTitle && attachments.length > 0) {
         newTitle = `📎 ${attachments[0].name}`;
@@ -1903,7 +1885,6 @@
       });
     }
   
-    // Sauvegarder le message
     const messagesRef = ref(db, `${userChatsRefPath}/${appState.currentUser.uid}/${appState.currentSessionId}/messages`);
     const attachmentsMeta = attachments.map(att => ({
       name: att.name,
@@ -1917,10 +1898,8 @@
       timestamp: serverTimestamp()
     });
   
-    // Mettre à jour lastUpdated
     await set(ref(db, `${userChatsRefPath}/${appState.currentUser.uid}/${appState.currentSessionId}/lastUpdated`), serverTimestamp());
     
-    // Recharger la sidebar si c'était une nouvelle session
     if (isNewSession) {
       loadChatHistorySidebar();
       setTimeout(() => {
@@ -1967,7 +1946,6 @@
       if (file.type === 'image') {
         iconHtml = `<img src="${file.data}" alt="${file.name}">`;
       } else {
-        // CORRECTION 4 (Optionnelle): Icônes de fichiers
         let iconClass = 'fa-file';
         let iconColor = '#6c757d';
         const fileName = file.name.toLowerCase();
@@ -2014,6 +1992,23 @@
   el('allOffBtn')?.addEventListener('click', () => appState.devices.forEach(d => sendCommand(d.id, 'OFF', 0)));
 
   // ======= Settings Management =======
+  
+  // ✅ NOUVEAU v9.0: Logique du bouton Mute (raccourci)
+  function updateToggleVoiceBtnUI() {
+    const btn = el('toggleVoiceBtn');
+    if (!btn) return;
+    const icon = btn.querySelector('i');
+    if (appState.voiceNotifications) {
+      btn.classList.remove('muted');
+      icon.className = 'fas fa-volume-up';
+      btn.title = "Désactiver la synthèse vocale";
+    } else {
+      btn.classList.add('muted');
+      icon.className = 'fas fa-volume-mute';
+      btn.title = "Activer la synthèse vocale";
+    }
+  }
+    
   function setupSettings() {
     el('darkModeToggle').checked = appState.isNightMode;
     el('darkModeToggle').addEventListener('change', (e) => {
@@ -2030,6 +2025,7 @@
     el('voiceNotificationsToggle').addEventListener('change', (e) => {
         appState.voiceNotifications = e.target.checked;
         localStorage.setItem('voiceNotifications', e.target.checked);
+        updateToggleVoiceBtnUI(); // Synchroniser
     });
     el('testNotificationBtn')?.addEventListener('click', () => {
       if (!appState.notificationsEnabled) { alert('❌ Activez d\'abord les notifications.'); return; }
@@ -2039,6 +2035,24 @@
     el('resetBtn').addEventListener('click', () => { if (confirm("Réinitialiser l'application ?")) { localStorage.clear(); location.reload(); } });
     el('googleSignInOverlayBtn').addEventListener('click', handleGoogleSignIn);
     el('signOutBtn').addEventListener('click', handleSignOut);
+    
+    // ✅ NOUVEAU v9.0: Écouteur pour le bouton Mute
+    el('toggleVoiceBtn').addEventListener('click', () => {
+      // Inverser l'état
+      appState.voiceNotifications = !appState.voiceNotifications;
+      localStorage.setItem('voiceNotifications', appState.voiceNotifications);
+      
+      // Synchroniser le toggle dans les paramètres
+      el('voiceNotificationsToggle').checked = appState.voiceNotifications;
+      
+      // Mettre à jour l'UI du bouton
+      updateToggleVoiceBtnUI();
+      
+      // Si on vient de le désactiver, couper la parole
+      if (!appState.voiceNotifications && window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+      }
+    });
   }
 
   // ======= User Profile Functions (Real) =======
@@ -2096,9 +2110,7 @@
         el('user-email-display').textContent = user.email;
         
         loadChatHistorySidebar();
-        // CORRECTION 14: Ne pas créer de chat auto
         
-        // NOUVEAU: Tenter la connexion locale auto
         if (appState.esp32Ip) {
           connectToESP32();
         }
@@ -2111,7 +2123,6 @@
         document.querySelector('.main-app').style.display = 'none';
         el('login-overlay').style.display = 'flex';
         
-        // NOUVEAU: Couper la connexion locale
         if (appState.localWebSocket) {
           appState.isLocalConnected = false;
           appState.localWebSocket.close();
@@ -2154,6 +2165,9 @@
     updateProactiveSuggestion();
     setInterval(updateProactiveSuggestion, 10000);
     
+    // ✅ NOUVEAU v9.0: Initialiser l'état du bouton Mute
+    updateToggleVoiceBtnUI();
+    
     el('toggleAddDeviceForm').addEventListener('click', () => {
       const form = el('addDeviceFormContainer');
       const btn = el('toggleAddDeviceForm');
@@ -2162,7 +2176,6 @@
       btn.innerHTML = isHidden ? '➖ Masquer le formulaire' : '➕ Ajouter un appareil';
     });
     
-    // NOUVEAU: Hook UI WebSocket
     el('btnConnectLocal').addEventListener('click', () => {
       const ip = el('esp32IpInput').value.trim();
       if (ip) {
