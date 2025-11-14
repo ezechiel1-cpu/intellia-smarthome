@@ -337,34 +337,88 @@ function formatAIResponse(text) {
   
   return text;
 }
-
-// ✅ NOUVELLE FONCTION : Réparer le HTML cassé automatiquement
-function repairBrokenHTML(text) {
+// ========================================
+// ✅ CONVERSION MARKDOWN/TEXTE → HTML PROPRE
+// ========================================
+function convertToCleanHTML(text) {
   if (typeof text !== 'string') return text;
   
-  // Réparer les balises orphelines style="..." sans balise ouvrante
-  text = text.replace(/(?<!<\w+\s)style="([^"]+)">([^<\n]+?)(?=\s|$|<br|<\/)/g, '<span style="$1">$2</span>');
+  // Nettoyer les entités HTML
+  text = text
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .trim();
   
-  // Réparer les structures spécifiques
-  // Format: "Texte" suivi de style="color: #4361ee;">Titre
-  text = text.replace(/([^\n<]+)\s+style="color: #4361ee[^"]*font-size: 18px[^"]*">([^<\n]+)/g, '<h2 style="color: #4361ee; font-size: 18px; margin: 16px 0 10px 0;">$2</h2>');
+  // Si déjà du HTML valide, retourner tel quel
+  if (text.includes('<h2') && text.includes('</h2>') && text.includes('<p') && text.includes('</p>')) {
+    return text;
+  }
   
-  // Réparer h3
-  text = text.replace(/style="color: #06b6d4[^"]*font-size: 16px[^"]*">([^<\n]+)/g, '<h3 style="color: #06b6d4; font-size: 16px; margin: 12px 0 8px 0;">$1</h3>');
+  console.log('⚠️ HTML invalide détecté, conversion automatique...');
   
-  // Réparer les paragraphes orphelins
-  text = text.replace(/style="margin: 10px 0[^"]*line-height: 1\.6[^"]*">([^<]+?)(?=<|$)/g, '<p style="margin: 10px 0; line-height: 1.6;">$1</p>');
+  // ====== CONVERSION MARKDOWN → HTML ======
   
-  // Réparer les <strong> orphelins
-  text = text.replace(/style="color: #([a-f0-9]{6})[^"]*">([^<\n]+?)(?=\s|<|$)/gi, '<strong style="color: #$1;">$2</strong>');
+  // 1. Titres ## → <h2>
+  text = text.replace(/^##\s+(.+)$/gm, '<h2 style="color: #4361ee; font-size: 18px; margin: 16px 0 10px 0;">$1</h2>');
   
-  // Réparer les <div> d'alerte orphelins
-  text = text.replace(/style="background: rgba\(243[^"]+">([^]*?)(?=<\/div>|$)/g, '<div style="background: rgba(243, 156, 18, 0.1); padding: 12px; border-left: 4px solid #f39c12; margin: 10px 0; border-radius: 4px;">$1</div>');
+  // 2. Sous-titres ### → <h3>
+  text = text.replace(/^###\s+(.+)$/gm, '<h3 style="color: #06b6d4; font-size: 16px; margin: 12px 0 8px 0;">$1</h3>');
   
-  // Nettoyer les doubles balises
-  text = text.replace(/<(h[23]|p|strong|div)([^>]*)><\1\2>/g, '<$1$2>');
-  text = text.replace(/<\/(h[23]|p|strong|div)><\/\1>/g, '</$1>');
+  // 3. Texte en gras **texte** → <strong>
+  text = text.replace(/\*\*(.+?)\*\*/g, '<strong style="color: #4361ee;">$1</strong>');
   
+  // 4. Texte en italique *texte* → <em>
+  text = text.replace(/\*(.+?)\*/g, '<em>$1</em>');
+  
+  // 5. Listes à puces
+  // Détecter les blocs de liste
+  const listRegex = /^[-*]\s+(.+)$/gm;
+  if (listRegex.test(text)) {
+    // Wrapper les listes
+    text = text.replace(/((?:^[-*]\s+.+$\n?)+)/gm, (match) => {
+      const items = match.split('\n').filter(line => line.trim()).map(line => {
+        const content = line.replace(/^[-*]\s+/, '');
+        return `<li style="margin: 5px 0; line-height: 1.6;">${content}</li>`;
+      }).join('\n');
+      return `<ul style="margin: 10px 0; padding-left: 20px;">\n${items}\n</ul>`;
+    });
+  }
+  
+  // 6. Séparer les paragraphes (double retour à la ligne)
+  const paragraphs = text.split(/\n\n+/);
+  text = paragraphs.map(para => {
+    para = para.trim();
+    if (!para) return '';
+    
+    // Si déjà une balise HTML, ne pas wrapper
+    if (para.startsWith('<h2') || para.startsWith('<h3') || 
+        para.startsWith('<ul') || para.startsWith('<div') ||
+        para.startsWith('<hr')) {
+      return para;
+    }
+    
+    // Sinon, wrapper en paragraphe
+    return `<p style="margin: 10px 0; line-height: 1.6;">${para}</p>`;
+  }).join('<br><br>');
+  
+  // 7. Nettoyer les balises orphelines (style="..." sans balise)
+  text = text.replace(/(?<!<\w+\s)style="([^"]+)">([^<\n]+?)(?=\s|<|$)/g, '<span style="$1">$2</span>');
+  
+  // 8. Ajouter des emojis aux titres si absents
+  text = text.replace(/<h2([^>]*)>(?![\u{1F300}-\u{1F9FF}])(.+?)<\/h2>/gu, '<h2$1>👋 $2</h2>');
+  
+  // 9. Remplacer les sauts de ligne simples par <br>
+  text = text.replace(/\n(?!<)/g, '<br>');
+  
+  return text.trim();
+}
+
+// Fonction de formatage basique (conservée pour compatibilité)
+function formatAIResponse(text) {
+  if (typeof text !== 'string') return text;
   return text.trim();
 }
 
@@ -754,8 +808,8 @@ app.post('/api/chat', async (req, res) => {
     // ✅ Déduplication des planifications
     aiJson.planning_commands = deduplicatePlanning(aiJson.planning_commands);
     
-    // ✅ RÉPARATION AUTOMATIQUE DU HTML
-    aiJson.reply = repairBrokenHTML(formatAIResponse(aiJson.reply));
+  // ✅ CONVERSION FORCÉE : Markdown/Texte → HTML propre
+aiJson.reply = convertToCleanHTML(aiJson.reply);
     
     // ✅ Post-processing de sécurité : Si aucun HTML détecté, wrapper en paragraphe
     if (!aiJson.reply.includes('<h2') && !aiJson.reply.includes('<p') && !aiJson.reply.includes('<div') && aiJson.reply.trim().length > 0) {
