@@ -490,7 +490,7 @@ async function chatWithGemini(userMessage, devices, userId, sessionId, attachmen
     try {
       const keyObj = getNextApiKey();
       const genAI = new GoogleGenerativeAI(keyObj.key);
-      const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" });
+      const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
       const historyFromFirebase = await getHistoryFromFirebase(userId, sessionId);
 
