@@ -530,6 +530,7 @@
         left: 50%;
         transform: translateX(-50%);
         max-width: 100%;
+        right: auto; /* <-- ✅ FIX: Annule la règle 'right: 0' de base */
       }
       
       .msg { max-width: 90%; font-size: 15px; }
@@ -538,6 +539,11 @@
         display: flex !important;
         width: 100%;
         justify-content: center;
+      }
+
+      /* ✅ FIX: Empêche le bouton supprimer chat de prendre 100% */
+      .chat-history-item .btn.chat-history-delete {
+        width: auto;
       }
     }
     
@@ -660,7 +666,7 @@
                 <label>Type</label>
                 <select id="newDeviceType" style="width:100%;padding:8px;border-radius:8px;border:1px solid #ddd">
                   <option value="lamp">Lampe</option> <option value="ventilateur">Ventilateur</option>
-                  <option value="plug">Prise</option> <option value="thermostat">Thermostat</option>
+                  <option value="plug">Prise</option <option value="thermostat">Thermostat</option>
                   <option value="volet">Volet Roulant</option>
                 </select>
                 <label>Pièce</label>
@@ -1526,6 +1532,11 @@
   async function handleChatSubmit(message, attachments = []) {
     if (appState.chatInProgress) return;
     if (!message && attachments.length === 0) return;
+
+    // ✅ FIX : S'assurer qu'une session existe AVANT d'afficher le message
+    if (!appState.currentSessionId) {
+      createNewChatSession();
+    }
   
     appState.shouldStopResponse = false; 
     appState.chatInProgress = true;
@@ -1571,6 +1582,11 @@
     if (appState.chatInProgress) {
       logActivity(`Voix ignorée (chat en cours): "${command}"`);
       return;
+    }
+
+    // ✅ FIX : S'assurer qu'une session existe AVANT d'afficher le message (pour la voix aussi)
+    if (!appState.currentSessionId) {
+      createNewChatSession();
     }
   
     appState.shouldStopResponse = false; 
@@ -1636,9 +1652,12 @@
         return "Erreur d'authentification.";
     }
     
+    // ❌ FIX: On supprime ce bloc, il est géré par handleChatSubmit
+    /*
     if (!appState.currentSessionId) {
       createNewChatSession();
     }
+    */
     
     const t0 = Date.now();
     
