@@ -6,6 +6,11 @@
   <title>SmartHome Intelligence - Mon Assistant Autonome</title>
   <meta name="theme-color" content="#06b6d4" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/13.0.0/marked.min.js"></script>
+  
   <style>
     :root {
       --primary:#4361ee; --accent-cyan:#06b6d4; --panel:#14151a; 
@@ -16,7 +21,6 @@
     
     * { box-sizing: border-box; margin: 0; padding: 0; }
     
-    /* Structure principale de l'application */
     html, body { height: 100%; overflow: hidden; }
     
     body {
@@ -56,17 +60,15 @@
     body.night-mode #chatFullInput { background: rgba(15, 23, 42, 0.8); }
     body.night-mode .attachment-preview { background: rgba(51, 65, 85, 0.8); border: 1px solid rgba(255, 255, 255, 0.1); }
     
-    /* ✅ NOUVEAU v9.1: Remplacement du bouton rouge */
     body.night-mode .chat-history-item .btn.warn { background: var(--danger); color: white; border: none; }
     body.night-mode .chat-history-item .btn.warn:hover { background: #c0392b; }
 
-    /* Container principal qui gère le défilement */
     .container { 
       max-width: 1200px; margin: 0 auto; 
-      padding: 16px 12px 100px; /* Padding bas pour le footer */
+      padding: 16px 12px 100px;
       height: 100%; 
-      overflow-y: auto; /* C'est ce container qui scrolle */
-      -webkit-overflow-scrolling: touch; /* Scroll fluide sur iOS */
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
     }
     
     header {
@@ -83,10 +85,10 @@
     #sec-intelligence {
       height: 100%; 
       padding-top: 0; 
-      margin-top: -16px; /* Compense le padding du container */
+      margin-top: -16px;
       display: none; 
       flex-direction: row;
-      position: relative; /* Ancre pour la sidebar mobile */
+      position: relative;
     }
     #sec-intelligence.active { display: flex; }
     
@@ -117,7 +119,7 @@
       align-items: center;
       justify-content: space-between;
       gap: 8px;
-      min-height: 44px; /* Zone tactile confortable */
+      min-height: 44px;
     }
     
     .chat-history-item-title {
@@ -125,11 +127,10 @@
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
-      min-width: 0; /* Important pour ellipsis */
+      min-width: 0;
       padding-right: 8px;
     }
     
-    /* ✅ NOUVEAU v9.1: Style pour le bouton "..." */
     .chat-history-item .chat-history-delete {
       padding: 6px 10px;
       font-size: 14px;
@@ -154,11 +155,9 @@
       background: var(--danger);
       color: white !important;
     }
-    /* Masquer l'ancien bouton au cas où */
     .chat-history-item .btn.warn {
       display: none;
     }
-    /* Fin v9.1 */
 
     .chat-history-item:hover { background: #e9ecef; }
     .chat-history-item.active { background: var(--primary); color: white; }
@@ -179,12 +178,39 @@
     #chatFullWindow {
       flex: 1; overflow-y: auto; padding: 16px;
       display: flex; flex-direction: column;
+      
+      /* ✅ NOUVEAU v9.2: Centrage (Style Gemini) */
+      max-width: 800px;
+      width: 100%;
+      margin: 0 auto;
     }
+    
     #chat-input-container {
       padding: 12px; border-top: 1px solid rgba(0,0,0,0.1);
       background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(10px);
       flex-shrink: 0;
+      
+      /* ✅ NOUVEAU v9.2: Centrage (Style Gemini) */
+      max-width: 800px;
+      width: 100%;
+      margin: 0 auto;
+      /* On s'assure qu'il est bien calé en bas */
+      position: sticky;
+      bottom: 0;
+      left: 0; 
+      right: 0;
     }
+    
+    /* On ajuste le conteneur principal pour compenser le sticky */
+    #chat-section-container {
+      overflow: auto; /* Le conteneur scrolle, pas la fenêtre */
+    }
+    #chatFullWindow {
+      overflow-y: visible; /* La fenêtre ne scrolle plus */
+      padding-bottom: 120px; /* Espace pour la barre de saisie */
+    }
+    
+    
     #chat-input-flex { display: flex; gap: 8px; }
     #chatFullInput {
       flex: 1; padding: 12px; border-radius: 8px;
@@ -231,7 +257,6 @@
     .btn.primary { background: var(--primary); color: white; }
     .btn.warn { background: var(--danger); color: white; }
     
-    /* ✅ NOUVEAU v9.0: Style pour le bouton Mute */
     #toggleVoiceBtn.muted {
       color: var(--danger);
       background: rgba(231, 76, 60, 0.1);
@@ -249,14 +274,25 @@
     
     input[type=range] { width: 100%; }
     
-    .msg { padding: 10px 14px; border-radius: 12px; max-width: 85%; margin-bottom: 10px; word-wrap: break-word; line-height: 1.4; }
-    .msg.user { align-self: flex-end; background: linear-gradient(135deg, #4895ef, #4361ee); color: white; }
+    /* ======================================= */
+    /* NOUVEAU STYLE GEMINI (v9.2)             */
+    /* ======================================= */
+    .msg { 
+      padding: 10px 14px; border-radius: 12px; max-width: 90%; 
+      margin-bottom: 10px; word-wrap: break-word; line-height: 1.6;
+    }
+    .msg.user { 
+      align-self: flex-end; background: linear-gradient(135deg, #4895ef, #4361ee); color: white; 
+    }
     
+    /* Style du message BOT */
     .msg.bot {
       align-self: flex-start;
       background: var(--card-bg);
       border: 1px solid rgba(0,0,0,0.06);
-      line-height: 1.6;
+      color: var(--dark);
+      width: 100%; /* Les messages bot prennent toute la largeur centrée */
+      max-width: 100%;
       white-space: normal;
       overflow-wrap: break-word;
     }
@@ -266,17 +302,87 @@
       border: 1px solid rgba(255, 255, 255, 0.1);
     }
 
-    .msg.bot.typing::after {
+    /* Styles pour le contenu Markdown */
+    .msg.bot h1, .msg.bot h2, .msg.bot h3 {
+      margin-top: 16px; margin-bottom: 8px;
+      color: var(--primary);
+    }
+    body.night-mode .msg.bot h1, 
+    body.night-mode .msg.bot h2, 
+    body.night-mode .msg.bot h3 {
+      color: var(--accent-cyan);
+    }
+    .msg.bot p { margin-bottom: 12px; }
+    .msg.bot ul, .msg.bot ol {
+      margin-left: 20px; margin-bottom: 12px;
+    }
+    .msg.bot li { margin-bottom: 4px; }
+    .msg.bot strong { color: var(--primary); }
+    body.night-mode .msg.bot strong { color: var(--accent-cyan); }
+    .msg.bot code:not(pre code) { /* Code inline */
+      background: rgba(0,0,0,0.05);
+      padding: 2px 4px;
+      border-radius: 4px;
+      font-family: monospace;
+    }
+    body.night-mode .msg.bot code:not(pre code) {
+      background: rgba(255,255,255,0.1);
+    }
+
+    /* Style des Blocs de Code (très important) */
+    .msg.bot pre {
+      background: #0d1117; /* Fond sombre pour le code */
+      color: #c9d1d9;
+      padding: 16px;
+      border-radius: 8px;
+      margin-bottom: 12px;
+      overflow-x: auto;
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 14px;
+      position: relative; /* Pour le bouton copier */
+    }
+    .msg.bot pre code {
+      background: none;
+      padding: 0;
+      border-radius: 0;
+    }
+    
+    /* Bouton Copier */
+    .copy-code-btn {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      background: rgba(255,255,255,0.1);
+      color: white;
+      border: none;
+      padding: 6px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+      opacity: 0;
+      transition: opacity 0.2s ease;
+    }
+    .msg.bot pre:hover .copy-code-btn {
+      opacity: 1;
+    }
+    .copy-code-btn:active {
+      background: rgba(255,255,255,0.3);
+    }
+    
+    /* Curseurs de chargement */
+    .msg.bot.loading::after {
       content: '▋'; animation: blink 1s step-end infinite; color: var(--primary);
     }
     @keyframes blink { 50% { opacity: 0; } }
+    /* ======================================= */
+    /* FIN NOUVEAU STYLE GEMINI (v9.2)         */
+    /* ======================================= */
     
     .flex { display: flex; gap: 10px; align-items: center; }
     label { display: block; margin: 6px 0; font-size: 13px; }
     table { width: 100%; border-collapse: collapse; }
     th, td { padding: 8px; border-bottom: 1px solid rgba(0,0,0,0.06); }
     
-    /* Footer (Barre de navigation) */
     footer {
       position: fixed; left: 0; right: 0; bottom: 0; height: 72px;
       background: linear-gradient(90deg, #14151a, #1a1c23);
@@ -324,9 +430,6 @@
       100% { transform: scale(1); opacity: 1; }
     }
     
-    /* ================================================= */
-    /* Mobile */
-    /* ================================================= */
     @media (max-width: 760px) {
       .grid { grid-template-columns: 1fr; }
       .controls { flex-direction: column; }
@@ -339,12 +442,10 @@
         height: 100%; 
       }
       
-      /* Sidebar mobile */
       #chat-sidebar {
         position: absolute; 
         left: -100%;
         top: 0; bottom: 0;
-        /* ✅ NOUVEAU v9.1: Sidebar plus large */
         width: 90%;
         max-width: 350px;
         z-index: 10000;
@@ -355,7 +456,6 @@
         left: 0;
       }
       
-      /* Overlay sombre */
       #sidebar-overlay {
         display: none;
         position: absolute; 
@@ -367,7 +467,6 @@
         display: block;
       }
       
-      /* Bouton pour ouvrir la sidebar */
       #sidebar-toggle-btn {
         display: flex; 
         position: absolute; 
@@ -389,7 +488,6 @@
         min-width: 48px; min-height: 48px; font-size: 18px;
       }
       
-      /* CORRECTION 4 (Stop Bouton): CSS Mobile */
       #stopAIBtn {
         background: var(--danger) !important;
         color: white !important;
@@ -422,9 +520,17 @@
       #chatFullSend { min-width: 56px; min-height: 48px; }
       #chatFullInput { min-height: 48px; font-size: 16px; }
       
-      #chat-section-container { height: 100%; }
-      #chatFullWindow { padding: 80px 12px 12px; }
-      #chat-input-container { padding: 16px 12px; }
+      #chat-section-container { height: 100%; overflow: auto; }
+      #chatFullWindow { 
+        padding: 80px 12px 120px; /* Padding haut pour bouton, bas pour input */
+      }
+      #chat-input-container { 
+        padding: 16px 12px; 
+        /* S'assure qu'il est bien centré et en bas sur mobile */
+        left: 50%;
+        transform: translateX(-50%);
+        max-width: 100%;
+      }
       
       .msg { max-width: 90%; font-size: 15px; }
       
@@ -439,9 +545,20 @@
       .two-column { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
       #sidebar-toggle-btn { display: none; }
       #sidebar-overlay { display: none; }
+      
+      /* Sur grand écran, la barre de saisie n'est pas sticky */
+      #chat-section-container { overflow: hidden; }
+      #chatFullWindow { 
+        overflow-y: auto; 
+        padding-bottom: 16px;
+      }
+      #chat-input-container {
+        position: relative;
+        transform: none;
+        left: auto;
+      }
     }
 
-    /* ==== Écran de connexion ==== */
     #login-overlay {
       position: fixed; top: 0; left: 0; right: 0; bottom: 0;
       background: linear-gradient(135deg, #f5f7fa, #c3cfe2);
@@ -580,7 +697,8 @@
         
         <div id="chat-section-container">
           <div id="chatFullWindow">
-          </div>
+            </div>
+          
           <div id="chat-input-container">
             <div id="chat-loading" style="display:none; padding-bottom: 8px; text-align:center; font-style:italic; color:var(--muted); font-size: 14px;">
               <i class="fas fa-spinner fa-spin"></i> Assistant en train de réfléchir...
@@ -726,12 +844,12 @@
       
   </div> <script type="module">
   /*************************************************
-   * SmartHome Intelligence - Version 9.1 (Bug Fixes)
-   * - v8.9: `htmlToPlainText` nettoie le HTML pour la voix
-   * - v9.0: Ajout du bouton Mute Voix (raccourci)
-   * - v9.1: Corrigé: Le premier message utilisateur ne s'affichait pas
-   * - v9.1: Corrigé: Sidebar élargie sur mobile
-   * - v9.1: Corrigé: Bouton "Suppr discussion" remplacé par "..."
+   * SmartHome Intelligence - Version 9.2 (Gemini UI)
+   * - Client reçoit du MARKDOWN
+   * - Utilise `marked.js` pour le rendu HTML
+   * - Utilise `highlight.js` pour la coloration du code
+   * - Ajoute des boutons "Copier" aux blocs de code
+   * - Conserve tous les fixes (v8.9, v9.0, v9.1)
    *************************************************/
 
   // ======= CONFIG =======
@@ -741,7 +859,6 @@
     RENDER_API = 'http://localhost:3000';
     console.log('Environnement local détecté. API ->', RENDER_API);
   } else {
-    // NOTE: Assurez-vous que c'est votre URL de serveur Render
     RENDER_API = 'https://intellia-smarthome.onrender.com'; 
     console.log('Environnement de production détecté. API ->', RENDER_API);
   }
@@ -782,7 +899,7 @@
     esp32Ip: localStorage.getItem('esp32Ip') || '', 
   };
   
-  const defaultAvatar = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iI2FlYWVhZSI+PHBhdGggZD0iTTEyIDJDNi44OCAyIDIgNi40OCAyIDEyczQuNDggMTQgMTAgMTBjNS41MiAwIDEwLTQuNDggMTAtMTBTMjcuNTIgMiAxMiAyem0wIDJjMS42NiAwIDMgMS4zNCAzIDNzLTEuMzQgMy0zIDMtMy0xLjM0LTMtM1MwLjM0IDQgMTIgNHptMCAxNmMtMi42NyAwLTUuNDMtMS4yOS03LTIuODguNTYtMS42NSAzLjU1LTIuNjIgNy0yLjYyczYuNDQgLjk3IDcgMi42MmMtMS41NyAxLjU5LTQuMzMgMi44OC03IDIuODh6Ii8+PC9zdmc+";
+  const defaultAvatar = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iI2FlYWVhZSI+PHBhdGggZD0iTTEyIDJDNi44OCAyIDIgNi44OCAyIDEyczQuNDggMTQgMTAgMTBjNS41MiAwIDEwLTQuNDggMTAtMTBTMjcuNTIgMiAxMiAyem0wIDJjMS42NiAwIDMgMS4zNCAzIDNzLTEuMzQgMy0zIDMtMy0xLjM0LTMtM1MwLjM0IDQgMTIgNHptMCAxNmMtMi42NyAwLTUuNDMtMS4yOS03LTIuODguNTYtMS42NSAzLjU1LTIuNjIgNy0yLjYyczYuNDQgLjk3IDcgMi42MmMtMS41NyAxLjU5LTQuMzMgMi44OC03IDIuODh6Ii8+PC9zdmc+";
 
   const deviceTypes = {
     'lamp': { name: 'Lampe', hasBrightness: true, icon: 'lightbulb' },
@@ -1493,16 +1610,23 @@
     }
   }
 
-  // ✅ NOUVELLE FONCTION (v8.9) - Nettoie le HTML pour la voix
-  function htmlToPlainText(html) {
+  // ✅ NOUVEAU (v8.9) - Nettoie le HTML/Markdown pour la voix
+  function htmlToPlainText(text) {
     try {
+      // D'abord, on rend le markdown en HTML temporaire
+      const html = marked.parse(text, { sanitize: false, gfm: true });
+      
       let el = document.createElement('div');
       // Remplace les <br> et <p> par des espaces pour une lecture plus naturelle
-      html = html.replace(/<br\s*\/?>/gi, ' ').replace(/<\/p>/gi, ' ');
-      el.innerHTML = html;
+      let cleanHtml = html.replace(/<br\s*\/?>/gi, ' ').replace(/<\/p>/gi, ' ');
+      el.innerHTML = cleanHtml;
+      
+      // On retire les blocs de code de la lecture vocale
+      el.querySelectorAll('pre').forEach(pre => pre.remove());
+      
       return el.textContent || el.innerText || '';
     } catch (e) {
-      return html; // Fallback au cas où
+      return text; // Fallback au cas où
     }
   }
 
@@ -1543,6 +1667,7 @@
           return "Interrompu.";
       }
       
+      // On sauvegarde le Markdown brut
       await saveMessageToFirebase(message, j.reply, attachments);
       
       if (j.suggestions && j.suggestions.length > 0) displaySuggestions(j.suggestions);
@@ -1569,61 +1694,68 @@
     }
   }
 
-  // ======= Chat Interface & Helpers =======
+  // ======= Chat Interface & Helpers (v9.2 - MARKDOWN) =======
   
-  // ✅ FONCTION (v8.8) - Corrigée
-  function simulateTyping(element, text, enableVoice = true) {
-    return new Promise((resolve, reject) => {
+  // ✅ NOUVEAU v9.2: Ajoute les boutons "Copier" aux blocs de code
+  function addCopyButtons(element) {
+    const codeBlocks = element.querySelectorAll('pre');
+    codeBlocks.forEach(block => {
+      const code = block.querySelector('code');
+      if (!code) return;
       
-      if (enableVoice) {
-        const plainText = htmlToPlainText(text); // ✅ v8.9 Nettoyer le HTML
-        speak(plainText, true);                 // ✅ v8.9 Envoyer le texte pur à la voix
-      }
+      const btn = document.createElement('button');
+      btn.className = 'copy-code-btn';
+      btn.innerHTML = '<i class="fas fa-copy"></i> Copier';
       
-      const isHtml = /<[a-z][\s\S]*>/i.test(text);
-
-      if (isHtml) {
-        if (appState.shouldStopResponse) {
-          element.innerHTML = '<br><br><em style="color: #e74c3c;">⚠️ Réponse interrompue</em>';
-          reject(new Error('Interrupted'));
-          return;
-        }
-        element.innerHTML = text;
-        element.classList.remove('typing');
-        resolve();
-        
-      } else {
-        // --- C'est du texte simple, on simule le typing ---
-        element.classList.add('typing');
-        let index = 0;
-        const words = text.split(' '); 
-        
-        function addWord() {
-          if (appState.shouldStopResponse) {
-            element.classList.remove('typing');
-            element.innerHTML += '<br><br><em style="color: #e74c3c;">⚠️ Réponse interrompue</em>';
-            reject(new Error('Interrupted'));
-            return;
-          }
-          
-          if (index < words.length) {
-            element.innerHTML += (index > 0 ? ' ' : '') + escapeHtml(words[index]);
-            el('chatFullWindow').scrollTop = el('chatFullWindow').scrollHeight;
-            index++;
-            const typingSpeed = text.length > 200 ? 30 : 70;
-            setTimeout(addWord, typingSpeed);
-          } else {
-            element.classList.remove('typing');
-            resolve();
-          }
-        }
-        addWord();
-      }
+      btn.addEventListener('click', () => {
+        navigator.clipboard.writeText(code.innerText);
+        btn.innerHTML = '<i class="fas fa-check"></i> Copié !';
+        setTimeout(() => {
+          btn.innerHTML = '<i class="fas fa-copy"></i> Copier';
+        }, 2000);
+      });
+      
+      block.appendChild(btn);
     });
   }
   
+  // ✅ NOUVEAU v9.2: Rend le Markdown (style Gemini)
+  function simulateTyping(element, text, enableVoice = true) {
+    return new Promise((resolve, reject) => {
+      
+      // 1. Gérer la voix (v8.9)
+      if (enableVoice) {
+        const plainText = htmlToPlainText(text); // Nettoie le Markdown
+        speak(plainText, true);
+      }
+      
+      // 2. Vérifier l'interruption
+      if (appState.shouldStopResponse) {
+        element.innerHTML = '<br><br><em style="color: #e74c3c;">⚠️ Réponse interrompue</em>';
+        reject(new Error('Interrupted'));
+        return;
+      }
+
+      // 3. Rendre le Markdown (texte brut du serveur) en HTML
+      const renderedHtml = marked.parse(text, { sanitize: false, gfm: true });
+      element.innerHTML = renderedHtml;
+      
+      // 4. Colorer le code (Highlight.js)
+      element.querySelectorAll('pre code').forEach(block => {
+        hljs.highlightElement(block);
+      });
+      
+      // 5. Ajouter les boutons "Copier"
+      addCopyButtons(element);
+
+      // 6. Fin
+      element.classList.remove('loading');
+      el('chat-section-container').scrollTop = el('chat-section-container').scrollHeight;
+      resolve();
+    });
+  }
   
-  // ✅ NOUVEAU v9.1: Corrigé: Le premier message utilisateur ne s'affichait pas
+  // ✅ NOUVEAU v9.2: Gère le Markdown de l'historique
   function appendChat(role, text, returnElement = false, attachments = []) {
     const target = el('chatFullWindow');
     if (!target) return;
@@ -1631,19 +1763,32 @@
     node.className = 'msg ' + (role === 'user' ? 'user' : 'bot');
 
     if (role === 'user') {
-      // ✅ Les messages utilisateur sont TOUJOURS du texte simple
-      // On utilise textContent pour la sécurité et l'affichage correct
+      // Les messages utilisateur sont toujours du texte simple
       if (text) {
         node.textContent = text;
       }
     } else {
-      // ✅ Les messages BOT (serveur) sont du HTML
-      // On utilise innerHTML pour le rendu
+      // Les messages BOT (serveur ou historique) sont du Markdown
       if (text) {
-        node.innerHTML = text;
+        // On le rend en HTML
+        const renderedHtml = marked.parse(text, { sanitize: false, gfm: true });
+        node.innerHTML = renderedHtml;
+        
+        // On colore le code
+        node.querySelectorAll('pre code').forEach(block => {
+          hljs.highlightElement(block);
+        });
+        
+        // On ajoute les boutons "Copier"
+        addCopyButtons(node);
+        
+      } else if (returnElement) {
+        // C'est un nouveau message qui attend la réponse
+        node.classList.add('loading');
       }
     }
-
+    
+    // (Gestion des pièces jointes, inchangée)
     if (attachments && attachments.length > 0) {
       const attachmentsDiv = document.createElement('div');
       attachmentsDiv.style.cssText = 'margin-top: 8px; display: flex; flex-wrap: wrap; gap: 8px;';
@@ -1672,7 +1817,7 @@
     }
 
     target.appendChild(node);
-    target.scrollTop = target.scrollHeight;
+    el('chat-section-container').scrollTop = el('chat-section-container').scrollHeight;
     if (returnElement) return node;
   }
   
@@ -1772,10 +1917,9 @@
         titleSpan.className = 'chat-history-item-title';
         titleSpan.onclick = () => loadChatSession(sessionId);
         
-        // ✅ NOUVEAU v9.1: Bouton "..."
         const deleteBtn = document.createElement('button');
-        deleteBtn.innerHTML = '<i class="fas fa-ellipsis-v"></i>'; // Icône "trois points"
-        deleteBtn.className = 'btn chat-history-delete'; // Nouvelle classe CSS
+        deleteBtn.innerHTML = '<i class="fas fa-ellipsis-v"></i>';
+        deleteBtn.className = 'btn chat-history-delete';
         deleteBtn.title = "Supprimer la discussion";
         deleteBtn.onclick = (e) => {
           e.stopPropagation();
@@ -1794,7 +1938,7 @@
     appState.currentSessionId = newSessionId;
     
     el('chatFullWindow').innerHTML = '';
-    appendChat('bot', 'Bonjour ! Je suis prêt pour notre nouvelle discussion.');
+    appendChat('bot', '### 👋 Bonjour !\n\nJe suis prêt pour notre nouvelle discussion.');
     
     setTimeout(() => {
       document.querySelectorAll('.chat-history-item').forEach(i => i.classList.remove('active'));
@@ -1839,11 +1983,11 @@
         sortedMessages.forEach(msg => {
           const attachmentsMeta = msg.attachments || [];
           appendChat('user', msg.user, false, attachmentsMeta);
-          appendChat('bot', msg.bot, false);
+          appendChat('bot', msg.bot, false); // msg.bot est du Markdown brut
         });
         
         setTimeout(() => {
-          chatWindow.scrollTop = chatWindow.scrollHeight;
+          el('chat-section-container').scrollTop = el('chat-section-container').scrollHeight;
         }, 100);
         
       } else {
@@ -1893,7 +2037,7 @@
   
     await push(messagesRef, {
       user: userMsg,
-      bot: botMsg,
+      bot: botMsg, // On sauvegarde le Markdown brut
       attachments: attachmentsMeta,
       timestamp: serverTimestamp()
     });
@@ -1993,7 +2137,6 @@
 
   // ======= Settings Management =======
   
-  // ✅ NOUVEAU v9.0: Logique du bouton Mute (raccourci)
   function updateToggleVoiceBtnUI() {
     const btn = el('toggleVoiceBtn');
     if (!btn) return;
@@ -2036,19 +2179,11 @@
     el('googleSignInOverlayBtn').addEventListener('click', handleGoogleSignIn);
     el('signOutBtn').addEventListener('click', handleSignOut);
     
-    // ✅ NOUVEAU v9.0: Écouteur pour le bouton Mute
     el('toggleVoiceBtn').addEventListener('click', () => {
-      // Inverser l'état
       appState.voiceNotifications = !appState.voiceNotifications;
       localStorage.setItem('voiceNotifications', appState.voiceNotifications);
-      
-      // Synchroniser le toggle dans les paramètres
       el('voiceNotificationsToggle').checked = appState.voiceNotifications;
-      
-      // Mettre à jour l'UI du bouton
       updateToggleVoiceBtnUI();
-      
-      // Si on vient de le désactiver, couper la parole
       if (!appState.voiceNotifications && window.speechSynthesis) {
         window.speechSynthesis.cancel();
       }
@@ -2077,7 +2212,7 @@
         const actionText = plan.action === 'ON' ? 'allumé' : 'éteint';
         const powerText = plan.power !== null ? ` à ${plan.power}%` : '';
         sendCommand(plan.device, plan.action, plan.power);
-        const chatMessage = `⏰ Tâche planifiée : ${deviceName} ${actionText}${powerText}`;
+        const chatMessage = `⏰ Tâche planifiée : **${deviceName}** ${actionText}${powerText}`;
         if (el('chatFullWindow')) appendChat("bot", chatMessage);
         if (appState.voiceNotifications) speak(`Exécution planifiée. ${deviceName} ${actionText}.`);
         sendBrowserNotification(
@@ -2165,7 +2300,6 @@
     updateProactiveSuggestion();
     setInterval(updateProactiveSuggestion, 10000);
     
-    // ✅ NOUVEAU v9.0: Initialiser l'état du bouton Mute
     updateToggleVoiceBtnUI();
     
     el('toggleAddDeviceForm').addEventListener('click', () => {
