@@ -211,23 +211,7 @@
     .btn.primary { background: var(--primary); color: white; }
     .btn.warn { background: var(--danger); color: white; }
     
-    /* CORRECTION 7 (Stop Bouton): CSS */
-    #stopAIBtn {
-      background: var(--danger) !important;
-      color: white !important;
-      animation: pulse-stop 1.5s infinite;
-      font-weight: 700;
-      box-shadow: 0 4px 12px rgba(231, 76, 60, 0.4);
-    }
-    @keyframes pulse-stop {
-      0% { box-shadow: 0 4px 12px rgba(231, 76, 60, 0.4); }
-      50% { box-shadow: 0 4px 20px rgba(231, 76, 60, 0.7); }
-      100% { box-shadow: 0 4px 12px rgba(231, 76, 60, 0.4); }
-    }
-    #stopAIBtn:hover {
-      background: #c0392b !important;
-      transform: scale(1.05);
-    }
+    /* CORRECTION 4 (Stop Bouton): Ancien CSS supprimé d'ici */
     
     .btn.success { background: var(--success); color: white; }
     .btn.warning { background: var(--warning); color: white; }
@@ -387,6 +371,37 @@
       #chat-input-buttons button {
         min-width: 48px; min-height: 48px; font-size: 18px;
       }
+      
+      /* CORRECTION 4 (Stop Bouton): CSS Mobile */
+      #stopAIBtn {
+        background: var(--danger) !important;
+        color: white !important;
+        animation: pulse-stop 1.5s infinite;
+        font-weight: 700;
+        min-width: 56px !important;
+        min-height: 48px !important;
+        box-shadow: 0 4px 12px rgba(231, 76, 60, 0.5) !important;
+        border: 2px solid rgba(255, 255, 255, 0.3) !important;
+      }
+      @keyframes pulse-stop {
+        0% {     
+          box-shadow: 0 4px 12px rgba(231, 76, 60, 0.5);
+          transform: scale(1);
+        }
+        50% {     
+          box-shadow: 0 6px 20px rgba(231, 76, 60, 0.8);
+          transform: scale(1.05);
+        }
+        100% {     
+          box-shadow: 0 4px 12px rgba(231, 76, 60, 0.5);
+          transform: scale(1);
+        }
+      }
+      #stopAIBtn:hover {
+        background: #c0392b !important;
+        transform: scale(1.1) !important;
+      }
+      
       #chatFullSend { min-width: 56px; min-height: 48px; }
       #chatFullInput { min-height: 48px; font-size: 16px; }
       
@@ -572,12 +587,14 @@
                 <button class="btn" id="voiceContinuous" title="Mode conversation continue">
                   <i class="fa-solid fa-waveform"></i>
                 </button>
+                
                 <button class="btn primary" id="chatFullSend">
                   <i class="fas fa-paper-plane"></i>
                 </button>
-                <button class="btn warn" id="stopAIBtn" style="display: none;">
-                  <i class="fas fa-stop-circle"></i>
+                <button class="btn warn" id="stopAIBtn" style="display: none; min-width: 56px; min-height: 48px;">
+                  <i class="fas fa-stop-circle" style="font-size: 20px;"></i>
                 </button>
+                
               </div>
             </div>
             <div style="margin-top:8px; display:flex; flex-wrap:wrap; gap: 8px;">
@@ -689,10 +706,11 @@
       
   </div> <script type="module">
   /*************************************************
-   * SmartHome Intelligence - Version 8.6 (Stop Fix + HTML Render Fix)
+   * SmartHome Intelligence - Version 8.7 (Stop Button Fix)
    * - `sendCommand` est hybride (WS/Firebase)
    * - `appendChat` affiche le HTML brut du serveur
    * - Le bouton STOP interrompt voix + texte
+   * - CSS du bouton STOP amélioré
    *************************************************/
 
   // ======= CONFIG =======
@@ -1389,7 +1407,7 @@
   
   // ======= Assistant Communication (v8.1) =======
   
-  // CORRECTION 4 (Stop Bouton): handleChatSubmit avec interruption
+  // CORRECTION 4 (Stop Bouton) & 6 (Vérification)
   async function handleChatSubmit(message, attachments = []) {
     if (appState.chatInProgress) return;
     if (!message && attachments.length === 0) return;
@@ -1401,7 +1419,7 @@
     el('intelliaStatus').textContent = "Assistant: En cours...";
     el('chat-loading').style.display = 'block';
     el('chatFullSend').style.display = 'none';
-    el('stopAIBtn').style.display = 'flex';
+    el('stopAIBtn').style.display = 'flex'; // ✅ CORRECTION 6 (Vérifié)
   
     appendChat('user', message, false, attachments); 
     el('chatFullInput').value = '';
@@ -1438,7 +1456,7 @@
     }
   }
   
-  // CORRECTION 5 (Stop Bouton): handleVoiceSubmit avec interruption
+  // CORRECTION 5 (Stop Bouton) & 7 (Vérification)
   async function handleVoiceSubmit(command) {
     if (!command) return;
     if (appState.chatInProgress) {
@@ -1452,8 +1470,8 @@
     appState.chatInProgress = true;
     el('intelliaStatus').textContent = "Assistant: En cours...";
     el('chat-loading').style.display = 'block';
-    el('stopAIBtn').style.display = 'flex';
-    el('chatFullSend').style.display = 'none';
+    el('stopAIBtn').style.display = 'flex'; // ✅ CORRECTION 7 (Vérifié)
+    el('chatFullSend').style.display = 'none'; // ✅ CORRECTION 7 (Vérifié)
   
     appendChat('user', command);
     logActivity(`Commande vocale: "${command}"`);
@@ -1673,7 +1691,7 @@
     if (e.key === 'Enter') handleChatSubmit(el('chatFullInput').value, appState.attachments);
   });
   
-  // CORRECTION 6 (Stop Bouton): Bouton Stop amélioré
+  // CORRECTION 5 (Stop Bouton): Event Listener Stop (remplacé)
   el('stopAIBtn')?.addEventListener('click', () => {
     console.log('🛑 ARRÊT DEMANDÉ');
   
@@ -1681,10 +1699,14 @@
     appState.shouldStopResponse = true;
   
     // ✅ Arrêter la voix immédiatement
-    window.speechSynthesis.cancel();
+    if (window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+    }
   
     // ✅ Arrêter la reconnaissance vocale
-    VoiceEngine.pauseRecognition();
+    if (VoiceEngine && VoiceEngine.pauseRecognition) {
+      VoiceEngine.pauseRecognition();
+    }
   
     // ✅ Marquer comme non en cours
     appState.chatInProgress = false;
@@ -1693,6 +1715,7 @@
     el('chat-loading').style.display = 'none';
     el('chatFullSend').style.display = 'flex';
     el('stopAIBtn').style.display = 'none';
+    el('intelliaStatus').textContent = "Assistant: Interrompu";
   
     logActivity('⚠️ Réponse IA interrompue par l\'utilisateur');
     
