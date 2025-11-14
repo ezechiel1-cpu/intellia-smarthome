@@ -1616,10 +1616,20 @@
     node.className = 'msg ' + (role === 'user' ? 'user' : 'bot');
 
     if (text) {
-      // ✅ Le serveur envoie du HTML complet avec styles inline
-      // On l'affiche directement sans modification
-      node.innerHTML = text;
-    }
+  // ✅ Nettoyer et réparer le HTML avant affichage
+  let cleanedHTML = text
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .trim();
+  
+  // ✅ Réparer les balises orphelines côté client aussi
+  cleanedHTML = cleanedHTML.replace(/^style="([^"]+)">([^<]+)/gm, '<span style="$1">$2</span>');
+  
+  node.innerHTML = cleanedHTML;
+}
 
     if (attachments && attachments.length > 0) {
       const attachmentsDiv = document.createElement('div');
