@@ -1,9 +1,9 @@
 // ========================================
-// INTELLIA v8.1 - ASSISTANT MULTIMODAL (HTML OUTPUT + ALL FILES)
+// INTELLIA v8.2 - ASSISTANT MULTIMODAL (HTML FIXED)
 //
 // ✅ Lit l'historique des chats depuis Firebase
 // ✅ Lit TOUS les fichiers (PDF, DOCX, TXT, HTML, JS, XLSX, etc.)
-// ✅ Répond en HTML (plus de Markdown **)
+// ✅ Répond en HTML CORRECT (balises complètes)
 // ✅ Gère les sessions uniques par utilisateur
 // ========================================
 const express = require('express');
@@ -200,12 +200,30 @@ async function parseFileAttachment(attachment) {
         console.log(`✅ PDF extrait: ${pdfData.numpages} pages, ${text.length} caractères`);
         break;
       
-      // ===== DOCX =====
+      // ===== DOCX (AMÉLIORÉ) =====
       case parsedData.mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
       case ext === 'docx':
-        const docxResult = await mammoth.extractRawText({ buffer });
-        text = docxResult.value;
-        console.log(`✅ DOCX extrait: ${text.length} caractères`);
+        try {
+          console.log(`📄 Tentative d'extraction DOCX...`);
+          const docxResult = await mammoth.extractRawText({ buffer });
+          text = docxResult.value;
+          
+          if (!text || text.trim().length === 0) {
+            console.warn(`⚠️ DOCX vide, tentative avec convertToHtml...`);
+            const htmlResult = await mammoth.convertToHtml({ buffer });
+            const $ = cheerio.load(htmlResult.value);
+            text = $.text();
+          }
+          
+          if (!text || text.trim().length === 0) {
+            return `[Fichier DOCX détecté mais le contenu est vide ou illisible. Veuillez vérifier que le fichier n'est pas protégé ou corrompu.]`;
+          }
+          
+          console.log(`✅ DOCX extrait: ${text.length} caractères`);
+        } catch (docxError) {
+          console.error(`❌ Erreur DOCX:`, docxError.message);
+          return `[Erreur lors de la lecture du fichier DOCX "${attachment.name}". Le fichier est peut-être corrompu ou dans un format non standard. Essayez de l'ouvrir dans Word et de le réenregistrer, ou exportez-le en PDF.]`;
+        }
         break;
       
       // ===== DOC (ancien format) =====
@@ -303,18 +321,51 @@ async function getHistoryFromFirebase(userId, sessionId) {
 }
 
 // ========================================
-// ✅ FORMATAGE HTML (SIMPLIFIÉ)
+// ✅ FORMATAGE HTML (AVEC RÉPARATION AUTOMATIQUE)
 // ========================================
 function formatAIResponse(text) {
   if (typeof text !== 'string') return text;
   
-  return text
+  // Nettoyer les entités HTML
+  text = text
     .replace(/&nbsp;/g, ' ')
     .replace(/&amp;/g, '&')
     .replace(/&lt;/g, '<')
     .replace(/&gt;/g, '>')
     .replace(/&quot;/g, '"')
     .trim();
+  
+  return text;
+}
+
+// ✅ NOUVELLE FONCTION : Réparer le HTML cassé automatiquement
+function repairBrokenHTML(text) {
+  if (typeof text !== 'string') return text;
+  
+  // Réparer les balises orphelines style="..." sans balise ouvrante
+  text = text.replace(/(?<!<\w+\s)style="([^"]+)">([^<\n]+?)(?=\s|$|<br|<\/)/g, '<span style="$1">$2</span>');
+  
+  // Réparer les structures spécifiques
+  // Format: "Texte" suivi de style="color: #4361ee;">Titre
+  text = text.replace(/([^\n<]+)\s+style="color: #4361ee[^"]*font-size: 18px[^"]*">([^<\n]+)/g, '<h2 style="color: #4361ee; font-size: 18px; margin: 16px 0 10px 0;">$2</h2>');
+  
+  // Réparer h3
+  text = text.replace(/style="color: #06b6d4[^"]*font-size: 16px[^"]*">([^<\n]+)/g, '<h3 style="color: #06b6d4; font-size: 16px; margin: 12px 0 8px 0;">$1</h3>');
+  
+  // Réparer les paragraphes orphelins
+  text = text.replace(/style="margin: 10px 0[^"]*line-height: 1\.6[^"]*">([^<]+?)(?=<|$)/g, '<p style="margin: 10px 0; line-height: 1.6;">$1</p>');
+  
+  // Réparer les <strong> orphelins
+  text = text.replace(/style="color: #([a-f0-9]{6})[^"]*">([^<\n]+?)(?=\s|<|$)/gi, '<strong style="color: #$1;">$2</strong>');
+  
+  // Réparer les <div> d'alerte orphelins
+  text = text.replace(/style="background: rgba\(243[^"]+">([^]*?)(?=<\/div>|$)/g, '<div style="background: rgba(243, 156, 18, 0.1); padding: 12px; border-left: 4px solid #f39c12; margin: 10px 0; border-radius: 4px;">$1</div>');
+  
+  // Nettoyer les doubles balises
+  text = text.replace(/<(h[23]|p|strong|div)([^>]*)><\1\2>/g, '<$1$2>');
+  text = text.replace(/<\/(h[23]|p|strong|div)><\/\1>/g, '</$1>');
+  
+  return text.trim();
 }
 
 // ========================================
@@ -351,7 +402,7 @@ function needsWebSearch(message) {
     /^merci/i, /^ok$/i, /^d'accord$/i, /^allume/i, /^éteins/i, /^règle/i,
     /^je (sort|sors|pars)/i, /^je (suis|reviens|rentre)/i, /^il fait (nuit|jour|sombre|chaud)/i,
     /appareil.*état/i, /état.*appareil/i, /code (arduino|python|javascript)/i,
-    /génère.*code/i, /écris.*code/i
+    /génère.*code/i, /écris.*code/i, /explique/i
   ];
   if (noSearchPatterns.some(pattern => pattern.test(lowerMsg))) return false;
   const webKeywords = [
@@ -398,94 +449,128 @@ function analyzeContext(message, deviceStates, beninTime) {
   
   return analysis;
 }
-const systemPrompt = `
-Tu es Intellia v5.0, assistant universel ultra-intelligent.
+
+// ========================================
+// ✅ PROMPT SYSTÈME v8.2 (ULTRA-STRICT HTML)
+// ========================================
+const systemPrompt = `Tu es Intellia v5.0, assistant universel ultra-intelligent.
 
 ## CAPACITÉS
 Domotique, Code (Arduino/Python/JS), Recherche web, Conversation naturelle, Analyse de Fichiers (PDF, TXT, DOCX, HTML, JS, etc.) et Images.
 
-## ⚠️ FORMAT DE RÉPONSE HTML (TRÈS IMPORTANT)
-Tu dois TOUJOURS répondre en JSON avec le champ "reply" contenant du HTML RICHE ET COLORÉ.
+## ⚠️ FORMAT DE RÉPONSE HTML (CRITIQUE - À RESPECTER ABSOLUMENT)
 
-### Règles de formatage HTML (BALISES COMPLÈTES OBLIGATOIRES):
-- Texte important: <strong style="color: #4361ee;">texte en bleu</strong>
-- Titres principaux: <h2 style="color: #4361ee; font-size: 18px; margin: 16px 0 10px 0;">Titre</h2>
-- Sous-titres: <h3 style="color: #06b6d4; font-size: 16px; margin: 12px 0 8px 0;">Sous-titre</h3>
-- Paragraphes: <p style="margin: 10px 0; line-height: 1.6;">texte du paragraphe</p>
-- Listes à puces: 
-  <ul style="margin: 10px 0; padding-left: 20px;">
-    <li style="margin: 5px 0;">élément 1</li>
-    <li style="margin: 5px 0;">élément 2</li>
-  </ul>
-- Retours à la ligne: <br><br> (double pour espacement)
-- Code inline: <code style="background: rgba(67, 97, 238, 0.1); padding: 2px 6px; border-radius: 4px; font-family: monospace;">code</code>
-- Séparateurs: <hr style="margin: 15px 0; border: none; border-top: 2px solid rgba(67, 97, 238, 0.3);">
-- Alertes: 
-  <div style="background: rgba(243, 156, 18, 0.1); padding: 12px; border-left: 4px solid #f39c12; margin: 10px 0; border-radius: 4px;">
-    ⚠️ <strong style="color: #f39c12;">Attention</strong><br><br>
-    Message d'alerte ici
-  </div>
+Tu dois TOUJOURS répondre en JSON avec "reply" contenant du HTML COMPLET ET VALIDE.
 
-### ⚠️ RÈGLES CRITIQUES D'ÉCRITURE HTML:
-1. ✅ TOUJOURS fermer les balises : <p>texte</p> (PAS juste <p>texte)
-2. ✅ TOUJOURS mettre les attributs entre guillemets : style="color: red" (PAS style='color: red')
-3. ✅ JAMAIS de balises orphelines : <h2 style="...">Titre</h2> (PAS juste style="...">Titre)
-4. ✅ Vérifier que chaque balise ouvrante a sa balise fermante
-5. ✅ Utiliser <br><br> pour espacer (PAS juste <br>)
+### 🎯 STRUCTURES HTML À COPIER-COLLER EXACTEMENT:
 
-### INTERDIT:
-❌ Balises incomplètes comme : style="color: #4361ee;">texte (manque <h2>)
-❌ Markdown (**, *, ##, -)
-❌ Guillemets simples dans les attributs
-## FORMAT JSON
+**1. TITRE PRINCIPAL (h2):**
+<h2 style="color: #4361ee; font-size: 18px; margin: 16px 0 10px 0;">📊 Votre titre ici</h2>
+
+**2. SOUS-TITRE (h3):**
+<h3 style="color: #06b6d4; font-size: 16px; margin: 12px 0 8px 0;">🎯 Sous-titre ici</h3>
+
+**3. PARAGRAPHE:**
+<p style="margin: 10px 0; line-height: 1.6;">Votre texte de paragraphe complet ici.</p>
+
+**4. TEXTE EN GRAS COLORÉ:**
+<strong style="color: #4361ee;">texte important en bleu</strong>
+<strong style="color: #06b6d4;">texte important en cyan</strong>
+
+**5. LISTE À PUCES:**
+<ul style="margin: 10px 0; padding-left: 20px;">
+<li style="margin: 5px 0; line-height: 1.6;">Premier élément de la liste</li>
+<li style="margin: 5px 0; line-height: 1.6;">Deuxième élément de la liste</li>
+<li style="margin: 5px 0; line-height: 1.6;">Troisième élément de la liste</li>
+</ul>
+
+**6. ALERTE/AVERTISSEMENT:**
+<div style="background: rgba(243, 156, 18, 0.1); padding: 12px; border-left: 4px solid #f39c12; margin: 10px 0; border-radius: 4px;">
+⚠️ <strong style="color: #f39c12;">Attention</strong><br><br>
+Votre message d'alerte ici
+</div>
+
+**7. MESSAGE DE SUCCÈS:**
+<div style="background: rgba(46, 204, 113, 0.1); padding: 12px; border-left: 4px solid #2ecc71; margin: 10px 0; border-radius: 4px;">
+✅ <strong style="color: #2ecc71;">Succès</strong><br><br>
+Votre message de succès ici
+</div>
+
+**8. SÉPARATEUR:**
+<hr style="margin: 15px 0; border: none; border-top: 2px solid rgba(67, 97, 238, 0.3);">
+
+**9. ESPACEMENT (retour à la ligne):**
+<br><br>
+
+### ❌ INTERDICTIONS ABSOLUES:
+
+1. ❌ JAMAIS écrire : style="color: #4361ee;">Titre (balise <h2> manquante)
+2. ❌ JAMAIS utiliser Markdown : **, *, ##, -, >
+3. ❌ JAMAIS laisser une balise ouverte sans la fermer
+4. ❌ JAMAIS utiliser des guillemets simples ' dans les attributs (TOUJOURS ")
+5. ❌ JAMAIS écrire du texte sans balise HTML
+
+### ✅ RÈGLES DE VALIDATION:
+
+Avant d'envoyer ta réponse, VÉRIFIE:
+1. ✅ Chaque <h2> a son </h2>
+2. ✅ Chaque <p> a son </p>
+3. ✅ Chaque <strong> a son </strong>
+4. ✅ Chaque <ul> a son </ul>
+5. ✅ Chaque <li> a son </li>
+6. ✅ Chaque <div> a son </div>
+7. ✅ Tous les attributs sont entre guillemets doubles "..."
+
+## FORMAT JSON DE RÉPONSE
+
 {
-  "reply": "<h2 style='color: #4361ee;'>Titre coloré</h2><p style='margin: 10px 0;'>Réponse en HTML avec <strong style='color: #06b6d4;'>couleurs</strong> et formatage.</p><br><ul style='margin: 10px 0; padding-left: 20px;'><li style='margin: 5px 0;'>Liste avec espacement</li></ul>",
+  "reply": "<h2 style=\"color: #4361ee; font-size: 18px; margin: 16px 0 10px 0;\">Titre</h2><br><p style=\"margin: 10px 0; line-height: 1.6;\">Paragraphe complet.</p>",
   "execute": ["device_id|ACTION|valeur"],
-  "planning_commands": [{"action":"add", "device":"id", "time":"HH:MM", "power":100}],
-  "suggestions": [{"type":"info|action|warning", "message":"...", "context":"..."}],
-  "source": "cloud|web|knowledge"
+  "planning_commands": [],
+  "suggestions": [],
+  "source": "cloud"
 }
 
-## 📌 RÈGLES CRITIQUES
-1. **Vérification:** Vérifie [États] AVANT toute action.
-2. **Recherche:** Ne recherche PAS pour code/domotique.
-3. **Suggestions:** Base sur CONTEXTE RÉEL ([États], [Heure]).
-4. **Heure:** Mentionne SEULEMENT si demandé ou pertinent.
-5. **Naturalité:** Réponses NATURELLES et CONVERSATIONNELLES.
-6. **CONTEXTE:** Si message court ("les", "oui"), analyse l'historique.
-7. **Fichiers:** Base ta réponse sur le contenu fourni.
-8. **PRÉSENTATION:** Utilise TOUJOURS des titres, listes, et couleurs pour une lecture facile.
+## 📋 EXEMPLES PARFAITS
 
-## EXEMPLES AVEC HTML COLORÉ
-
-[Exemple 1: Liste d'appareils]
-USER: "Donne-moi l'état des appareils"
+**Exemple 1: Réponse simple**
+USER: "Bonjour"
 {
-  "reply": "<h2 style=\"color: #4361ee; font-size: 18px; margin: 16px 0 10px 0;\">📊 État des appareils</h2><br><p style=\"margin: 10px 0; line-height: 1.6;\">Voici les appareils actifs dans votre maison :</p><br><ul style=\"margin: 10px 0; padding-left: 20px; list-style-type: none;\"><li style=\"margin: 8px 0; padding: 8px; background: rgba(67, 97, 238, 0.05); border-radius: 6px;\">💡 <strong style=\"color: #4361ee;\">LED 1 (SALON)</strong> : Allumée à 30%</li><li style=\"margin: 8px 0; padding: 8px; background: rgba(67, 97, 238, 0.05); border-radius: 6px;\">💡 <strong style=\"color: #4361ee;\">LED 2 (CHAMBRE)</strong> : Allumée à 30%</li></ul><br><p style=\"margin: 10px 0; color: #9aa3b2; font-size: 14px;\">Voulez-vous modifier quelque chose ?</p>",
+  "reply": "<h2 style=\"color: #4361ee; font-size: 18px; margin: 16px 0 10px 0;\">👋 Bonjour !</h2><br><p style=\"margin: 10px 0; line-height: 1.6;\">Je suis <strong style=\"color: #06b6d4;\">Intellia v5.0</strong>, votre assistant universel.</p><br><p style=\"margin: 10px 0; line-height: 1.6;\">Comment puis-je vous aider aujourd'hui ?</p>",
   "execute": [],
   "suggestions": [],
   "source": "cloud"
 }
 
-[Exemple 2: Explication de fichier]
-USER: "Explique-moi ce fichier"
+**Exemple 2: Liste d'appareils**
+USER: "État des appareils"
 {
-  "reply": "<h2 style='color: #4361ee; margin: 10px 0;'>📄 Analyse du fichier</h2><br><p style='margin: 10px 0;'>Ce fichier HTML représente l'interface de <strong style='color: #06b6d4;'>SmartHome Intelligence</strong>.</p><br><h3 style='color: #06b6d4; margin: 12px 0 8px 0;'>🎯 Sections principales</h3><ul style='margin: 10px 0; padding-left: 20px;'><li style='margin: 5px 0; line-height: 1.6;'><strong style='color: #4361ee;'>Domotique</strong> : Contrôle des appareils connectés</li><li style='margin: 5px 0; line-height: 1.6;'><strong style='color: #4361ee;'>Assistant</strong> : Interface de conversation avec moi</li><li style='margin: 5px 0; line-height: 1.6;'><strong style='color: #4361ee;'>Planning</strong> : Automatisation des tâches</li></ul><br><div style='background: rgba(46, 204, 113, 0.1); padding: 12px; border-left: 4px solid #2ecc71; margin: 10px 0; border-radius: 4px;'>✅ Interface responsive avec mode jour/nuit</div>",
+  "reply": "<h2 style=\"color: #4361ee; font-size: 18px; margin: 16px 0 10px 0;\">📊 État des appareils</h2><br><p style=\"margin: 10px 0; line-height: 1.6;\">Voici vos appareils actifs :</p><br><ul style=\"margin: 10px 0; padding-left: 20px;\"><li style=\"margin: 5px 0; line-height: 1.6;\">💡 <strong style=\"color: #4361ee;\">LED 1 (SALON)</strong> : Allumée à 30%</li><li style=\"margin: 5px 0; line-height: 1.6;\">💡 <strong style=\"color: #4361ee;\">LED 2 (CHAMBRE)</strong> : Allumée à 30%</li></ul><br><p style=\"margin: 10px 0; line-height: 1.6; color: #9aa3b2; font-size: 14px;\">Voulez-vous modifier quelque chose ?</p>",
   "execute": [],
   "suggestions": [],
   "source": "cloud"
 }
 
-[Exemple 3: Erreur ou avertissement]
-USER: "Allume tous les appareils"
+**Exemple 3: Avec alerte**
+USER: "Allume tout"
 {
-  "reply": "<div style='background: rgba(243, 156, 18, 0.1); padding: 12px; border-left: 4px solid #f39c12; margin: 10px 0; border-radius: 4px;'>⚠️ <strong style='color: #f39c12;'>Attention</strong><br><br>Vous êtes sur le point d'allumer <strong>7 appareils</strong> simultanément. Cela peut augmenter votre consommation électrique.</div><br><p style='margin: 10px 0;'>Voulez-vous continuer ?</p>",
+  "reply": "<div style=\"background: rgba(243, 156, 18, 0.1); padding: 12px; border-left: 4px solid #f39c12; margin: 10px 0; border-radius: 4px;\">⚠️ <strong style=\"color: #f39c12;\">Attention</strong><br><br>Vous allez allumer <strong style=\"color: #f39c12;\">7 appareils</strong> simultanément. Cela augmentera votre consommation.</div><br><p style=\"margin: 10px 0; line-height: 1.6;\">Voulez-vous continuer ?</p>",
   "execute": [],
-  "suggestions": [{"type": "warning", "message": "Consommation élevée détectée"}],
+  "suggestions": [{"type": "warning", "message": "Consommation élevée"}],
   "source": "cloud"
 }
 
-RÉPONDS EN JSON VALIDE AVEC HTML COLORÉ ET STYLISÉ DANS "reply".
+## 📌 RÈGLES GÉNÉRALES
+
+1. **Vérification:** Vérifie [États] AVANT toute action
+2. **Recherche:** Ne recherche PAS pour code/domotique
+3. **Heure:** Mentionne SEULEMENT si demandé ou pertinent
+4. **Naturalité:** Réponses NATURELLES et CONVERSATIONNELLES
+5. **CONTEXTE:** Si message court ("les", "oui"), analyse l'historique
+6. **Fichiers:** Base ta réponse sur le contenu fourni
+7. **PRÉSENTATION:** Utilise TOUJOURS des titres, listes et couleurs
+
+RÉPONDS EN JSON VALIDE AVEC HTML COMPLET ET CORRECT DANS "reply".
 `;
 
 // ========================================
@@ -537,7 +622,7 @@ async function chatWithGemini(userMessage, devices, userId, sessionId, attachmen
         history: [
           { role: "user", parts: [{ text: systemPrompt }] },
           { role: "model", parts: [{ text: JSON.stringify({
-                reply: "Je suis Intellia v5.0, votre assistant universel ultra-intelligent !",
+                reply: "<h2 style=\"color: #4361ee; font-size: 18px; margin: 16px 0 10px 0;\">👋 Bonjour !</h2><br><p style=\"margin: 10px 0; line-height: 1.6;\">Je suis <strong style=\"color: #06b6d4;\">Intellia v5.0</strong>, votre assistant universel ultra-intelligent !</p>",
                 execute: [], planning_commands: [], suggestions: [], source: "cloud"
               })}] 
           },
@@ -545,7 +630,7 @@ async function chatWithGemini(userMessage, devices, userId, sessionId, attachmen
         ],
         generationConfig: {
           responseMimeType: "application/json",
-          temperature: 0.8,
+          temperature: 0.7,
           maxOutputTokens: 8192,
         },
       });
@@ -574,7 +659,7 @@ MESSAGE: "${userMessage}"
       }
 
       const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 20000);
+      const timeout = setTimeout(() => controller.abort(), 25000);
       const result = await chat.sendMessage(promptParts, { signal: controller.signal });
       clearTimeout(timeout);
 
@@ -589,7 +674,7 @@ MESSAGE: "${userMessage}"
       const keyObj = API_KEYS[(currentKeyIndex - 1 + API_KEYS.length) % API_KEYS.length];
       const isQuotaError = error.message?.includes('quota') || error.message?.includes('429') || error.message?.includes('RESOURCE_EXHAUSTED');
       markKeyAsFailed(keyObj, isQuotaError);
-      console.warn(`⚠️ Tentative ${attempt + 1}/${maxRetries} échouée`);
+      console.warn(`⚠️ Tentative ${attempt + 1}/${maxRetries} échouée: ${error.message}`);
       if (attempt === maxRetries - 1) break;
     }
   }
@@ -613,13 +698,13 @@ app.post('/api/chat', async (req, res) => {
     } = req.body;
 
     if (key !== AUTH_KEY) {
-      return res.status(401).json({ reply: "Clé d'authentification invalide", ...jsonErrorDefaults() });
+      return res.status(401).json({ reply: "<p style=\"margin: 10px 0; color: #e74c3c;\">Clé d'authentification invalide</p>", ...jsonErrorDefaults() });
     }
     if (!message && attachments.length === 0) {
-      return res.status(400).json({ reply: "Message ou pièce jointe requis", ...jsonErrorDefaults() });
+      return res.status(400).json({ reply: "<p style=\"margin: 10px 0; color: #e74c3c;\">Message ou pièce jointe requis</p>", ...jsonErrorDefaults() });
     }
     if (!userId || !sessionId) {
-      return res.status(400).json({ reply: "ID Utilisateur ou ID Session manquant", ...jsonErrorDefaults() });
+      return res.status(400).json({ reply: "<p style=\"margin: 10px 0; color: #e74c3c;\">ID Utilisateur ou ID Session manquant</p>", ...jsonErrorDefaults() });
     }
 
     console.log('┌────────────────────────────────────────');
@@ -634,7 +719,10 @@ app.post('/api/chat', async (req, res) => {
 
     if (!result.success) {
       console.log('⚠️ Gemini indisponible');
-      return res.json({ reply: "Service temporairement indisponible.", ...jsonErrorDefaults() });
+      return res.json({ 
+        reply: "<div style=\"background: rgba(231, 76, 60, 0.1); padding: 12px; border-left: 4px solid #e74c3c; margin: 10px 0; border-radius: 4px;\">❌ <strong style=\"color: #e74c3c;\">Service temporairement indisponible</strong><br><br>Veuillez réessayer dans quelques instants.</div>", 
+        ...jsonErrorDefaults() 
+      });
     }
 
     const aiText = result.data;
@@ -644,33 +732,55 @@ app.post('/api/chat', async (req, res) => {
     try {
       aiJson = JSON.parse(aiText);
     } catch (parseError) {
+      console.warn('⚠️ Première tentative de parsing JSON échouée, nettoyage...');
       const cleaned = aiText.replace(/^```json\s*\n?/, '').replace(/\n?```\s*$/, '').trim();
       try { 
         aiJson = JSON.parse(cleaned); 
       } catch (secondError) { 
-        return res.json({ reply: "Désolé, reformulez votre demande ?", ...jsonErrorDefaults() });
+        console.error('❌ Parsing JSON impossible:', secondError.message);
+        return res.json({ 
+          reply: "<p style=\"margin: 10px 0; line-height: 1.6;\">Désolé, je n'ai pas pu formuler ma réponse correctement. Pouvez-vous reformuler votre demande ?</p>", 
+          ...jsonErrorDefaults() 
+        });
       }
     }
 
-    aiJson.reply = aiJson.reply || "Commande reçue.";
+    // ✅ Valeurs par défaut et nettoyage
+    aiJson.reply = aiJson.reply || "<p style=\"margin: 10px 0; line-height: 1.6;\">Commande reçue.</p>";
     aiJson.execute = aiJson.execute || [];
     aiJson.planning_commands = aiJson.planning_commands || [];
     aiJson.suggestions = aiJson.suggestions || [];
+    
+    // ✅ Déduplication des planifications
     aiJson.planning_commands = deduplicatePlanning(aiJson.planning_commands);
-    aiJson.reply = formatAIResponse(aiJson.reply);
+    
+    // ✅ RÉPARATION AUTOMATIQUE DU HTML
+    aiJson.reply = repairBrokenHTML(formatAIResponse(aiJson.reply));
+    
+    // ✅ Post-processing de sécurité : Si aucun HTML détecté, wrapper en paragraphe
+    if (!aiJson.reply.includes('<h2') && !aiJson.reply.includes('<p') && !aiJson.reply.includes('<div') && aiJson.reply.trim().length > 0) {
+      console.warn('⚠️ Aucune balise HTML détectée, wrapping en paragraphe');
+      aiJson.reply = `<p style="margin: 10px 0; line-height: 1.6;">${aiJson.reply}</p>`;
+    }
+    
     if (!aiJson.source) aiJson.source = result.hadWebResults ? "web" : "cloud";
 
     console.log('✅ RÉPONSE GÉNÉRÉE');
     console.log(`📤 Execute: ${aiJson.execute.length}`);
     console.log(`📅 Planning: ${aiJson.planning_commands.length}`);
     console.log(`💡 Suggestions: ${aiJson.suggestions.length}`);
+    console.log(`📝 HTML Length: ${aiJson.reply.length} chars`);
     console.log('└────────────────────────────────────────\n');
 
     res.json(aiJson);
     
   } catch (error) {
     console.error('💥 ERREUR:', error.message);
-    res.status(500).json({ reply: "Désolé, une erreur s'est produite.", ...jsonErrorDefaults() });
+    console.error(error.stack);
+    res.status(500).json({ 
+      reply: "<div style=\"background: rgba(231, 76, 60, 0.1); padding: 12px; border-left: 4px solid #e74c3c; margin: 10px 0; border-radius: 4px;\">❌ <strong style=\"color: #e74c3c;\">Erreur interne</strong><br><br>Une erreur s'est produite. Veuillez réessayer.</div>", 
+      ...jsonErrorDefaults() 
+    });
   }
 });
 
@@ -713,7 +823,7 @@ app.get('/api/health', (req, res) => {
   
   res.json({ 
     status: 'ok', 
-    version: '8.1-html-output-allfiles',
+    version: '8.2-html-fixed-complete',
     features: {
       gemini: API_KEYS.length > 0,
       webSearch: true,
@@ -722,6 +832,7 @@ app.get('/api/health', (req, res) => {
       multimodal_Image: true,
       multimodal_Files: true,
       htmlOutput: true,
+      htmlAutoRepair: true,
       supportedFiles: "PDF, DOCX, TXT, HTML, JS, JSON, CSS, XLSX, CSV, Images"
     },
     keys: { total: API_KEYS.length, available: availableKeys },
@@ -737,13 +848,14 @@ app.get('/api/health', (req, res) => {
 // ========================================
 app.listen(PORT, () => {
   console.log('\n🏠 ╔═══════════════════════════════════════╗');
-  console.log('   ║  INTELLIA v8.1 - HTML OUTPUT         ║');
+  console.log('   ║  INTELLIA v8.2 - HTML FIXED          ║');
   console.log('   ╚═══════════════════════════════════════╝');
   console.log(`\n   🚀 Serveur: http://localhost:${PORT}`);
   console.log(`   🔑 Clés Gemini: ${API_KEYS.length}`);
   console.log(`   🔥 Synchro Firebase (Appareils): Activée`);
   console.log(`   💾 Synchro Firebase (Chats): Activée`);
   console.log(`   🖼️ Multimodal (Images/Fichiers): Prêt`);
-  console.log(`   ✅ Output HTML (Plus de Markdown): Activé`);
-  console.log(`   📂 Fichiers supportés: PDF, DOCX, TXT, HTML, JS, XLSX, CSV\n`);
+  console.log(`   ✅ Output HTML avec Auto-Réparation: Activé`);
+  console.log(`   📂 Fichiers supportés: PDF, DOCX, TXT, HTML, JS, XLSX, CSV`);
+  console.log(`   🔧 Modèle: gemini-2.0-flash-exp\n`);
 });
