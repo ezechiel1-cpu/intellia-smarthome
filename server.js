@@ -1,8 +1,10 @@
 // ========================================
-// INTELLIA v9.3 - ASSISTANT MULTIMODAL (MARKDOWN + PLANNING AI)
+// INTELLIA v9.4 - ASSISTANT MULTIMODAL AMÉLIORÉ
 //
-// ✅ Ajout des règles d'IA pour générer des commandes de planning
-// ✅ Répond en MARKDOWN (le client gère le HTML)
+// ✅ Ajout automatique d'appareils via IA
+// ✅ Température de Lokossa en temps réel
+// ✅ Actions "allumer"/"éteindre" dans planning
+// ✅ Markdown + Planning AI
 // ========================================
 const express = require('express');
 const cors = require('cors');
@@ -13,7 +15,7 @@ const { GoogleGenerativeAI } = require("@google/generative-ai");
 
 // ✅ Imports Firebase
 const { initializeApp } = require("firebase/app");
-const { getDatabase, ref, get } = require("firebase/database");
+const { getDatabase, ref, get, set, push } = require("firebase/database");
 
 // ✅ Imports des Parsers de Fichiers
 const pdf = require('pdf-parse');
@@ -57,7 +59,9 @@ try {
 }
 
 const DEVICES_STATES_REF = "devices";
+const DEVICES_META_REF = "devicesMeta";
 const USER_CHATS_REF = "userChats";
+const PLANNING_REF = "planning";
 
 const API_KEYS = [];
 let currentKeyIndex = 0;
@@ -101,29 +105,139 @@ function markKeyAsFailed(keyObj, isQuotaError = false) {
 }
 
 // ========================================
-// HEURE PRÉCISE DU BÉNIN
+// 🌡️ TEMPÉRATURE RÉELLE DE LOKOSSA (Open-Meteo API)
 // ========================================
-function getBeninTime() {
+
+// Fallback: Estimation si API indisponible
+function getLoKossaTemperatureEstimated(month, hour) {
+  const temperatureData = {
+    1: { min: 23, max: 35, avg: 29 },  // Janvier
+    2: { min: 25, max: 36, avg: 30.5 }, // Février
+    3: { min: 25, max: 35, avg: 30 },  // Mars
+    4: { min: 24, max: 34, avg: 29 },  // Avril
+    5: { min: 24, max: 32, avg: 28 },  // Mai
+    6: { min: 23, max: 30, avg: 26.5 }, // Juin
+    7: { min: 23, max: 29, avg: 26 },  // Juillet
+    8: { min: 23, max: 29, avg: 26 },  // Août
+    9: { min: 23, max: 30, avg: 26.5 }, // Septembre
+    10: { min: 24, max: 32, avg: 28 },  // Octobre
+    11: { min: 24, max: 33, avg: 28.5 }, // Novembre
+    12: { min: 23, max: 34, avg: 28.5 }  // Décembre
+  };
+
+  const monthData = temperatureData[month] || temperatureData[1];
+  let tempAdjustment = 0;
+  
+  if (hour >= 6 && hour < 12) {
+    tempAdjustment = ((hour - 6) / 6) * (monthData.max - monthData.avg);
+  } else if (hour >= 12 && hour < 18) {
+    tempAdjustment = monthData.max - monthData.avg - ((hour - 12) / 6) * (monthData.max - monthData.avg);
+  } else {
+    tempAdjustment = monthData.min - monthData.avg;
+  }
+  
+  const estimatedTemp = Math.round(monthData.avg + tempAdjustment);
+  
+  return {
+    temperature: estimatedTemp,
+    feels_like: estimatedTemp,
+    humidity: hour >= 6 && hour < 18 ? 65 : 80,
+    description: estimatedTemp >= 32 ? "Très chaud et humide" : 
+                 estimatedTemp >= 28 ? "Chaud" : 
+                 estimatedTemp >= 25 ? "Agréable" : "Frais",
+    source: 'estimation'
+  };
+}
+
+function getWeatherDescription(code) {
+  const descriptions = {
+    0: "Ciel dégagé ☀️", 1: "Principalement dégagé 🌤️", 2: "Partiellement nuageux ⛅", 3: "Couvert ☁️",
+    45: "Brouillard 🌫️", 48: "Brouillard givrant 🌫️",
+    51: "Bruine légère 🌦️", 53: "Bruine modérée 🌦️", 55: "Bruine dense 🌧️",
+    61: "Pluie faible 🌧️", 63: "Pluie modérée 🌧️", 65: "Pluie forte ⛈️",
+    71: "Neige faible ❄️", 73: "Neige modérée ❄️", 75: "Neige forte ❄️",
+    80: "Averses légères 🌦️", 81: "Averses modérées 🌧️", 82: "Averses violentes ⛈️",
+    85: "Averses de neige légères 🌨️", 86: "Averses de neige fortes 🌨️",
+    95: "Orage ⛈️", 96: "Orage avec grêle légère ⛈️", 99: "Orage avec grêle forte ⛈️"
+  };
+  return descriptions[code] || "Conditions variables";
+}
+
+// API Open-Meteo (100% gratuit, précis à 92-95%)
+async function getRealLoKossaTemperature() {
+  try {
+    // Coordonnées GPS de Lokossa: 6.64°N, 1.97°E
+    const response = await axios.get(
+      'https://api.open-meteo.com/v1/forecast',
+      {
+        params: {
+          latitude: 6.64,
+          longitude: 1.97,
+          current: 'temperature_2m,relative_humidity_2m,apparent_temperature,weather_code',
+          timezone: 'Africa/Porto-Novo',
+          temperature_unit: 'celsius'
+        },
+        timeout: 5000
+      }
+    );
+    
+    const current = response.data.current;
+    
+    return {
+      temperature: Math.round(current.temperature_2m),
+      feels_like: Math.round(current.apparent_temperature),
+      humidity: current.relative_humidity_2m,
+      description: getWeatherDescription(current.weather_code),
+      source: 'open-meteo-api',
+      success: true
+    };
+    
+  } catch (error) {
+    console.warn("⚠️ Open-Meteo API indisponible, utilisation estimation:", error.message);
+    const now = new Date();
+    const month = now.getMonth() + 1;
+    const hour = now.getHours();
+    return { 
+      ...getLoKossaTemperatureEstimated(month, hour), 
+      success: false 
+    };
+  }
+}
+
+// ========================================
+// HEURE PRÉCISE DU BÉNIN + TEMPÉRATURE TEMPS RÉEL
+// ========================================
+async function getBeninTime() {
   const timeZone = 'Africa/Porto-Novo';
   const now = new Date();
   const optionsDate = { timeZone, weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
   const optionsTime = { timeZone, hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false };
   const dateFormatter = new Intl.DateTimeFormat('fr-FR', optionsDate);
   const timeFormatter = new Intl.DateTimeFormat('fr-FR', optionsTime);
-  const partsFormatter = new Intl.DateTimeFormat('en-US', { timeZone, hour: 'numeric', minute: 'numeric', hour12: false });
+  const partsFormatter = new Intl.DateTimeFormat('en-US', { timeZone, hour: 'numeric', minute: 'numeric', hour12: false, month: 'numeric' });
   const parts = partsFormatter.formatToParts(now);
   let hoursPart = parts.find(p => p.type === 'hour')?.value;
   let minutesPart = parts.find(p => p.type === 'minute')?.value;
+  let monthPart = parts.find(p => p.type === 'month')?.value;
+  
   if (hoursPart === '24') hoursPart = '00';
   const beninHours = parseInt(hoursPart, 10);
   const beninMinutes = parseInt(minutesPart, 10);
+  const beninMonth = parseInt(monthPart, 10);
+  
   const timeString = `${dateFormatter.format(now)} ${timeFormatter.format(now)}`;
+  
+  // ✅ TOUJOURS récupérer la température RÉELLE via Open-Meteo
+  const tempInfo = await getRealLoKossaTemperature();
+  
   return {
     formatted: timeString,
     hours: beninHours,
     minutes: beninMinutes,
+    month: beninMonth,
     hoursStr: String(beninHours).padStart(2, '0'),
-    minutesStr: String(beninMinutes).padStart(2, '0')
+    minutesStr: String(beninMinutes).padStart(2, '0'),
+    temperature: tempInfo
   };
 }
 
@@ -352,11 +466,10 @@ function needsWebSearch(message) {
     /^merci/i, /^ok$/i, /^d'accord$/i, /^allume/i, /^éteins/i, /^règle/i,
     /^je (sort|sors|pars)/i, /^je (suis|reviens|rentre)/i, /^il fait (nuit|jour|sombre|chaud)/i,
     /appareil.*état/i, /état.*appareil/i, /code (arduino|python|javascript)/i,
-    /génère.*code/i, /écris.*code/i, /explique/i
+    /génère.*code/i, /écris.*code/i, /explique/i, /température.*lokossa/i
   ];
   if (noSearchPatterns.some(pattern => pattern.test(lowerMsg))) return false;
   const webKeywords = [
-    'météo', 'temps qu\'il fait', 'température', 'pluie', 'soleil',
     'actualité', 'news', 'nouvelles', 'recherche', 'cherche', 'trouve',
     'où se trouve', 'où est situé', 'combien coûte', 'prix de', 'qui est', 'c\'est qui'
   ];
@@ -401,17 +514,19 @@ function analyzeContext(message, deviceStates, beninTime) {
 }
 
 // ========================================
-// ✅ PROMPT SYSTÈME v9.3 (MARKDOWN + PLANNING AI)
+// ✅ PROMPT SYSTÈME v9.4 (MARKDOWN + PLANNING AI + ADD DEVICES)
 // ========================================
-const systemPrompt = `Tu es Intellia , assistant universel ultra-intelligent.
+const systemPrompt = `Tu es Intellia, assistant universel ultra-intelligent.
 
 ## CRÉATEURS 
 Tu es créé pour un projet Domotique intelligente par 06 jeunes étudiants chercheurs de l'Université National de Lokossa en Génie électrique et informatique option Électrotechnique et Électronique.
+
 ## CONTACTS DE TON PRINCIPAL CRÉATEUR 
 +229 0159071155
 +229 0141929429
+
 ## CAPACITÉS
-Domotique, Code (Arduino/Python/JS), Recherche web, Conversation naturelle, Analyse de Fichiers (PDF, TXT, DOCX, HTML, JS, XLSX, etc.) et Images.
+Domotique, Code (Arduino/Python/JS), Recherche web, Conversation naturelle, Analyse de Fichiers (PDF, TXT, DOCX, HTML, JS, XLSX, etc.) et Images, **Ajout automatique d'appareils**, **Température de Lokossa en temps réel**.
 
 ## ⚠️ FORMAT DE RÉPONSE (CRITIQUE : MARKDOWN)
 
@@ -427,6 +542,11 @@ Le champ "reply" doit contenir du texte en **Markdown (GFM)**.
 * Liens : \`[texte du lien](https://url.com)\`
 * Paragraphes : Laisse une ligne vide pour un nouveau paragraphe.
 
+### 🌡️ TEMPÉRATURE DE LOKOSSA
+Tu as accès à la température estimée de Lokossa en temps réel dans les métadonnées.
+**Quand l'utilisateur demande la température**, donne IMMÉDIATEMENT la valeur sans rechercher sur le web.
+Exemple : "À Lokossa, il fait actuellement **28°C** (température agréable). Min: 24°C, Max: 32°C."
+
 ### 📅 GESTION DU PLANNING (CRITIQUE)
 Si l'utilisateur demande une action à un **moment futur** ("à 16h34", "dans 15 minutes", "à 20h00 demain"), tu dois générer une commande dans le champ **"planning_commands"**.
 
@@ -437,9 +557,10 @@ Si l'utilisateur demande une action à un **moment futur** ("à 16h34", "dans 15
   "reply": "✅ C'est noté ! J'ai ajouté la tâche **Lampe Salon** à votre planning pour 16h34.",
   "planning_commands": [
     {
-      "action": "allumer",
+      "action": "add",
       "device": "lampe_salon",
       "time": "16:34",
+      "actionType": "allumer",
       "power": 80
     }
   ],
@@ -451,33 +572,64 @@ Si l'utilisateur demande une action à un **moment futur** ("à 16h34", "dans 15
 **Règles de planning :**
 * Le format \`time\` est TOUJOURS \`HH:MM\`.
 * L'ID de l'appareil (\`device\`) doit exister dans [Appareils].
-* Pour une lampe, la \`power\` est obligatoire (entre 0 et 100). Pour une prise (\`plug\`), mets \`power: 100\` pour ON et \`power: 0\` pour OFF ou omet-le.
-* L'\`action\` est \`allumer\` ou \`éteindre\` selon la requête.
+* L'\`actionType\` est **"allumer"** ou **"éteindre"** selon la requête.
+* Pour une lampe, la \`power\` est obligatoire (entre 0 et 100). Pour une prise (\`plug\`), mets \`power: 100\` pour ON et \`power: 0\` pour OFF.
+* L'\`action\` est toujours \`"add"\` pour ajouter une tâche.
+
+### ➕ AJOUT AUTOMATIQUE D'APPAREILS
+Si l'utilisateur demande d'ajouter un nouvel appareil (ex: "Ajoute une lampe jardin dans le salon"), génère une commande dans **"device_commands"**.
+
+**Exemple de requête :** "Ajoute une lampe jardin dans le salon"
+**Exemple de JSON à générer :**
+\`\`\`json
+{
+  "reply": "✅ J'ai ajouté **Lampe Jardin** dans votre salon !",
+  "device_commands": [
+    {
+      "action": "add",
+      "name": "Lampe Jardin",
+      "type": "lamp",
+      "room": "Salon"
+    }
+  ],
+  "execute": [],
+  "source": "cloud"
+}
+\`\`\`
+
+**Types d'appareils supportés :**
+* \`lamp\` : Lampe (avec luminosité)
+* \`plug\` : Prise électrique
+* \`ventilateur\` : Ventilateur (avec vitesse)
+* \`thermostat\` : Thermostat
+* \`volet\` : Volet roulant
 
 ### ❌ INTERDICTIONS :
 1. ❌ JAMAIS envoyer de balises HTML (<p>, <h2>, <strong style=...>) dans "reply".
 2. ❌ Le client (index.html) s'occupe de transformer le Markdown en HTML.
+3. ❌ Ne JAMAIS rechercher sur le web pour la température de Lokossa (elle est fournie).
 
 ## FORMAT JSON DE RÉPONSE
 
 {
-  "reply": "### 💡 État des lampes\n\nVoici l'état actuel :\n\n* **LED 1 (SALON)** : Allumée à 30%\n* **LED 2 (CHAMBRE)** : Éteinte\n",
+  "reply": "### 💡 État des lampes\\n\\nVoici l'état actuel :\\n\\n* **LED 1 (SALON)** : Allumée à 30%\\n* **LED 2 (CHAMBRE)** : Éteinte\\n",
   "execute": ["device_id|ACTION|valeur"],
   "planning_commands": [],
+  "device_commands": [],
   "suggestions": [],
   "source": "cloud"
 }
 
-## 📌 RÈGLES GÉNÉRALES (Inchangées)
+## 📌 RÈGLES GÉNÉRALES
 
 1. **Vérification:** Vérifie [États] AVANT toute action immédiate.
-2. **Recherche:** Ne recherche PAS pour code/domotique.
+2. **Recherche:** Ne recherche PAS pour code/domotique/température Lokossa.
 3. **Heure:** Mentionne SEULEMENT si demandé ou pertinent.
 4. **Naturalité:** Réponses NATURELLES et CONVERSATIONNELLES.
 5. **CONTEXTE:** Si message court ("les","tout", "oui"), analyse l'historique.
 6. **Fichiers:** Base ta réponse sur le contenu fourni.
 7. **PRÉSENTATION:** Utilise la structure Markdown (titres, listes, gras).
-8. **Température:** Donne toujours après avoir recherché, la température de La ville de Lokossa selon le mois et le jour si possible si l'utilisateur ne donne pas le lieu précis.
+8. **Température Lokossa:** Toujours disponible dans les métadonnées, ne cherche JAMAIS sur le web.
 
 RÉPONDS EN JSON VALIDE AVEC DU MARKDOWN DANS "reply".
 `;
@@ -531,8 +683,8 @@ async function chatWithGemini(userMessage, devices, userId, sessionId, attachmen
         history: [
           { role: "user", parts: [{ text: systemPrompt }] },
           { role: "model", parts: [{ text: JSON.stringify({
-                reply: "### 👋 Recevez mes chaleureuses salutations !\n\nJe suis **Intellia **, votre assistant universel. Comment puis-je vous aider aujourd'hui ?",
-                execute: [], planning_commands: [], suggestions: [], source: "cloud"
+                reply: "### 👋 Recevez mes chaleureuses salutations !\n\nJe suis **Intellia**, votre assistant universel. Comment puis-je vous aider aujourd'hui ?",
+                execute: [], planning_commands: [], device_commands: [], suggestions: [], source: "cloud"
               })}] 
           },
           ...historyParts.flat()
@@ -546,6 +698,7 @@ async function chatWithGemini(userMessage, devices, userId, sessionId, attachmen
 
       const metadataPrompt = `
 [Heure: ${beninTime.formatted}]
+[Température Lokossa: ${beninTime.temperature.temperature}°C (${beninTime.temperature.description}), Min: ${beninTime.temperature.min}°C, Max: ${beninTime.temperature.max}°C]
 [Préfs: ${JSON.stringify(preferences)}]
 [États: ${JSON.stringify(realDeviceStates)}]
 [Appareils: ${JSON.stringify(devices)}] 
@@ -658,16 +811,23 @@ app.post('/api/chat', async (req, res) => {
     aiJson.reply = aiJson.reply || "Commande reçue.";
     aiJson.execute = aiJson.execute || [];
     aiJson.planning_commands = aiJson.planning_commands || [];
+    aiJson.device_commands = aiJson.device_commands || [];
     aiJson.suggestions = aiJson.suggestions || [];
     
     // ✅ Déduplication des planifications
     aiJson.planning_commands = deduplicatePlanning(aiJson.planning_commands);
+    
+    // ✅ Traiter les commandes d'ajout d'appareils
+    if (aiJson.device_commands && aiJson.device_commands.length > 0) {
+      await handleDeviceCommands(aiJson.device_commands, userId);
+    }
     
     if (!aiJson.source) aiJson.source = result.hadWebResults ? "web" : "cloud";
 
     console.log('✅ RÉPONSE GÉNÉRÉE');
     console.log(`📤 Execute: ${aiJson.execute.length}`);
     console.log(`📅 Planning: ${aiJson.planning_commands.length}`);
+    console.log(`➕ Device Commands: ${aiJson.device_commands.length}`);
     console.log(`💡 Suggestions: ${aiJson.suggestions.length}`);
     console.log(`📝 Markdown Length: ${aiJson.reply.length} chars`);
     console.log('└────────────────────────────────────────\n');
@@ -685,7 +845,7 @@ app.post('/api/chat', async (req, res) => {
 });
 
 function jsonErrorDefaults() {
-  return { execute: [], planning_commands: [], suggestions: [], source: "error" };
+  return { execute: [], planning_commands: [], device_commands: [], suggestions: [], source: "error" };
 }
 
 function deduplicatePlanning(plans) {
@@ -697,7 +857,7 @@ function deduplicatePlanning(plans) {
     switch(plan.action) {
       case 'add':
         if (!plan.device || !plan.time) continue;
-        key = `add_${plan.device}_${plan.time}_${plan.power || 100}`;
+        key = `add_${plan.device}_${plan.time}_${plan.actionType}_${plan.power || 100}`;
         break;
       case 'delete_all': key = 'delete_all'; break;
       case 'delete':
@@ -715,6 +875,67 @@ function deduplicatePlanning(plans) {
 }
 
 // ========================================
+// ✅ GESTION DES COMMANDES D'APPAREILS
+// ========================================
+async function handleDeviceCommands(commands, userId) {
+  if (!db) {
+    console.warn("⚠️ Firebase non disponible, impossible d'ajouter des appareils");
+    return;
+  }
+
+  for (const cmd of commands) {
+    if (cmd.action === 'add') {
+      try {
+        const deviceName = cmd.name || 'Nouvel Appareil';
+        const deviceType = cmd.type || 'lamp';
+        const deviceRoom = cmd.room || 'Non spécifié';
+        
+        // Générer un ID unique
+        const deviceId = deviceName.toLowerCase()
+          .replace(/\s+/g, '_')
+          .replace(/[^\w\-]/g, '')
+          .substring(0, 30) + '_' + Date.now().toString().slice(-4);
+        
+        const deviceTypes = {
+          'lamp': { hasBrightness: true, icon: 'lightbulb' },
+          'plug': { hasBrightness: false, icon: 'plug' },
+          'ventilateur': { hasBrightness: true, icon: 'fan' },
+          'thermostat': { hasBrightness: false, icon: 'temperature-low' },
+          'volet': { hasBrightness: false, icon: 'window-maximize' }
+        };
+        
+        const typeInfo = deviceTypes[deviceType] || deviceTypes['lamp'];
+        
+        const newDevice = {
+          id: deviceId,
+          name: deviceName,
+          type: deviceType,
+          room: deviceRoom,
+          hasBrightness: typeInfo.hasBrightness,
+          icon: typeInfo.icon,
+          createdAt: Date.now(),
+          createdBy: userId
+        };
+        
+        // Ajouter à Firebase
+        await set(ref(db, `${DEVICES_META_REF}/${deviceId}`), newDevice);
+        
+        // Initialiser l'état
+        await set(ref(db, `${DEVICES_STATES_REF}/${deviceId}`), {
+          etat: 'OFF',
+          luminosite: 0
+        });
+        
+        console.log(`✅ Appareil ajouté: ${deviceName} (${deviceId})`);
+        
+      } catch (error) {
+        console.error(`❌ Erreur ajout appareil:`, error.message);
+      }
+    }
+  }
+}
+
+// ========================================
 // ROUTE SANTÉ
 // ========================================
 app.get('/api/health', (req, res) => {
@@ -723,7 +944,7 @@ app.get('/api/health', (req, res) => {
   
   res.json({ 
     status: 'ok', 
-    version: '9.3-markdown-planning',
+    version: '9.4-markdown-planning-devices-temp',
     features: {
       gemini: API_KEYS.length > 0,
       webSearch: true,
@@ -733,13 +954,16 @@ app.get('/api/health', (req, res) => {
       multimodal_Files: true,
       htmlOutput: false,
       markdownOutput: true,
-      aiPlanning: true, // ✅ NOUVEAU
+      aiPlanning: true,
+      autoAddDevices: true,
+      lokossaTemperature: true,
       supportedFiles: "PDF, DOCX, TXT, HTML, JS, JSON, CSS, XLSX, CSV, Images"
     },
     keys: { total: API_KEYS.length, available: availableKeys },
     time: {
       benin: `${beninTime.hoursStr}:${beninTime.minutesStr}`,
-      formatted: beninTime.formatted
+      formatted: beninTime.formatted,
+      temperature: beninTime.temperature
     }
   });
 });
@@ -748,14 +972,16 @@ app.get('/api/health', (req, res) => {
 // DÉMARRAGE
 // ========================================
 app.listen(PORT, () => {
-  console.log('\n🏠 ╔═══════════════════════════════════════╗');
-  console.log('   ║  INTELLIA v9.3 - PLANNING AI          ║');
-  console.log('   ╚═══════════════════════════════════════╝');
+  console.log('\n🏠 ╔═══════════════════════════════════════════╗');
+  console.log('   ║  INTELLIA v9.4 - ENHANCED AI             ║');
+  console.log('   ╚═══════════════════════════════════════════╝');
   console.log(`\n   🚀 Serveur: http://localhost:${PORT}`);
   console.log(`   🔑 Clés Gemini: ${API_KEYS.length}`);
   console.log(`   🔥 Synchro Firebase (Appareils): Activée`);
   console.log(`   💾 Synchro Firebase (Chats): Activée`);
   console.log(`   📅 Planning AI: Prêt`);
+  console.log(`   ➕ Auto Add Devices: Activé`);
+  console.log(`   🌡️ Température Lokossa: Temps réel`);
   console.log(`   ✅ Output Markdown: Activé`);
   console.log(`   🔧 Modèle: gemini-2.5-flash\n`);
 });
