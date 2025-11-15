@@ -432,7 +432,7 @@ Si l'utilisateur demande une action à un **moment futur** ("à 16h34", "dans 15
   "reply": "✅ C'est noté ! J'ai ajouté la tâche **Lampe Salon** à votre planning pour 16h34.",
   "planning_commands": [
     {
-      "action": "add",
+      "action": "allumer",
       "device": "lampe_salon",
       "time": "16:34",
       "power": 80
@@ -447,7 +447,7 @@ Si l'utilisateur demande une action à un **moment futur** ("à 16h34", "dans 15
 * Le format \`time\` est TOUJOURS \`HH:MM\`.
 * L'ID de l'appareil (\`device\`) doit exister dans [Appareils].
 * Pour une lampe, la \`power\` est obligatoire (entre 0 et 100). Pour une prise (\`plug\`), mets \`power: 100\` pour ON et \`power: 0\` pour OFF ou omet-le.
-* L'\`action\` est \`add\`.
+* L'\`action\` est \`allumer\` ou \`éteindre\` selon la requête.
 
 ### ❌ INTERDICTIONS :
 1. ❌ JAMAIS envoyer de balises HTML (<p>, <h2>, <strong style=...>) dans "reply".
@@ -469,9 +469,10 @@ Si l'utilisateur demande une action à un **moment futur** ("à 16h34", "dans 15
 2. **Recherche:** Ne recherche PAS pour code/domotique.
 3. **Heure:** Mentionne SEULEMENT si demandé ou pertinent.
 4. **Naturalité:** Réponses NATURELLES et CONVERSATIONNELLES.
-5. **CONTEXTE:** Si message court ("les", "oui"), analyse l'historique.
+5. **CONTEXTE:** Si message court ("les","tout", "oui"), analyse l'historique.
 6. **Fichiers:** Base ta réponse sur le contenu fourni.
 7. **PRÉSENTATION:** Utilise la structure Markdown (titres, listes, gras).
+8. **Température:** Donne toujours après avoir recherché, la température de La ville de Lokossa selon le mois et le jour si possible si l'utilisateur ne donne pas le lieu précis.
 
 RÉPONDS EN JSON VALIDE AVEC DU MARKDOWN DANS "reply".
 `;
@@ -525,7 +526,7 @@ async function chatWithGemini(userMessage, devices, userId, sessionId, attachmen
         history: [
           { role: "user", parts: [{ text: systemPrompt }] },
           { role: "model", parts: [{ text: JSON.stringify({
-                reply: "### 👋 Bonjour !\n\nJe suis **Intellia v5.0**, votre assistant universel. Comment puis-je vous aider aujourd'hui ?",
+                reply: "### 👋 Recevez mes chaleureuses salutations !\n\nJe suis **Intellia **, votre assistant universel. Comment puis-je vous aider aujourd'hui ?",
                 execute: [], planning_commands: [], suggestions: [], source: "cloud"
               })}] 
           },
