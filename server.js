@@ -166,6 +166,8 @@ function getWeatherDescription(code) {
 // API Open-Meteo (100% gratuit, précis à 92-95%)
 async function getRealLoKossaTemperature() {
   try {
+    console.log("🌡️ Appel Open-Meteo API...");
+    
     // Coordonnées GPS de Lokossa: 6.64°N, 1.97°E
     const response = await axios.get(
       'https://api.open-meteo.com/v1/forecast',
@@ -177,11 +179,13 @@ async function getRealLoKossaTemperature() {
           timezone: 'Africa/Porto-Novo',
           temperature_unit: 'celsius'
         },
-        timeout: 5000
+        timeout: 3000 // ✅ Timeout réduit à 3 secondes
       }
     );
     
     const current = response.data.current;
+    
+    console.log(`✅ Température récupérée: ${Math.round(current.temperature_2m)}°C`);
     
     return {
       temperature: Math.round(current.temperature_2m),
@@ -197,8 +201,10 @@ async function getRealLoKossaTemperature() {
     const now = new Date();
     const month = now.getMonth() + 1;
     const hour = now.getHours();
+    const estimated = getLoKossaTemperatureEstimated(month, hour);
+    console.log(`📊 Température estimée: ${estimated.temperature}°C`);
     return { 
-      ...getLoKossaTemperatureEstimated(month, hour), 
+      ...estimated, 
       success: false 
     };
   }
@@ -543,9 +549,14 @@ Le champ "reply" doit contenir du texte en **Markdown (GFM)**.
 * Paragraphes : Laisse une ligne vide pour un nouveau paragraphe.
 
 ### 🌡️ TEMPÉRATURE DE LOKOSSA
-Tu as accès à la température estimée de Lokossa en temps réel dans les métadonnées.
-**Quand l'utilisateur demande la température**, donne IMMÉDIATEMENT la valeur sans rechercher sur le web.
-Exemple : "À Lokossa, il fait actuellement **28°C** (température agréable). Min: 24°C, Max: 32°C."
+Tu as accès à la température **RÉELLE EN TEMPS RÉEL** de Lokossa via Open-Meteo API dans les métadonnées.
+**Quand l'utilisateur demande la température**, donne IMMÉDIATEMENT la valeur **sans mentionner de recherche**.
+
+**Instructions critiques :**
+- ❌ Ne dis JAMAIS "Je vais chercher" ou "Laissez-moi vérifier"
+- ✅ Réponds directement : "À Lokossa, il fait actuellement **28°C** (Ciel dégagé ☀️). Ressenti: 30°C, Humidité: 75%."
+- ✅ Si la source est "estimation", ajoute discrètement : "(estimation basée sur les moyennes saisonnières)"
+- ❌ Ne mentionne JAMAIS "Open-Meteo" ou "API météo" sauf si l'utilisateur demande la source
 
 ### 📅 GESTION DU PLANNING (CRITIQUE)
 Si l'utilisateur demande une action à un **moment futur** ("à 16h34", "dans 15 minutes", "à 20h00 demain"), tu dois générer une commande dans le champ **"planning_commands"**.
@@ -654,7 +665,7 @@ async function chatWithGemini(userMessage, devices, userId, sessionId, attachmen
     return { success: false, error: "Aucune clé Gemini disponible" };
   }
 
-  const beninTime = getBeninTime();
+  const beninTime = await getBeninTime();
   const contextAnalysis = analyzeContext(userMessage, realDeviceStates, beninTime);
   
   let webResults = [];
@@ -698,7 +709,7 @@ async function chatWithGemini(userMessage, devices, userId, sessionId, attachmen
 
       const metadataPrompt = `
 [Heure: ${beninTime.formatted}]
-[Température Lokossa: ${beninTime.temperature.temperature}°C (${beninTime.temperature.description}), Min: ${beninTime.temperature.min}°C, Max: ${beninTime.temperature.max}°C]
+[Température Lokossa TEMPS RÉEL: ${beninTime.temperature.temperature}°C (${beninTime.temperature.description}), Ressenti: ${beninTime.temperature.feels_like}°C, Humidité: ${beninTime.temperature.humidity}%, Source: ${beninTime.temperature.source}]
 [Préfs: ${JSON.stringify(preferences)}]
 [États: ${JSON.stringify(realDeviceStates)}]
 [Appareils: ${JSON.stringify(devices)}] 
@@ -938,9 +949,9 @@ async function handleDeviceCommands(commands, userId) {
 // ========================================
 // ROUTE SANTÉ
 // ========================================
-app.get('/api/health', (req, res) => {
+app.get('/api/health', async (req, res) => {
   const availableKeys = API_KEYS.filter(k => !k.quotaExceeded).length;
-  const beninTime = getBeninTime();
+  const beninTime = await getBeninTime();
   
   res.json({ 
     status: 'ok', 
