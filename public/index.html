@@ -11,6 +11,10 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/13.0.0/marked.min.js"></script>
   
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/docx@8.0.0/build/index.min.js"></script>
+  
   <style>
     :root {
       --primary:#4361ee; --accent-cyan:#06b6d4; --panel:#14151a; 
@@ -195,6 +199,16 @@
       -webkit-overflow-scrolling: touch; /* ✅ Ajouté */
     }
     
+    /* FIX : Permet l'utilisation du gras sans la couleur bleue du thème principal. (Correction utilisateur) */
+    #chatFullWindow strong { 
+      color: inherit !important; 
+      font-weight: bold;
+    }
+    /* Maintient la couleur bleue pour les titres de réponse de l'IA (meilleure pratique) */
+    .msg.bot h1 strong, .msg.bot h2 strong, .msg.bot h3 strong {
+      color: var(--primary) !important; 
+    }
+    
     #chat-input-container {
       padding: 12px; 
       border-top: 1px solid rgba(0,0,0,0.1);
@@ -207,680 +221,1536 @@
       position: relative; /* ✅ Corrigé (plus sticky) */
       bottom: auto; /* ✅ Ajouté */
     }
+    body.night-mode #chat-input-container {
+      background: rgba(30, 41, 59, 0.95); border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
     
     #chat-input-flex { display: flex; gap: 8px; }
-    #chatFullInput {
-      flex: 1; padding: 12px; border-radius: 8px;
-      border: 1px solid #ddd; font-size: 15px;
-    }
-    #chat-input-buttons { display: flex; gap: 8px; }
-    #chatFullSend { padding: 0 16px; }
     
-    #attachment-preview-container {
-      display: flex; gap: 8px; margin-bottom: 8px; flex-wrap: wrap;
-    }
-    .attachment-preview {
-      display: flex; align-items: center; gap: 8px;
-      background: #e9ecef; padding: 6px 10px; border-radius: 6px; font-size: 13px;
-    }
-    .attachment-preview img { width: 32px; height: 32px; object-fit: cover; border-radius: 4px; }
-    .remove-attachment { cursor: pointer; font-size: 14px; color: var(--danger); }
-    #file-input { display: none; }
-    /* ===== FIN SECTION CHAT ===== */
-
-    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
-    .card { background: var(--card-bg); border-radius: 12px; padding: 14px; box-shadow: var(--shadow); }
-    .chip { display: inline-block; padding: 6px 10px; border-radius: 999px; background: rgba(0,0,0,0.05); margin-right: 8px; font-size: 13px; }
-    .device-card { border-radius: 12px; padding: 14px; background: var(--card-bg); box-shadow: var(--shadow); transition: transform 0.2s ease; }
-    .device-card:hover { transform: translateY(-2px); }
-    .device-header { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
-    .device-icon {
-      width: 48px; height: 48px; border-radius: 10px;
-      background: linear-gradient(135deg, #4895ef, #4361ee);
-      display: flex; align-items: center; justify-content: center; color: white;
-    }
-    .device-name { font-weight: 700; }
-    .device-status { color: var(--muted); font-size: 13px; }
-    .status-indicator { width: 10px; height: 10px; border-radius: 50%; background: var(--muted); display: inline-block; margin-right: 8px; }
-    .status-indicator.active { background: var(--success); }
-    
-    .controls { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
-    .btn {
-      padding: 8px 12px; border-radius: 999px; border: 0; background: #f1f5f9;
-      cursor: pointer; transition: all 0.2s ease; display: flex;
-      align-items: center; gap: 6px; font-size: 14px;
-    }
-    .btn:hover { transform: translateY(-1px); box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
-    .btn.primary { background: var(--primary); color: white; }
-    .btn.warn { background: var(--danger); color: white; }
-    
-    #toggleVoiceBtn.muted {
-      color: var(--danger);
-      background: rgba(231, 76, 60, 0.1);
-      border: 1px solid var(--danger);
-    }
-    body.night-mode #toggleVoiceBtn.muted {
-      background: rgba(231, 76, 60, 0.3);
-      color: #f0a0a0;
-    }
-    
-    .btn.success { background: var(--success); color: white; }
-    .btn.warning { background: var(--warning); color: white; }
-    .btn.active { background: var(--accent-cyan); color: white; }
-    .btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
-    
-    input[type=range] { width: 100%; }
-    
-    /* ======================================= */
-    /* NOUVEAU STYLE GEMINI (v9.2)             */
-    /* ======================================= */
-    .msg { 
-      padding: 10px 14px; border-radius: 12px; max-width: 90%; 
-      margin-bottom: 10px; word-wrap: break-word; line-height: 1.6;
-    }
-    .msg.user { 
-      align-self: flex-end; background: linear-gradient(135deg, #4895ef, #4361ee); color: white; 
-    }
-    
-    /* Style du message BOT */
-    .msg.bot {
-      align-self: flex-start;
-      background: var(--card-bg);
-      border: 1px solid rgba(0,0,0,0.06);
+    #chatFullInput { 
+      flex: 1; padding: 12px; border-radius: 8px; 
+      border: 1px solid #ddd; font-size: 16px; 
+      resize: none; min-height: 48px; max-height: 200px;
+      transition: all 0.2s ease;
+      background: white;
       color: var(--dark);
-      width: 100%; /* Les messages bot prennent toute la largeur centrée */
-      max-width: 100%;
-      white-space: normal;
-      overflow-wrap: break-word;
-    }
-    body.night-mode .msg.bot {
-      background: rgba(30, 41, 59, 0.95);
-      color: #e2e8f0;
-      border: 1px solid rgba(255, 255, 255, 0.1);
     }
 
-    /* Styles pour le contenu Markdown */
-    .msg.bot h1, .msg.bot h2, .msg.bot h3 {
-      margin-top: 16px; margin-bottom: 8px;
+    #chatFullInput:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.2); outline: none; }
+    
+    #chatFullSend { 
+      width: 48px; height: 48px; 
+      border-radius: 8px; background: var(--primary); 
+      color: white; border: none; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      transition: background 0.2s ease;
+    }
+    #chatFullSend:hover { background: #3452c9; }
+    
+    #chat-loading {
+      display: none; 
+      padding: 12px;
+      text-align: center;
+      font-style: italic;
       color: var(--primary);
     }
-    body.night-mode .msg.bot h1, 
-    body.night-mode .msg.bot h2, 
-    body.night-mode .msg.bot h3 {
-      color: var(--accent-cyan);
-    }
-    .msg.bot p { margin-bottom: 12px; }
-    .msg.bot ul, .msg.bot ol {
-      margin-left: 20px; margin-bottom: 12px;
-    }
-    .msg.bot li { margin-bottom: 4px; }
-    .msg.bot strong { color: var(--primary); }
-    body.night-mode .msg.bot strong { color: var(--accent-cyan); }
-    .msg.bot code:not(pre code) { /* Code inline */
-      background: rgba(0,0,0,0.05);
-      padding: 2px 4px;
-      border-radius: 4px;
-      font-family: monospace;
-    }
-    body.night-mode .msg.bot code:not(pre code) {
-      background: rgba(255,255,255,0.1);
-    }
-
-    /* Style des Blocs de Code (très important) */
-    .msg.bot pre {
-      background: #0d1117; /* Fond sombre pour le code */
-      color: #c9d1d9;
-      padding: 16px;
-      border-radius: 8px;
-      margin-bottom: 12px;
-      overflow-x: auto;
-      font-family: 'Courier New', Courier, monospace;
-      font-size: 14px;
-      position: relative; /* Pour le bouton copier */
-    }
-    .msg.bot pre code {
-      background: none;
-      padding: 0;
-      border-radius: 0;
-    }
     
-    /* Bouton Copier */
-    .copy-code-btn {
-      position: absolute;
-      top: 8px;
-      right: 8px;
-      background: rgba(255,255,255,0.1);
-      color: white;
-      border: none;
+    #stopAIBtn { 
+      display: none; 
+      background: var(--danger); 
+      color: white; 
       padding: 6px 10px;
       border-radius: 6px;
+      border: none;
       cursor: pointer;
-      font-size: 13px;
-      opacity: 0;
-      transition: opacity 0.2s ease;
+      font-size: 14px;
+      line-height: 1.5;
+      flex-shrink: 0;
+      align-self: center;
     }
-    .msg.bot pre:hover .copy-code-btn {
-      opacity: 1;
+    #stopAIBtn:hover { background: #c0392b; }
+
+    .attachment-preview-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 8px 0;
+      font-size: 12px;
     }
-    .copy-code-btn:active {
-      background: rgba(255,255,255,0.3);
+    .attachment-preview {
+      background: #e9ecef;
+      padding: 6px 10px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      border: 1px solid #ddd;
+    }
+    .attachment-preview button {
+      background: none;
+      border: none;
+      color: var(--danger);
+      cursor: pointer;
+      padding: 0;
+      line-height: 1;
+      margin-left: 4px;
+      font-size: 14px;
     }
     
-    /* Curseurs de chargement */
-    .msg.bot.loading::after {
-      content: '▋'; animation: blink 1s step-end infinite; color: var(--primary);
+    /* Styles pour la prévisualisation de documents */
+    .document-preview {
+      background: white; 
+      padding: 30px; 
+      border-radius: 12px; 
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1); 
+      max-width: 800px; 
+      margin: 20px auto; 
+      font-family: Arial, sans-serif; 
+      color: #333;
     }
-    @keyframes blink { 50% { opacity: 0; } }
-    /* ======================================= */
-    /* FIN NOUVEAU STYLE GEMINI (v9.2)         */
-    /* ======================================= */
-    
-    .flex { display: flex; gap: 10px; align-items: center; }
-    label { display: block; margin: 6px 0; font-size: 13px; }
-    table { width: 100%; border-collapse: collapse; }
-    th, td { padding: 8px; border-bottom: 1px solid rgba(0,0,0,0.06); }
-    
-    footer {
-      position: fixed; left: 0; right: 0; bottom: 0; height: 72px;
-      background: linear-gradient(90deg, #14151a, #1a1c23);
-      display: flex; align-items: center; justify-content: space-around;
-      color: var(--muted); z-index: 1000;
+    .document-preview table {
       width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
     }
-    .btn-nav {
-      background: none; border: none; color: var(--muted); display: flex;
-      flex-direction: column; align-items: center; gap: 4px;
-      cursor: pointer; transition: color 0.2s ease; padding: 8px;
+    .document-preview th, .document-preview td {
+      border: 1px solid #ddd;
+      padding: 10px;
+      text-align: left;
     }
-    .btn-nav.active { color: var(--accent-cyan); }
-    
-    .switch-3d { position: relative; display: inline-block; width: 50px; height: 24px; }
-    .switch-3d input { opacity: 0; width: 0; height: 0; }
-    .slider-3d {
-      position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
-      background: linear-gradient(145deg, #e0e0e0, #bebebe);
-      transition: .4s; border-radius: 24px; box-shadow: inset 0 2px 5px rgba(0,0,0,0.2);
+    .document-preview th {
+      background: #f8f9fa;
+      font-weight: bold;
     }
-    .slider-3d:before {
-      position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px;
-      background: linear-gradient(145deg, #ffffff, #e6e6e6);
-      transition: .4s; border-radius: 50%; box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    .document-preview h1, .document-preview h2 {
+      color: var(--primary);
     }
-    input:checked + .slider-3d { background: linear-gradient(145deg, var(--accent-cyan), var(--primary)); }
-    input:checked + .slider-3d:before { transform: translateX(26px); }
-    
-    .settings-group { margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid rgba(0,0,0,0.1); }
-    .settings-group h3 { margin-bottom: 15px; color: var(--primary); }
-    .toggle-section { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
 
-    .pulse { animation: pulse 1.5s infinite ease-in-out; }
+
+    /* Styles généraux */
+    .card {
+      background: var(--card-bg);
+      padding: 16px; border-radius: 8px; box-shadow: var(--shadow);
+      margin-bottom: 16px;
+    }
+    .device-card {
+      background: var(--card-bg); border-radius: 8px; box-shadow: var(--shadow);
+      padding: 12px; margin-bottom: 12px;
+      border-left: 5px solid var(--primary);
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .device-status { color: var(--muted); font-size: 14px; }
+    
+    .btn {
+      padding: 8px 15px; border-radius: 8px; border: none; cursor: pointer;
+      font-weight: 500; font-size: 14px; transition: background 0.2s ease, transform 0.1s;
+      display: inline-flex; align-items: center; gap: 8px;
+    }
+    .btn:active { transform: scale(0.98); }
+    .btn.primary { background: var(--primary); color: white; }
+    .btn.primary:hover { background: #3452c9; }
+    .btn.warn { background: var(--danger); color: white; }
+    .btn.warn:hover { background: #c0392b; }
+    .btn.success { background: var(--success); color: white; }
+    .btn.success:hover { background: #27ae60; }
+    .btn.warning { background: var(--warning); color: white; }
+    .btn.warning:hover { background: #e67e22; }
+    
+    .chip {
+      display: inline-block; padding: 4px 10px; border-radius: 12px;
+      font-size: 12px; background: rgba(0,0,0,0.05); color: var(--dark);
+      margin-right: 6px; margin-bottom: 6px;
+    }
+    
+    /* Navigation */
+    nav {
+      position: fixed; bottom: 0; left: 0; right: 0;
+      background: var(--panel); box-shadow: 0 -5px 15px rgba(0,0,0,0.1);
+      z-index: 1000; display: flex; justify-content: space-around;
+      padding: 10px 0; border-top-left-radius: 12px; border-top-right-radius: 12px;
+      border-top: 1px solid rgba(255,255,255,0.1);
+    }
+    .nav-item {
+      display: flex; flex-direction: column; align-items: center;
+      color: var(--muted); text-decoration: none; font-size: 12px;
+      transition: color 0.2s ease; padding: 5px 10px;
+    }
+    .nav-item.active { color: var(--accent-cyan); }
+    .nav-item:hover { color: var(--accent-cyan); }
+    .nav-item i { font-size: 20px; margin-bottom: 4px; }
+    
+    /* Chat Messages */
+    .msg-container { display: flex; margin-bottom: 16px; }
+    .msg.user { 
+      background: #007bff; color: white; 
+      align-self: flex-end; 
+      max-width: 90%;
+      border-bottom-right-radius: 2px !important;
+    }
+    .msg.bot { 
+      background: var(--card-bg); color: var(--dark); 
+      align-self: flex-start; 
+      max-width: 90%;
+      border-bottom-left-radius: 2px !important;
+    }
+    body.night-mode .msg.bot { background: rgba(51, 65, 85, 0.8); color: #e2e8f0; }
+
+    .msg-icon { 
+      width: 32px; height: 32px; border-radius: 50%; 
+      display: flex; align-items: center; justify-content: center; 
+      font-size: 16px; color: white; flex-shrink: 0;
+      margin-top: 5px; /* Aligner avec le haut du message */
+    }
+    .msg-icon.user { background: #007bff; order: 2; margin-left: 8px; }
+    .msg-icon.bot { background: var(--primary); order: 1; margin-right: 8px; }
+    
+    .msg { 
+      padding: 10px 14px; border-radius: 16px; 
+      line-height: 1.6;
+      overflow-wrap: break-word; /* Important pour les longs mots */
+      word-break: break-word; /* Pour la compatibilité */
+    }
+    .msg.loading { 
+      background: #f1f1f1; color: #555; 
+      animation: pulse 1.5s infinite; 
+    }
+    body.night-mode .msg.loading { background: rgba(51, 65, 85, 0.5); color: #94a3b8; }
+
     @keyframes pulse {
-      0% { box-shadow: 0 0 0 0 rgba(231, 76, 60, 0.7); background-color: var(--danger); }
-      70% { box-shadow: 0 0 0 10px rgba(231, 76, 60, 0); }
-      100% { box-shadow: 0 0 0 0 rgba(231, 76, 60, 0); background-color: var(--danger); }
+      0% { opacity: 0.8; }
+      50% { opacity: 1; }
+      100% { opacity: 0.8; }
     }
     
-    .icon-pulse { animation: icon-pulse-anim 1.5s infinite ease-in-out; }
-    @keyframes icon-pulse-anim {
-      0% { transform: scale(1); opacity: 1; }
-      50% { transform: scale(1.2); opacity: 0.7; }
-      100% { transform: scale(1); opacity: 1; }
+    /* Markdown Styles (Bot only) */
+    .msg.bot h1, .msg.bot h2, .msg.bot h3 { 
+      color: var(--primary); margin-top: 15px; margin-bottom: 10px; 
+      padding-bottom: 5px; border-bottom: 1px solid rgba(67, 97, 238, 0.2); 
+    }
+    .msg.bot h3 { font-size: 1.2em; }
+    .msg.bot p { margin-bottom: 10px; }
+    .msg.bot ul, .msg.bot ol { 
+      margin-left: 20px; margin-bottom: 10px; 
+      padding-left: 0;
+    }
+    .msg.bot li { margin-bottom: 5px; }
+    .msg.bot pre { 
+      background: var(--panel); color: white; 
+      padding: 10px; border-radius: 6px; 
+      overflow-x: auto; font-size: 14px;
+      position: relative;
     }
     
-    @media (max-width: 760px) {
-      .grid { grid-template-columns: 1fr; }
-      .controls { flex-direction: column; }
-      .btn { width: 100%; justify-content: center; }
-      .flex { flex-direction: column; align-items: stretch; }
-      .two-column { grid-template-columns: 1fr; }
-      .container { padding-bottom: 88px; }
+    .copy-btn {
+        position: absolute;
+        top: 5px;
+        right: 5px;
+        background: rgba(255, 255, 255, 0.2);
+        color: white;
+        border: none;
+        padding: 5px 8px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 12px;
+        z-index: 10;
+        opacity: 0.8;
+        transition: opacity 0.2s;
+    }
+    .copy-btn:hover {
+        opacity: 1;
+    }
+    
+    /* Suggestions */
+    #suggestions-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .suggestion-chip {
+      padding: 8px 12px;
+      border-radius: 20px;
+      border: 1px solid var(--primary);
+      color: var(--primary);
+      background: white;
+      cursor: pointer;
+      font-size: 14px;
+      transition: all 0.2s ease;
+    }
+    body.night-mode .suggestion-chip {
+        background: rgba(30, 41, 59, 0.95);
+        color: var(--accent-cyan);
+        border-color: var(--accent-cyan);
+    }
+    .suggestion-chip:hover {
+      background: var(--primary);
+      color: white;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
 
-      #sec-intelligence {
-        height: 100%; 
-      }
-      
+    /* Media Queries pour le plein écran */
+    @media (min-width: 992px) {
+        .container {
+            max-width: 100%;
+            padding: 0;
+            margin: 0;
+            height: 100%;
+        }
+        header {
+            display: none;
+        }
+        nav {
+            display: none;
+        }
+        
+        #sec-domotique {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            padding-bottom: 0;
+            overflow-y: auto;
+        }
+
+        #sec-domotique .container {
+            max-width: 1200px;
+            padding-top: 16px;
+            padding-bottom: 16px;
+        }
+        
+        /* Chat en mode desktop */
+        #sec-intelligence {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            padding: 0;
+            margin: 0;
+            width: 100%;
+            height: 100%;
+        }
+        
+        #chat-sidebar {
+            width: 300px; /* Plus large pour desktop */
+        }
+        #chat-sidebar.open {
+            left: 0;
+        }
+        #sidebar-overlay { display: none; }
+        #sidebar-toggle-btn { display: none; } 
+        
+        /* Sur grand écran, la barre de saisie n'est pas sticky */
+        #chat-section-container { overflow: hidden; }
+        #chatFullWindow { overflow-y: auto; padding-bottom: 16px; }
+        #chat-input-container { position: relative; transform: none; left: auto; }
+    }
+    
+    /* Styles pour le mode Mobile (masquer la sidebar) */
+    @media (max-width: 991px) {
       #chat-sidebar {
-        /* ✅ CORRIGÉ: position: fixed */
-        position: fixed; 
-        left: -100%;
-        top: 0; bottom: 0;
-        width: 85%; /* Ajusté */
-        max-width: 320px; /* Ajusté */
+        position: fixed;
+        top: 0;
+        left: -260px; /* Masqué */
+        bottom: 0;
         z-index: 10000;
-        transition: left 0.3s ease;
-        box-shadow: 2px 0 10px rgba(0,0,0,0.3);
       }
       #chat-sidebar.open {
         left: 0;
       }
-      
       #sidebar-overlay {
-        display: none;
-        /* ✅ CORRIGÉ: position: fixed */
+        display: none; 
         position: fixed; 
-        top: 0; left: 0; right: 0; bottom: 0;
-        background: rgba(0,0,0,0.5);
+        top: 0; 
+        left: 0; 
+        right: 0; 
+        bottom: 0; 
+        background: rgba(0,0,0,0.5); 
         z-index: 9999;
       }
-      #sidebar-overlay.open {
-        display: block;
-      }
-      
+      #sidebar-overlay.open { display: block; }
       #sidebar-toggle-btn {
-        display: flex; 
-        position: absolute; 
+        display: flex;
+        position: absolute;
         top: 16px;
         left: 16px;
-        z-index: 1000; 
+        z-index: 999;
         background: var(--primary);
         color: white;
-        border: 0;
+        padding: 8px;
         border-radius: 8px;
-        width: 48px;
-        height: 48px;
-        align-items: center;
-        justify-content: center;
-        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-      }
-      
-      #chat-input-buttons button {
-        min-width: 48px; min-height: 48px; font-size: 18px;
-      }
-      
-      #stopAIBtn {
-        background: var(--danger) !important;
-        color: white !important;
-        animation: pulse-stop 1.5s infinite;
-        font-weight: 700;
-        min-width: 56px !important;
-        min-height: 48px !important;
-        box-shadow: 0 4px 12px rgba(231, 76, 60, 0.5) !important;
-        border: 2px solid rgba(255, 255, 255, 0.3) !important;
-      }
-      @keyframes pulse-stop {
-        0% {     
-          box-shadow: 0 4px 12px rgba(231, 76, 60, 0.5);
-          transform: scale(1);
-        }
-        50% {     
-          box-shadow: 0 6px 20px rgba(231, 76, 60, 0.8);
-          transform: scale(1.05);
-        }
-        100% {     
-          box-shadow: 0 4px 12px rgba(231, 76, 60, 0.5);
-          transform: scale(1);
-        }
-      }
-      #stopAIBtn:hover {
-        background: #c0392b !important;
-        transform: scale(1.1) !important;
-      }
-      
-      #chatFullSend { min-width: 56px; min-height: 48px; }
-      #chatFullInput { min-height: 48px; font-size: 16px; }
-      
-     /* ✅ ===== BLOC CORRIGÉ POUR MOBILE ===== */
-     #chat-section-container { 
-        height: 100%; 
-        overflow: hidden; /* ✅ Corrigé */
-        width: 100%; 
-        position: relative;
-     }
-     #chatFullWindow { 
-        padding: 80px 12px 16px; /* ✅ Corrigé */
-        padding-bottom: 200px; /* ✅ Espace clavier */
-        overflow-y: auto;
-        overflow-x: hidden;
-        -webkit-overflow-scrolling: touch;
-     }
-     #chat-input-container { 
-        position: fixed; /* ✅ CRITIQUE */
-        bottom: 72px; /* ✅ Hauteur footer */
-        left: 0; /* ✅ Corrigé */
-        right: 0; /* ✅ Corrigé */
-        width: 100%; /* ✅ Pleine largeur */
-        max-width: 100%; /* ✅ Override */
-        margin: 0; /* ✅ Pas de margin */
-        padding: 12px;
-        transform: none; /* ✅ SUPPRIME translateX */
-        z-index: 999;
-        box-sizing: border-box;
-     }
-     /* ===== FIN BLOC CORRIGÉ ===== */
-      
-      .msg { 
-        max-width: 90%; 
-        font-size: 15px; 
-        /* ✅ CORRIGÉ: Ajout du word-wrap */
-        word-wrap: break-word;
-        overflow-wrap: break-word;
-      }
-      
-      #close-sidebar-btn {
-        display: flex !important;
-        width: 100%;
-        justify-content: center;
-      }
-
-      /* ✅ FIX: Empêche le bouton supprimer chat de prendre 100% */
-      .chat-history-item .btn.chat-history-delete {
-        width: auto;
-      }
-    }
-    
-    @media (min-width: 761px) {
-      .two-column { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-      #sidebar-toggle-btn { display: none; }
-      #sidebar-overlay { display: none; }
-      
-      /* Sur grand écran, la barre de saisie n'est pas sticky */
-      /* (Ces règles sont maintenant définies dans le bloc principal corrigé) */
-      #chat-section-container { overflow: hidden; }
-      #chatFullWindow { 
-        overflow-y: auto; 
-        padding-bottom: 16px;
-      }
-      #chat-input-container {
-        position: relative;
-        transform: none;
-        left: auto;
+        border: none;
+        cursor: pointer;
       }
     }
 
-    #login-overlay {
-      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-      background: linear-gradient(135deg, #f5f7fa, #c3cfe2);
-      display: flex; flex-direction: column;
-      align-items: center; justify-content: center;
-      z-index: 2000; transition: opacity 0.3s ease;
+
+    #login-overlay { 
+      position: fixed; top: 0; left: 0; right: 0; bottom: 0; 
+      background: linear-gradient(135deg, #f5f7fa, #c3cfe2); 
+      display: flex; flex-direction: column; align-items: center; 
+      justify-content: center; z-index: 100000; 
     }
+    body.night-mode #login-overlay { background: linear-gradient(135deg, #0e0f13, #0f1724); }
+
     .login-box {
-      background: var(--card-bg); padding: 30px 40px;
-      border-radius: 12px; box-shadow: var(--shadow);
-      text-align: center; max-width: 400px;
+      background: var(--card-bg); padding: 30px; border-radius: 12px;
+      box-shadow: var(--shadow); max-width: 400px; width: 90%;
+      text-align: center;
     }
-    .login-box .app-icon { font-size: 48px; color: var(--primary); margin-bottom: 16px; }
-    .login-box h2 { margin-bottom: 8px; }
-    .login-box p { color: var(--muted); margin-bottom: 24px; }
-    
-    .main-app { display: none; height: 100%; }
-    
-    #user-profile-card {
-      display: flex; align-items: center; gap: 15px;
-      background: rgba(0,0,0,0.02); padding: 12px; border-radius: 8px;
+    .login-box h2 { color: var(--primary); margin-bottom: 20px; }
+    .login-box input {
+      width: 100%; padding: 12px; margin-bottom: 15px; 
+      border-radius: 8px; border: 1px solid #ddd;
+      font-size: 16px;
     }
-    body.night-mode #user-profile-card { background: rgba(255,255,255,0.05); }
-    #user-photo {
-      width: 60px; height: 60px; border-radius: 50%;
-      object-fit: cover; border: 2px solid var(--primary);
-    }
-    #user-profile-card div { flex: 1; }
-    #user-name-display { font-weight: 700; font-size: 16px; }
-    #user-email-display { font-size: 14px; color: var(--muted); word-break: break-all; }
+    .login-box button { width: 100%; }
     
-    #proactive-suggestion { transition: opacity 0.5s ease-in-out; }
-    #proactive-suggestion.fade-out { opacity: 0; }
+    .status-badge {
+      padding: 5px 10px; border-radius: 15px; font-size: 12px;
+      font-weight: bold; margin-bottom: 8px; text-align: center;
+      display: block;
+    }
+    
+    .settings-group {
+      padding: 10px 0; border-bottom: 1px solid rgba(0,0,0,0.1);
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    
+    table {
+      width: 100%; border-collapse: collapse; margin-top: 15px;
+    }
+    table th, table td {
+      text-align: left; padding: 10px; border-bottom: 1px solid rgba(0,0,0,0.1);
+    }
+    table th { background: #f8f9fa; font-weight: bold; }
+    body.night-mode table th { background: rgba(51, 65, 85, 0.8); }
+
+    .plan-time-due { background: #ffe0b2; color: #ff9800; padding: 2px 6px; border-radius: 4px; }
+    .plan-time-due-executed { background: #c8e6c9; color: #4caf50; padding: 2px 6px; border-radius: 4px; }
+    
+    .icon-pulse {
+      animation: pulse-icon 1.5s infinite;
+    }
+    @keyframes pulse-icon {
+      0% { opacity: 0.5; }
+      50% { opacity: 1; }
+      100% { opacity: 0.5; }
+    }
   </style>
 </head>
 <body>
 
   <div id="login-overlay">
     <div class="login-box">
-      <div class="app-icon"><i class="fas fa-home-user"></i></div>
-      <h2>SmartHome Intelligence</h2>
-      <p>Veuillez vous connecter pour accéder à votre assistant domotique.</p>
-      <button class="btn primary" id="googleSignInOverlayBtn" style="width:100%; justify-content:center;">
-          <svg style="width:20px; height:20px; margin-right:8px;" viewBox="0 0 24 24"><path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" style="color:#4285F4"></path><path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" style="color:#34A853"></path><path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" style="color:#FBBC05"></path><path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" style="color:#EA4335"></path><path fill="none" d="M1 1h22v22H1z"></path></svg>
-          Se connecter avec Google
-      </button>
+      <h2>Connexion à SmartHome Intelligence</h2>
+      <input type="text" id="authKeyInput" placeholder="Clé d'authentification (AUTH_KEY)" value="cle-secrete-intellia" required>
+      <input type="text" id="userIdInput" placeholder="ID Utilisateur (Optionnel)" value="user_demo" required>
+      <button class="btn primary" id="loginBtn">Se connecter</button>
+      <p style="margin-top: 15px; font-size: 14px; color: var(--muted);">Utilisez la clé par défaut si vous n'avez pas de clé personnalisée.</p>
     </div>
   </div>
 
-  <div class="main-app">
-    
-    <div class="container">
-      <header id="main-header">
-        <h1 id="section-header-title">Domotique</h1>
-        <div style="margin-top:8px; display:flex; flex-wrap: wrap; justify-content: center; gap: 8px;">
-          <span id="statusLocal" class="chip">ESP32: -</span>
-          <span id="statusFirebase" class="chip">Firebase : -</span> 
-          <span id="statusOnline" class="chip">Assistant : -</span>
-          <span id="intelliaLatency" class="chip">latence: -</span>
-          <span id="db-count" class="chip">on: 0</span>
-        </div>
-      </header>
+  <button id="sidebar-toggle-btn" style="display:none;"><i class="fas fa-bars"></i></button>
+  <div id="sidebar-overlay" style="display:none;"></div>
+  
+  <div class="container" id="main-container">
 
-      <section id="sec-domotique" class="section active">
-        <div class="grid" style="grid-template-columns:1fr">
-          <div>
-            <div class="card">
-              <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
-                <strong>Contrôles rapides</strong>
-                <div class="flex" style="flex-wrap:wrap">
-                  <button class="btn" id="dayModeBtn"><i class="fas fa-sun"></i> Jour</button>
-                  <button class="btn" id="nightModeBtn"><i class="fas fa-moon"></i> Nuit</button>
-                  <button class="btn success" id="allOnBtn">Tout allumer</button>
-                  <button class="btn warn" id="allOffBtn">Tout éteindre</button>
-                </div>
-              </div>
-              
-              <div style="margin-top:12px; border-top: 1px solid rgba(0,0,0,0.1); padding-top:12px;">
-                <strong><i class="fas fa-robot"></i> Assistant Vocal (Raccourci)</strong>
-                <button class="btn primary" id="quickVoiceToggleBtn" style="width:100%; justify-content:center; margin-top:8px; font-size: 15px;">
-                  <i class="fas fa-waveform"></i> Lancer la conversation
-                </button>
-              </div>
-
-              </div>
-            
-            <div class="card" style="margin-top:12px">
-              <h3>💡 Suggestions Proactives</h3>
-              <p id="proactive-suggestion" style="font-size:14px; color:var(--muted)">...</p>
-            </div>
-
-            <div class="card" style="margin-top:12px" id="addDeviceCard">
-              <button class="btn primary" id="toggleAddDeviceForm" style="width: 100%; justify-content: center;">
-                ➕ Ajouter un appareil
-              </button>
-              <div id="addDeviceFormContainer" style="display: none; margin-top: 15px;">
-                <label>Nom</label>
-                <input id="newDeviceName" placeholder="Lampe Jardin" style="width:100%;padding:8px;border-radius:8px;border:1px solid #ddd" autocomplete="off" />
-                <label>Type</label>
-                <select id="newDeviceType" style="width:100%;padding:8px;border-radius:8px;border:1px solid #ddd">
-                  <option value="lamp">Lampe</option> <option value="ventilateur">Ventilateur</option>
-                  <option value="plug">Prise</option <option value="thermostat">Thermostat</option>
-                  <option value="volet">Volet Roulant</option>
-                </select>
-                <label>Pièce</label>
-                <input id="newDeviceRoom" placeholder="Salon, Chambre..." style="width:100%;padding:8px;border-radius:8px;border:1px solid #ddd" autocomplete="off" />
-                <div style="margin-top:10px;display:flex;gap:8px">
-                  <button class="btn primary" id="btnAddDevice">Ajouter</button>
-                  <button class="btn" id="btnRefreshDevices">Rafraîchir</button>
-                </div>
-                <div id="addDeviceResult" style="margin-top:8px;color:green"></div>
-              </div>
-            </div>
-
-            <div style="margin-top:12px"> <div id="deviceGrid" class="grid"></div> </div>
-          </div>
-        </div>
-      </section>
-
-      <section id="sec-intelligence" class="section">
-        <button id="sidebar-toggle-btn"><i class="fas fa-bars"></i></button>
-        <div id="sidebar-overlay"></div>
-        
-        <div id="chat-sidebar">
-          <div id="chat-sidebar-header">
-            <button class="btn" id="close-sidebar-btn" style="display: none;">
-              <i class="fas fa-arrow-left"></i> Retour
-            </button>
-            <button class="btn primary" id="new-chat-btn">
-              <i class="fas fa-plus"></i> Nouvelle Discussion
-            </button>
-          </div>
-          <div id="chat-history-list">
-          </div>
-        </div>
-        
-        <div id="chat-section-container">
-          <div id="chatFullWindow">
-            </div>
-          
-          <div id="chat-input-container">
-            <div id="chat-loading" style="display:none; padding-bottom: 8px; text-align:center; font-style:italic; color:var(--muted); font-size: 14px;">
-              <i class="fas fa-spinner fa-spin"></i> Assistant en train de réfléchir...
-            </div>
-          
-            <div id="attachment-preview-container"></div>
-            
-            <div id="chat-input-flex">
-              <input type="file" id="file-input" accept="image/*,application/pdf,text/*,.txt,.docx,.doc,.html,.htm,.js,.json,.css,.xml,.csv,.xlsx,.xls,.pptx,.ppt,.zip,.rar" multiple>
-              <button class="btn" id="attach-file-btn" title="Joindre un fichier">
-                <i class="fas fa-paperclip"></i>
-              </button>
-              
-              <input id="chatFullInput" placeholder="Posez une question à l'Assistant..." />
-              
-              <div id="chat-input-buttons">
-                <button class="btn" id="voicePushToTalk" title="Appuyer pour enregistrer, réappuyer pour envoyer">
-                  <i class="fas fa-microphone-alt"></i>
-                </button>
-                <button class="btn" id="voiceContinuous" title="Mode conversation continue">
-                  <i class="fa-solid fa-waveform"></i>
-                </button>
-                
-                <button class="btn" id="toggleVoiceBtn" title="Activer/Désactiver la synthèse vocale">
-                  <i class="fas fa-volume-up"></i>
-                </button>
-                
-                <button class="btn primary" id="chatFullSend">
-                  <i class="fas fa-paper-plane"></i>
-                </button>
-                <button class="btn warn" id="stopAIBtn" style="display: none; min-width: 56px; min-height: 48px;">
-                  <i class="fas fa-stop-circle" style="font-size: 20px;"></i>
-                </button>
-                
-              </div>
-            </div>
-            <div style="margin-top:8px; display:flex; flex-wrap:wrap; gap: 8px;">
-              <span class="chip">Mode Conversation: <span id="continuousStatus">Désactivé</span></span>
-              <span class="chip" id="intelliaStatus">Assistant: Non connecté</span>
-              <span class="chip" id="voiceStatus">Voix: Inactive</span>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section id="sec-planning" class="section">
-        <div class="two-column">
-          <div class="card">
-            <strong>Ajouter une planification</strong>
-            <div style="margin-top:8px">
-              <label>Appareil</label>
-              <select id="plan-device" style="width:100%;padding:8px;border-radius:8px;border:1px solid #ddd"></select>
-              <label>Heure</label>
-              <input type="time" id="plan-time" style="width:100%;padding:8px;border-radius:8px;border:1px solid #ddd" />
-              <label>Action</label>
-              <select id="plan-action" style="width:100%;padding:8px;border-radius:8px;border:1px solid #ddd">
-                <option value="ON">Allumer</option> <option value="OFF">Éteindre</option>
-              </select>
-              <label>Puissance (%)</label>
-              <input id="plan-power" type="number" min="0" max="100" value="100" style="width:100%;padding:8px;border-radius:8px;border:1px solid #ddd" />
-              <div style="margin-top:8px;display:flex;gap:8px">
-                <button class="btn primary" id="addPlan">Ajouter</button>
-                <button class="btn warning" id="clearAllPlans"> <i class="fas fa-trash"></i> Tout supprimer </button>
-              </div>
-            </div>
-          </div>
-          <div class="card">
-            <strong>Planifications enregistrées</strong>
-            <div id="planningTable" style="margin-top:8px"></div>
-          </div>
-        </div>
-      </section>
-
-      <section id="sec-params" class="section">
-        <div class="card">
-          <h2>Paramètres du Système</h2>
-          
-          <div class="settings-group">
-            <h3>⚡ Connexion Locale (WebSocket)</h3>
-            <p style="font-size:13px; color:var(--muted); margin-bottom:10px;">
-              Permet un contrôle instantané lorsque vous êtes sur le même WiFi que l'ESP32.
-            </p>
-            <label>Adresse IP de l'ESP32 :</label>
-            <input id="esp32IpInput" placeholder="192.168.x.x" style="width:100%;padding:8px;border-radius:8px;border:1px solid #ddd" />
-            <div style="margin-top:10px;display:flex;gap:8px">
-              <button class="btn primary" id="btnConnectLocal">Sauver & Connecter</button>
-            </div>
-          </div>
-          
-          <div class="settings-group">
-            <h3>Apparence</h3>
-            <div class="toggle-section">
-              <span>Mode sombre</span>
-              <label class="switch-3d"><input type="checkbox" id="darkModeToggle"><span class="slider-3d"></span></label>
-            </div>
-          </div>
-          <div class="settings-group">
-            <h3>Notifications</h3>
-            <div class="toggle-section">
-              <span>Activer les notifications</span>
-              <label class="switch-3d"><input type="checkbox" id="notificationsToggle" checked><span class="slider-3d"></span></label>
-            </div>
-            <div class="toggle-section">
-              <span>Notifications vocales de l'Assistant</span>
-              <label class="switch-3d"><input type="checkbox" id="voiceNotificationsToggle" checked><span class="slider-3d"></span></label>
-            </div>
-            <button class="btn primary" id="testNotificationBtn" style="margin-top: 10px; width: 100%; justify-content: center;">
-              <i class="fas fa-bell"></i> Tester les notifications
-            </button>
-          </div>
-          <div class="settings-group">
-              <h3>👤 Profil Utilisateur</h3>
-              <div id="user-profile-card">
-                  <img id="user-photo" src="" alt="Photo de profil">
-                  <div>
-                      <strong id="user-name-display"></strong>
-                      <p id="user-email-display"></p>
-                  </div>
-              </div>
-              <button class="btn warn" id="signOutBtn" style="margin-top: 15px; width: 100%; justify-content: center;">
-                <i class="fas fa-sign-out-alt"></i> Déconnexion
-              </button>
-          </div>
-          <div class="settings-group">
-              <h3>Journal d'Activité</h3>
-              <div id="activityLog" style="height: 200px; overflow-y: auto; background: rgba(0,0,0,0.03); border-radius: 8px; padding: 10px; font-size: 13px; border: 1px solid rgba(0,0,0,0.06);"></div>
-          </div>
-          <div class="settings-group">
-            <h3>Réinitialisation</h3>
-            <button class="btn warn" id="resetBtn"> <i class="fas fa-trash"></i> Réinitialiser l'application </button>
-            <p style="margin-top:8px;font-size:13px;color:var(--muted)"> Attention: Cette action supprimera tous les appareils et paramètres. </p>
-          </div>
-        </div>
-      </section>
-    </div> 
-    
-    <footer id="main-footer">
-      <button data-target="sec-domotique" class="btn-nav active"><i class="fas fa-home"></i><span>Accueil</span></button>
-      <button data-target="sec-intelligence" class="btn-nav"><i class="fas fa-robot"></i><span>Assistant</span></button>
-      <button data-target="sec-planning" class="btn-nav"><i class="fas fa-calendar-alt"></i><span>Planning</span></button>
-      <button data-target="sec-params" class="btn-nav"><i class="fas fa-cog"></i><span>Paramètres</span></button>
-    </footer>
+    <div id="sec-domotique" class="section">
+      <header><h1>🏠 Tableau de Bord</h1></header>
       
-  </div> <script type="module">
-  /*************************************************
-   * SmartHome Intelligence - Version 9.2 (Gemini UI)
-   * - Client reçoit du MARKDOWN
-   * - Utilise `marked.js` pour le rendu HTML
-   * - Utilise `highlight.js` pour la coloration du code
-   * - Ajoute des boutons "Copier" aux blocs de code
-   * - Conserve tous les fixes (v8.9, v9.0, v9.1)
-   *************************************************/
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+          <strong>Contrôles rapides</strong>
+          <div class="flex" style="flex-wrap:wrap">
+            <button class="btn" id="dayModeBtn"><i class="fas fa-sun"></i> Jour</button>
+            <button class="btn" id="nightModeBtn"><i class="fas fa-moon"></i> Nuit</button>
+            <button class="btn success" id="allOnBtn">Tout allumer</button>
+            <button class="btn warn" id="allOffBtn">Tout éteindre</button>
+          </div>
+        </div>
+        <div style="margin-top:12px; border-top: 1px solid rgba(0,0,0,0.1); padding-top:12px">
+          <p>
+            <span id="statusFirebase" class="status-badge" style="background: rgba(46, 204, 113, 0.3); color: #27ae60;">Firebase : Connecté</span>
+            <span id="statusESP32" class="status-badge" style="background: rgba(243, 156, 18, 0.3); color: #e67e22;">ESP32 : Local</span>
+          </p>
+          <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+             <input type="text" id="esp32IpInput" placeholder="IP locale ESP32 (ws://192.168.x.x)" style="flex-grow: 1; min-width: 200px; padding: 8px; border-radius: 8px; border: 1px solid #ddd;" value="ws://192.168.1.100:81">
+             <button class="btn primary" id="btnConnectLocal">Connecter WS</button>
+          </div>
+        </div>
+      </div>
+      
+      <h2 style="margin-bottom: 12px; color: var(--primary);">Appareils Connectés (<span id="deviceCount">0</span>)</h2>
+      <div id="devicesList">
+        </div>
+      
+      <div style="text-align: center; margin-top: 20px;">
+        <button class="btn success" id="toggleAddDeviceForm">
+          ➕ Ajouter un appareil
+        </button>
+      </div>
 
-  // ======= CONFIG =======
+      <div id="addDeviceFormContainer" class="card" style="display: none; margin-top: 16px;">
+        <h3 style="margin-bottom: 10px;">Ajouter un nouvel appareil</h3>
+        <input id="add-id" placeholder="ID (lampe_salon, ventilateur_cuisine)" style="width:100%;padding:8px;border-radius:8px;border:1px solid #ddd; margin-bottom: 8px;" />
+        <input id="add-nom" placeholder="Nom Affiché (Lampe Salon)" style="width:100%;padding:8px;border-radius:8px;border:1px solid #ddd; margin-bottom: 8px;" />
+        <select id="add-type" style="width:100%;padding:8px;border-radius:8px;border:1px solid #ddd; margin-bottom: 8px;">
+          <option value="lampe">Lampe</option>
+          <option value="ventilateur">Ventilateur</option>
+          <option value="prise">Prise Intelligente</option>
+        </select>
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <button class="btn primary" id="addDeviceBtn" style="flex: 1;">Ajouter à Firebase</button>
+          <button class="btn warn" id="autoAddDeviceBtn" style="flex: 1;">Auto-Détection</button>
+        </div>
+      </div>
+
+    </div>
+
+    <div id="sec-intelligence" class="section active">
+      <div id="chat-sidebar">
+        <div id="chat-sidebar-header">
+          <button class="btn success" id="new-chat-btn"><i class="fas fa-plus"></i> Nouvelle Conversation</button>
+          <span style="font-size: 12px; color: var(--muted);">Historique des sessions:</span>
+        </div>
+        <div id="chat-history-list">
+          </div>
+      </div>
+      
+      <div id="chat-section-container">
+        <button id="sidebar-toggle-btn-chat"><i class="fas fa-bars"></i></button>
+
+        <div id="chatFullWindow">
+          <div class="msg-container">
+            <div class="msg-icon bot"><i class="fas fa-robot"></i></div>
+            <div class="msg bot" style="max-width: none;">
+              <h3>Bienvenue ! Je suis Intellia v9.5 🚀</h3>
+              <p>Je suis votre assistant domotique multimodal. Je peux contrôler vos appareils, gérer votre planning, générer des images et des documents (PDF/DOCX), et analyser des fichiers (PDF/DOCX/Code).</p>
+              <p>Comment puis-je vous aider aujourd'hui ?</p>
+              <div id="suggestions-container" style="margin-top: 15px;">
+                  </div>
+            </div>
+          </div>
+          
+        </div>
+
+        <div id="chat-input-container">
+          <div id="attachment-preview-container" class="attachment-preview-container">
+            </div>
+          <div id="chat-input-flex">
+            <button class="btn" id="attachFileBtn" style="width: 48px; height: 48px; flex-shrink: 0;"><i class="fas fa-paperclip"></i></button>
+            <input type="file" id="fileInput" style="display: none;" multiple accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png,.md,.js,.json">
+
+            <textarea id="chatFullInput" placeholder="Envoyer un message à Intellia..." rows="1" maxlength="1000"></textarea>
+            
+            <button class="btn" id="voiceContinuous" style="width: 48px; height: 48px; flex-shrink: 0; background: #6c757d;" title="Conversation Continue">
+              <i class="fas fa-microphone"></i>
+            </button>
+            
+            <button class="btn" id="voicePushToTalk" style="width: 48px; height: 48px; flex-shrink: 0; background: #6c757d;" title="Appuyer pour parler">
+              <i class="fas fa-microphone-alt"></i>
+            </button>
+            
+            <button class="btn primary" id="chatFullSend" style="width: 48px; height: 48px; flex-shrink: 0;"><i class="fas fa-paper-plane"></i></button>
+            <button id="stopAIBtn"><i class="fas fa-stop-circle"></i> Arrêter</button>
+          </div>
+          <p id="intelliaStatus" style="font-size: 12px; color: var(--muted); margin-top: 5px;">Assistant: Prêt</p>
+          <p id="voiceStatus" style="font-size: 12px; color: var(--muted); margin-top: 5px; display: none;">Voix: Inactif</p>
+        </div>
+      </div>
+    </div>
+    
+    <div id="sec-planning" class="section">
+      <header><h1>📅 Planning</h1></header>
+      
+      <div class="card">
+        <h2 style="color: var(--primary); margin-bottom: 15px;">Ajouter une Tâche</h2>
+        <label>Appareil</label>
+        <select id="plan-device" style="width:100%;padding:8px;border-radius:8px;border:1px solid #ddd; margin-bottom: 8px;">
+          <option value="">Sélectionner un appareil</option>
+        </select>
+        <label>Heure (HH:MM)</label>
+        <input id="plan-time" type="time" style="width:100%;padding:8px;border-radius:8px;border:1px solid #ddd; margin-bottom: 8px;" value="18:30" />
+        <label>Action</label>
+        <select id="plan-action" style="width:100%;padding:8px;border-radius:8px;border:1px solid #ddd; margin-bottom: 8px;">
+          <option value="ON">Allumer</option>
+          <option value="OFF">Éteindre</option>
+        </select>
+        <label>Puissance (%)</label>
+        <input id="plan-power" type="number" min="0" max="100" value="100" style="width:100%;padding:8px;border-radius:8px;border:1px solid #ddd; margin-bottom: 8px;" />
+        <div style="margin-top:8px;display:flex;gap:8px">
+          <button class="btn primary" id="addPlan" style="flex: 1;"><i class="fas fa-plus-circle"></i> Ajouter à la Liste</button>
+          <button class="btn success" id="addPlanViaIA" style="flex: 1;"><i class="fas fa-robot"></i> Ajouter via IA</button>
+        </div>
+        <p style="font-size: 12px; color: var(--muted); margin-top: 10px;">**Conseil :** Vous pouvez aussi dire à l'IA : "Allume la lampe du salon à 19h30 à 50%".</p>
+      </div>
+
+      <div class="card">
+        <h2 style="color: var(--primary); margin-bottom: 15px;">Tâches Planifiées</h2>
+        <div id="planningTable">
+          <p>Chargement du planning...</p>
+        </div>
+      </div>
+    </div>
+    
+    <div id="sec-settings" class="section">
+      <header><h1>⚙️ Paramètres</h1></header>
+
+      <div class="card">
+        <h2 style="color: var(--primary); margin-bottom: 15px;">Statut et Logs</h2>
+        <div id="logs" style="max-height: 200px; overflow-y: auto; background: #f8f9fa; padding: 10px; border-radius: 8px; font-size: 12px; margin-bottom: 10px; font-family: monospace;">
+          </div>
+        <p>
+          <span id="intelliaVersion" class="chip">Intellia v9.5</span>
+          <span id="dateLocale" class="chip">Date: 16/11/2025</span>
+        </p>
+      </div>
+      
+      <div class="card">
+        <h2 style="color: var(--primary); margin-bottom: 15px;">Préférences Utilisateur</h2>
+        
+        <div class="settings-group">
+          <strong>Synthèse Vocale (TTS)</strong>
+          <input type="checkbox" id="ttsToggle">
+        </div>
+        
+        <div class="settings-group">
+          <strong>Voix (TTS)</strong>
+          <select id="voiceSelect" style="padding: 5px; border-radius: 5px;"></select>
+        </div>
+        
+        <div class="settings-group">
+          <strong>Notifications Navigateur</strong>
+          <input type="checkbox" id="notificationsToggle" checked>
+        </div>
+        
+        <div class="settings-group">
+          <strong>Mode Sombre Automatique</strong>
+          <input type="checkbox" id="autoNightModeToggle">
+        </div>
+        
+        <button class="btn warn" id="logoutBtn" style="width: 100%; margin-top: 15px;">
+          <i class="fas fa-sign-out-alt"></i> Déconnexion
+        </button>
+      </div>
+      
+    </div>
+    
+  </div>
+
+  <nav>
+    <a href="#sec-domotique" class="nav-item active" data-section="sec-domotique">
+      <i class="fas fa-home"></i> Tableau de Bord
+    </a>
+    <a href="#sec-intelligence" class="nav-item" data-section="sec-intelligence">
+      <i class="fas fa-brain"></i> Assistant IA
+    </a>
+    <a href="#sec-planning" class="nav-item" data-section="sec-planning">
+      <i class="fas fa-calendar-alt"></i> Planning
+    </a>
+    <a href="#sec-settings" class="nav-item" data-section="sec-settings">
+      <i class="fas fa-cog"></i> Paramètres
+    </a>
+  </nav>
+
+  <script>
+  
+  // ========================================
+  // INTELLIA v9.5 - GÉNÉRATEUR DE DOCUMENTS OPTIMISÉ (Contenu de intellia_doc.js)
+  // Client-side : Conversion JSON → PDF/DOCX
+  // ========================================
+
+  // La dépendance jsPDF est chargée via CDN dans le <head>
+
+  // ========================================
+  // 📄 FONCTION UNIVERSELLE DE TÉLÉCHARGEMENT (CAS 1)
+  // ========================================
+  function downloadAsFile(filename, content, mimeType = 'text/plain') {
+    const blob = new Blob([content], { type: mimeType + ';charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    
+    document.body.appendChild(a);
+    a.click();
+    
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    console.log(`✅ Fichier téléchargé: ${filename}`);
+  }
+
+  // ========================================
+  // 🎨 FONCTION DE TÉLÉCHARGEMENT D'IMAGE (CAS 3)
+  // ========================================
+  function downloadImage(imageUrl, filename = null) {
+    if (!filename) {
+      filename = `intellia_image_${Date.now()}.png`;
+    }
+    
+    fetch(imageUrl)
+      .then(response => response.blob())
+      .then(blob => {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        console.log(`✅ Image téléchargée: ${filename}`);
+      })
+      .catch(error => {
+        console.error("❌ Erreur de téléchargement d'image:", error);
+        alert("Impossible de télécharger l'image. Veuillez réessayer.");
+      });
+  }
+
+  // ========================================
+  // 📝 FORMATAGE JSON → HTML (PRÉVISUALISATION)
+  // ========================================
+  function formatJsonAsDocumentHtml(jsonData) {
+    const type = jsonData.type || 'document';
+    
+    let html = '<div class="document-preview" style="background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); max-width: 800px; margin: 20px auto; font-family: Arial, sans-serif; color: #333;">';
+    
+    switch(type) {
+      case 'lettre':
+        html += formatLetterHtml(jsonData);
+        break;
+      case 'rapport':
+        html += formatReportHtml(jsonData);
+        break;
+      case 'cv':
+        html += formatCvHtml(jsonData);
+        break;
+      case 'facture':
+        html += formatInvoiceHtml(jsonData);
+        break;
+      case 'contrat':
+        html += formatContractHtml(jsonData);
+        break;
+      default:
+        html += formatGenericDocumentHtml(jsonData);
+    }
+    
+    // Le JSON est "échappé" en remplaçant " par &quot; pour être passé dans le onclick
+    const safeJson = JSON.stringify(jsonData).replace(/"/g, '&quot;');
+    
+    html += `
+      <div style="margin-top: 30px; display: flex; gap: 10px; justify-content: center;">
+        <button class="btn primary" onclick="generatePdfFromJson('${safeJson}')">
+          <i class="fas fa-file-pdf"></i> Télécharger en PDF
+        </button>
+        <button class="btn success" onclick="generateDocxFromJson('${safeJson}')">
+          <i class="fas fa-file-word"></i> Télécharger en DOCX
+        </button>
+      </div>
+    </div>`;
+    
+    return html;
+  }
+
+  // ========================================
+  // 📧 FORMAT : LETTRE
+  // ========================================
+  function formatLetterHtml(data) {
+    return `
+      <div style="text-align: right; margin-bottom: 30px;">
+        <strong>${data.expediteur || 'Expéditeur'}</strong><br>
+        ${data.adresse_expediteur || ''}
+      </div>
+      
+      <div style="margin-bottom: 30px;">
+        <strong>À l'attention de :</strong><br>
+        ${data.destinataire || 'Destinataire'}<br>
+        ${data.adresse_destinataire || ''}
+      </div>
+      
+      <div style="text-align: right; margin-bottom: 30px;">
+        ${data.lieu || 'Lokossa'}, le ${data.date || new Date().toLocaleDateString('fr-FR')}
+      </div>
+      
+      <h2 style="margin-bottom: 20px; text-align: left;">Objet: ${data.objet || 'Objet de la lettre'}</h2>
+      
+      <div style="font-size: 16px; text-align: justify;">
+        ${data.formule_appel || 'Madame, Monsieur,'}<br><br>
+        ${(data.corps || '').replace(/\n/g, '<br><br>')}
+      </div>
+      
+      <div style="margin-top: 40px;">
+        ${data.formule_politesse || 'Veuillez agréer, Madame, Monsieur, l\'expression de mes salutations distinguées.'}<br><br>
+        ${data.signature || data.expediteur || ''}
+      </div>
+    `;
+  }
+
+  // ========================================
+  // 📊 FORMAT : RAPPORT
+  // ========================================
+  function formatReportHtml(data) {
+    let html = `
+      <h1 style="text-align: center;">${data.titre || 'Rapport sans Titre'}</h1>
+      <h3 style="text-align: center; color: #6c757d;">${data.sous_titre || ''}</h3>
+      <p style="text-align: center; margin-bottom: 30px; border-bottom: 1px solid #ddd; padding-bottom: 15px;">
+        Date: ${data.date || new Date().toLocaleDateString('fr-FR')} | Auteur: ${data.auteur || 'Intellia'}
+      </p>
+      <div style="line-height: 1.8;">
+    `;
+    
+    if (data.introduction) {
+      html += `<h2>Introduction</h2><p style="text-align: justify;">${data.introduction}</p>`;
+    }
+    
+    if (data.sections && Array.isArray(data.sections)) {
+      data.sections.forEach((section, index) => {
+        html += `<h3>${index + 1}. ${section.titre}</h3><p style="text-align: justify;">${section.contenu}</p>`;
+      });
+    }
+    
+    if (data.conclusion) {
+      html += `<h2>Conclusion</h2><p style="text-align: justify;">${data.conclusion}</p>`;
+    }
+    
+    html += '</div>';
+    return html;
+  }
+
+  // ========================================
+  // 🤵 FORMAT : CV
+  // ========================================
+  function formatCvHtml(data) {
+    let html = `
+      <h1 style="text-align: center; color: var(--primary); margin-bottom: 5px;">${data.prenom || ''} ${data.nom || ''}</h1>
+      <p style="text-align: center; font-size: 18px; color: #6c757d;">${data.titre_poste || ''}</p>
+      <p style="text-align: center; margin-bottom: 20px; border-bottom: 1px solid #ddd; padding-bottom: 10px;">
+        ${data.email || ''} | ${data.telephone || ''} | ${data.adresse || ''}
+      </p>
+    `;
+
+    if (data.profil) {
+      html += `<div style="margin-bottom: 30px;">
+        <h2 style="color: #4361ee; border-left: 4px solid #4361ee; padding-left: 15px;">Profil</h2>
+        <p style="margin-top: 10px; text-align: justify;">${data.profil}</p>
+      </div>`;
+    }
+
+    if (data.experiences && Array.isArray(data.experiences)) {
+      html += `<div style="margin-bottom: 30px;">
+        <h2 style="color: #4361ee; border-left: 4px solid #4361ee; padding-left: 15px;">Expériences Professionnelles</h2>`;
+      data.experiences.forEach(exp => {
+        html += `<div style="margin-top: 15px;">
+          <h3 style="margin: 0; font-size: 16px; display: flex; justify-content: space-between;">
+            <strong>${exp.poste || ''}</strong> 
+            <span style="color: #6c757d; font-weight: normal;">${exp.dates || ''}</span>
+          </h3>
+          <p style="margin: 5px 0 0 0;">${exp.entreprise || ''} - ${exp.ville || ''}</p>
+          ${exp.description ? `<p style="margin-top: 8px; line-height: 1.6;">${exp.description}</p>` : ''}
+        </div>`;
+      });
+      html += `</div>`;
+    }
+
+    if (data.formations && Array.isArray(data.formations)) {
+      html += `<div style="margin-bottom: 30px;">
+        <h2 style="color: #4361ee; border-left: 4px solid #4361ee; padding-left: 15px;">Formation</h2>`;
+      data.formations.forEach(form => {
+        html += `<div style="margin-top: 15px;">
+          <h3 style="margin: 0; font-size: 16px; display: flex; justify-content: space-between;">
+            <strong>${form.diplome || ''}</strong> 
+            <span style="color: #6c757d; font-weight: normal;">${form.annee || ''}</span>
+          </h3>
+          <p style="margin: 5px 0 0 0;">${form.etablissement || ''} - ${form.ville || ''}</p>
+        </div>`;
+      });
+      html += `</div>`;
+    }
+
+    return html;
+  }
+
+  // ========================================
+  // 🧾 FORMAT : FACTURE
+  // ========================================
+  function formatInvoiceHtml(data) {
+    const total = data.lignes ? data.lignes.reduce((sum, item) => sum + (item.quantite * item.prix_unitaire), 0) : 0;
+
+    let html = `
+      <h1 style="text-align: center; color: var(--primary); margin-bottom: 30px;">FACTURE #${data.numero || '001'}</h1>
+      
+      <div style="display: flex; justify-content: space-between; margin-bottom: 40px; font-size: 14px;">
+        <div>
+          <strong>Émetteur:</strong><br>
+          ${data.emetteur?.nom || 'Nom Entreprise'}<br>
+          ${data.emetteur?.adresse || ''}<br>
+          Tél: ${data.emetteur?.telephone || ''}
+        </div>
+        <div>
+          <strong>Client:</strong><br>
+          ${data.client?.nom || 'Nom Client'}<br>
+          ${data.client?.adresse || ''}<br>
+          Tél: ${data.client?.telephone || ''}
+        </div>
+        <div>
+          <strong>Date:</strong> ${data.date || new Date().toLocaleDateString('fr-FR')}<br>
+          <strong>Échéance:</strong> ${data.echeance || ''}
+        </div>
+      </div>
+      
+      <table>
+        <thead>
+          <tr style="background: #f8f9fa;">
+            <th>Description</th>
+            <th style="text-align: right; width: 10%;">Qté</th>
+            <th style="text-align: right; width: 15%;">Prix Unitaire</th>
+            <th style="text-align: right; width: 15%;">Total</th>
+          </tr>
+        </thead>
+        <tbody>
+    `;
+
+    if (data.lignes && Array.isArray(data.lignes)) {
+      data.lignes.forEach(item => {
+        const itemTotal = item.quantite * item.prix_unitaire;
+        html += `
+          <tr>
+            <td>${item.description}</td>
+            <td style="text-align: right;">${item.quantite}</td>
+            <td style="text-align: right;">${item.prix_unitaire.toFixed(2)} FCFA</td>
+            <td style="text-align: right;">${itemTotal.toFixed(2)} FCFA</td>
+          </tr>
+        `;
+      });
+    }
+
+    html += `
+        </tbody>
+        <tfoot>
+          <tr>
+            <td colspan="3" style="padding: 12px; text-align: right;">Sous-total</td>
+            <td style="padding: 12px; text-align: right;">${total.toFixed(2)} FCFA</td>
+          </tr>
+          <tr style="background: #e9ecef; font-weight: bold;">
+            <td colspan="3" style="padding: 12px; text-align: right;">TOTAL À PAYER</td>
+            <td style="padding: 12px; text-align: right; color: #4361ee; font-size: 18px;">${total.toFixed(2)} FCFA</td>
+          </tr>
+        </tfoot>
+      </table>
+    `;
+
+    if (data.notes) {
+      html += `
+        <div style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-left: 5px solid var(--primary);">
+          <strong>Notes :</strong> ${data.notes}
+        </div>
+      `;
+    }
+
+    return html;
+  }
+  
+  // ========================================
+  // 📜 FORMAT : CONTRAT
+  // ========================================
+  function formatContractHtml(data) {
+    return `
+      <h1 style="text-align: center; color: var(--primary); margin-bottom: 5px;">CONTRAT DE ${data.type_contrat?.toUpperCase() || 'SERVICE'}</h1>
+      <p style="text-align: center; margin-bottom: 30px; border-bottom: 1px solid #ddd; padding-bottom: 15px;">
+        Fait à ${data.lieu || 'Lokossa'}, le ${data.date || new Date().toLocaleDateString('fr-FR')}
+      </p>
+      
+      <h3 style="margin-top: 20px;">ENTRE LES PARTIES :</h3>
+      <ul style="list-style: none; padding-left: 0; margin-bottom: 20px;">
+        <li style="margin-bottom: 10px;">
+          <strong>Partie 1:</strong> ${data.partie1?.nom || 'Partie 1'}<br>
+          ${data.partie1?.adresse || ''}
+        </li>
+        <li>
+          <strong>Partie 2:</strong> ${data.partie2?.nom || 'Partie 2'}<br>
+          ${data.partie2?.adresse || ''}
+        </li>
+      </ul>
+      
+      <h3 style="margin-top: 30px;">OBJET DU CONTRAT :</h3>
+      <p style="text-align: justify; line-height: 1.8;">${data.contenu || 'Contenu du contrat...'}</p>
+      
+      <p style="margin-top: 50px; text-align: center;">
+        Les parties reconnaissent avoir lu et accepté les termes de ce contrat.
+      </p>
+      
+      <div style="margin-top: 50px; display: flex; justify-content: space-around;">
+        <div style="text-align: center;">
+          <p>___________________</p>
+          <p>Signature Partie 1</p>
+          <p>(${data.partie1?.nom || 'Partie 1'})</p>
+        </div>
+        <div style="text-align: center;">
+          <p>___________________</p>
+          <p>Signature Partie 2</p>
+          <p>(${data.partie2?.nom || 'Partie 2'})</p>
+        </div>
+      </div>
+    `;
+  }
+
+  // ========================================
+  // 📁 FORMAT : DOCUMENT GÉNÉRIQUE (Fallback)
+  // ========================================
+  function formatGenericDocumentHtml(data) {
+    let html = `
+      <h1 style="text-align: center; color: var(--primary); margin-bottom: 20px;">${data.titre || 'Document Généré par Intellia'}</h1>
+      <p style="text-align: center; margin-bottom: 30px; border-bottom: 1px solid #ddd; padding-bottom: 15px;">
+        Date: ${data.date || new Date().toLocaleDateString('fr-FR')}
+      </p>
+      <div style="line-height: 1.8; text-align: justify;">
+        ${(data.contenu || JSON.stringify(data, null, 2)).replace(/\n/g, '<br>')}
+      </div>
+    `;
+    return html;
+  }
+
+  // ========================================
+  // ⚙️ CONVERSION JSON → PDF (jsPDF)
+  // ========================================
+  const { jsPDF } = window.jspdf;
+
+  function generatePdfFromJson(jsonString) {
+      // jsonString est passé avec &quot; pour les guillemets, on doit les rétablir
+      const jsonData = JSON.parse(jsonString.replace(/&quot;/g, '"'));
+      const doc = new jsPDF();
+      let y = 20;
+      const margin = 20;
+      const maxWidth = doc.internal.pageSize.getWidth() - 2 * margin;
+
+      // Fonction utilitaire pour ajouter du texte
+      const addText = (text, fontSize = 12, fontStyle = 'normal', align = 'left') => {
+          doc.setFontSize(fontSize);
+          doc.setFont('helvetica', fontStyle);
+          const lines = doc.splitTextToSize(text, maxWidth);
+          
+          lines.forEach(line => {
+              if (y + fontSize / doc.internal.scaleFactor > doc.internal.pageSize.getHeight() - margin) {
+                  doc.addPage();
+                  y = margin;
+              }
+              doc.text(line, align === 'center' ? doc.internal.pageSize.getWidth() / 2 : margin, y, { align: align });
+              y += fontSize * 0.5; // Ajuster l'espacement entre les lignes
+          });
+          y += 5; // Marge après le bloc de texte
+      };
+
+      const type = jsonData.type || 'document';
+      try {
+          switch(type) {
+              case 'lettre':
+                  generateLetterPdf(doc, jsonData, addText, { y, margin, maxWidth });
+                  break;
+              case 'rapport':
+                  generateReportPdf(doc, jsonData, addText, { y, margin, maxWidth });
+                  break;
+              case 'cv':
+                  generateCvPdf(doc, jsonData, addText, { y, margin, maxWidth });
+                  break;
+              case 'facture':
+                  generateInvoicePdf(doc, jsonData, addText, { y, margin, maxWidth });
+                  break;
+              case 'contrat':
+                  generateContractPdf(doc, jsonData, addText, { y, margin, maxWidth });
+                  break;
+              default:
+                  addText(jsonData.titre || 'Document Généré', 18, 'bold', 'center');
+                  addText(`Date: ${jsonData.date || new Date().toLocaleDateString('fr-FR')}`, 10, 'normal', 'center');
+                  addText('', 10);
+                  addText(jsonData.contenu || JSON.stringify(jsonData, null, 2), 12);
+          }
+          
+          doc.save(`${type}_intellia_${Date.now()}.pdf`);
+          console.log(`✅ Document PDF téléchargé: ${type}`);
+      } catch (error) {
+          console.error("❌ Erreur lors de la génération du PDF:", error);
+          alert("Erreur lors de la génération du PDF. Consultez la console.");
+      }
+  }
+
+  // Fonctions spécifiques pour chaque type de PDF
+  function generateLetterPdf(doc, data, addText, state) {
+      // Expediteur
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'bold');
+      doc.text(data.expediteur || 'Expéditeur', state.margin, state.y, { align: 'right' });
+      doc.setFont('helvetica', 'normal');
+      doc.text(data.adresse_expediteur || '', state.margin, state.y + 5, { align: 'right' });
+      state.y += 20;
+
+      // Destinataire
+      addText('À l\'attention de :', 10, 'bold');
+      addText(data.destinataire || 'Destinataire', 10);
+      addText(data.adresse_destinataire || '', 10);
+      state.y += 10;
+
+      // Lieu et Date
+      doc.setFontSize(10);
+      doc.text(`${data.lieu || 'Lokossa'}, le ${data.date || new Date().toLocaleDateString('fr-FR')}`, state.margin, state.y, { align: 'right' });
+      state.y += 10;
+
+      // Objet
+      addText(`Objet: ${data.objet || 'Objet de la lettre'}`, 12, 'bold');
+      state.y += 10;
+
+      // Corps
+      addText(data.formule_appel || 'Madame, Monsieur,', 12);
+      addText(data.corps || 'Corps de la lettre...', 12, 'normal', 'justify');
+      state.y += 10;
+
+      // Politesse et Signature
+      addText(data.formule_politesse || 'Veuillez agréer, Madame, Monsieur, l\'expression de mes salutations distinguées.', 12);
+      addText('', 12);
+      addText(data.signature || data.expediteur || '', 12, 'bold');
+  }
+
+  function generateReportPdf(doc, data, addText, state) {
+      addText(data.titre || 'Rapport sans Titre', 18, 'bold', 'center');
+      addText(data.sous_titre || '', 14, 'normal', 'center');
+      addText(`Date: ${data.date || new Date().toLocaleDateString('fr-FR')} | Auteur: ${data.auteur || 'Intellia'}`, 10, 'normal', 'center');
+      state.y += 10;
+
+      if (data.introduction) {
+          addText('INTRODUCTION', 14, 'bold');
+          addText(data.introduction, 12, 'normal', 'justify');
+      }
+
+      if (data.sections && Array.isArray(data.sections)) {
+          data.sections.forEach((section, index) => {
+              addText(`${index + 1}. ${section.titre}`, 14, 'bold');
+              addText(section.contenu, 12, 'normal', 'justify');
+          });
+      }
+
+      if (data.conclusion) {
+          addText('CONCLUSION', 14, 'bold');
+          addText(data.conclusion, 12, 'normal', 'justify');
+      }
+  }
+
+  function generateCvPdf(doc, data, addText, state) {
+      addText(`${data.prenom || ''} ${data.nom || ''}`, 24, 'bold', 'center');
+      addText(data.titre_poste || '', 14, 'normal', 'center');
+      addText(`${data.email || ''} | ${data.telephone || ''} | ${data.adresse || ''}`, 10, 'normal', 'center');
+      addText('', 10);
+
+      if (data.profil) {
+          addText('PROFIL', 14, 'bold');
+          addText(data.profil, 11);
+          addText('', 10);
+      }
+
+      if (data.experiences && Array.isArray(data.experiences)) {
+          addText('EXPÉRIENCES PROFESSIONNELLES', 14, 'bold');
+          data.experiences.forEach(exp => {
+              addText(`${exp.poste || ''} - ${exp.entreprise || ''}`, 12, 'bold');
+              addText(`${exp.dates || ''} - ${exp.ville || ''}`, 10);
+              if (exp.description) addText(exp.description, 10, 'normal', 'justify');
+              addText('', 5);
+          });
+      }
+
+      if (data.formations && Array.isArray(data.formations)) {
+          addText('FORMATION', 14, 'bold');
+          data.formations.forEach(form => {
+              addText(form.diplome || '', 12, 'bold');
+              addText(`${form.etablissement || ''} - ${form.annee || ''}`, 10);
+              addText('', 5);
+          });
+      }
+  }
+
+  function generateInvoicePdf(doc, data, addText, state) {
+      const total = data.lignes ? data.lignes.reduce((sum, item) => sum + (item.quantite * item.prix_unitaire), 0) : 0;
+      let finalY = state.y;
+
+      addText(`FACTURE #${data.numero || '001'}`, 20, 'bold', 'center');
+      finalY = doc.autoTable.previous.finalY + 10;
+
+      // Informations
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Émetteur:', state.margin, finalY);
+      doc.text('Client:', state.margin + 70, finalY);
+      doc.text('Date:', state.margin + 140, finalY);
+      
+      doc.setFont('helvetica', 'normal');
+      doc.text(data.emetteur?.nom || 'Nom Entreprise', state.margin, finalY + 5);
+      doc.text(data.emetteur?.adresse || '', state.margin, finalY + 10);
+      doc.text(`Tél: ${data.emetteur?.telephone || ''}`, state.margin, finalY + 15);
+      
+      doc.text(data.client?.nom || 'Nom Client', state.margin + 70, finalY + 5);
+      doc.text(data.client?.adresse || '', state.margin + 70, finalY + 10);
+      doc.text(`Tél: ${data.client?.telephone || ''}`, state.margin + 70, finalY + 15);
+
+      doc.text(data.date || new Date().toLocaleDateString('fr-FR'), state.margin + 140, finalY + 5);
+      doc.text(`Échéance: ${data.echeance || ''}`, state.margin + 140, finalY + 10);
+      
+      finalY += 30;
+      state.y = finalY;
+
+      // Tableau des lignes
+      const body = data.lignes ? data.lignes.map(item => [
+          item.description,
+          item.quantite,
+          item.prix_unitaire.toFixed(2) + ' FCFA',
+          (item.quantite * item.prix_unitaire).toFixed(2) + ' FCFA'
+      ]) : [];
+
+      doc.autoTable({
+          startY: finalY,
+          head: [['Description', 'Qté', 'Prix Unitaire', 'Total']],
+          body: body,
+          styles: { fontSize: 10, cellPadding: 3, halign: 'left' },
+          columnStyles: {
+              1: { halign: 'right', cellWidth: 15 },
+              2: { halign: 'right', cellWidth: 25 },
+              3: { halign: 'right', cellWidth: 25, fontStyle: 'bold' }
+          },
+          foot: [['Sous-total', '', '', total.toFixed(2) + ' FCFA'], ['TOTAL À PAYER', '', '', { content: total.toFixed(2) + ' FCFA', styles: { fontStyle: 'bold', fillColor: [233, 236, 239], textColor: [67, 97, 238] } }]],
+          footStyles: { fillColor: [248, 249, 250], fontSize: 10, halign: 'right', textColor: [0, 0, 0] }
+      });
+
+      finalY = doc.autoTable.previous.finalY;
+
+      if (data.notes) {
+          finalY += 10;
+          doc.setFillColor(248, 249, 250); // Light gray background
+          doc.rect(state.margin, finalY, state.maxWidth, 20, 'F');
+          doc.setFontSize(10);
+          doc.setFont('helvetica', 'bold');
+          doc.text('Notes :', state.margin + 5, finalY + 7);
+          doc.setFont('helvetica', 'normal');
+          doc.text(data.notes, state.margin + 5, finalY + 12, { maxWidth: state.maxWidth - 10 });
+          finalY += 20;
+      }
+  }
+
+  function generateContractPdf(doc, data, addText, state) {
+      addText(`CONTRAT DE ${data.type_contrat?.toUpperCase() || 'SERVICE'}`, 20, 'bold', 'center');
+      addText(`Fait à ${data.lieu || 'Lokossa'}, le ${data.date || new Date().toLocaleDateString('fr-FR')}`, 10, 'normal', 'center');
+      state.y += 10;
+      
+      addText('ENTRE LES PARTIES :', 14, 'bold');
+      addText('', 5);
+      
+      addText('Partie 1:', 12, 'bold');
+      addText(data.partie1?.nom || 'Partie 1', 12);
+      addText(data.partie1?.adresse || '', 10);
+      addText('', 5);
+      
+      addText('Partie 2:', 12, 'bold');
+      addText(data.partie2?.nom || 'Partie 2', 12);
+      addText(data.partie2?.adresse || '', 10);
+      state.y += 10;
+
+      addText('OBJET DU CONTRAT :', 14, 'bold');
+      addText('', 5);
+      addText(data.contenu || 'Contenu du contrat...', 12, 'normal', 'justify');
+      state.y += 20;
+
+      addText('Les parties reconnaissent avoir lu et accepté les termes de ce contrat.', 10, 'normal', 'center');
+      state.y += 15;
+
+      // Signatures (horizontal)
+      const centerX = doc.internal.pageSize.getWidth() / 2;
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'normal');
+      doc.text('___________________', centerX - 40, state.y, { align: 'center' });
+      doc.text('___________________', centerX + 40, state.y, { align: 'center' });
+      state.y += 5;
+      doc.setFont('helvetica', 'bold');
+      doc.text('Signature Partie 1', centerX - 40, state.y + 5, { align: 'center' });
+      doc.text('Signature Partie 2', centerX + 40, state.y + 5, { align: 'center' });
+  }
+
+  // ========================================
+  // ⚙️ CONVERSION JSON → DOCX (DocX)
+  // ========================================
+  const { Document, Paragraph, TextRun, HeadingLevel, AlignmentType, Packer, Table, TableRow, TableCell, WidthType, BorderStyle } = docx;
+
+  function generateDocxFromJson(jsonString) {
+      const jsonData = JSON.parse(jsonString.replace(/&quot;/g, '"'));
+      const type = jsonData.type || 'document';
+      let sections;
+
+      try {
+          switch(type) {
+              case 'lettre':
+                  sections = generateLetterDocx(jsonData, { Paragraph, TextRun, AlignmentType });
+                  break;
+              case 'rapport':
+                  sections = generateReportDocx(jsonData, { Paragraph, TextRun, HeadingLevel, AlignmentType });
+                  break;
+              case 'cv':
+                  sections = generateCvDocx(jsonData, { Paragraph, TextRun, HeadingLevel, AlignmentType });
+                  break;
+              case 'facture':
+                  sections = generateInvoiceDocx(jsonData, { Paragraph, TextRun, HeadingLevel, AlignmentType, Table, TableRow, TableCell, WidthType, BorderStyle });
+                  break;
+              case 'contrat':
+                  sections = generateContractDocx(jsonData, { Paragraph, TextRun, AlignmentType });
+                  break;
+              default:
+                  sections = [
+                      new Paragraph({ text: jsonData.titre || 'Document Généré par Intellia', heading: HeadingLevel.HEADING_1, alignment: AlignmentType.CENTER }),
+                      new Paragraph({ text: `Date: ${jsonData.date || new Date().toLocaleDateString('fr-FR')}`, alignment: AlignmentType.CENTER }),
+                      new Paragraph({ text: '' }),
+                      new Paragraph({ text: jsonData.contenu || JSON.stringify(jsonData, null, 2) })
+                  ];
+          }
+
+          const doc = new Document({ sections: [{ children: sections }] });
+
+          Packer.toBlob(doc).then(blob => {
+              downloadAsFile(`${type}_intellia_${Date.now()}.docx`, blob, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+              console.log(`✅ Document DOCX téléchargé: ${type}`);
+          });
+
+      } catch (error) {
+          console.error("❌ Erreur lors de la génération du DOCX:", error);
+          alert("Erreur lors de la génération du DOCX. Consultez la console.");
+      }
+  }
+
+  // Fonctions spécifiques pour chaque type de DOCX
+  function generateLetterDocx(data, { Paragraph, TextRun, AlignmentType }) {
+      return [
+          new Paragraph({
+              children: [
+                  new TextRun({ text: data.expediteur || 'Expéditeur', bold: true })
+              ],
+              alignment: AlignmentType.RIGHT
+          }),
+          new Paragraph({ text: data.adresse_expediteur || '', alignment: AlignmentType.RIGHT }),
+          new Paragraph({ text: '' }),
+          new Paragraph({
+              children: [
+                  new TextRun({ text: 'À l\'attention de : ', bold: true }),
+                  new TextRun({ text: data.destinataire || 'Destinataire' })
+              ]
+          }),
+          new Paragraph({ text: data.adresse_destinataire || '' }),
+          new Paragraph({ text: '' }),
+          new Paragraph({ text: `${data.lieu || 'Lokossa'}, le ${data.date || new Date().toLocaleDateString('fr-FR')}`, alignment: AlignmentType.RIGHT }),
+          new Paragraph({ text: '' }),
+          new Paragraph({
+              children: [
+                  new TextRun({ text: `Objet: ${data.objet || 'Objet de la lettre'}`, bold: true, size: 28 }) // Taille de police
+              ]
+          }),
+          new Paragraph({ text: '' }),
+          new Paragraph({ text: data.formule_appel || 'Madame, Monsieur,' }),
+          new Paragraph({ text: '' }),
+          new Paragraph({ text: data.corps || 'Corps de la lettre...' }),
+          new Paragraph({ text: '' }),
+          new Paragraph({ text: '' }),
+          new Paragraph({ text: data.formule_politesse || 'Veuillez agréer, Madame, Monsieur, l\'expression de mes salutations distinguées.' }),
+          new Paragraph({ text: '' }),
+          new Paragraph({ text: data.signature || data.expediteur || '', bold: true })
+      ];
+  }
+
+  function generateReportDocx(data, { Paragraph, TextRun, HeadingLevel, AlignmentType }) {
+      const children = [
+          new Paragraph({ text: data.titre || 'Rapport sans Titre', heading: HeadingLevel.HEADING_1, alignment: AlignmentType.CENTER }),
+          new Paragraph({ text: data.sous_titre || '', alignment: AlignmentType.CENTER }),
+          new Paragraph({ text: `Date: ${data.date || new Date().toLocaleDateString('fr-FR')} | Auteur: ${data.auteur || 'Intellia'}`, alignment: AlignmentType.CENTER }),
+          new Paragraph({ text: '' })
+      ];
+
+      if (data.introduction) {
+          children.push(new Paragraph({ text: 'Introduction', heading: HeadingLevel.HEADING_2 }));
+          children.push(new Paragraph({ text: data.introduction, alignment: AlignmentType.JUSTIFY }));
+      }
+
+      if (data.sections && Array.isArray(data.sections)) {
+          data.sections.forEach((section, index) => {
+              children.push(new Paragraph({ text: `${index + 1}. ${section.titre}`, heading: HeadingLevel.HEADING_3 }));
+              children.push(new Paragraph({ text: section.contenu, alignment: AlignmentType.JUSTIFY }));
+          });
+      }
+
+      if (data.conclusion) {
+          children.push(new Paragraph({ text: 'Conclusion', heading: HeadingLevel.HEADING_2 }));
+          children.push(new Paragraph({ text: data.conclusion, alignment: AlignmentType.JUSTIFY }));
+      }
+      
+      return children;
+  }
+
+  function generateCvDocx(data, { Paragraph, TextRun, HeadingLevel, AlignmentType }) {
+      const children = [
+          new Paragraph({ text: `${data.prenom || ''} ${data.nom || ''}`, heading: HeadingLevel.HEADING_1, alignment: AlignmentType.CENTER }),
+          new Paragraph({ text: data.titre_poste || '', alignment: AlignmentType.CENTER }),
+          new Paragraph({ text: `${data.email || ''} | ${data.telephone || ''} | ${data.adresse || ''}`, alignment: AlignmentType.CENTER }),
+          new Paragraph({ text: '' })
+      ];
+
+      if (data.profil) {
+          children.push(new Paragraph({ text: 'PROFIL', heading: HeadingLevel.HEADING_2 }));
+          children.push(new Paragraph({ text: data.profil }));
+          children.push(new Paragraph({ text: '' }));
+      }
+
+      if (data.experiences && Array.isArray(data.experiences)) {
+          children.push(new Paragraph({ text: 'EXPÉRIENCES PROFESSIONNELLES', heading: HeadingLevel.HEADING_2 }));
+          data.experiences.forEach(exp => {
+              children.push(new Paragraph({
+                  children: [
+                      new TextRun({ text: `${exp.poste || ''} - ${exp.entreprise || ''}`, bold: true }),
+                      new TextRun({ text: ` (${exp.dates || ''})`, color: '6c757d' })
+                  ]
+              }));
+              children.push(new Paragraph({ text: exp.description || '' }));
+              children.push(new Paragraph({ text: '' }));
+          });
+      }
+
+      if (data.formations && Array.isArray(data.formations)) {
+          children.push(new Paragraph({ text: 'FORMATION', heading: HeadingLevel.HEADING_2 }));
+          data.formations.forEach(form => {
+              children.push(new Paragraph({
+                  children: [
+                      new TextRun({ text: form.diplome || '', bold: true }),
+                      new TextRun({ text: ` (${form.annee || ''})`, color: '6c757d' })
+                  ]
+              }));
+              children.push(new Paragraph({ text: form.etablissement || '' }));
+              children.push(new Paragraph({ text: '' }));
+          });
+      }
+      
+      return children;
+  }
+
+  function generateInvoiceDocx(data, { Paragraph, TextRun, HeadingLevel, AlignmentType, Table, TableRow, TableCell, WidthType, BorderStyle }) {
+      const total = data.lignes ? data.lignes.reduce((sum, item) => sum + (item.quantite * item.prix_unitaire), 0) : 0;
+      
+      const headerCells = [
+          new TableCell({ children: [new Paragraph({ text: 'Description', bold: true })], verticalAlign: VerticalAlign.CENTER }),
+          new TableCell({ children: [new Paragraph({ text: 'Qté', bold: true, alignment: AlignmentType.RIGHT })], verticalAlign: VerticalAlign.CENTER }),
+          new TableCell({ children: [new Paragraph({ text: 'Prix Unitaire', bold: true, alignment: AlignmentType.RIGHT })], verticalAlign: VerticalAlign.CENTER }),
+          new TableCell({ children: [new Paragraph({ text: 'Total', bold: true, alignment: AlignmentType.RIGHT })], verticalAlign: VerticalAlign.CENTER }),
+      ];
+
+      const bodyRows = data.lignes ? data.lignes.map(item => new TableRow({
+          children: [
+              new TableCell({ children: [new Paragraph(item.description)] }),
+              new TableCell({ children: [new Paragraph({ text: String(item.quantite), alignment: AlignmentType.RIGHT })] }),
+              new TableCell({ children: [new Paragraph({ text: item.prix_unitaire.toFixed(2) + ' FCFA', alignment: AlignmentType.RIGHT })] }),
+              new TableCell({ children: [new Paragraph({ text: (item.quantite * item.prix_unitaire).toFixed(2) + ' FCFA', alignment: AlignmentType.RIGHT })] }),
+          ]
+      })) : [];
+
+      const totalRow = new TableRow({
+          children: [
+              new TableCell({ children: [new Paragraph({ text: 'TOTAL À PAYER', bold: true, alignment: AlignmentType.RIGHT })], columnSpan: 3, verticalAlign: VerticalAlign.CENTER }),
+              new TableCell({ children: [new Paragraph({ text: total.toFixed(2) + ' FCFA', bold: true, alignment: AlignmentType.RIGHT, color: '4361ee' })], verticalAlign: VerticalAlign.CENTER }),
+          ]
+      });
+
+      const table = new Table({
+          rows: [
+              new TableRow({ children: headerCells, tableHeader: true }),
+              ...bodyRows,
+              totalRow
+          ],
+          width: { size: 100, type: WidthType.PERCENTAGE },
+          borders: {
+              top: { style: BorderStyle.SINGLE, size: 6, color: '000000' },
+              bottom: { style: BorderStyle.SINGLE, size: 6, color: '000000' },
+              left: { style: BorderStyle.SINGLE, size: 6, color: '000000' },
+              right: { style: BorderStyle.SINGLE, size: 6, color: '000000' },
+          }
+      });
+
+      const children = [
+          new Paragraph({ text: `FACTURE N°${data.numero || '001'}`, heading: HeadingLevel.HEADING_1, alignment: AlignmentType.CENTER }),
+          new Paragraph({ text: '' }),
+          new Paragraph({ text: 'Émetteur:', bold: true }),
+          new Paragraph(data.emetteur?.nom || 'Nom Entreprise'),
+          new Paragraph(data.emetteur?.adresse || ''),
+          new Paragraph({ text: '' }),
+          new Paragraph({ text: 'Client:', bold: true }),
+          new Paragraph(data.client?.nom || 'Nom Client'),
+          new Paragraph(data.client?.adresse || ''),
+          new Paragraph({ text: '' }),
+          new Paragraph({ text: `Date: ${data.date || new Date().toLocaleDateString('fr-FR')}`, alignment: AlignmentType.RIGHT }),
+          new Paragraph({ text: '' }),
+          table
+      ];
+
+      if (data.notes) {
+          children.push(new Paragraph({ text: '' }));
+          children.push(new Paragraph({ text: 'Notes :', bold: true }));
+          children.push(new Paragraph(data.notes));
+      }
+
+      return children;
+  }
+  
+  function generateContractDocx(data, { Paragraph, TextRun, AlignmentType }) {
+      return [
+          new Paragraph({ text: `CONTRAT DE ${data.type_contrat?.toUpperCase() || 'SERVICE'}`, heading: HeadingLevel.HEADING_1, alignment: AlignmentType.CENTER }),
+          new Paragraph({ text: `Fait à ${data.lieu || 'Lokossa'}, le ${data.date || new Date().toLocaleDateString('fr-FR')}`, alignment: AlignmentType.CENTER }),
+          new Paragraph({ text: '' }),
+          new Paragraph({ text: 'ENTRE LES PARTIES :', heading: HeadingLevel.HEADING_2 }),
+          new Paragraph({ text: '' }),
+          new Paragraph({
+              children: [
+                  new TextRun({ text: 'Partie 1 : ', bold: true }),
+                  new TextRun({ text: data.partie1?.nom || 'Partie 1' })
+              ]
+          }),
+          new Paragraph({ text: data.partie1?.adresse || '' }),
+          new Paragraph({ text: '' }),
+          new Paragraph({
+              children: [
+                  new TextRun({ text: 'Partie 2 : ', bold: true }),
+                  new TextRun({ text: data.partie2?.nom || 'Partie 2' })
+              ]
+          }),
+          new Paragraph({ text: data.partie2?.adresse || '' }),
+          new Paragraph({ text: '' }),
+          new Paragraph({ text: 'OBJET DU CONTRAT :', heading: HeadingLevel.HEADING_2 }),
+          new Paragraph({ text: '' }),
+          new Paragraph({ text: data.contenu || 'Contenu du contrat...' }),
+          new Paragraph({ text: '' }),
+          new Paragraph({ text: '' }),
+          new Paragraph({ text: '' }),
+          new Paragraph({ text: 'Signature Partie 1 : ___________________', alignment: AlignmentType.LEFT }),
+          new Paragraph({ text: 'Signature Partie 2 : ___________________', alignment: AlignmentType.RIGHT })
+      ];
+  }
+
+
+  // ========================================
+  // 🎯 EXPORTS GLOBAUX
+  // ========================================
+  window.downloadAsFile = downloadAsFile;
+  window.downloadImage = downloadImage;
+  window.formatJsonAsDocumentHtml = formatJsonAsDocumentHtml;
+  window.generatePdfFromJson = generatePdfFromJson;
+  window.generateDocxFromJson = generateDocxFromJson;
+  
+  // ========================================
+  // FIN DU CODE intellia_doc.js
+  // ========================================
+
+
+  const el = (id) => document.getElementById(id);
+
+// ======= CONFIG =======
   let RENDER_API;
 
   if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
@@ -926,6 +1796,8 @@
     isLocalConnected: false,
     esp32Ip: localStorage.getItem('esp32Ip') || '', 
   };
+  
+
   
   const defaultAvatar = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iI2FlYWVhZSI+PHBhdGggZD0iTTEyIDJDNi44OCAyIDIgNi44OCAyIDEyczQuNDggMTQgMTAgMTBjNS41MiAwIDEwLTQuNDggMTAtMTBTMjcuNTIgMiAxMiAyem0wIDJjMS42NiAwIDMgMS4zNCAzIDNzLTEuMzQgMy0zIDMtMy0xLjM0LTMtM1MwLjM0IDQgMTIgNHptMCAxNmMtMi42NyAwLTUuNDMtMS4yOS03LTIuODguNTYtMS42NSAzLjU1LTIuNjIgNy0yLjYyczYuNDQgLjk3IDcgMi42MmMtMS41NyAxLjU5LTQuMzMgMi44OC03IDIuODh6Ii8+PC9zdmc+";
 
@@ -1269,7 +2141,17 @@
     if (!device || !time) return alert('Appareil et heure requis');
     const hasBrightness = appState.devices.find(d => d.id === device)?.hasBrightness ?? true;
     power = hasBrightness ? (power || (action === "ON" ? 100 : 0)) : null;
-    const payload = { device, time, action, power: hasBrightness ? parseInt(power) : null, createdAt: Date.now() };
+    
+    // ✅ CORRECTION: Uniformiser avec le format Gemini
+    const payload = { 
+      device, 
+      time, 
+      action: 'add', // Toujours "add" pour l'interface
+      actionType: action === "ON" ? "allumer" : "éteindre", // Action réelle
+      power: hasBrightness ? parseInt(power) : null, 
+      createdAt: Date.now() 
+    };
+    
     if (db) await push(ref(db, planningRefPath), payload);
     else { appState.plans.push(payload); savePlansToLocalStorage(); renderPlanningListUI(appState.plans); }
     logActivity(`Plan ajouté: ${device} à ${time}`);
@@ -2240,36 +3122,75 @@
   function handleSignOut() { if (auth) signOut(auth).catch((error) => console.error("Erreur Déco:", error)); }
   
   
-  // ======= Exécution Automatique des Planifications =======
-  setInterval(() => {
-    const now = new Date();
-    const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-    const duePlans = appState.plans.filter(p => p.time === currentTime);
-    
-    if (duePlans.length > 0) {
-      logActivity(`⏰ Exécution de ${duePlans.length} tâche(s) planifiée(s).`);
-      duePlans.forEach(plan => {
-        const deviceName = appState.devices.find(d => d.id === plan.device)?.name || plan.device;
-        const actionText = plan.action === 'ON' ? 'allumé' : 'éteint';
-        const powerText = plan.power !== null ? ` à ${plan.power}%` : '';
-        sendCommand(plan.device, plan.action, plan.power);
-        const chatMessage = `⏰ Tâche planifiée : **${deviceName}** ${actionText}${powerText}`;
-        if (el('chatFullWindow')) appendChat("bot", chatMessage);
-        if (appState.voiceNotifications) speak(`Exécution planifiée. ${deviceName} ${actionText}.`);
-        sendBrowserNotification(
-          '⏰ Tâche Planifiée Exécutée',
-          `${deviceName} a été ${actionText}${powerText}`,
-          { tag: `schedule-${plan.device}-${Date.now()}` }
-        );
-        const planId = plan.firebaseId || plan.createdAt;
-        if (db) remove(ref(db, `${planningRefPath}/${planId}`));
-        else appState.plans = appState.plans.filter(p => (p.firebaseId || p.createdAt) !== planId);
-        logActivity(`✅ Tâche exécutée : ${deviceName} ${actionText}`);
-      });
-      if (!db) { savePlansToLocalStorage(); renderPlanningListUI(appState.plans); }
-    }
-  }, 15000); 
+// ======= Exécution Automatique des Planifications =======
+// ✅ Système anti-duplication : stocke les tâches déjà exécutées cette minute
+let executedTasksThisMinute = new Set();
+let lastCheckedMinute = '';
 
+setInterval(() => {
+  const now = new Date();
+  const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+  
+  // ✅ Réinitialiser le cache si on change de minute
+  if (currentTime !== lastCheckedMinute) {
+    executedTasksThisMinute.clear();
+    lastCheckedMinute = currentTime;
+  }
+  
+  const duePlans = appState.plans.filter(p => p.time === currentTime);
+  
+  if (duePlans.length > 0) {
+    duePlans.forEach(plan => {
+      const planId = plan.firebaseId || plan.createdAt;
+      const taskKey = `${plan.device}-${plan.time}-${planId}`;
+      
+      // ✅ Vérifier si cette tâche a déjà été exécutée cette minute
+      if (executedTasksThisMinute.has(taskKey)) {
+        return; // Ignorer, déjà exécutée
+      }
+      
+      // ✅ Marquer comme exécutée
+      executedTasksThisMinute.add(taskKey);
+      
+      const deviceName = appState.devices.find(d => d.id === plan.device)?.name || plan.device;
+      
+      // Gérer les deux formats (ancien et nouveau)
+      let action, actionText;
+      if (plan.actionType) {
+        action = plan.actionType === "allumer" ? "ON" : "OFF";
+        actionText = plan.actionType === "allumer" ? "allumé" : "éteint";
+      } else {
+        action = plan.action;
+        actionText = plan.action === 'ON' ? 'allumé' : 'éteint';
+      }
+      
+      const powerText = plan.power !== null ? ` à ${plan.power}%` : '';
+      
+      logActivity(`⏰ Exécution : ${deviceName} ${actionText}${powerText}`);
+      sendCommand(plan.device, action, plan.power);
+      
+      const chatMessage = `⏰ Tâche planifiée : **${deviceName}** ${actionText}${powerText}`;
+      if (el('chatFullWindow')) appendChat("bot", chatMessage);
+      if (appState.voiceNotifications) speak(`Exécution planifiée. ${deviceName} ${actionText}.`);
+      
+      sendBrowserNotification(
+        '⏰ Tâche Planifiée Exécutée',
+        `${deviceName} a été ${actionText}${powerText}`,
+        { tag: `schedule-${plan.device}` } // ✅ Tag fixe pour éviter les duplications
+      );
+      
+      // ✅ Supprimer la tâche de la base après exécution
+      if (db) remove(ref(db, `${planningRefPath}/${planId}`));
+      else {
+        appState.plans = appState.plans.filter(p => (p.firebaseId || p.createdAt) !== planId);
+        savePlansToLocalStorage();
+        renderPlanningListUI(appState.plans);
+      }
+      
+      logActivity(`✅ Tâche exécutée : ${deviceName} ${actionText}`);
+    });
+  }
+}, 15000);
 
   // ======= Auth State Change Listener (Le "Gardien") =======
   if (auth) {
