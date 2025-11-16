@@ -6,6 +6,17 @@
   <title>SmartHome Intelligence - Mon Assistant Hybride Autonome</title>
   <meta name="theme-color" content="#06b6d4" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/docx/8.5.0/docx.umd.min.js"></script>
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/13.0.0/marked.min.js"></script>
+  
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  
   <style>
     :root {
       --primary:#4361ee; --accent-cyan:#06b6d4; --panel:#14151a; 
@@ -55,7 +66,11 @@
     body.night-mode #chat-input-container { background: rgba(30, 41, 59, 0.95); border-top: 1px solid rgba(255, 255, 255, 0.1); }
     body.night-mode #chatFullInput { background: rgba(15, 23, 42, 0.8); }
     body.night-mode .attachment-preview { background: rgba(51, 65, 85, 0.8); border: 1px solid rgba(255, 255, 255, 0.1); }
-
+    
+    /* ▼▼ CORRECTION CSS (Historique Chat) ▼▼ */
+    body.night-mode .chat-history-delete { color: #94a3b8; }
+    body.night-mode .chat-history-delete:hover { background: rgba(255,255,255,0.1); }
+    
     .container { max-width: 1200px; margin: 0 auto; padding: 16px 12px 100px; height: 100%; overflow-y: auto; }
     
     header {
@@ -85,11 +100,30 @@
     #chat-sidebar-header { padding: 12px; border-bottom: 1px solid rgba(0,0,0,0.1); }
     #new-chat-btn { width: 100%; justify-content: center; }
     #chat-history-list { flex: 1; overflow-y: auto; padding: 8px; }
+    
+    /* ▼▼ CORRECTION CSS (Historique Chat) ▼▼ */
     .chat-history-item {
-      padding: 10px 12px; border-radius: 8px; cursor: pointer; margin-bottom: 4px;
-      font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      
+      padding: 10px 12px; border-radius: 8px; margin-bottom: 4px;
+      font-size: 14px;
       transition: background 0.2s ease;
     }
+    .chat-history-item-title {
+      flex: 1; /* Le titre prend toute la place restante */
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      cursor: pointer; /* Garder le curseur pour le clic */
+    }
+    .chat-history-delete {
+      background: none; border: none; color: var(--muted);
+      padding: 4px 8px; border-radius: 4px; cursor: pointer;
+      margin-left: 8px; flex-shrink: 0;
+    }
+    .chat-history-delete:hover { background: rgba(0,0,0,0.1); }
+    /* ▲▲ FIN CORRECTION CSS ▲▲ */
+    
     .chat-history-item:hover { background: #e9ecef; }
     .chat-history-item.active { background: var(--primary); color: white; }
     
@@ -171,6 +205,45 @@
       content: '▋'; animation: blink 1s step-end infinite; color: var(--primary);
     }
     @keyframes blink { 50% { opacity: 0; } }
+    
+    /* ▼▼ CORRECTION CSS (Bouton Copier Code) ▼▼ */
+    .msg.bot pre {
+      position: relative; /* Nécessaire pour positionner le bouton */
+      background: #282c34; /* Fond sombre pour le code */
+      color: #abb2bf;
+      padding: 16px;
+      padding-top: 40px; /* Espace pour le bouton */
+      border-radius: 8px;
+      overflow-x: auto;
+      margin: 10px 0;
+    }
+    body.night-mode .msg.bot pre {
+      background: #1e2127;
+    }
+    .copy-code-btn {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      background: rgba(255, 255, 255, 0.1);
+      color: white;
+      border: none;
+      padding: 4px 8px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+      transition: background 0.2s ease;
+    }
+    .copy-code-btn:hover {
+      background: rgba(255, 255, 255, 0.2);
+    }
+    body.night-mode .copy-code-btn {
+      background: rgba(255, 255, 255, 0.1);
+      color: #e2e8f0;
+    }
+    body.night-mode .copy-code-btn:hover {
+      background: rgba(255, 255, 255, 0.2);
+    }
+    /* ▲▲ FIN CORRECTION CSS ▲▲ */
     
     .flex { display: flex; gap: 10px; align-items: center; }
     label { display: block; margin: 6px 0; font-size: 13px; }
@@ -329,7 +402,7 @@
         <h1 id="section-header-title">Domotique</h1>
         <div style="margin-top:8px; display:flex; flex-wrap: wrap; justify-content: center; gap: 8px;">
           <span id="statusLocal" class="chip">Local : -</span>
-          <span id="statusOnline" class="chip">Assistant : -</span>
+          <span id="statusFirebase" class="chip">Firebase : -</span>
           <span id="intelliaLatency" class="chip">latence: -</span>
           <span id="db-count" class="chip">on: 0</span>
           <span id="connection-mode" class="chip" style="background: rgba(46, 204, 113, 0.1); color: #2ecc71;">
@@ -347,6 +420,10 @@
                 <div class="flex" style="flex-wrap:wrap">
                   <button class="btn" id="dayModeBtn"><i class="fas fa-sun"></i> Jour</button>
                   <button class="btn" id="nightModeBtn"><i class="fas fa-moon"></i> Nuit</button>
+                  
+                  <button class="btn" id="toggleVoiceBtn" title="Activer/Désactiver la synthèse vocale">
+                    <i class="fas fa-volume-up"></i>
+                  </button>
                   <button class="btn success" id="allOnBtn">Tout allumer</button>
                   <button class="btn warn" id="allOffBtn">Tout éteindre</button>
                 </div>
@@ -366,14 +443,14 @@
                   <br>• <strong>À distance</strong> : Via Firebase (toujours disponible)
                   <br>• <strong>Local</strong> : Via ESP32 (uniquement sur le même réseau Wi-Fi)
                 </p>
-                <div class="flex" style="flex-wrap:wrap; justify-content: center;">
-                  <button class="btn primary" id="connect-ws" title="Active le contrôle direct de l'ESP32...">
-                    <i class="fas fa-wifi"></i> Activer connexion locale
-                  </button>
-                  <button class="btn warn" id="disconnect-ws" style="display:none;">
-                    <i class="fas fa-times-circle"></i> Désactiver local
+                
+                <div class="flex" style="flex-wrap:wrap; align-items: stretch;">
+                  <input id="esp32IpInput" placeholder="IP de l'ESP32 (ex: 192.168.1.50)" style="flex: 1; padding: 8px; border-radius: 8px; border: 1px solid #ddd; min-width: 180px;">
+                  <button class="btn primary" id="btnConnectLocal" title="Sauvegarder l'IP et connecter">
+                    <i class="fas fa-wifi"></i> Activer local
                   </button>
                 </div>
+
                 <div id="ws-status" class="chip" style="margin-top:8px; display:flex; align-items:center; gap:8px;">
                   <i class="fas fa-circle" id="ws-status-icon" style="font-size:10px; color:#94a3b8;"></i>
                   <span id="ws-status-text">Local: Non activé</span>
@@ -383,7 +460,7 @@
                   <span>À distance: Actif (Firebase)</span>
                 </div>
               </div>
-            </div>
+              </div>
             
             <div class="card" style="margin-top:12px">
               <h3>💡 Suggestions Proactives</h3>
@@ -453,11 +530,18 @@
                 <button class="btn" id="voiceContinuous" title="Mode conversation continue">
                   <i class="fa-solid fa-waveform"></i>
                 </button>
+
+                <button class="btn" id="chat-loading" style="display: none;">
+                  <i class="fas fa-spinner fa-spin"></i>
+                </button>
+                <button class="btn warn" id="stopAIBtn" style="display: none;" title="Arrêter la réponse">
+                  <i class="fas fa-stop"></i>
+                </button>
                 <button class="btn primary" id="chatFullSend">
                   <i class="fas fa-paper-plane"></i>
                 </button>
               </div>
-            </div>
+              </div>
             <div style="margin-top:8px; display:flex; flex-wrap:wrap; gap: 8px;">
               <span class="chip">Mode Conversation: <span id="continuousStatus">Désactivé</span></span>
               <span class="chip" id="intelliaStatus">Assistant: Non connecté</span>
@@ -550,8 +634,10 @@
       <button data-target="sec-params" class="btn-nav"><i class="fas fa-cog"></i><span>Paramètres</span></button>
     </footer>
       
+  </div>
   </div> <script type="module">
   
+
   // ========================================
   // INTELLIA v9.5 - GÉNÉRATEUR DE DOCUMENTS OPTIMISÉ (Contenu de intellia_doc.js)
   // Client-side : Conversion JSON → PDF/DOCX
