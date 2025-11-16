@@ -2,20 +2,20 @@
 <html lang="fr">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>SmartHome Intelligence - Mon Assistant Hybride Autonome</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
+  <title>SmartHome Intelligence - Mon Assistant Autonome</title>
   <meta name="theme-color" content="#06b6d4" />
+  
+  <!-- ✅ CDN Existants -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
-  
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
-  
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/docx/8.5.0/docx.umd.min.js"></script>
-  
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/13.0.0/marked.min.js"></script>
   
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <!-- ✅ CDN pour Génération de Documents -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/docx@8.0.0/build/index.min.js"></script>
   
   <style>
     :root {
@@ -26,7 +26,6 @@
     }
     
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    
     html, body { height: 100%; overflow: hidden; }
     
     body {
@@ -55,7 +54,6 @@
     body.night-mode .btn.success { background: var(--success); color: white; }
     body.night-mode .btn.warning { background: var(--warning); color: white; }
     body.night-mode .chat-window { background: rgba(15, 23, 42, 0.6); }
-    body.night-mode .msg.bot { background: rgba(30, 41, 59, 0.9); color: #e2e8f0; border: 1px solid rgba(255, 255, 255, 0.1); }
     body.night-mode table th, body.night-mode table td { border-bottom: 1px solid rgba(255, 255, 255, 0.1); color: #e2e8f0; }
     body.night-mode .chip { background: rgba(51, 65, 85, 0.6); color: #e2e8f0; }
     body.night-mode .settings-group { border-bottom: 1px solid rgba(255, 255, 255, 0.1); }
@@ -66,12 +64,34 @@
     body.night-mode #chat-input-container { background: rgba(30, 41, 59, 0.95); border-top: 1px solid rgba(255, 255, 255, 0.1); }
     body.night-mode #chatFullInput { background: rgba(15, 23, 42, 0.8); }
     body.night-mode .attachment-preview { background: rgba(51, 65, 85, 0.8); border: 1px solid rgba(255, 255, 255, 0.1); }
-    
-    /* ▼▼ CORRECTION CSS (Historique Chat) ▼▼ */
-    body.night-mode .chat-history-delete { color: #94a3b8; }
-    body.night-mode .chat-history-delete:hover { background: rgba(255,255,255,0.1); }
-    
-    .container { max-width: 1200px; margin: 0 auto; padding: 16px 12px 100px; height: 100%; overflow-y: auto; }
+    body.night-mode .chat-history-item .btn.warn { background: var(--danger); color: white; border: none; }
+    body.night-mode .chat-history-item .btn.warn:hover { background: #c0392b; }
+    body.night-mode .msg.bot {
+      background: rgba(30, 41, 59, 0.95);
+      color: #e2e8f0;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    body.night-mode .msg.bot h1, 
+    body.night-mode .msg.bot h2, 
+    body.night-mode .msg.bot h3 {
+      color: var(--accent-cyan);
+    }
+    body.night-mode .msg.bot strong { color: var(--accent-cyan); }
+    body.night-mode .msg.bot code:not(pre code) {
+      background: rgba(255,255,255,0.1);
+    }
+    body.night-mode .document-preview {
+      background: rgba(30, 41, 59, 0.95);
+      color: #e2e8f0;
+    }
+
+    .container { 
+      max-width: 1200px; margin: 0 auto; 
+      padding: 16px 12px 100px;
+      height: 100%; 
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
     
     header {
       background: linear-gradient(90deg, #4b6cb7, #1f3b8a);
@@ -83,68 +103,129 @@
     .section { display: none; }
     .section.active { display: block; }
     
-    /* ===== NOUVELLE SECTION CHAT (DANS L'ONGLET) ===== */
+    /* SECTION CHAT */
     #sec-intelligence {
-      height: calc(100vh - 88px); /* Hauteur totale - padding bas du container */
-      padding-top: 0; margin-top: -16px; /* Ajuster pour prendre l'écran */
-      display: none; flex-direction: row;
+      height: 100%; 
+      padding-top: 0; 
+      margin-top: -16px;
+      display: none; 
+      flex-direction: row;
+      position: relative;
     }
-    #sec-intelligence.active { display: flex; } /* Activer le flex quand visible */
-    
+    #sec-intelligence.active { display: flex; }
+
     #chat-sidebar {
       width: 260px; height: 100%; background: #f8f9fa;
       border-right: 1px solid rgba(0,0,0,0.1); display: flex;
       flex-direction: column; flex-shrink: 0;
       transition: all 0.3s ease;
     }
-    #chat-sidebar-header { padding: 12px; border-bottom: 1px solid rgba(0,0,0,0.1); }
+
+    #chat-sidebar-header {
+      padding: 12px;
+      border-bottom: 1px solid rgba(0,0,0,0.1);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
     #new-chat-btn { width: 100%; justify-content: center; }
     #chat-history-list { flex: 1; overflow-y: auto; padding: 8px; }
-    
-    /* ▼▼ CORRECTION CSS (Historique Chat) ▼▼ */
+
     .chat-history-item {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      
-      padding: 10px 12px; border-radius: 8px; margin-bottom: 4px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      margin-bottom: 4px;
       font-size: 14px;
       transition: background 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      min-height: 44px;
     }
-    .chat-history-item-title {
-      flex: 1; /* Le titre prend toute la place restante */
-      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-      cursor: pointer; /* Garder le curseur pour le clic */
-    }
-    .chat-history-delete {
-      background: none; border: none; color: var(--muted);
-      padding: 4px 8px; border-radius: 4px; cursor: pointer;
-      margin-left: 8px; flex-shrink: 0;
-    }
-    .chat-history-delete:hover { background: rgba(0,0,0,0.1); }
-    /* ▲▲ FIN CORRECTION CSS ▲▲ */
     
+    .chat-history-item-title {
+      flex: 1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      min-width: 0;
+      padding-right: 8px;
+    }
+    
+    .chat-history-item .chat-history-delete {
+      padding: 6px 10px;
+      font-size: 14px;
+      line-height: 1;
+      border-radius: 6px;
+      flex-shrink: 0;
+      min-width: 36px;
+      min-height: 36px;
+      background: rgba(0,0,0,0.05);
+      color: var(--muted);
+      border: none;
+    }
+    .chat-history-item .chat-history-delete:hover {
+      background: var(--danger);
+      color: white !important;
+    }
+    body.night-mode .chat-history-item .chat-history-delete {
+      background: rgba(255,255,255,0.05);
+      color: var(--muted);
+    }
+    body.night-mode .chat-history-item .chat-history-delete:hover {
+      background: var(--danger);
+      color: white !important;
+    }
+
     .chat-history-item:hover { background: #e9ecef; }
     .chat-history-item.active { background: var(--primary); color: white; }
+    .chat-history-item.active .btn.warn { 
+      background: rgba(255,255,255,0.2); color: white; 
+    }
     
     #chat-section-container {
-      flex: 1; height: 100%;
-      display: flex; flex-direction: column;
+      flex: 1; 
+      height: 100%;
+      display: flex; 
+      flex-direction: column;
       background: linear-gradient(135deg, #f5f7fa, #c3cfe2);
       position: relative;
+      overflow: hidden;
     }
     body.night-mode #chat-section-container {
       background: linear-gradient(135deg, #0e0f13, #0f1724);
     }
     
     #chatFullWindow {
-      flex: 1; overflow-y: auto; padding: 16px;
-      display: flex; flex-direction: column;
+      flex: 1; 
+      overflow-y: auto;
+      overflow-x: hidden;
+      padding: 16px;
+      padding-bottom: 16px;
+      display: flex; 
+      flex-direction: column;
+      max-width: 800px;
+      width: 100%;
+      margin: 0 auto;
+      -webkit-overflow-scrolling: touch;
     }
+    
     #chat-input-container {
-      padding: 12px; border-top: 1px solid rgba(0,0,0,0.1);
-      background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(10px);
+      padding: 12px; 
+      border-top: 1px solid rgba(0,0,0,0.1);
+      background: rgba(255, 255, 255, 0.9); 
+      backdrop-filter: blur(10px);
+      flex-shrink: 0;
+      max-width: 800px;
+      width: 100%;
+      margin: 0 auto;
+      position: relative;
+      bottom: auto;
     }
+    
     #chat-input-flex { display: flex; gap: 8px; }
     #chatFullInput {
       flex: 1; padding: 12px; border-radius: 8px;
@@ -153,7 +234,6 @@
     #chat-input-buttons { display: flex; gap: 8px; }
     #chatFullSend { padding: 0 16px; }
     
-    /* Prévisualisation des pièces jointes */
     #attachment-preview-container {
       display: flex; gap: 8px; margin-bottom: 8px; flex-wrap: wrap;
     }
@@ -164,7 +244,6 @@
     .attachment-preview img { width: 32px; height: 32px; object-fit: cover; border-radius: 4px; }
     .remove-attachment { cursor: pointer; font-size: 14px; color: var(--danger); }
     #file-input { display: none; }
-    /* ===== FIN SECTION CHAT ===== */
 
     .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
     .card { background: var(--card-bg); border-radius: 12px; padding: 14px; box-shadow: var(--shadow); }
@@ -191,6 +270,17 @@
     .btn:hover { transform: translateY(-1px); box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
     .btn.primary { background: var(--primary); color: white; }
     .btn.warn { background: var(--danger); color: white; }
+    
+    #toggleVoiceBtn.muted {
+      color: var(--danger);
+      background: rgba(231, 76, 60, 0.1);
+      border: 1px solid var(--danger);
+    }
+    body.night-mode #toggleVoiceBtn.muted {
+      background: rgba(231, 76, 60, 0.3);
+      color: #f0a0a0;
+    }
+    
     .btn.success { background: var(--success); color: white; }
     .btn.warning { background: var(--warning); color: white; }
     .btn.active { background: var(--accent-cyan); color: white; }
@@ -198,52 +288,113 @@
     
     input[type=range] { width: 100%; }
     
-    .msg { padding: 10px 14px; border-radius: 12px; max-width: 85%; margin-bottom: 10px; word-wrap: break-word; line-height: 1.4; }
-    .msg.user { align-self: flex-end; background: linear-gradient(135deg, #4895ef, #4361ee); color: white; }
-    .msg.bot { align-self: flex-start; background: var(--card-bg); border: 1px solid rgba(0,0,0,0.06); }
-    .msg.bot.typing::after {
-      content: '▋'; animation: blink 1s step-end infinite; color: var(--primary);
+    /* MESSAGES STYLE GEMINI */
+    .msg { 
+      padding: 10px 14px; border-radius: 12px; max-width: 90%; 
+      margin-bottom: 10px; word-wrap: break-word; line-height: 1.6;
     }
-    @keyframes blink { 50% { opacity: 0; } }
+    .msg.user { 
+      align-self: flex-end; background: linear-gradient(135deg, #4895ef, #4361ee); color: white; 
+    }
     
-    /* ▼▼ CORRECTION CSS (Bouton Copier Code) ▼▼ */
+    .msg.bot {
+      align-self: flex-start;
+      background: var(--card-bg);
+      border: 1px solid rgba(0,0,0,0.06);
+      color: var(--dark);
+      width: 100%;
+      max-width: 100%;
+      white-space: normal;
+      overflow-wrap: break-word;
+    }
+
+    .msg.bot h1, .msg.bot h2, .msg.bot h3 {
+      margin-top: 16px; margin-bottom: 8px;
+      color: var(--primary);
+    }
+    .msg.bot p { margin-bottom: 12px; }
+    .msg.bot ul, .msg.bot ol {
+      margin-left: 20px; margin-bottom: 12px;
+    }
+    .msg.bot li { margin-bottom: 4px; }
+    .msg.bot strong { color: var(--primary); }
+    .msg.bot code:not(pre code) {
+      background: rgba(0,0,0,0.05);
+      padding: 2px 4px;
+      border-radius: 4px;
+      font-family: monospace;
+    }
+
     .msg.bot pre {
-      position: relative; /* Nécessaire pour positionner le bouton */
-      background: #282c34; /* Fond sombre pour le code */
-      color: #abb2bf;
+      background: #0d1117;
+      color: #c9d1d9;
       padding: 16px;
-      padding-top: 40px; /* Espace pour le bouton */
       border-radius: 8px;
+      margin-bottom: 12px;
       overflow-x: auto;
-      margin: 10px 0;
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 14px;
+      position: relative;
     }
-    body.night-mode .msg.bot pre {
-      background: #1e2127;
+    .msg.bot pre code {
+      background: none;
+      padding: 0;
+      border-radius: 0;
     }
+    
     .copy-code-btn {
       position: absolute;
       top: 8px;
       right: 8px;
-      background: rgba(255, 255, 255, 0.1);
+      background: rgba(255,255,255,0.1);
       color: white;
       border: none;
-      padding: 4px 8px;
-      border-radius: 4px;
+      padding: 6px 10px;
+      border-radius: 6px;
       cursor: pointer;
-      font-size: 12px;
-      transition: background 0.2s ease;
+      font-size: 13px;
+      opacity: 0;
+      transition: opacity 0.2s ease;
     }
-    .copy-code-btn:hover {
-      background: rgba(255, 255, 255, 0.2);
+    .msg.bot pre:hover .copy-code-btn {
+      opacity: 1;
     }
-    body.night-mode .copy-code-btn {
-      background: rgba(255, 255, 255, 0.1);
-      color: #e2e8f0;
+    .copy-code-btn:active {
+      background: rgba(255,255,255,0.3);
     }
-    body.night-mode .copy-code-btn:hover {
-      background: rgba(255, 255, 255, 0.2);
+    
+    .ai-image-container {
+      margin: 15px 0;
+      text-align: center;
     }
-    /* ▲▲ FIN CORRECTION CSS ▲▲ */
+    
+    .ai-image-container img {
+      max-width: 100%;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      margin-bottom: 10px;
+    }
+    
+    .ai-document-container {
+      margin: 15px 0;
+    }
+    
+    .document-preview {
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      max-width: 800px;
+      margin: 20px auto;
+      font-family: Arial, sans-serif;
+      color: #333;
+    }
+    
+    .msg.bot.loading::after {
+      content: '▋'; animation: blink 1s step-end infinite; color: var(--primary);
+    }
+
+    @keyframes blink { 50% { opacity: 0; } }
     
     .flex { display: flex; gap: 10px; align-items: center; }
     label { display: block; margin: 6px 0; font-size: 13px; }
@@ -303,42 +454,152 @@
       .btn { width: 100%; justify-content: center; }
       .flex { flex-direction: column; align-items: stretch; }
       .two-column { grid-template-columns: 1fr; }
+      .container { padding-bottom: 88px; }
 
-      /* Responsive Chat UI */
-      #chat-sidebar {
-        position: absolute; left: -280px; top: 0; bottom: 0;
-        z-index: 1100; box-shadow: 0 0 20px rgba(0,0,0,0.2);
-      }
-      #chat-sidebar.open { left: 0; }
-      
-      /* Bouton pour ouvrir la sidebar */
-      #sidebar-toggle-btn {
-        display: block; position: absolute; top: 16px; left: 12px;
-        z-index: 900; background: var(--panel); color: white;
-        border: 0; border-radius: 8px; width: 40px; height: 40px;
-      }
-      /* Fond sombre quand sidebar ouverte */
-      #sidebar-overlay {
-        display: none; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
-        background: rgba(0,0,0,0.5); z-index: 1050;
-      }
-      #sidebar-overlay.open { display: block; }
-      /* L'onglet chat prend tout l'espace */
       #sec-intelligence {
-        width: 100%;
-        position: fixed; top: 0; left: 0; right: 0; bottom: 72px; /* 72px = hauteur footer */
-        margin-top: 0; z-index: 950;
+        height: 100%; 
       }
-      .container { padding-bottom: 88px; } /* Plus d'espace pour le footer */
+      
+      #chat-sidebar {
+        position: fixed; 
+        left: -100%;
+        top: 0; bottom: 0;
+        width: 85%;
+        max-width: 320px;
+        z-index: 10000;
+        transition: left 0.3s ease;
+        box-shadow: 2px 0 10px rgba(0,0,0,0.3);
+      }
+      #chat-sidebar.open {
+        left: 0;
+      }
+      
+      #sidebar-overlay {
+        display: none;
+        position: fixed; 
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0,0,0,0.5);
+        z-index: 9999;
+      }
+      #sidebar-overlay.open {
+        display: block;
+      }
+      
+      #sidebar-toggle-btn {
+        display: flex; 
+        position: absolute; 
+        top: 16px;
+        left: 16px;
+        z-index: 1000; 
+        background: var(--primary);
+        color: white;
+        border: 0;
+        border-radius: 8px;
+        width: 48px;
+        height: 48px;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+      }
+      
+      #chat-input-buttons button {
+        min-width: 48px; min-height: 48px; font-size: 18px;
+      }
+      
+      #stopAIBtn {
+        background: var(--danger) !important;
+        color: white !important;
+        animation: pulse-stop 1.5s infinite;
+        font-weight: 700;
+        min-width: 56px !important;
+        min-height: 48px !important;
+        box-shadow: 0 4px 12px rgba(231, 76, 60, 0.5) !important;
+        border: 2px solid rgba(255, 255, 255, 0.3) !important;
+      }
+      @keyframes pulse-stop {
+        0% {     
+          box-shadow: 0 4px 12px rgba(231, 76, 60, 0.5);
+          transform: scale(1);
+        }
+        50% {     
+          box-shadow: 0 6px 20px rgba(231, 76, 60, 0.8);
+          transform: scale(1.05);
+        }
+        100% {     
+          box-shadow: 0 4px 12px rgba(231, 76, 60, 0.5);
+          transform: scale(1);
+        }
+      }
+      #stopAIBtn:hover {
+        background: #c0392b !important;
+        transform: scale(1.1) !important;
+      }
+      
+      #chatFullSend { min-width: 56px; min-height: 48px; }
+      #chatFullInput { min-height: 48px; font-size: 16px; }
+      
+      #chat-section-container { 
+        height: 100%; 
+        overflow: hidden;
+        width: 100%; 
+        position: relative;
+      }
+      #chatFullWindow { 
+        padding: 80px 12px 16px;
+        padding-bottom: 200px;
+        overflow-y: auto;
+        overflow-x: hidden;
+        -webkit-overflow-scrolling: touch;
+      }
+      #chat-input-container { 
+        position: fixed;
+        bottom: 72px;
+        left: 0;
+        right: 0;
+        width: 100%;
+        max-width: 100%;
+        margin: 0;
+        padding: 12px;
+        transform: none;
+        z-index: 999;
+        box-sizing: border-box;
+      }
+      
+      .msg { 
+        max-width: 90%; 
+        font-size: 15px; 
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+      }
+      
+      #close-sidebar-btn {
+        display: flex !important;
+        width: 100%;
+        justify-content: center;
+      }
+
+      .chat-history-item .btn.chat-history-delete {
+        width: auto;
+      }
     }
     
     @media (min-width: 761px) {
       .two-column { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
       #sidebar-toggle-btn { display: none; }
       #sidebar-overlay { display: none; }
+      
+      #chat-section-container { overflow: hidden; }
+      #chatFullWindow { 
+        overflow-y: auto; 
+        padding-bottom: 16px;
+      }
+      #chat-input-container {
+        position: relative;
+        transform: none;
+        left: auto;
+      }
     }
 
-    /* ==== Écran de connexion (C'EST LE NOUVEL ÉLÉMENT HTML IMPORTANT) ==== */
     #login-overlay {
       position: fixed; top: 0; left: 0; right: 0; bottom: 0;
       background: linear-gradient(135deg, #f5f7fa, #c3cfe2);
@@ -355,11 +616,7 @@
     .login-box h2 { margin-bottom: 8px; }
     .login-box p { color: var(--muted); margin-bottom: 24px; }
     
-    /* ==== Application Principale (Masquée par défaut) ==== */
-    .main-app { 
-      display: none; /* Le script le mettra en 'block' après connexion */
-      height: 100%; 
-    }
+    .main-app { display: none; height: 100%; }
     
     #user-profile-card {
       display: flex; align-items: center; gap: 15px;
@@ -376,9 +633,6 @@
     
     #proactive-suggestion { transition: opacity 0.5s ease-in-out; }
     #proactive-suggestion.fade-out { opacity: 0; }
-
-    @keyframes connection-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
-    #ws-status-icon.active { animation: connection-pulse 2s infinite; }
   </style>
 </head>
 <body>
@@ -401,13 +655,11 @@
       <header id="main-header">
         <h1 id="section-header-title">Domotique</h1>
         <div style="margin-top:8px; display:flex; flex-wrap: wrap; justify-content: center; gap: 8px;">
-          <span id="statusLocal" class="chip">Local : -</span>
-          <span id="statusFirebase" class="chip">Firebase : -</span>
+          <span id="statusLocal" class="chip">ESP32: -</span>
+          <span id="statusFirebase" class="chip">Firebase : -</span> 
+          <span id="statusOnline" class="chip">Assistant : -</span>
           <span id="intelliaLatency" class="chip">latence: -</span>
           <span id="db-count" class="chip">on: 0</span>
-          <span id="connection-mode" class="chip" style="background: rgba(46, 204, 113, 0.1); color: #2ecc71;">
-            <i class="fas fa-cloud"></i> Mode distant
-          </span>
         </div>
       </header>
 
@@ -420,10 +672,6 @@
                 <div class="flex" style="flex-wrap:wrap">
                   <button class="btn" id="dayModeBtn"><i class="fas fa-sun"></i> Jour</button>
                   <button class="btn" id="nightModeBtn"><i class="fas fa-moon"></i> Nuit</button>
-                  
-                  <button class="btn" id="toggleVoiceBtn" title="Activer/Désactiver la synthèse vocale">
-                    <i class="fas fa-volume-up"></i>
-                  </button>
                   <button class="btn success" id="allOnBtn">Tout allumer</button>
                   <button class="btn warn" id="allOffBtn">Tout éteindre</button>
                 </div>
@@ -436,31 +684,7 @@
                 </button>
               </div>
 
-              <div style="margin-top:12px; border-top: 1px solid rgba(0,0,0,0.1); padding-top:12px;">
-                <strong>📡 Mode de Connexion</strong>
-                <p style="font-size:12px; color:var(--muted); margin:8px 0;">
-                  <i class="fas fa-info-circle"></i> L'application fonctionne en mode <strong>hybride</strong> :
-                  <br>• <strong>À distance</strong> : Via Firebase (toujours disponible)
-                  <br>• <strong>Local</strong> : Via ESP32 (uniquement sur le même réseau Wi-Fi)
-                </p>
-                
-                <div class="flex" style="flex-wrap:wrap; align-items: stretch;">
-                  <input id="esp32IpInput" placeholder="IP de l'ESP32 (ex: 192.168.1.50)" style="flex: 1; padding: 8px; border-radius: 8px; border: 1px solid #ddd; min-width: 180px;">
-                  <button class="btn primary" id="btnConnectLocal" title="Sauvegarder l'IP et connecter">
-                    <i class="fas fa-wifi"></i> Activer local
-                  </button>
-                </div>
-
-                <div id="ws-status" class="chip" style="margin-top:8px; display:flex; align-items:center; gap:8px;">
-                  <i class="fas fa-circle" id="ws-status-icon" style="font-size:10px; color:#94a3b8;"></i>
-                  <span id="ws-status-text">Local: Non activé</span>
-                </div>
-                <div id="firebase-status" class="chip" style="margin-top:4px; display:flex; align-items:center; gap:8px;">
-                  <i class="fas fa-circle" style="font-size:10px; color:#2ecc71;"></i>
-                  <span>À distance: Actif (Firebase)</span>
-                </div>
-              </div>
-              </div>
+            </div>
             
             <div class="card" style="margin-top:12px">
               <h3>💡 Suggestions Proactives</h3>
@@ -501,22 +725,30 @@
         
         <div id="chat-sidebar">
           <div id="chat-sidebar-header">
+            <button class="btn" id="close-sidebar-btn" style="display: none;">
+              <i class="fas fa-arrow-left"></i> Retour
+            </button>
             <button class="btn primary" id="new-chat-btn">
               <i class="fas fa-plus"></i> Nouvelle Discussion
             </button>
           </div>
           <div id="chat-history-list">
-            </div>
+          </div>
         </div>
         
         <div id="chat-section-container">
           <div id="chatFullWindow">
-            </div>
+          </div>
+          
           <div id="chat-input-container">
+            <div id="chat-loading" style="display:none; padding-bottom: 8px; text-align:center; font-style:italic; color:var(--muted); font-size: 14px;">
+              <i class="fas fa-spinner fa-spin"></i> Assistant en train de réfléchir...
+            </div>
+          
             <div id="attachment-preview-container"></div>
             
             <div id="chat-input-flex">
-              <input type="file" id="file-input" accept="image/*,application/pdf,.txt,.docx" multiple>
+              <input type="file" id="file-input" accept="image/*,application/pdf,text/*,.txt,.docx,.doc,.html,.htm,.js,.json,.css,.xml,.csv,.xlsx,.xls,.pptx,.ppt,.zip,.rar" multiple>
               <button class="btn" id="attach-file-btn" title="Joindre un fichier">
                 <i class="fas fa-paperclip"></i>
               </button>
@@ -524,24 +756,26 @@
               <input id="chatFullInput" placeholder="Posez une question à l'Assistant..." />
               
               <div id="chat-input-buttons">
-                <button class="btn" id="voicePushToTalk" title="Appuyer pour enregistrer, réappuyer pour envoyer">
+                <button class="btn" id="voicePushToTalk" title="Appuyer pour enregistrer">
                   <i class="fas fa-microphone-alt"></i>
                 </button>
                 <button class="btn" id="voiceContinuous" title="Mode conversation continue">
                   <i class="fa-solid fa-waveform"></i>
                 </button>
-
-                <button class="btn" id="chat-loading" style="display: none;">
-                  <i class="fas fa-spinner fa-spin"></i>
+                
+                <button class="btn" id="toggleVoiceBtn" title="Activer/Désactiver la synthèse vocale">
+                  <i class="fas fa-volume-up"></i>
                 </button>
-                <button class="btn warn" id="stopAIBtn" style="display: none;" title="Arrêter la réponse">
-                  <i class="fas fa-stop"></i>
-                </button>
+                
                 <button class="btn primary" id="chatFullSend">
                   <i class="fas fa-paper-plane"></i>
                 </button>
+                <button class="btn warn" id="stopAIBtn" style="display: none; min-width: 56px; min-height: 48px;">
+                  <i class="fas fa-stop-circle" style="font-size: 20px;"></i>
+                </button>
+                
               </div>
-              </div>
+            </div>
             <div style="margin-top:8px; display:flex; flex-wrap:wrap; gap: 8px;">
               <span class="chip">Mode Conversation: <span id="continuousStatus">Désactivé</span></span>
               <span class="chip" id="intelliaStatus">Assistant: Non connecté</span>
@@ -582,6 +816,19 @@
       <section id="sec-params" class="section">
         <div class="card">
           <h2>Paramètres du Système</h2>
+          
+          <div class="settings-group">
+            <h3>⚡ Connexion Locale (WebSocket)</h3>
+            <p style="font-size:13px; color:var(--muted); margin-bottom:10px;">
+              Permet un contrôle instantané lorsque vous êtes sur le même WiFi que l'ESP32.
+            </p>
+            <label>Adresse IP de l'ESP32 :</label>
+            <input id="esp32IpInput" placeholder="192.168.x.x" style="width:100%;padding:8px;border-radius:8px;border:1px solid #ddd" />
+            <div style="margin-top:10px;display:flex;gap:8px">
+              <button class="btn primary" id="btnConnectLocal">Sauver & Connecter</button>
+            </div>
+          </div>
+          
           <div class="settings-group">
             <h3>Apparence</h3>
             <div class="toggle-section">
@@ -627,7 +874,9 @@
           </div>
         </div>
       </section>
-    </div> <footer id="main-footer">
+    </div> 
+    
+    <footer id="main-footer">
       <button data-target="sec-domotique" class="btn-nav active"><i class="fas fa-home"></i><span>Accueil</span></button>
       <button data-target="sec-intelligence" class="btn-nav"><i class="fas fa-robot"></i><span>Assistant</span></button>
       <button data-target="sec-planning" class="btn-nav"><i class="fas fa-calendar-alt"></i><span>Planning</span></button>
@@ -635,902 +884,16 @@
     </footer>
       
   </div>
-  </div> <script type="module">
   
-
-  // ========================================
-  // INTELLIA v9.5 - GÉNÉRATEUR DE DOCUMENTS OPTIMISÉ (Contenu de intellia_doc.js)
-  // Client-side : Conversion JSON → PDF/DOCX
-  // ========================================
-
-  // La dépendance jsPDF est chargée via CDN dans le <head>
-
-  // ========================================
-  // 📄 FONCTION UNIVERSELLE DE TÉLÉCHARGEMENT (CAS 1)
-  // ========================================
-  function downloadAsFile(filename, content, mimeType = 'text/plain') {
-    const blob = new Blob([content], { type: mimeType + ';charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    
-    document.body.appendChild(a);
-    a.click();
-    
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    
-    console.log(`✅ Fichier téléchargé: ${filename}`);
-  }
-
-  // ========================================
-  // 🎨 FONCTION DE TÉLÉCHARGEMENT D'IMAGE (CAS 3)
-  // ========================================
-  function downloadImage(imageUrl, filename = null) {
-    if (!filename) {
-      filename = `intellia_image_${Date.now()}.png`;
-    }
-    
-    fetch(imageUrl)
-      .then(response => response.blob())
-      .then(blob => {
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-        console.log(`✅ Image téléchargée: ${filename}`);
-      })
-      .catch(error => {
-        console.error("❌ Erreur de téléchargement d'image:", error);
-        alert("Impossible de télécharger l'image. Veuillez réessayer.");
-      });
-  }
-
-  // ========================================
-  // 📝 FORMATAGE JSON → HTML (PRÉVISUALISATION)
-  // ========================================
-  function formatJsonAsDocumentHtml(jsonData) {
-    const type = jsonData.type || 'document';
-    
-    let html = '<div class="document-preview" style="background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); max-width: 800px; margin: 20px auto; font-family: Arial, sans-serif; color: #333;">';
-    
-    switch(type) {
-      case 'lettre':
-        html += formatLetterHtml(jsonData);
-        break;
-      case 'rapport':
-        html += formatReportHtml(jsonData);
-        break;
-      case 'cv':
-        html += formatCvHtml(jsonData);
-        break;
-      case 'facture':
-        html += formatInvoiceHtml(jsonData);
-        break;
-      case 'contrat':
-        html += formatContractHtml(jsonData);
-        break;
-      default:
-        html += formatGenericDocumentHtml(jsonData);
-    }
-    
-    // Le JSON est "échappé" en remplaçant " par &quot; pour être passé dans le onclick
-    const safeJson = JSON.stringify(jsonData).replace(/"/g, '&quot;');
-    
-    html += `
-      <div style="margin-top: 30px; display: flex; gap: 10px; justify-content: center;">
-        <button class="btn primary" onclick="generatePdfFromJson('${safeJson}')">
-          <i class="fas fa-file-pdf"></i> Télécharger en PDF
-        </button>
-        <button class="btn success" onclick="generateDocxFromJson('${safeJson}')">
-          <i class="fas fa-file-word"></i> Télécharger en DOCX
-        </button>
-      </div>
-    </div>`;
-    
-    return html;
-  }
-
-  // ========================================
-  // 📧 FORMAT : LETTRE
-  // ========================================
-  function formatLetterHtml(data) {
-    return `
-      <div style="text-align: right; margin-bottom: 30px;">
-        <strong>${data.expediteur || 'Expéditeur'}</strong><br>
-        ${data.adresse_expediteur || ''}
-      </div>
-      
-      <div style="margin-bottom: 30px;">
-        <strong>À l'attention de :</strong><br>
-        ${data.destinataire || 'Destinataire'}<br>
-        ${data.adresse_destinataire || ''}
-      </div>
-      
-      <div style="text-align: right; margin-bottom: 30px;">
-        ${data.lieu || 'Lokossa'}, le ${data.date || new Date().toLocaleDateString('fr-FR')}
-      </div>
-      
-      <h2 style="margin-bottom: 20px; text-align: left;">Objet: ${data.objet || 'Objet de la lettre'}</h2>
-      
-      <div style="font-size: 16px; text-align: justify;">
-        ${data.formule_appel || 'Madame, Monsieur,'}<br><br>
-        ${(data.corps || '').replace(/\n/g, '<br><br>')}
-      </div>
-      
-      <div style="margin-top: 40px;">
-        ${data.formule_politesse || 'Veuillez agréer, Madame, Monsieur, l\'expression de mes salutations distinguées.'}<br><br>
-        ${data.signature || data.expediteur || ''}
-      </div>
-    `;
-  }
-
-  // ========================================
-  // 📊 FORMAT : RAPPORT
-  // ========================================
-  function formatReportHtml(data) {
-    let html = `
-      <h1 style="text-align: center;">${data.titre || 'Rapport sans Titre'}</h1>
-      <h3 style="text-align: center; color: #6c757d;">${data.sous_titre || ''}</h3>
-      <p style="text-align: center; margin-bottom: 30px; border-bottom: 1px solid #ddd; padding-bottom: 15px;">
-        Date: ${data.date || new Date().toLocaleDateString('fr-FR')} | Auteur: ${data.auteur || 'Intellia'}
-      </p>
-      <div style="line-height: 1.8;">
-    `;
-    
-    if (data.introduction) {
-      html += `<h2>Introduction</h2><p style="text-align: justify;">${data.introduction}</p>`;
-    }
-    
-    if (data.sections && Array.isArray(data.sections)) {
-      data.sections.forEach((section, index) => {
-        html += `<h3>${index + 1}. ${section.titre}</h3><p style="text-align: justify;">${section.contenu}</p>`;
-      });
-    }
-    
-    if (data.conclusion) {
-      html += `<h2>Conclusion</h2><p style="text-align: justify;">${data.conclusion}</p>`;
-    }
-    
-    html += '</div>';
-    return html;
-  }
-
-  // ========================================
-  // 🤵 FORMAT : CV
-  // ========================================
-  function formatCvHtml(data) {
-    let html = `
-      <h1 style="text-align: center; color: var(--primary); margin-bottom: 5px;">${data.prenom || ''} ${data.nom || ''}</h1>
-      <p style="text-align: center; font-size: 18px; color: #6c757d;">${data.titre_poste || ''}</p>
-      <p style="text-align: center; margin-bottom: 20px; border-bottom: 1px solid #ddd; padding-bottom: 10px;">
-        ${data.email || ''} | ${data.telephone || ''} | ${data.adresse || ''}
-      </p>
-    `;
-
-    if (data.profil) {
-      html += `<div style="margin-bottom: 30px;">
-        <h2 style="color: #4361ee; border-left: 4px solid #4361ee; padding-left: 15px;">Profil</h2>
-        <p style="margin-top: 10px; text-align: justify;">${data.profil}</p>
-      </div>`;
-    }
-
-    if (data.experiences && Array.isArray(data.experiences)) {
-      html += `<div style="margin-bottom: 30px;">
-        <h2 style="color: #4361ee; border-left: 4px solid #4361ee; padding-left: 15px;">Expériences Professionnelles</h2>`;
-      data.experiences.forEach(exp => {
-        html += `<div style="margin-top: 15px;">
-          <h3 style="margin: 0; font-size: 16px; display: flex; justify-content: space-between;">
-            <strong>${exp.poste || ''}</strong> 
-            <span style="color: #6c757d; font-weight: normal;">${exp.dates || ''}</span>
-          </h3>
-          <p style="margin: 5px 0 0 0;">${exp.entreprise || ''} - ${exp.ville || ''}</p>
-          ${exp.description ? `<p style="margin-top: 8px; line-height: 1.6;">${exp.description}</p>` : ''}
-        </div>`;
-      });
-      html += `</div>`;
-    }
-
-    if (data.formations && Array.isArray(data.formations)) {
-      html += `<div style="margin-bottom: 30px;">
-        <h2 style="color: #4361ee; border-left: 4px solid #4361ee; padding-left: 15px;">Formation</h2>`;
-      data.formations.forEach(form => {
-        html += `<div style="margin-top: 15px;">
-          <h3 style="margin: 0; font-size: 16px; display: flex; justify-content: space-between;">
-            <strong>${form.diplome || ''}</strong> 
-            <span style="color: #6c757d; font-weight: normal;">${form.annee || ''}</span>
-          </h3>
-          <p style="margin: 5px 0 0 0;">${form.etablissement || ''} - ${form.ville || ''}</p>
-        </div>`;
-      });
-      html += `</div>`;
-    }
-
-    return html;
-  }
-
-  // ========================================
-  // 🧾 FORMAT : FACTURE
-  // ========================================
-  function formatInvoiceHtml(data) {
-    const total = data.lignes ? data.lignes.reduce((sum, item) => sum + (item.quantite * item.prix_unitaire), 0) : 0;
-
-    let html = `
-      <h1 style="text-align: center; color: var(--primary); margin-bottom: 30px;">FACTURE #${data.numero || '001'}</h1>
-      
-      <div style="display: flex; justify-content: space-between; margin-bottom: 40px; font-size: 14px;">
-        <div>
-          <strong>Émetteur:</strong><br>
-          ${data.emetteur?.nom || 'Nom Entreprise'}<br>
-          ${data.emetteur?.adresse || ''}<br>
-          Tél: ${data.emetteur?.telephone || ''}
-        </div>
-        <div>
-          <strong>Client:</strong><br>
-          ${data.client?.nom || 'Nom Client'}<br>
-          ${data.client?.adresse || ''}<br>
-          Tél: ${data.client?.telephone || ''}
-        </div>
-        <div>
-          <strong>Date:</strong> ${data.date || new Date().toLocaleDateString('fr-FR')}<br>
-          <strong>Échéance:</strong> ${data.echeance || ''}
-        </div>
-      </div>
-      
-      <table>
-        <thead>
-          <tr style="background: #f8f9fa;">
-            <th>Description</th>
-            <th style="text-align: right; width: 10%;">Qté</th>
-            <th style="text-align: right; width: 15%;">Prix Unitaire</th>
-            <th style="text-align: right; width: 15%;">Total</th>
-          </tr>
-        </thead>
-        <tbody>
-    `;
-
-    if (data.lignes && Array.isArray(data.lignes)) {
-      data.lignes.forEach(item => {
-        const itemTotal = item.quantite * item.prix_unitaire;
-        html += `
-          <tr>
-            <td>${item.description}</td>
-            <td style="text-align: right;">${item.quantite}</td>
-            <td style="text-align: right;">${item.prix_unitaire.toFixed(2)} FCFA</td>
-            <td style="text-align: right;">${itemTotal.toFixed(2)} FCFA</td>
-          </tr>
-        `;
-      });
-    }
-
-    html += `
-        </tbody>
-        <tfoot>
-          <tr>
-            <td colspan="3" style="padding: 12px; text-align: right;">Sous-total</td>
-            <td style="padding: 12px; text-align: right;">${total.toFixed(2)} FCFA</td>
-          </tr>
-          <tr style="background: #e9ecef; font-weight: bold;">
-            <td colspan="3" style="padding: 12px; text-align: right;">TOTAL À PAYER</td>
-            <td style="padding: 12px; text-align: right; color: #4361ee; font-size: 18px;">${total.toFixed(2)} FCFA</td>
-          </tr>
-        </tfoot>
-      </table>
-    `;
-
-    if (data.notes) {
-      html += `
-        <div style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-left: 5px solid var(--primary);">
-          <strong>Notes :</strong> ${data.notes}
-        </div>
-      `;
-    }
-
-    return html;
-  }
-  
-  // ========================================
-  // 📜 FORMAT : CONTRAT
-  // ========================================
-  function formatContractHtml(data) {
-    return `
-      <h1 style="text-align: center; color: var(--primary); margin-bottom: 5px;">CONTRAT DE ${data.type_contrat?.toUpperCase() || 'SERVICE'}</h1>
-      <p style="text-align: center; margin-bottom: 30px; border-bottom: 1px solid #ddd; padding-bottom: 15px;">
-        Fait à ${data.lieu || 'Lokossa'}, le ${data.date || new Date().toLocaleDateString('fr-FR')}
-      </p>
-      
-      <h3 style="margin-top: 20px;">ENTRE LES PARTIES :</h3>
-      <ul style="list-style: none; padding-left: 0; margin-bottom: 20px;">
-        <li style="margin-bottom: 10px;">
-          <strong>Partie 1:</strong> ${data.partie1?.nom || 'Partie 1'}<br>
-          ${data.partie1?.adresse || ''}
-        </li>
-        <li>
-          <strong>Partie 2:</strong> ${data.partie2?.nom || 'Partie 2'}<br>
-          ${data.partie2?.adresse || ''}
-        </li>
-      </ul>
-      
-      <h3 style="margin-top: 30px;">OBJET DU CONTRAT :</h3>
-      <p style="text-align: justify; line-height: 1.8;">${data.contenu || 'Contenu du contrat...'}</p>
-      
-      <p style="margin-top: 50px; text-align: center;">
-        Les parties reconnaissent avoir lu et accepté les termes de ce contrat.
-      </p>
-      
-      <div style="margin-top: 50px; display: flex; justify-content: space-around;">
-        <div style="text-align: center;">
-          <p>___________________</p>
-          <p>Signature Partie 1</p>
-          <p>(${data.partie1?.nom || 'Partie 1'})</p>
-        </div>
-        <div style="text-align: center;">
-          <p>___________________</p>
-          <p>Signature Partie 2</p>
-          <p>(${data.partie2?.nom || 'Partie 2'})</p>
-        </div>
-      </div>
-    `;
-  }
-
-  // ========================================
-  // 📁 FORMAT : DOCUMENT GÉNÉRIQUE (Fallback)
-  // ========================================
-  function formatGenericDocumentHtml(data) {
-    let html = `
-      <h1 style="text-align: center; color: var(--primary); margin-bottom: 20px;">${data.titre || 'Document Généré par Intellia'}</h1>
-      <p style="text-align: center; margin-bottom: 30px; border-bottom: 1px solid #ddd; padding-bottom: 15px;">
-        Date: ${data.date || new Date().toLocaleDateString('fr-FR')}
-      </p>
-      <div style="line-height: 1.8; text-align: justify;">
-        ${(data.contenu || JSON.stringify(data, null, 2)).replace(/\n/g, '<br>')}
-      </div>
-    `;
-    return html;
-  }
-
-  // ========================================
-  // ⚙️ CONVERSION JSON → PDF (jsPDF)
-  // ========================================
-  const { jsPDF } = window.jspdf;
-
-  function generatePdfFromJson(jsonString) {
-      // jsonString est passé avec &quot; pour les guillemets, on doit les rétablir
-      const jsonData = JSON.parse(jsonString.replace(/&quot;/g, '"'));
-      const doc = new jsPDF();
-      let y = 20;
-      const margin = 20;
-      const maxWidth = doc.internal.pageSize.getWidth() - 2 * margin;
-
-      // Fonction utilitaire pour ajouter du texte
-      const addText = (text, fontSize = 12, fontStyle = 'normal', align = 'left') => {
-          doc.setFontSize(fontSize);
-          doc.setFont('helvetica', fontStyle);
-          const lines = doc.splitTextToSize(text, maxWidth);
-          
-          lines.forEach(line => {
-              if (y + fontSize / doc.internal.scaleFactor > doc.internal.pageSize.getHeight() - margin) {
-                  doc.addPage();
-                  y = margin;
-              }
-              doc.text(line, align === 'center' ? doc.internal.pageSize.getWidth() / 2 : margin, y, { align: align });
-              y += fontSize * 0.5; // Ajuster l'espacement entre les lignes
-          });
-          y += 5; // Marge après le bloc de texte
-      };
-
-      const type = jsonData.type || 'document';
-      try {
-          switch(type) {
-              case 'lettre':
-                  generateLetterPdf(doc, jsonData, addText, { y, margin, maxWidth });
-                  break;
-              case 'rapport':
-                  generateReportPdf(doc, jsonData, addText, { y, margin, maxWidth });
-                  break;
-              case 'cv':
-                  generateCvPdf(doc, jsonData, addText, { y, margin, maxWidth });
-                  break;
-              case 'facture':
-                  generateInvoicePdf(doc, jsonData, addText, { y, margin, maxWidth });
-                  break;
-              case 'contrat':
-                  generateContractPdf(doc, jsonData, addText, { y, margin, maxWidth });
-                  break;
-              default:
-                  addText(jsonData.titre || 'Document Généré', 18, 'bold', 'center');
-                  addText(`Date: ${jsonData.date || new Date().toLocaleDateString('fr-FR')}`, 10, 'normal', 'center');
-                  addText('', 10);
-                  addText(jsonData.contenu || JSON.stringify(jsonData, null, 2), 12);
-          }
-          
-          doc.save(`${type}_intellia_${Date.now()}.pdf`);
-          console.log(`✅ Document PDF téléchargé: ${type}`);
-      } catch (error) {
-          console.error("❌ Erreur lors de la génération du PDF:", error);
-          alert("Erreur lors de la génération du PDF. Consultez la console.");
-      }
-  }
-
-  // Fonctions spécifiques pour chaque type de PDF
-  function generateLetterPdf(doc, data, addText, state) {
-      // Expediteur
-      doc.setFontSize(10);
-      doc.setFont('helvetica', 'bold');
-      doc.text(data.expediteur || 'Expéditeur', state.margin, state.y, { align: 'right' });
-      doc.setFont('helvetica', 'normal');
-      doc.text(data.adresse_expediteur || '', state.margin, state.y + 5, { align: 'right' });
-      state.y += 20;
-
-      // Destinataire
-      addText('À l\'attention de :', 10, 'bold');
-      addText(data.destinataire || 'Destinataire', 10);
-      addText(data.adresse_destinataire || '', 10);
-      state.y += 10;
-
-      // Lieu et Date
-      doc.setFontSize(10);
-      doc.text(`${data.lieu || 'Lokossa'}, le ${data.date || new Date().toLocaleDateString('fr-FR')}`, state.margin, state.y, { align: 'right' });
-      state.y += 10;
-
-      // Objet
-      addText(`Objet: ${data.objet || 'Objet de la lettre'}`, 12, 'bold');
-      state.y += 10;
-
-      // Corps
-      addText(data.formule_appel || 'Madame, Monsieur,', 12);
-      addText(data.corps || 'Corps de la lettre...', 12, 'normal', 'justify');
-      state.y += 10;
-
-      // Politesse et Signature
-      addText(data.formule_politesse || 'Veuillez agréer, Madame, Monsieur, l\'expression de mes salutations distinguées.', 12);
-      addText('', 12);
-      addText(data.signature || data.expediteur || '', 12, 'bold');
-  }
-
-  function generateReportPdf(doc, data, addText, state) {
-      addText(data.titre || 'Rapport sans Titre', 18, 'bold', 'center');
-      addText(data.sous_titre || '', 14, 'normal', 'center');
-      addText(`Date: ${data.date || new Date().toLocaleDateString('fr-FR')} | Auteur: ${data.auteur || 'Intellia'}`, 10, 'normal', 'center');
-      state.y += 10;
-
-      if (data.introduction) {
-          addText('INTRODUCTION', 14, 'bold');
-          addText(data.introduction, 12, 'normal', 'justify');
-      }
-
-      if (data.sections && Array.isArray(data.sections)) {
-          data.sections.forEach((section, index) => {
-              addText(`${index + 1}. ${section.titre}`, 14, 'bold');
-              addText(section.contenu, 12, 'normal', 'justify');
-          });
-      }
-
-      if (data.conclusion) {
-          addText('CONCLUSION', 14, 'bold');
-          addText(data.conclusion, 12, 'normal', 'justify');
-      }
-  }
-
-  function generateCvPdf(doc, data, addText, state) {
-      addText(`${data.prenom || ''} ${data.nom || ''}`, 24, 'bold', 'center');
-      addText(data.titre_poste || '', 14, 'normal', 'center');
-      addText(`${data.email || ''} | ${data.telephone || ''} | ${data.adresse || ''}`, 10, 'normal', 'center');
-      addText('', 10);
-
-      if (data.profil) {
-          addText('PROFIL', 14, 'bold');
-          addText(data.profil, 11);
-          addText('', 10);
-      }
-
-      if (data.experiences && Array.isArray(data.experiences)) {
-          addText('EXPÉRIENCES PROFESSIONNELLES', 14, 'bold');
-          data.experiences.forEach(exp => {
-              addText(`${exp.poste || ''} - ${exp.entreprise || ''}`, 12, 'bold');
-              addText(`${exp.dates || ''} - ${exp.ville || ''}`, 10);
-              if (exp.description) addText(exp.description, 10, 'normal', 'justify');
-              addText('', 5);
-          });
-      }
-
-      if (data.formations && Array.isArray(data.formations)) {
-          addText('FORMATION', 14, 'bold');
-          data.formations.forEach(form => {
-              addText(form.diplome || '', 12, 'bold');
-              addText(`${form.etablissement || ''} - ${form.annee || ''}`, 10);
-              addText('', 5);
-          });
-      }
-  }
-
-  function generateInvoicePdf(doc, data, addText, state) {
-      const total = data.lignes ? data.lignes.reduce((sum, item) => sum + (item.quantite * item.prix_unitaire), 0) : 0;
-      let finalY = state.y;
-
-      addText(`FACTURE #${data.numero || '001'}`, 20, 'bold', 'center');
-      finalY = doc.autoTable.previous.finalY + 10;
-
-      // Informations
-      doc.setFontSize(10);
-      doc.setFont('helvetica', 'bold');
-      doc.text('Émetteur:', state.margin, finalY);
-      doc.text('Client:', state.margin + 70, finalY);
-      doc.text('Date:', state.margin + 140, finalY);
-      
-      doc.setFont('helvetica', 'normal');
-      doc.text(data.emetteur?.nom || 'Nom Entreprise', state.margin, finalY + 5);
-      doc.text(data.emetteur?.adresse || '', state.margin, finalY + 10);
-      doc.text(`Tél: ${data.emetteur?.telephone || ''}`, state.margin, finalY + 15);
-      
-      doc.text(data.client?.nom || 'Nom Client', state.margin + 70, finalY + 5);
-      doc.text(data.client?.adresse || '', state.margin + 70, finalY + 10);
-      doc.text(`Tél: ${data.client?.telephone || ''}`, state.margin + 70, finalY + 15);
-
-      doc.text(data.date || new Date().toLocaleDateString('fr-FR'), state.margin + 140, finalY + 5);
-      doc.text(`Échéance: ${data.echeance || ''}`, state.margin + 140, finalY + 10);
-      
-      finalY += 30;
-      state.y = finalY;
-
-      // Tableau des lignes
-      const body = data.lignes ? data.lignes.map(item => [
-          item.description,
-          item.quantite,
-          item.prix_unitaire.toFixed(2) + ' FCFA',
-          (item.quantite * item.prix_unitaire).toFixed(2) + ' FCFA'
-      ]) : [];
-
-      doc.autoTable({
-          startY: finalY,
-          head: [['Description', 'Qté', 'Prix Unitaire', 'Total']],
-          body: body,
-          styles: { fontSize: 10, cellPadding: 3, halign: 'left' },
-          columnStyles: {
-              1: { halign: 'right', cellWidth: 15 },
-              2: { halign: 'right', cellWidth: 25 },
-              3: { halign: 'right', cellWidth: 25, fontStyle: 'bold' }
-          },
-          foot: [['Sous-total', '', '', total.toFixed(2) + ' FCFA'], ['TOTAL À PAYER', '', '', { content: total.toFixed(2) + ' FCFA', styles: { fontStyle: 'bold', fillColor: [233, 236, 239], textColor: [67, 97, 238] } }]],
-          footStyles: { fillColor: [248, 249, 250], fontSize: 10, halign: 'right', textColor: [0, 0, 0] }
-      });
-
-      finalY = doc.autoTable.previous.finalY;
-
-      if (data.notes) {
-          finalY += 10;
-          doc.setFillColor(248, 249, 250); // Light gray background
-          doc.rect(state.margin, finalY, state.maxWidth, 20, 'F');
-          doc.setFontSize(10);
-          doc.setFont('helvetica', 'bold');
-          doc.text('Notes :', state.margin + 5, finalY + 7);
-          doc.setFont('helvetica', 'normal');
-          doc.text(data.notes, state.margin + 5, finalY + 12, { maxWidth: state.maxWidth - 10 });
-          finalY += 20;
-      }
-  }
-
-  function generateContractPdf(doc, data, addText, state) {
-      addText(`CONTRAT DE ${data.type_contrat?.toUpperCase() || 'SERVICE'}`, 20, 'bold', 'center');
-      addText(`Fait à ${data.lieu || 'Lokossa'}, le ${data.date || new Date().toLocaleDateString('fr-FR')}`, 10, 'normal', 'center');
-      state.y += 10;
-      
-      addText('ENTRE LES PARTIES :', 14, 'bold');
-      addText('', 5);
-      
-      addText('Partie 1:', 12, 'bold');
-      addText(data.partie1?.nom || 'Partie 1', 12);
-      addText(data.partie1?.adresse || '', 10);
-      addText('', 5);
-      
-      addText('Partie 2:', 12, 'bold');
-      addText(data.partie2?.nom || 'Partie 2', 12);
-      addText(data.partie2?.adresse || '', 10);
-      state.y += 10;
-
-      addText('OBJET DU CONTRAT :', 14, 'bold');
-      addText('', 5);
-      addText(data.contenu || 'Contenu du contrat...', 12, 'normal', 'justify');
-      state.y += 20;
-
-      addText('Les parties reconnaissent avoir lu et accepté les termes de ce contrat.', 10, 'normal', 'center');
-      state.y += 15;
-
-      // Signatures (horizontal)
-      const centerX = doc.internal.pageSize.getWidth() / 2;
-      doc.setFontSize(12);
-      doc.setFont('helvetica', 'normal');
-      doc.text('___________________', centerX - 40, state.y, { align: 'center' });
-      doc.text('___________________', centerX + 40, state.y, { align: 'center' });
-      state.y += 5;
-      doc.setFont('helvetica', 'bold');
-      doc.text('Signature Partie 1', centerX - 40, state.y + 5, { align: 'center' });
-      doc.text('Signature Partie 2', centerX + 40, state.y + 5, { align: 'center' });
-  }
-
-  // ========================================
-  // ⚙️ CONVERSION JSON → DOCX (DocX)
-  // ========================================
-  const { Document, Paragraph, TextRun, HeadingLevel, AlignmentType, Packer, Table, TableRow, TableCell, WidthType, BorderStyle } = docx;
-
-  function generateDocxFromJson(jsonString) {
-      const jsonData = JSON.parse(jsonString.replace(/&quot;/g, '"'));
-      const type = jsonData.type || 'document';
-      let sections;
-
-      try {
-          switch(type) {
-              case 'lettre':
-                  sections = generateLetterDocx(jsonData, { Paragraph, TextRun, AlignmentType });
-                  break;
-              case 'rapport':
-                  sections = generateReportDocx(jsonData, { Paragraph, TextRun, HeadingLevel, AlignmentType });
-                  break;
-              case 'cv':
-                  sections = generateCvDocx(jsonData, { Paragraph, TextRun, HeadingLevel, AlignmentType });
-                  break;
-              case 'facture':
-                  sections = generateInvoiceDocx(jsonData, { Paragraph, TextRun, HeadingLevel, AlignmentType, Table, TableRow, TableCell, WidthType, BorderStyle });
-                  break;
-              case 'contrat':
-                  sections = generateContractDocx(jsonData, { Paragraph, TextRun, AlignmentType });
-                  break;
-              default:
-                  sections = [
-                      new Paragraph({ text: jsonData.titre || 'Document Généré par Intellia', heading: HeadingLevel.HEADING_1, alignment: AlignmentType.CENTER }),
-                      new Paragraph({ text: `Date: ${jsonData.date || new Date().toLocaleDateString('fr-FR')}`, alignment: AlignmentType.CENTER }),
-                      new Paragraph({ text: '' }),
-                      new Paragraph({ text: jsonData.contenu || JSON.stringify(jsonData, null, 2) })
-                  ];
-          }
-
-          const doc = new Document({ sections: [{ children: sections }] });
-
-          Packer.toBlob(doc).then(blob => {
-              downloadAsFile(`${type}_intellia_${Date.now()}.docx`, blob, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
-              console.log(`✅ Document DOCX téléchargé: ${type}`);
-          });
-
-      } catch (error) {
-          console.error("❌ Erreur lors de la génération du DOCX:", error);
-          alert("Erreur lors de la génération du DOCX. Consultez la console.");
-      }
-  }
-
-  // Fonctions spécifiques pour chaque type de DOCX
-  function generateLetterDocx(data, { Paragraph, TextRun, AlignmentType }) {
-      return [
-          new Paragraph({
-              children: [
-                  new TextRun({ text: data.expediteur || 'Expéditeur', bold: true })
-              ],
-              alignment: AlignmentType.RIGHT
-          }),
-          new Paragraph({ text: data.adresse_expediteur || '', alignment: AlignmentType.RIGHT }),
-          new Paragraph({ text: '' }),
-          new Paragraph({
-              children: [
-                  new TextRun({ text: 'À l\'attention de : ', bold: true }),
-                  new TextRun({ text: data.destinataire || 'Destinataire' })
-              ]
-          }),
-          new Paragraph({ text: data.adresse_destinataire || '' }),
-          new Paragraph({ text: '' }),
-          new Paragraph({ text: `${data.lieu || 'Lokossa'}, le ${data.date || new Date().toLocaleDateString('fr-FR')}`, alignment: AlignmentType.RIGHT }),
-          new Paragraph({ text: '' }),
-          new Paragraph({
-              children: [
-                  new TextRun({ text: `Objet: ${data.objet || 'Objet de la lettre'}`, bold: true, size: 28 }) // Taille de police
-              ]
-          }),
-          new Paragraph({ text: '' }),
-          new Paragraph({ text: data.formule_appel || 'Madame, Monsieur,' }),
-          new Paragraph({ text: '' }),
-          new Paragraph({ text: data.corps || 'Corps de la lettre...' }),
-          new Paragraph({ text: '' }),
-          new Paragraph({ text: '' }),
-          new Paragraph({ text: data.formule_politesse || 'Veuillez agréer, Madame, Monsieur, l\'expression de mes salutations distinguées.' }),
-          new Paragraph({ text: '' }),
-          new Paragraph({ text: data.signature || data.expediteur || '', bold: true })
-      ];
-  }
-
-  function generateReportDocx(data, { Paragraph, TextRun, HeadingLevel, AlignmentType }) {
-      const children = [
-          new Paragraph({ text: data.titre || 'Rapport sans Titre', heading: HeadingLevel.HEADING_1, alignment: AlignmentType.CENTER }),
-          new Paragraph({ text: data.sous_titre || '', alignment: AlignmentType.CENTER }),
-          new Paragraph({ text: `Date: ${data.date || new Date().toLocaleDateString('fr-FR')} | Auteur: ${data.auteur || 'Intellia'}`, alignment: AlignmentType.CENTER }),
-          new Paragraph({ text: '' })
-      ];
-
-      if (data.introduction) {
-          children.push(new Paragraph({ text: 'Introduction', heading: HeadingLevel.HEADING_2 }));
-          children.push(new Paragraph({ text: data.introduction, alignment: AlignmentType.JUSTIFY }));
-      }
-
-      if (data.sections && Array.isArray(data.sections)) {
-          data.sections.forEach((section, index) => {
-              children.push(new Paragraph({ text: `${index + 1}. ${section.titre}`, heading: HeadingLevel.HEADING_3 }));
-              children.push(new Paragraph({ text: section.contenu, alignment: AlignmentType.JUSTIFY }));
-          });
-      }
-
-      if (data.conclusion) {
-          children.push(new Paragraph({ text: 'Conclusion', heading: HeadingLevel.HEADING_2 }));
-          children.push(new Paragraph({ text: data.conclusion, alignment: AlignmentType.JUSTIFY }));
-      }
-      
-      return children;
-  }
-
-  function generateCvDocx(data, { Paragraph, TextRun, HeadingLevel, AlignmentType }) {
-      const children = [
-          new Paragraph({ text: `${data.prenom || ''} ${data.nom || ''}`, heading: HeadingLevel.HEADING_1, alignment: AlignmentType.CENTER }),
-          new Paragraph({ text: data.titre_poste || '', alignment: AlignmentType.CENTER }),
-          new Paragraph({ text: `${data.email || ''} | ${data.telephone || ''} | ${data.adresse || ''}`, alignment: AlignmentType.CENTER }),
-          new Paragraph({ text: '' })
-      ];
-
-      if (data.profil) {
-          children.push(new Paragraph({ text: 'PROFIL', heading: HeadingLevel.HEADING_2 }));
-          children.push(new Paragraph({ text: data.profil }));
-          children.push(new Paragraph({ text: '' }));
-      }
-
-      if (data.experiences && Array.isArray(data.experiences)) {
-          children.push(new Paragraph({ text: 'EXPÉRIENCES PROFESSIONNELLES', heading: HeadingLevel.HEADING_2 }));
-          data.experiences.forEach(exp => {
-              children.push(new Paragraph({
-                  children: [
-                      new TextRun({ text: `${exp.poste || ''} - ${exp.entreprise || ''}`, bold: true }),
-                      new TextRun({ text: ` (${exp.dates || ''})`, color: '6c757d' })
-                  ]
-              }));
-              children.push(new Paragraph({ text: exp.description || '' }));
-              children.push(new Paragraph({ text: '' }));
-          });
-      }
-
-      if (data.formations && Array.isArray(data.formations)) {
-          children.push(new Paragraph({ text: 'FORMATION', heading: HeadingLevel.HEADING_2 }));
-          data.formations.forEach(form => {
-              children.push(new Paragraph({
-                  children: [
-                      new TextRun({ text: form.diplome || '', bold: true }),
-                      new TextRun({ text: ` (${form.annee || ''})`, color: '6c757d' })
-                  ]
-              }));
-              children.push(new Paragraph({ text: form.etablissement || '' }));
-              children.push(new Paragraph({ text: '' }));
-          });
-      }
-      
-      return children;
-  }
-
-  function generateInvoiceDocx(data, { Paragraph, TextRun, HeadingLevel, AlignmentType, Table, TableRow, TableCell, WidthType, BorderStyle }) {
-      const total = data.lignes ? data.lignes.reduce((sum, item) => sum + (item.quantite * item.prix_unitaire), 0) : 0;
-      
-      const headerCells = [
-          new TableCell({ children: [new Paragraph({ text: 'Description', bold: true })], verticalAlign: VerticalAlign.CENTER }),
-          new TableCell({ children: [new Paragraph({ text: 'Qté', bold: true, alignment: AlignmentType.RIGHT })], verticalAlign: VerticalAlign.CENTER }),
-          new TableCell({ children: [new Paragraph({ text: 'Prix Unitaire', bold: true, alignment: AlignmentType.RIGHT })], verticalAlign: VerticalAlign.CENTER }),
-          new TableCell({ children: [new Paragraph({ text: 'Total', bold: true, alignment: AlignmentType.RIGHT })], verticalAlign: VerticalAlign.CENTER }),
-      ];
-
-      const bodyRows = data.lignes ? data.lignes.map(item => new TableRow({
-          children: [
-              new TableCell({ children: [new Paragraph(item.description)] }),
-              new TableCell({ children: [new Paragraph({ text: String(item.quantite), alignment: AlignmentType.RIGHT })] }),
-              new TableCell({ children: [new Paragraph({ text: item.prix_unitaire.toFixed(2) + ' FCFA', alignment: AlignmentType.RIGHT })] }),
-              new TableCell({ children: [new Paragraph({ text: (item.quantite * item.prix_unitaire).toFixed(2) + ' FCFA', alignment: AlignmentType.RIGHT })] }),
-          ]
-      })) : [];
-
-      const totalRow = new TableRow({
-          children: [
-              new TableCell({ children: [new Paragraph({ text: 'TOTAL À PAYER', bold: true, alignment: AlignmentType.RIGHT })], columnSpan: 3, verticalAlign: VerticalAlign.CENTER }),
-              new TableCell({ children: [new Paragraph({ text: total.toFixed(2) + ' FCFA', bold: true, alignment: AlignmentType.RIGHT, color: '4361ee' })], verticalAlign: VerticalAlign.CENTER }),
-          ]
-      });
-
-      const table = new Table({
-          rows: [
-              new TableRow({ children: headerCells, tableHeader: true }),
-              ...bodyRows,
-              totalRow
-          ],
-          width: { size: 100, type: WidthType.PERCENTAGE },
-          borders: {
-              top: { style: BorderStyle.SINGLE, size: 6, color: '000000' },
-              bottom: { style: BorderStyle.SINGLE, size: 6, color: '000000' },
-              left: { style: BorderStyle.SINGLE, size: 6, color: '000000' },
-              right: { style: BorderStyle.SINGLE, size: 6, color: '000000' },
-          }
-      });
-
-      const children = [
-          new Paragraph({ text: `FACTURE N°${data.numero || '001'}`, heading: HeadingLevel.HEADING_1, alignment: AlignmentType.CENTER }),
-          new Paragraph({ text: '' }),
-          new Paragraph({ text: 'Émetteur:', bold: true }),
-          new Paragraph(data.emetteur?.nom || 'Nom Entreprise'),
-          new Paragraph(data.emetteur?.adresse || ''),
-          new Paragraph({ text: '' }),
-          new Paragraph({ text: 'Client:', bold: true }),
-          new Paragraph(data.client?.nom || 'Nom Client'),
-          new Paragraph(data.client?.adresse || ''),
-          new Paragraph({ text: '' }),
-          new Paragraph({ text: `Date: ${data.date || new Date().toLocaleDateString('fr-FR')}`, alignment: AlignmentType.RIGHT }),
-          new Paragraph({ text: '' }),
-          table
-      ];
-
-      if (data.notes) {
-          children.push(new Paragraph({ text: '' }));
-          children.push(new Paragraph({ text: 'Notes :', bold: true }));
-          children.push(new Paragraph(data.notes));
-      }
-
-      return children;
-  }
-  
-  function generateContractDocx(data, { Paragraph, TextRun, AlignmentType }) {
-      return [
-          new Paragraph({ text: `CONTRAT DE ${data.type_contrat?.toUpperCase() || 'SERVICE'}`, heading: HeadingLevel.HEADING_1, alignment: AlignmentType.CENTER }),
-          new Paragraph({ text: `Fait à ${data.lieu || 'Lokossa'}, le ${data.date || new Date().toLocaleDateString('fr-FR')}`, alignment: AlignmentType.CENTER }),
-          new Paragraph({ text: '' }),
-          new Paragraph({ text: 'ENTRE LES PARTIES :', heading: HeadingLevel.HEADING_2 }),
-          new Paragraph({ text: '' }),
-          new Paragraph({
-              children: [
-                  new TextRun({ text: 'Partie 1 : ', bold: true }),
-                  new TextRun({ text: data.partie1?.nom || 'Partie 1' })
-              ]
-          }),
-          new Paragraph({ text: data.partie1?.adresse || '' }),
-          new Paragraph({ text: '' }),
-          new Paragraph({
-              children: [
-                  new TextRun({ text: 'Partie 2 : ', bold: true }),
-                  new TextRun({ text: data.partie2?.nom || 'Partie 2' })
-              ]
-          }),
-          new Paragraph({ text: data.partie2?.adresse || '' }),
-          new Paragraph({ text: '' }),
-          new Paragraph({ text: 'OBJET DU CONTRAT :', heading: HeadingLevel.HEADING_2 }),
-          new Paragraph({ text: '' }),
-          new Paragraph({ text: data.contenu || 'Contenu du contrat...' }),
-          new Paragraph({ text: '' }),
-          new Paragraph({ text: '' }),
-          new Paragraph({ text: '' }),
-          new Paragraph({ text: 'Signature Partie 1 : ___________________', alignment: AlignmentType.LEFT }),
-          new Paragraph({ text: 'Signature Partie 2 : ___________________', alignment: AlignmentType.RIGHT })
-      ];
-  }
-
-
-  // ========================================
-  // 🎯 EXPORTS GLOBAUX
-  // ========================================
-  window.downloadAsFile = downloadAsFile;
-  window.downloadImage = downloadImage;
-  window.formatJsonAsDocumentHtml = formatJsonAsDocumentHtml;
-  window.generatePdfFromJson = generatePdfFromJson;
-  window.generateDocxFromJson = generateDocxFromJson;
-  
-  // ========================================
-  // FIN DU CODE intellia_doc.js
-  // ========================================
-
-
-  const el = (id) => document.getElementById(id);
-
-// ======= CONFIG =======
+  <script type="module">
+  /*************************************************
+   * SmartHome Intelligence - Version 9.7 COMPLÈTE
+   * ✅ TOUTES les fonctionnalités intégrées
+   * ✅ intellia_doc.js fusionné inline
+   * ✅ Bugs corrigés, doublons supprimés
+   *************************************************/
+
+  // ======= CONFIG =======
   let RENDER_API;
 
   if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
@@ -1557,9 +920,9 @@
   import { getDatabase, ref, set, push, onValue, remove, get, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
   import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
+  const el = id => document.getElementById(id);
 
-
-  // ======= APP STATE (Hybride) =======
+  // ======= APP STATE =======
   const appState = {
     devices: [], deviceStates: {},
     isNightMode: localStorage.getItem('nightMode') === 'true',
@@ -1576,8 +939,6 @@
     isLocalConnected: false,
     esp32Ip: localStorage.getItem('esp32Ip') || '', 
   };
-  
-
   
   const defaultAvatar = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iI2FlYWVhZSI+PHBhdGggZD0iTTEyIDJDNi44OCAyIDIgNi44OCAyIDEyczQuNDggMTQgMTAgMTBjNS41MiAwIDEwLTQuNDggMTAtMTBTMjcuNTIgMiAxMiAyem0wIDJjMS42NiAwIDMgMS4zNCAzIDNzLTEuMzQgMy0zIDMtMy0xLjM0LTMtM1MwLjM0IDQgMTIgNHptMCAxNmMtMi42NyAwLTUuNDMtMS4yOS03LTIuODguNTYtMS42NSAzLjU1LTIuNjIgNy0yLjYyczYuNDQgLjk3IDcgMi42MmMtMS41NyAxLjU5LTQuMzMgMi44OC03IDIuODh6Ii8+PC9zdmc+";
 
@@ -1596,6 +957,450 @@
     "Une nouvelle journée commence ! Je suis prêt à vous aider à automatiser vos tâches."
   ];
   let suggestionIndex = 0;
+
+  // ========================================
+  // ✅ INTELLIA_DOC.JS - FUSIONNÉ INLINE
+  // ========================================
+  
+  window.downloadAsFile = function(filename, content, mimeType = 'text/plain') {
+    const blob = new Blob([content], { type: mimeType + ';charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    console.log(`✅ Fichier téléchargé: ${filename}`);
+  };
+
+  window.downloadImage = function(imageUrl, filename = null) {
+    if (!filename) {
+      filename = `intellia_image_${Date.now()}.png`;
+    }
+    fetch(imageUrl)
+      .then(response => response.blob())
+      .then(blob => {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        console.log(`✅ Image téléchargée: ${filename}`);
+      })
+      .catch(error => {
+        console.error("❌ Erreur de téléchargement d'image:", error);
+        alert("Impossible de télécharger l'image. Veuillez réessayer.");
+      });
+  };
+
+  window.formatJsonAsDocumentHtml = function(jsonData) {
+    const type = jsonData.type || 'document';
+    let html = '<div class="document-preview">';
+    
+    switch(type) {
+      case 'lettre':
+        html += formatLetterHtml(jsonData);
+        break;
+      case 'rapport':
+        html += formatReportHtml(jsonData);
+        break;
+      case 'cv':
+        html += formatCvHtml(jsonData);
+        break;
+      case 'facture':
+        html += formatInvoiceHtml(jsonData);
+        break;
+      case 'contrat':
+        html += formatContractHtml(jsonData);
+        break;
+      default:
+        html += formatGenericDocumentHtml(jsonData);
+    }
+    
+    html += `
+      <div style="margin-top: 30px; display: flex; gap: 10px; justify-content: center;">
+        <button class="btn primary" onclick="generatePdfFromJson(${JSON.stringify(jsonData).replace(/"/g, '&quot;')})">
+          <i class="fas fa-file-pdf"></i> Télécharger en PDF
+        </button>
+        <button class="btn success" onclick="generateDocxFromJson(${JSON.stringify(jsonData).replace(/"/g, '&quot;')})">
+          <i class="fas fa-file-word"></i> Télécharger en DOCX
+        </button>
+      </div>
+    </div>`;
+    
+    return html;
+  };
+
+  function formatLetterHtml(data) {
+    return `
+      <div style="text-align: right; margin-bottom: 30px;">
+        <strong>${data.expediteur || 'Expéditeur'}</strong><br>
+        ${data.adresse_expediteur || ''}
+      </div>
+      <div style="margin-bottom: 30px;">
+        <strong>À l'attention de :</strong><br>
+        ${data.destinataire || 'Destinataire'}<br>
+        ${data.adresse_destinataire || ''}
+      </div>
+      <div style="text-align: right; margin-bottom: 30px;">
+        ${data.lieu || 'Lokossa'}, le ${data.date || new Date().toLocaleDateString('fr-FR')}
+      </div>
+      <div style="margin-bottom: 20px;">
+        <strong>Objet :</strong> ${data.objet || 'Sans objet'}
+      </div>
+      <div style="margin-bottom: 30px; line-height: 1.8; text-align: justify;">
+        ${data.formule_appel || 'Madame, Monsieur,'}<br><br>
+        ${(data.corps || '').replace(/\n/g, '<br><br>')}
+      </div>
+      <div style="margin-top: 40px;">
+        ${data.formule_politesse || 'Veuillez agréer, Madame, Monsieur, l\'expression de mes salutations distinguées.'}<br><br>
+        ${data.signature || data.expediteur || ''}
+      </div>
+    `;
+  }
+
+  function formatReportHtml(data) {
+    let html = `
+      <div style="text-align: center; margin-bottom: 40px;">
+        <h1 style="color: #4361ee; font-size: 28px; margin-bottom: 10px;">
+          ${data.titre || 'RAPPORT'}
+        </h1>
+        <p style="color: #666;">${data.sous_titre || ''}</p>
+        <p style="color: #999; font-size: 14px;">${data.date || new Date().toLocaleDateString('fr-FR')}</p>
+      </div>
+    `;
+    
+    if (data.auteur) {
+      html += `<div style="margin-bottom: 20px;"><strong>Auteur :</strong> ${data.auteur}</div>`;
+    }
+    
+    if (data.resume) {
+      html += `
+        <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 30px;">
+          <h3 style="color: #4361ee; margin-top: 0;">Résumé</h3>
+          <p style="line-height: 1.6;">${data.resume}</p>
+        </div>
+      `;
+    }
+    
+    if (data.sections && Array.isArray(data.sections)) {
+      data.sections.forEach((section, index) => {
+        html += `
+          <div style="margin-bottom: 30px;">
+            <h2 style="color: #4361ee; border-bottom: 2px solid #4361ee; padding-bottom: 10px;">
+              ${index + 1}. ${section.titre || 'Section ' + (index + 1)}
+            </h2>
+            <div style="line-height: 1.8; text-align: justify;">
+              ${(section.contenu || '').replace(/\n/g, '<br>')}
+            </div>
+          </div>
+        `;
+      });
+    } else if (data.contenu) {
+      html += `<div style="line-height: 1.8; text-align: justify;">${data.contenu.replace(/\n/g, '<br>')}</div>`;
+    }
+    
+    if (data.conclusion) {
+      html += `
+        <div style="margin-top: 40px; background: #f8f9fa; padding: 20px; border-radius: 8px;">
+          <h3 style="color: #4361ee; margin-top: 0;">Conclusion</h3>
+          <p style="line-height: 1.6;">${data.conclusion}</p>
+        </div>
+      `;
+    }
+    
+    return html;
+  }
+
+  function formatCvHtml(data) {
+    let html = `
+      <div style="text-align: center; margin-bottom: 40px; border-bottom: 3px solid #4361ee; padding-bottom: 20px;">
+        <h1 style="color: #4361ee; font-size: 32px; margin: 0;">
+          ${data.prenom || ''} ${data.nom || ''}
+        </h1>
+        <p style="color: #666; margin-top: 10px;">${data.titre_poste || ''}</p>
+        <p style="color: #999; font-size: 14px;">
+          ${data.email || ''} ${data.email && data.telephone ? '|' : ''} ${data.telephone || ''}
+        </p>
+        ${data.adresse ? `<p style="color: #999; font-size: 14px;">${data.adresse}</p>` : ''}
+      </div>
+    `;
+    
+    if (data.profil) {
+      html += `
+        <div style="margin-bottom: 30px;">
+          <h2 style="color: #4361ee; border-left: 4px solid #4361ee; padding-left: 15px;">Profil</h2>
+          <p style="line-height: 1.6; text-align: justify;">${data.profil}</p>
+        </div>
+      `;
+    }
+    
+    if (data.experiences && Array.isArray(data.experiences)) {
+      html += `<div style="margin-bottom: 30px;">
+        <h2 style="color: #4361ee; border-left: 4px solid #4361ee; padding-left: 15px;">Expériences Professionnelles</h2>`;
+      data.experiences.forEach(exp => {
+        html += `
+          <div style="margin: 20px 0; padding-left: 20px;">
+            <strong style="font-size: 16px;">${exp.poste || ''}</strong> - <em>${exp.entreprise || ''}</em><br>
+            <small style="color: #666;">${exp.periode || ''}</small>
+            ${exp.description ? `<p style="margin-top: 8px; line-height: 1.6;">${exp.description}</p>` : ''}
+          </div>
+        `;
+      });
+      html += `</div>`;
+    }
+    
+    if (data.formations && Array.isArray(data.formations)) {
+      html += `<div style="margin-bottom: 30px;">
+        <h2 style="color: #4361ee; border-left: 4px solid #4361ee; padding-left: 15px;">Formation</h2>`;
+      data.formations.forEach(form => {
+        html += `
+          <div style="margin: 20px 0; padding-left: 20px;">
+            <strong style="font-size: 16px;">${form.diplome || ''}</strong><br>
+            <em>${form.etablissement || ''}</em> - <small style="color: #666;">${form.annee || ''}</small>
+          </div>
+        `;
+      });
+      html += `</div>`;
+    }
+    
+    if (data.competences && Array.isArray(data.competences)) {
+      html += `
+        <div style="margin-bottom: 30px;">
+          <h2 style="color: #4361ee; border-left: 4px solid #4361ee; padding-left: 15px;">Compétences</h2>
+          <div style="display: flex; flex-wrap: wrap; gap: 10px; padding-left: 20px;">
+            ${data.competences.map(comp => `<span style="background: #e9ecef; padding: 8px 16px; border-radius: 20px; font-size: 14px;">${comp}</span>`).join('')}
+          </div>
+        </div>
+      `;
+    }
+    
+    if (data.langues && Array.isArray(data.langues)) {
+      html += `
+        <div style="margin-bottom: 30px;">
+          <h2 style="color: #4361ee; border-left: 4px solid #4361ee; padding-left: 15px;">Langues</h2>
+          <div style="padding-left: 20px;">
+            ${data.langues.map(lang => `<p>${lang.langue || ''} - <em>${lang.niveau || ''}</em></p>`).join('')}
+          </div>
+        </div>
+      `;
+    }
+    
+    return html;
+  }
+
+  function formatInvoiceHtml(data) {
+    let html = `
+      <div style="display: flex; justify-content: space-between; margin-bottom: 40px;">
+        <div>
+          <h1 style="color: #4361ee; font-size: 32px; margin: 0;">FACTURE</h1>
+          <p style="color: #666;">N° ${data.numero || 'XXXX'}</p>
+          <p style="color: #666;">Date: ${data.date || new Date().toLocaleDateString('fr-FR')}</p>
+        </div>
+        <div style="text-align: right;">
+          <strong>${data.emetteur?.nom || 'Entreprise'}</strong><br>
+          ${data.emetteur?.adresse || ''}<br>
+          ${data.emetteur?.telephone || ''}<br>
+          ${data.emetteur?.email || ''}
+        </div>
+      </div>
+      
+      <div style="margin-bottom: 30px; padding: 20px; background: #f8f9fa; border-radius: 8px;">
+        <strong>Facturé à :</strong><br>
+        ${data.client?.nom || 'Client'}<br>
+        ${data.client?.adresse || ''}<br>
+        ${data.client?.telephone || ''}
+      </div>
+    `;
+    
+    if (data.articles && Array.isArray(data.articles)) {
+      html += `
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px;">
+          <thead>
+            <tr style="background: #4361ee; color: white;">
+              <th style="padding: 12px; text-align: left;">Description</th>
+              <th style="padding: 12px; text-align: center;">Quantité</th>
+              <th style="padding: 12px; text-align: right;">Prix Unitaire</th>
+              <th style="padding: 12px; text-align: right;">Total</th>
+            </tr>
+          </thead>
+          <tbody>
+      `;
+      
+      let total = 0;
+      data.articles.forEach((article, index) => {
+        const quantite = article.quantite || 1;
+        const prixUnitaire = article.prix_unitaire || 0;
+        const totalLigne = quantite * prixUnitaire;
+        total += totalLigne;
+        
+        html += `
+          <tr style="border-bottom: 1px solid #ddd; ${index % 2 === 0 ? 'background: #f8f9fa;' : ''}">
+            <td style="padding: 12px;">${article.description || ''}</td>
+            <td style="padding: 12px; text-align: center;">${quantite}</td>
+            <td style="padding: 12px; text-align: right;">${prixUnitaire.toFixed(2)} FCFA</td>
+            <td style="padding: 12px; text-align: right;">${totalLigne.toFixed(2)} FCFA</td>
+          </tr>
+        `;
+      });
+      
+      html += `
+          </tbody>
+          <tfoot>
+            <tr style="background: #e9ecef; font-weight: bold;">
+              <td colspan="3" style="padding: 12px; text-align: right;">TOTAL</td>
+              <td style="padding: 12px; text-align: right; color: #4361ee; font-size: 18px;">${total.toFixed(2)} FCFA</td>
+            </tr>
+          </tfoot>
+        </table>
+      `;
+    }
+    
+    if (data.notes) {
+      html += `
+        <div style="margin-top: 30px; padding: 15px; background: #fff3cd; border-left: 4px solid #ffc107; border-radius: 4px;">
+          <strong>Notes :</strong><br>
+          ${data.notes}
+        </div>
+      `;
+    }
+    
+    return html;
+  }
+
+  function formatContractHtml(data) {
+    return `
+      <div style="text-align: center; margin-bottom: 40px;">
+        <h1 style="color: #4361ee; font-size: 28px; margin-bottom: 10px;">
+          ${data.titre || 'CONTRAT'}
+        </h1>
+        <p style="color: #666;">${data.type_contrat || ''}</p>
+      </div>
+      
+      <div style="margin-bottom: 30px;">
+        <strong>Entre les soussignés :</strong><br><br>
+        <strong>Partie 1 :</strong> ${data.partie1?.nom || ''}<br>
+        ${data.partie1?.adresse || ''}<br><br>
+        <strong>Partie 2 :</strong> ${data.partie2?.nom || ''}<br>
+        ${data.partie2?.adresse || ''}
+      </div>
+      
+      <div style="margin-bottom: 30px; line-height: 1.8; text-align: justify;">
+        ${(data.contenu || '').replace(/\n/g, '<br><br>')}
+      </div>
+      
+      <div style="margin-top: 60px; display: flex; justify-content: space-between;">
+        <div style="text-align: center;">
+          <p>Fait à ${data.lieu || 'Lokossa'}, le ${data.date || new Date().toLocaleDateString('fr-FR')}</p>
+          <br><br>
+          <strong>Signature Partie 1</strong><br>
+          ___________________
+        </div>
+        <div style="text-align: center;">
+          <p>&nbsp;</p>
+          <br><br>
+          <strong>Signature Partie 2</strong><br>
+          ___________________
+        </div>
+      </div>
+    `;
+  }
+
+  function formatGenericDocumentHtml(data) {
+    let html = '';
+    if (data.titre) {
+      html += `<h1 style="color: #4361ee; text-align: center; margin-bottom: 30px;">${data.titre}</h1>`;
+    }
+    if (data.contenu) {
+      html += `<div style="line-height: 1.8; text-align: justify;">${data.contenu.replace(/\n/g, '<br>')}</div>`;
+    } else {
+      html += `<div style="line-height: 1.8; text-align: justify;">${JSON.stringify(data, null, 2).replace(/\n/g, '<br>')}</div>`;
+    }
+    return html;
+  }
+
+  window.generatePdfFromJson = function(jsonData) {
+    if (typeof jspdf === 'undefined' || !jspdf.jsPDF) {
+      alert('❌ Bibliothèque jsPDF non chargée. Veuillez rafraîchir la page.');
+      return;
+    }
+    
+    const { jsPDF } = jspdf;
+    const doc = new jsPDF();
+    doc.setFont('helvetica');
+    
+    const type = jsonData.type || 'document';
+    
+    doc.setFontSize(18);
+    doc.text(jsonData.titre || type.toUpperCase(), 20, 20);
+    
+    doc.setFontSize(12);
+    let y = 40;
+    const maxWidth = 170;
+    
+    if (jsonData.contenu) {
+      const lines = doc.splitTextToSize(jsonData.contenu, maxWidth);
+      lines.forEach(line => {
+        if (y > 280) {
+          doc.addPage();
+          y = 20;
+        }
+        doc.text(line, 20, y);
+        y += 7;
+      });
+    }
+    
+    const filename = `${type}_${Date.now()}.pdf`;
+    doc.save(filename);
+    console.log(`✅ PDF généré: ${filename}`);
+  };
+
+  window.generateDocxFromJson = function(jsonData) {
+    if (typeof docx === 'undefined') {
+      alert('❌ Bibliothèque docx.js non chargée. Veuillez rafraîchir la page.');
+      return;
+    }
+    
+    const { Document, Packer, Paragraph, TextRun, HeadingLevel } = docx;
+    
+    const sections = [
+      new Paragraph({
+        text: jsonData.titre || 'Document',
+        heading: HeadingLevel.HEADING_1
+      }),
+      new Paragraph({ text: '' }),
+      new Paragraph({
+        text: jsonData.contenu || JSON.stringify(jsonData, null, 2)
+      })
+    ];
+    
+    const doc = new Document({
+      sections: [{ children: sections }]
+    });
+    
+    Packer.toBlob(doc).then(blob => {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${jsonData.type || 'document'}_${Date.now()}.docx`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      console.log(`✅ DOCX généré: ${a.download}`);
+    });
+  };
+
+  console.log('✅ intellia_doc intégré inline');
+
+  // ========================================
+  // FIN INTELLIA_DOC.JS
+  // ========================================
 
   // ======= UI: Navigation =======
   function navigateTo(targetSection) {
@@ -1630,7 +1435,6 @@
     el('chat-sidebar').classList.remove('open');
     el('sidebar-overlay').classList.remove('open');
   });
-
 
   // ======= Firebase & Listeners =======
   let db = null;
@@ -1776,7 +1580,7 @@
 
   el('btnRefreshDevices')?.addEventListener('click', () => { if(db) onValue(ref(db, metaRefPath), s => {}, { onlyOnce: true }); });
 
-  // ======= Device Control (Firebase Seulement) =======
+  // ======= Device Control =======
   async function writeDeviceStateToBackend(deviceId, etat, value = null) {
     const payload = { etat };
     if (value !== null) payload.luminosite = parseInt(value, 10);
@@ -1788,8 +1592,7 @@
     await set(ref(db, `${devicesRefPath}/${deviceId}`), payload);
   }
 
-  // ======= ⚡ WebSocket Local Logic =======
-  
+  // ======= WebSocket Local Logic =======
   function updateStatusUI(type, connected) {
     const element = el(type === 'local' ? 'statusLocal' : 'statusFirebase');
     if (!element) return;
@@ -1864,8 +1667,6 @@
       }, 5000);
     };
   }
-  // ======= Fin WebSocket Local Logic =======
-
 
   window.toggleDevice = (deviceId) => {
     const current = appState.deviceStates[deviceId] || { etat: "OFF" };
@@ -1879,11 +1680,9 @@
     sendCommand(deviceId, v > 0 ? "ON" : "OFF", v);
   };
 
-  // ======= Commande Hybride (WS/Firebase) =======
   window.sendCommand = (deviceId, action, value = null) => {
     const val = (value !== null) ? parseInt(value) : (action === "ON" ? 100 : 0);
     
-    // ⚡ Fast Path: WebSocket
     if (appState.isLocalConnected && appState.localWebSocket && appState.localWebSocket.readyState === 1) {
       logActivity(`⚡[WS] Envoi: ${deviceId} → ${action} (${val}%)`);
       appState.localWebSocket.send(JSON.stringify({
@@ -1897,7 +1696,6 @@
       renderDevices();
       
     } else {
-      // ☁️ Fallback Path: Firebase
       logActivity(`☁️ [Firebase] Envoi: ${deviceId} → ${action} (${val}%)`);
       writeDeviceStateToBackend(deviceId, action, val);
       
@@ -1921,17 +1719,7 @@
     if (!device || !time) return alert('Appareil et heure requis');
     const hasBrightness = appState.devices.find(d => d.id === device)?.hasBrightness ?? true;
     power = hasBrightness ? (power || (action === "ON" ? 100 : 0)) : null;
-    
-    // ✅ CORRECTION: Uniformiser avec le format Gemini
-    const payload = { 
-      device, 
-      time, 
-      action: 'add', // Toujours "add" pour l'interface
-      actionType: action === "ON" ? "allumer" : "éteindre", // Action réelle
-      power: hasBrightness ? parseInt(power) : null, 
-      createdAt: Date.now() 
-    };
-    
+    const payload = { device, time, action, power: hasBrightness ? parseInt(power) : null, createdAt: Date.now() };
     if (db) await push(ref(db, planningRefPath), payload);
     else { appState.plans.push(payload); savePlansToLocalStorage(); renderPlanningListUI(appState.plans); }
     logActivity(`Plan ajouté: ${device} à ${time}`);
@@ -1977,7 +1765,7 @@
     el('db-count').textContent = `on: ${onCount}`;
   }
 
-  // ======= Local Persistence (utilisé uniquement si Firebase échoue) =======
+  // ======= Local Persistence =======
   const saveDevicesToLocalStorage = () => localStorage.setItem('sh_devices', JSON.stringify(appState.devices));
   const loadDevicesFromLocalStorage = () => { appState.devices = JSON.parse(localStorage.getItem('sh_devices') || '[]'); };
   const savePlansToLocalStorage = () => localStorage.setItem('sh_plans', JSON.stringify(appState.plans));
@@ -2213,11 +2001,206 @@
   
   // ======= Assistant Communication =======
   
+  function htmlToPlainText(text) {
+    try {
+      const html = marked.parse(text, { sanitize: false, gfm: true });
+      let el = document.createElement('div');
+      let cleanHtml = html.replace(/<br\s*\/?>/gi, ' ').replace(/<\/p>/gi, ' ');
+      el.innerHTML = cleanHtml;
+      el.querySelectorAll('pre').forEach(pre => pre.remove());
+      return el.textContent || el.innerText || '';
+    } catch (e) {
+      return text;
+    }
+  }
+
+  function detectImageToken(content) {
+    const imageTokenMatch = content.match(/<IMAGE_URL_TOKEN>(.*?)<\/IMAGE_URL_TOKEN>/);
+    if (imageTokenMatch) {
+      return imageTokenMatch[1];
+    }
+    return null;
+  }
+  
+  function detectStructuredJson(content) {
+    try {
+      const jsonData = JSON.parse(content);
+      if (jsonData && jsonData.type && ['lettre', 'rapport', 'cv', 'facture', 'contrat'].includes(jsonData.type)) {
+        return jsonData;
+      }
+    } catch (e) {}
+    return null;
+  }
+  
+  function appendChat(role, text, returnElement = false, attachments = []) {
+    const target = document.getElementById('chatFullWindow');
+    if (!target) return;
+    
+    const node = document.createElement('div');
+    node.className = 'msg ' + (role === 'user' ? 'user' : 'bot');
+
+    if (role === 'user') {
+      if (text) {
+        node.textContent = text;
+      }
+    } else {
+      const imageUrl = detectImageToken(text);
+      if (imageUrl) {
+        const imageHtml = `
+          <img src="${imageUrl}" style="max-width:100%; border-radius:12px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+          <div style="margin-top: 15px;">
+            <button class="btn primary" onclick="window.downloadImage('${imageUrl}')">
+              <i class="fas fa-download"></i> Télécharger l'Image
+            </button>
+          </div>
+        `;
+        node.innerHTML = `<div class="ai-image-container">${imageHtml}</div>`;
+        target.appendChild(node);
+        scrollToBottom();
+        return node;
+      }
+      
+      const structuredJson = detectStructuredJson(text);
+      if (structuredJson) {
+        const htmlContent = window.formatJsonAsDocumentHtml(structuredJson);
+        node.innerHTML = `<div class="ai-document-container">${htmlContent}</div>`;
+        target.appendChild(node);
+        scrollToBottom();
+        return node;
+      }
+      
+      if (text) {
+        const renderedHtml = marked.parse(text, { sanitize: false, gfm: true });
+        node.innerHTML = renderedHtml;
+        
+        node.querySelectorAll('pre code').forEach(block => {
+          hljs.highlightElement(block);
+        });
+        
+        addCopyButtons(node);
+        
+      } else if (returnElement) {
+        node.classList.add('loading');
+      }
+    }
+    
+    if (attachments && attachments.length > 0) {
+      const attachmentsDiv = document.createElement('div');
+      attachmentsDiv.style.cssText = 'margin-top: 8px; display: flex; flex-wrap: wrap; gap: 8px;';
+      
+      attachments.forEach(att => {
+        if (att.type === 'image' && att.data) {
+          const img = document.createElement('img');
+          img.src = att.data;
+          img.style.cssText = 'max-width: 150px; max-height: 150px; border-radius: 8px; object-fit: cover; cursor: pointer;';
+          img.onclick = () => window.open(att.data, '_blank');
+          attachmentsDiv.appendChild(img);
+        } else if (att.type === 'file') {
+          const fileDiv = document.createElement('div');
+          fileDiv.style.cssText = 'padding: 8px 12px; background: rgba(0,0,0,0.1); border-radius: 6px; font-size: 13px;';
+          let iconClass = 'fa-file';
+          if (att.name.endsWith('.pdf')) iconClass = 'fa-file-pdf';
+          else if (att.name.endsWith('.docx')) iconClass = 'fa-file-word';
+          fileDiv.innerHTML = `<i class="fas ${iconClass}"></i> ${att.name}`;
+          attachmentsDiv.appendChild(fileDiv);
+        }
+      });
+      node.appendChild(attachmentsDiv);
+    }
+
+    target.appendChild(node);
+    scrollToBottom();
+    if (returnElement) return node;
+  }
+  
+  function scrollToBottom() {
+    const container = document.getElementById('chatFullWindow');
+    if (container) {
+      container.scrollTop = container.scrollHeight;
+    }
+  }
+  
+  function addCopyButtons(element) {
+    const codeBlocks = element.querySelectorAll('pre');
+    codeBlocks.forEach(block => {
+      const code = block.querySelector('code');
+      if (!code) return;
+      
+      const btn = document.createElement('button');
+      btn.className = 'copy-code-btn';
+      btn.innerHTML = '<i class="fas fa-copy"></i> Copier';
+      
+      btn.addEventListener('click', () => {
+        navigator.clipboard.writeText(code.innerText);
+        btn.innerHTML = '<i class="fas fa-check"></i> Copié !';
+        setTimeout(() => {
+          btn.innerHTML = '<i class="fas fa-copy"></i> Copier';
+        }, 2000);
+      });
+      
+      block.appendChild(btn);
+    });
+  }
+  
+  function simulateTyping(element, text, enableVoice = true) {
+    return new Promise((resolve, reject) => {
+      
+      if (appState.shouldStopResponse) {
+        element.innerHTML = '<br><br><em style="color: #e74c3c;">⚠️ Réponse interrompue</em>';
+        reject(new Error('Interrupted'));
+        return;
+      }
+      
+      const imageUrl = detectImageToken(text);
+      if (imageUrl) {
+        element.innerHTML = `
+          <div class="ai-image-container">
+            <img src="${imageUrl}" style="max-width:100%; border-radius:12px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+            <div style="margin-top: 15px;">
+              <button class="btn primary" onclick="window.downloadImage('${imageUrl}')">
+                <i class="fas fa-download"></i> Télécharger l'Image
+              </button>
+            </div>
+          </div>
+        `;
+        element.classList.remove('loading');
+        scrollToBottom();
+        resolve();
+        return;
+      }
+      
+      const structuredJson = detectStructuredJson(text);
+      if (structuredJson) {
+        element.innerHTML = `<div class="ai-document-container">${window.formatJsonAsDocumentHtml(structuredJson)}</div>`;
+        element.classList.remove('loading');
+        scrollToBottom();
+        resolve();
+        return;
+      }
+      
+      if (enableVoice) {
+        const plainText = htmlToPlainText(text);
+        speak(plainText, true);
+      }
+      
+      const renderedHtml = marked.parse(text, { sanitize: false, gfm: true });
+      element.innerHTML = renderedHtml;
+      
+      element.querySelectorAll('pre code').forEach(block => {
+        hljs.highlightElement(block);
+      });
+      
+      addCopyButtons(element);
+      element.classList.remove('loading');
+      scrollToBottom();
+      resolve();
+    });
+  }
+
   async function handleChatSubmit(message, attachments = []) {
     if (appState.chatInProgress) return;
     if (!message && attachments.length === 0) return;
 
-    // ✅ FIX : S'assurer qu'une session existe AVANT d'afficher le message
     if (!appState.currentSessionId) {
       createNewChatSession();
     }
@@ -2268,7 +2251,6 @@
       return;
     }
 
-    // ✅ FIX : S'assurer qu'une session existe AVANT d'afficher le message (pour la voix aussi)
     if (!appState.currentSessionId) {
       createNewChatSession();
     }
@@ -2310,38 +2292,11 @@
     }
   }
 
-  // ✅ NOUVEAU (v8.9) - Nettoie le HTML/Markdown pour la voix
-  function htmlToPlainText(text) {
-    try {
-      // D'abord, on rend le markdown en HTML temporaire
-      const html = marked.parse(text, { sanitize: false, gfm: true });
-      
-      let el = document.createElement('div');
-      // Remplace les <br> et <p> par des espaces pour une lecture plus naturelle
-      let cleanHtml = html.replace(/<br\s*\/?>/gi, ' ').replace(/<\/p>/gi, ' ');
-      el.innerHTML = cleanHtml;
-      
-      // On retire les blocs de code de la lecture vocale
-      el.querySelectorAll('pre').forEach(pre => pre.remove());
-      
-      return el.textContent || el.innerText || '';
-    } catch (e) {
-      return text; // Fallback au cas où
-    }
-  }
-
   async function sendToOnline(message, attachments = []) {
     if (!appState.currentUser) {
         alert("Erreur: Utilisateur non connecté. Veuillez rafraîchir.");
         return "Erreur d'authentification.";
     }
-    
-    // ❌ FIX: On supprime ce bloc, il est géré par handleChatSubmit
-    /*
-    if (!appState.currentSessionId) {
-      createNewChatSession();
-    }
-    */
     
     const t0 = Date.now();
     
@@ -2370,7 +2325,6 @@
           return "Interrompu.";
       }
       
-      // On sauvegarde le Markdown brut
       await saveMessageToFirebase(message, j.reply, attachments);
       
       if (j.suggestions && j.suggestions.length > 0) displaySuggestions(j.suggestions);
@@ -2395,138 +2349,6 @@
       logActivity(`Erreur de connexion Assistant.`);
       return "Erreur de connexion avec l'Assistant.";
     }
-  }
-
-  // ======= Chat Interface & Helpers (v9.2 - MARKDOWN) =======
-  
-  // ✅ NOUVEAU v9.2: Ajoute les boutons "Copier" aux blocs de code
-  function addCopyButtons(element) {
-    const codeBlocks = element.querySelectorAll('pre');
-    codeBlocks.forEach(block => {
-      const code = block.querySelector('code');
-      if (!code) return;
-      
-      const btn = document.createElement('button');
-      btn.className = 'copy-code-btn';
-      btn.innerHTML = '<i class="fas fa-copy"></i> Copier';
-      
-      btn.addEventListener('click', () => {
-        navigator.clipboard.writeText(code.innerText);
-        btn.innerHTML = '<i class="fas fa-check"></i> Copié !';
-        setTimeout(() => {
-          btn.innerHTML = '<i class="fas fa-copy"></i> Copier';
-        }, 2000);
-      });
-      
-      block.appendChild(btn);
-    });
-  }
-  
-  // ✅ NOUVEAU v9.2: Rend le Markdown (style Gemini)
-  function simulateTyping(element, text, enableVoice = true) {
-    return new Promise((resolve, reject) => {
-      
-      // 1. Gérer la voix (v8.9)
-      if (enableVoice) {
-        const plainText = htmlToPlainText(text); // Nettoie le Markdown
-        speak(plainText, true);
-      }
-      
-      // 2. Vérifier l'interruption
-      if (appState.shouldStopResponse) {
-        element.innerHTML = '<br><br><em style="color: #e74c3c;">⚠️ Réponse interrompue</em>';
-        reject(new Error('Interrupted'));
-        return;
-      }
-
-      // 3. Rendre le Markdown (texte brut du serveur) en HTML
-      const renderedHtml = marked.parse(text, { sanitize: false, gfm: true });
-      element.innerHTML = renderedHtml;
-      
-      // 4. Colorer le code (Highlight.js)
-      element.querySelectorAll('pre code').forEach(block => {
-        hljs.highlightElement(block);
-      });
-      
-      // 5. Ajouter les boutons "Copier"
-      addCopyButtons(element);
-
-      // 6. Fin
-      element.classList.remove('loading');
-      el('chat-section-container').scrollTop = el('chat-section-container').scrollHeight;
-      resolve();
-    });
-  }
-  
-  // ✅ NOUVEAU v9.2: Gère le Markdown de l'historique
-  function appendChat(role, text, returnElement = false, attachments = []) {
-    const target = el('chatFullWindow');
-    if (!target) return;
-    const node = document.createElement('div');
-    node.className = 'msg ' + (role === 'user' ? 'user' : 'bot');
-
-    if (role === 'user') {
-      // Les messages utilisateur sont toujours du texte simple
-      if (text) {
-        node.textContent = text;
-      }
-    } else {
-      // Les messages BOT (serveur ou historique) sont du Markdown
-      if (text) {
-        // On le rend en HTML
-        const renderedHtml = marked.parse(text, { sanitize: false, gfm: true });
-        node.innerHTML = renderedHtml;
-        
-        // On colore le code
-        node.querySelectorAll('pre code').forEach(block => {
-          hljs.highlightElement(block);
-        });
-        
-        // On ajoute les boutons "Copier"
-        addCopyButtons(node);
-        
-      } else if (returnElement) {
-        // C'est un nouveau message qui attend la réponse
-        node.classList.add('loading');
-      }
-    }
-    
-    // (Gestion des pièces jointes, inchangée)
-    if (attachments && attachments.length > 0) {
-      const attachmentsDiv = document.createElement('div');
-      attachmentsDiv.style.cssText = 'margin-top: 8px; display: flex; flex-wrap: wrap; gap: 8px;';
-      
-      attachments.forEach(att => {
-        if (att.type === 'image' && att.data) {
-          const img = document.createElement('img');
-          img.src = att.data;
-          img.style.cssText = 'max-width: 150px; max-height: 150px; border-radius: 8px; object-fit: cover; cursor: pointer; border: 2px solid rgba(255,255,255,0.2);';
-          img.onclick = () => window.open(att.data, '_blank');
-          img.title = att.name;
-          attachmentsDiv.appendChild(img);
-        } else if (att.type === 'file' || (att.type === 'image' && !att.data)) {
-          const fileDiv = document.createElement('div');
-          fileDiv.style.cssText = 'display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: rgba(0,0,0,0.1); border-radius: 6px; font-size: 13px;';
-          let iconClass = 'fa-file';
-          if (att.name.endsWith('.pdf')) iconClass = 'fa-file-pdf';
-          else if (att.name.endsWith('.docx') || att.name.endsWith('.doc')) iconClass = 'fa-file-word';
-          else if (att.name.endsWith('.txt')) iconClass = 'fa-file-alt';
-          else if (att.type === 'image') iconClass = 'fa-file-image';
-          fileDiv.innerHTML = `<i class="fas ${iconClass}"></i> <span>${escapeHtml(att.name)}</span>`;
-          attachmentsDiv.appendChild(fileDiv);
-        }
-      });
-      node.appendChild(attachmentsDiv);
-    }
-
-    target.appendChild(node);
-    el('chat-section-container').scrollTop = el('chat-section-container').scrollHeight;
-    if (returnElement) return node;
-  }
-  
-  function escapeHtml(text) {
-    if (typeof text !== 'string') return '';
-    return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   }
 
   async function handlePlanningCommands(commands) {
@@ -2686,11 +2508,11 @@
         sortedMessages.forEach(msg => {
           const attachmentsMeta = msg.attachments || [];
           appendChat('user', msg.user, false, attachmentsMeta);
-          appendChat('bot', msg.bot, false); // msg.bot est du Markdown brut
+          appendChat('bot', msg.bot, false);
         });
         
         setTimeout(() => {
-          el('chat-section-container').scrollTop = el('chat-section-container').scrollHeight;
+          el('chatFullWindow').scrollTop = el('chatFullWindow').scrollHeight;
         }, 100);
         
       } else {
@@ -2720,7 +2542,7 @@
     if (isNewSession) {
       let newTitle = userMsg;
       if (!newTitle && attachments.length > 0) {
-        newTitle = `📎 ${attachments[0].name}`;
+        newTitle = `🔎 ${attachments[0].name}`;
       }
       if (!newTitle) newTitle = "Nouvelle discussion";
       newTitle = newTitle.substring(0, 30) + (newTitle.length > 30 ? '...' : '');
@@ -2740,7 +2562,7 @@
   
     await push(messagesRef, {
       user: userMsg,
-      bot: botMsg, // On sauvegarde le Markdown brut
+      bot: botMsg,
       attachments: attachmentsMeta,
       timestamp: serverTimestamp()
     });
@@ -2757,7 +2579,7 @@
     }
   }
   
-  // ======= Gestion des Pièces Jointes (Upload) =======
+  // ======= Gestion des Pièces Jointes =======
   
   el('attach-file-btn').addEventListener('click', () => {
     el('file-input').click();
@@ -2871,7 +2693,7 @@
     el('voiceNotificationsToggle').addEventListener('change', (e) => {
         appState.voiceNotifications = e.target.checked;
         localStorage.setItem('voiceNotifications', e.target.checked);
-        updateToggleVoiceBtnUI(); // Synchroniser
+        updateToggleVoiceBtnUI();
     });
     el('testNotificationBtn')?.addEventListener('click', () => {
       if (!appState.notificationsEnabled) { alert('❌ Activez d\'abord les notifications.'); return; }
@@ -2893,7 +2715,7 @@
     });
   }
 
-  // ======= User Profile Functions (Real) =======
+  // ======= User Profile Functions =======
   function handleGoogleSignIn() {
     if (!auth) return;
     const provider = new GoogleAuthProvider();
@@ -2902,81 +2724,74 @@
   function handleSignOut() { if (auth) signOut(auth).catch((error) => console.error("Erreur Déco:", error)); }
   
   
-// ======= Exécution Automatique des Planifications =======
-// ✅ Système anti-duplication : stocke les tâches déjà exécutées cette minute
-let executedTasksThisMinute = new Set();
-let lastCheckedMinute = '';
+  // ======= Exécution Automatique des Planifications =======
+  let executedTasksThisMinute = new Set();
+  let lastCheckedMinute = '';
 
-setInterval(() => {
-  const now = new Date();
-  const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-  
-  // ✅ Réinitialiser le cache si on change de minute
-  if (currentTime !== lastCheckedMinute) {
-    executedTasksThisMinute.clear();
-    lastCheckedMinute = currentTime;
-  }
-  
-  const duePlans = appState.plans.filter(p => p.time === currentTime);
-  
-  if (duePlans.length > 0) {
-    duePlans.forEach(plan => {
-      const planId = plan.firebaseId || plan.createdAt;
-      const taskKey = `${plan.device}-${plan.time}-${planId}`;
-      
-      // ✅ Vérifier si cette tâche a déjà été exécutée cette minute
-      if (executedTasksThisMinute.has(taskKey)) {
-        return; // Ignorer, déjà exécutée
-      }
-      
-      // ✅ Marquer comme exécutée
-      executedTasksThisMinute.add(taskKey);
-      
-      const deviceName = appState.devices.find(d => d.id === plan.device)?.name || plan.device;
-      
-      // Gérer les deux formats (ancien et nouveau)
-      let action, actionText;
-      if (plan.actionType) {
-        action = plan.actionType === "allumer" ? "ON" : "OFF";
-        actionText = plan.actionType === "allumer" ? "allumé" : "éteint";
-      } else {
-        action = plan.action;
-        actionText = plan.action === 'ON' ? 'allumé' : 'éteint';
-      }
-      
-      const powerText = plan.power !== null ? ` à ${plan.power}%` : '';
-      
-      logActivity(`⏰ Exécution : ${deviceName} ${actionText}${powerText}`);
-      sendCommand(plan.device, action, plan.power);
-      
-      const chatMessage = `⏰ Tâche planifiée : **${deviceName}** ${actionText}${powerText}`;
-      if (el('chatFullWindow')) appendChat("bot", chatMessage);
-      if (appState.voiceNotifications) speak(`Exécution planifiée. ${deviceName} ${actionText}.`);
-      
-      sendBrowserNotification(
-        '⏰ Tâche Planifiée Exécutée',
-        `${deviceName} a été ${actionText}${powerText}`,
-        { tag: `schedule-${plan.device}` } // ✅ Tag fixe pour éviter les duplications
-      );
-      
-      // ✅ Supprimer la tâche de la base après exécution
-      if (db) remove(ref(db, `${planningRefPath}/${planId}`));
-      else {
-        appState.plans = appState.plans.filter(p => (p.firebaseId || p.createdAt) !== planId);
-        savePlansToLocalStorage();
-        renderPlanningListUI(appState.plans);
-      }
-      
-      logActivity(`✅ Tâche exécutée : ${deviceName} ${actionText}`);
-    });
-  }
-}, 15000);
+  setInterval(() => {
+    const now = new Date();
+    const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+    
+    if (currentTime !== lastCheckedMinute) {
+      executedTasksThisMinute.clear();
+      lastCheckedMinute = currentTime;
+    }
+    
+    const duePlans = appState.plans.filter(p => p.time === currentTime);
+    
+    if (duePlans.length > 0) {
+      duePlans.forEach(plan => {
+        const planId = plan.firebaseId || plan.createdAt;
+        const taskKey = `${plan.device}-${plan.time}-${planId}`;
+        
+        if (executedTasksThisMinute.has(taskKey)) {
+          return;
+        }
+        
+        executedTasksThisMinute.add(taskKey);
+        
+        const deviceName = appState.devices.find(d => d.id === plan.device)?.name || plan.device;
+        
+        let action, actionText;
+        if (plan.actionType) {
+          action = plan.actionType === "allumer" ? "ON" : "OFF";
+          actionText = plan.actionType === "allumer" ? "allumé" : "éteint";
+        } else {
+          action = plan.action;
+          actionText = plan.action === 'ON' ? 'allumé' : 'éteint';
+        }
+        
+        const powerText = plan.power !== null ? ` à ${plan.power}%` : '';
+        
+        logActivity(`⏰ Exécution : ${deviceName} ${actionText}${powerText}`);
+        sendCommand(plan.device, action, plan.power);
+        
+        const chatMessage = `⏰ Tâche planifiée : **${deviceName}** ${actionText}${powerText}`;
+        if (el('chatFullWindow')) appendChat("bot", chatMessage);
+        if (appState.voiceNotifications) speak(`Exécution planifiée. ${deviceName} ${actionText}.`);
+        
+        sendBrowserNotification(
+          '⏰ Tâche Planifiée Exécutée',
+          `${deviceName} a été ${actionText}${powerText}`,
+          { tag: `schedule-${plan.device}` }
+        );
+        
+        if (db) remove(ref(db, `${planningRefPath}/${planId}`));
+        else {
+          appState.plans = appState.plans.filter(p => (p.firebaseId || p.createdAt) !== planId);
+          savePlansToLocalStorage();
+          renderPlanningListUI(appState.plans);
+        }
+        
+        logActivity(`✅ Tâche exécutée : ${deviceName} ${actionText}`);
+      });
+    }
+  }, 15000);
 
-  // ======= Auth State Change Listener (Le "Gardien") =======
+  // ======= Auth State Change Listener =======
   if (auth) {
     onAuthStateChanged(auth, (user) => {
       if (user) {
-        // --- Utilisateur connecté ---
         appState.currentUser = user;
         document.querySelector('.main-app').style.display = 'block';
         el('login-overlay').style.display = 'none';
@@ -2995,7 +2810,6 @@ setInterval(() => {
         navigateTo('sec-domotique');
 
       } else {
-        // --- Utilisateur déconnecté ---
         appState.currentUser = null;
         document.querySelector('.main-app').style.display = 'none';
         el('login-overlay').style.display = 'flex';
@@ -3008,7 +2822,6 @@ setInterval(() => {
       }
     });
   } else {
-    // Fallback si Firebase échoue
     el('login-overlay').innerHTML = `
       <div class="login-box">
         <h2>Erreur Critique</h2>
@@ -3019,13 +2832,13 @@ setInterval(() => {
   
   
   function updateProactiveSuggestion() {
-    const el = document.getElementById('proactive-suggestion');
-    if (!el) return;
-    el.classList.add('fade-out');
+    const container = el('proactive-suggestion');
+    if (!container) return;
+    container.classList.add('fade-out');
     setTimeout(() => {
       suggestionIndex = (suggestionIndex + 1) % proactiveSuggestions.length;
-      el.textContent = proactiveSuggestions[suggestionIndex];
-      el.classList.remove('fade-out');
+      container.textContent = proactiveSuggestions[suggestionIndex];
+      container.classList.remove('fade-out');
     }, 500);
   }
 
@@ -3085,6 +2898,7 @@ setInterval(() => {
   initUI(); 
 
   window.appState = appState;
+  console.log('✅ SmartHome Intelligence v9.7 - Application COMPLÈTE chargée');
   </script>
 </body>
 </html>
