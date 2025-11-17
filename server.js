@@ -1,345 +1,3 @@
-// ========================================
-// INTELLIA v9.6 - CORRECTIONS COMPLÈTES
-// ✅ Toutes les capacités MAXIMALES conservées
-// ✅ Correction des bugs et optimisation
-// ✅ Génération d'images SD3.5 (2 crédits)
-// ========================================
-const express = require('express');
-const cors = require('cors');
-const path = require('path');
-const axios = require('axios');
-const cheerio = require('cheerio');
-const { GoogleGenerativeAI } = require("@google/generative-ai");
-
-// ✅ Imports Firebase
-const { initializeApp } = require("firebase/app");
-const { getDatabase, ref, get, set, push } = require("firebase/database");
-
-// ✅ Imports des Parsers de Fichiers
-const pdf = require('pdf-parse');
-const mammoth = require('mammoth');
-
-const app = express();
-const PORT = process.env.PORT || 3000;
-
-app.use(cors());
-app.use(express.json({ limit: '50mb' }));
-app.use(express.static('public'));
-
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
-
-// ========================================
-// CONFIGURATION
-// ========================================
-const AUTH_KEY = process.env.AUTH_KEY || "cle-secrete-intellia";
-
-// ✅ CONFIG FIREBASE
-const firebaseConfig = {
-    apiKey: "AIzaSyA5oYEu4-nOUtjOe2JJ4C9VwNniNSBdjqI",
-    authDomain: "mamaisonintelligente-14485.firebaseapp.com",
-    databaseURL: "https://mamaisonintelligente-14485-default-rtdb.firebaseio.com",
-    projectId: "mamaisonintelligente-14485",
-    storageBucket: "mamaisonintelligente-14485.firebasestorage.app",
-    messagingSenderId: "197281963087",
-    appId: "1:197281963087:web:da680779479391d91f1e3a"
-};
-
-// ✅ Initialisation de Firebase
-let db;
-try {
-    const firebaseApp = initializeApp(firebaseConfig);
-    db = getDatabase(firebaseApp);
-    console.log("🔥 Connexion à Firebase Réussie");
-} catch (e) {
-    console.error("❌ ERREUR CRITIQUE: Impossible d'initialiser Firebase.", e);
-}
-
-const DEVICES_STATES_REF = "devices";
-const DEVICES_META_REF = "devicesMeta";
-const USER_CHATS_REF = "userChats";
-const PLANNING_REF = "planning";
-
-// ========================================
-// 🎨 CONFIGURATION DES CLÉS D'IMAGERIE (STABILITY AI)
-// ✅ Utiliser SD3.5 (2 crédits) au lieu de Ultra (8 crédits)
-// ========================================
-const IMAGE_API_KEYS = [];
-let currentImageKeyIndex = 0;
-
-// Chargement des clés Stability AI depuis les variables d'environnement
-for (let i = 1; i <= 3; i++) {
-  const key = process.env[`STABILITY_KEY_${i}`];
-  if (key && key !== "sk-xxxx" && key.startsWith('sk-')) {
-    IMAGE_API_KEYS.push({ 
-      key: key, 
-      failures: 0, 
-      lastUsed: null, 
-      quotaExceeded: false 
-    });
-  }
-}
-
-if (IMAGE_API_KEYS.length === 0) {
-  console.warn('⚠️ AUCUNE CLÉ STABILITY AI DÉTECTÉE - Génération d\'images désactivée');
-} else {
-  console.log(`🎨 ${IMAGE_API_KEYS.length} clé(s) Stability AI chargée(s)`);
-}
-
-// ✅ Fonction de rotation pour les clés d'imagerie
-function getNextImageApiKey() {
-  if (IMAGE_API_KEYS.length === 0) {
-    throw new Error("Aucune clé d'imagerie disponible");
-  }
-  
-  const maxAttempts = IMAGE_API_KEYS.length;
-  let attempts = 0;
-  
-  while (attempts < maxAttempts) {
-    const keyObj = IMAGE_API_KEYS[currentImageKeyIndex];
-    currentImageKeyIndex = (currentImageKeyIndex + 1) % IMAGE_API_KEYS.length;
-    
-    if (!keyObj.quotaExceeded) {
-      keyObj.lastUsed = Date.now();
-      return keyObj;
-    }
-    attempts++;
-  }
-  
-  throw new Error("Toutes les clés d'imagerie ont atteint leur quota");
-}
-
-function markImageKeyAsFailed(keyObj, isQuotaError = false) {
-  keyObj.failures++;
-  if (isQuotaError) {
-    keyObj.quotaExceeded = true;
-    console.warn(`⚠️ Clé d'imagerie en quota dépassé, réinitialisation dans 1h`);
-    setTimeout(() => { 
-      keyObj.quotaExceeded = false; 
-      keyObj.failures = 0; 
-    }, 3600000); // 1 heure
-  }
-}
-
-// ========================================
-// 🎨 FONCTION DE GÉNÉRATION D'IMAGES (STABILITY AI)
-// ✅ OPTIMISÉ : SD3.5 (2 crédits) au lieu de SDXL (8 crédits)
-// ========================================
-async function generateImage(prompt, style = "photorealistic") {
-  if (IMAGE_API_KEYS.length === 0) {
-    return { 
-      success: false, 
-      error: "Service de génération d'images non configuré. Veuillez ajouter des clés Stability AI." 
-    };
-  }
-
-  console.log(`🎨 Génération d'image demandée: "${prompt.substring(0, 50)}..."`);
-
-  const maxRetries = IMAGE_API_KEYS.length;
-  let lastError = null;
-
-  for (let attempt = 0; attempt < maxRetries; attempt++) {
-    try {
-      const keyObj = getNextImageApiKey();
-      
-      // ✅ CHANGEMENT CRITIQUE : Utiliser SD3.5 (2 crédits au lieu de 8)
-      const STABILITY_API_URL = "https://api.stability.ai/v2beta/stable-image/generate/sd3.5";
-      
-      const response = await axios.post(
-        STABILITY_API_URL,
-        {
-          prompt: prompt,
-          negative_prompt: "blurry, low quality, distorted, deformed, ugly",
-          aspect_ratio: "1:1",
-          output_format: "png"
-        },
-        {
-          headers: {
-            'Authorization': `Bearer ${keyObj.key}`,
-            'Accept': 'application/json'
-          },
-          timeout: 60000
-        }
-      );
-
-      if (response.data.image) {
-        const imageBase64 = response.data.image;
-        const imageDataUrl = `data:image/png;base64,${imageBase64}`;
-        
-        console.log(`✅ Image générée avec succès (${imageBase64.length} bytes) - Modèle: SD3.5 (2 crédits)`);
-        
-        return { 
-          success: true, 
-          imageUrl: imageDataUrl,
-          format: 'png',
-          size: imageBase64.length,
-          model: 'sd3.5',
-          credits_used: 2
-        };
-      } else {
-        throw new Error("Aucune image retournée par l'API");
-      }
-      
-    } catch (error) {
-      lastError = error;
-      const keyObj = IMAGE_API_KEYS[(currentImageKeyIndex - 1 + IMAGE_API_KEYS.length) % IMAGE_API_KEYS.length];
-      
-      const isQuotaError = error.response?.status === 402 || 
-                          error.response?.status === 429 ||
-                          error.message?.includes('quota') ||
-                          error.message?.includes('credits');
-      
-      markImageKeyAsFailed(keyObj, isQuotaError);
-      
-      console.warn(`⚠️ Tentative ${attempt + 1}/${maxRetries} échouée (Image): ${error.message}`);
-      
-      if (attempt === maxRetries - 1) break;
-    }
-  }
-
-  return { 
-    success: false, 
-    error: `Échec de la génération : ${lastError?.response?.data?.message || lastError?.message || 'Erreur inconnue'}` 
-  };
-}
-
-// ✅ Fonction de détection d'intention d'image
-function isImageGenerationRequest(message) {
-  const lowerMsg = message.toLowerCase();
-  
-  const imageKeywords = [
-    'génère une image',
-    'génère un image',
-    'crée une image',
-    'crée un image',
-    'dessine',
-    'fais une image',
-    'fais un dessin',
-    'imagine une image',
-    'fais une affiche',
-    'génère une photo',
-    'crée une illustration',
-    'montre-moi une image de',
-    'peux-tu dessiner',
-    'fais-moi une image'
-  ];
-  
-  return imageKeywords.some(keyword => lowerMsg.includes(keyword));
-}
-
-// ✅ Fonction de détection de génération de documents
-function isDocumentGenerationRequest(message) {
-  const lowerMsg = message.toLowerCase();
-  
-  const documentKeywords = [
-    'génère un pdf',
-    'génère une lettre',
-    'crée un document',
-    'crée une lettre',
-    'écris une lettre',
-    'rédige une lettre',
-    'fais un rapport',
-    'génère un rapport',
-    'crée un rapport',
-    'écris un rapport',
-    'fais un cv',
-    'génère un cv',
-    'crée un cv',
-    'rédige un cv',
-    'crée un contrat',
-    'rédige un contrat',
-    'fais une facture',
-    'génère une facture',
-    'crée une facture'
-  ];
-  
-  return documentKeywords.some(keyword => lowerMsg.includes(keyword));
-}
-
-// ========================================
-// GESTION DES CLÉS API GEMINI
-// ========================================
-const API_KEYS = [];
-let currentKeyIndex = 0;
-
-for (let i = 1; i <= 10; i++) {
-  const key = process.env[`GEMINI_KEY_${i}`];
-  if (key && key !== "VOTRE_CLE_API_ICI") {
-    API_KEYS.push({ key: key, failures: 0, lastUsed: null, quotaExceeded: false });
-  }
-}
-
-if (API_KEYS.length === 0) console.warn('⚠️ AUCUNE CLÉ API GEMINI');
-console.log(`🔑 ${API_KEYS.length} clé(s) Gemini chargée(s)`);
-
-function getNextApiKey() {
-  if (API_KEYS.length === 0) throw new Error("Aucune clé API disponible");
-  const maxAttempts = API_KEYS.length;
-  let attempts = 0;
-  while (attempts < maxAttempts) {
-    const keyObj = API_KEYS[currentKeyIndex];
-    currentKeyIndex = (currentKeyIndex + 1) % API_KEYS.length;
-    if (!keyObj.quotaExceeded) {
-      keyObj.lastUsed = Date.now();
-      return keyObj;
-    }
-    attempts++;
-  }
-  throw new Error("Toutes les clés ont atteint leur quota");
-}
-
-function markKeyAsFailed(keyObj, isQuotaError = false) {
-  keyObj.failures++;
-  if (isQuotaError) {
-    keyObj.quotaExceeded = true;
-    setTimeout(() => { keyObj.quotaExceeded = false; keyObj.failures = 0; }, 3600000);
-  }
-}
-
-// ========================================
-// TEMPÉRATURE RÉELLE DE LOKOSSA
-// ========================================
-function getLoKossaTemperatureEstimated(month, hour) {
-  const temperatureData = {
-    1: { min: 23, max: 35, avg: 29 },
-    2: { min: 25, max: 36, avg: 30.5 },
-    3: { min: 25, max: 35, avg: 30 },
-    4: { min: 24, max: 34, avg: 29 },
-    5: { min: 24, max: 32, avg: 28 },
-    6: { min: 23, max: 30, avg: 26.5 },
-    7: { min: 23, max: 29, avg: 26 },
-    8: { min: 23, max: 29, avg: 26 },
-    9: { min: 23, max: 30, avg: 26.5 },
-    10: { min: 24, max: 32, avg: 28 },
-    11: { min: 24, max: 33, avg: 28.5 },
-    12: { min: 23, max: 34, avg: 28.5 }
-  };
-
-  const monthData = temperatureData[month] || temperatureData[1];
-  let tempAdjustment = 0;
-  
-  if (hour >= 6 && hour < 12) {
-    tempAdjustment = ((hour - 6) / 6) * (monthData.max - monthData.avg);
-  } else if (hour >= 12 && hour < 18) {
-    tempAdjustment = monthData.max - monthData.avg - ((hour - 12) / 6) * (monthData.max - monthData.avg);
-  } else {
-    tempAdjustment = monthData.min - monthData.avg;
-  }
-  
-  const estimatedTemp = Math.round(monthData.avg + tempAdjustment);
-  
-  return {
-    temperature: estimatedTemp,
-    feels_like: estimatedTemp,
-    humidity: hour >= 6 && hour < 18 ? 65 : 80,
-    description: estimatedTemp >= 32 ? "Très chaud et humide" : 
-                 estimatedTemp >= 28 ? "Chaud" : 
-                 estimatedTemp >= 25 ? "Agréable" : "Frais",
-    source: 'estimation'
-  };
-}
-
 function getWeatherDescription(code) {
   const descriptions = {
     0: "Ciel dégagé ☀️", 1: "Principalement dégagé 🌤️", 2: "Partiellement nuageux ⛅", 3: "Couvert ☁️",
@@ -696,7 +354,7 @@ function analyzeContext(message, deviceStates, beninTime) {
 }
 
 // ========================================
-// ✅ PROMPT SYSTÈME v9.6 COMPLET
+// ✅ PROMPT SYSTÈME v9.6 COMPLET AVEC SUPPRESSION D'APPAREILS
 // ========================================
 const systemPrompt = `Tu es Intellia, assistant universel ultra-intelligent.
 
@@ -708,7 +366,7 @@ Tu es créé pour un projet Domotique intelligente par 06 jeunes étudiants cher
 +229 0141929429
 
 ## 🎯 TES CAPACITÉS COMPLÈTES
-1. **Domotique** : Contrôle appareils, planification, ajout automatique
+1. **Domotique** : Contrôle appareils, planification, ajout automatique, SUPPRESSION d'appareils
 2. **Code** : Arduino, Python, JavaScript, C, C++, Java, etc.
 3. **Recherche web** : Actualités, infos en temps réel via DuckDuckGo
 4. **Conversation naturelle** : Contexte, historique, suggestions proactives
@@ -777,7 +435,7 @@ Tu peux générer des images via Stability AI (modèle SD3.5, 2 crédits/image).
 
 **Règles pour le prompt d'image :**
 - Toujours en ANGLAIS
-- Descriptif et détaillé (20-70 mots)
+- Descriptif et détaillé (20-50 mots)
 - Inclure le style (photorealistic, digital art, painting...)
 - Inclure la qualité (4k, high quality, detailed...)
 - Éviter les termes vagues
@@ -901,7 +559,7 @@ Tu peux générer des documents professionnels : lettres, rapports, CV, factures
     "client": {
       "nom": "Client ABC",
       "adresse": "456 Avenue Principale, Cotonou",
-      "telephone": "+229 01 98 76 54 32"
+      "telephone": "+229 98 76 54 32"
     },
     "articles": [
       {
@@ -996,6 +654,34 @@ Si l'utilisateur demande d'ajouter un nouvel appareil (ex: "Ajoute une lampe jar
 }
 \`\`\`
 
+### ❌ SUPPRESSION D'APPAREILS
+Si l'utilisateur demande de supprimer un appareil (ex: "Supprime la lampe du jardin", "Retire la prise du salon"), génère une commande dans **"device_commands"**.
+
+**Exemple de requête :** "Supprime la lampe du jardin"
+**Exemple de JSON à générer :**
+\`\`\`json
+{
+  "reply": "✅ J'ai supprimé **Lampe Jardin** de votre liste !",
+  "device_commands": [
+    {
+      "action": "remove",
+      "deviceId": "lampe_jardin_1234"
+    }
+  ],
+  "execute": [],
+  "document_generation": null,
+  "image_generation": null,
+  "source": "cloud"
+}
+\`\`\`
+
+**Règles de suppression :**
+* L'\`action\` est "remove" (ou "delete").
+* Le champ \`deviceId\` est OBLIGATOIRE et doit être l'ID exact de l'appareil (disponible dans [Appareils]).
+* Si l'utilisateur donne un nom, tu dois trouver l'ID correspondant dans [Appareils] en cherchant par nom.
+
+**Important :** Ne supprime pas un appareil qui n'existe pas. Vérifie dans [Appareils] que l'appareil existe.
+
 **Types d'appareils supportés :**
 * \`lamp\` : Lampe (avec luminosité)
 * \`plug\` : Prise électrique
@@ -1035,6 +721,7 @@ Si l'utilisateur demande d'ajouter un nouvel appareil (ex: "Ajoute une lampe jar
 8. **Température Lokossa:** Toujours disponible dans les métadonnées, ne cherche JAMAIS sur le web.
 9. **Images:** Utilise le champ \`image_generation\` avec un prompt en ANGLAIS.
 10. **Documents:** Utilise le champ \`document_generation\` avec un JSON structuré.
+11. **Suppression appareils:** Utilise le champ \`device_commands\` avec action "remove" et l'ID exact.
 
 RÉPONDS EN JSON VALIDE AVEC DU MARKDOWN DANS "reply".
 `;
@@ -1159,11 +846,11 @@ MESSAGE: "${userMessage}"
 }
 
 // ========================================
-// ✅ GESTION DES COMMANDES D'APPAREILS
+// ✅ GESTION DES COMMANDES D'APPAREILS (COMPLÉTÉE AVEC SUPPRESSION)
 // ========================================
 async function handleDeviceCommands(commands, userId) {
   if (!db) {
-    console.warn("⚠️ Firebase non disponible, impossible d'ajouter des appareils");
+    console.warn("⚠️ Firebase non disponible, impossible de gérer les appareils");
     return;
   }
 
@@ -1211,6 +898,27 @@ async function handleDeviceCommands(commands, userId) {
         
       } catch (error) {
         console.error(`❌ Erreur ajout appareil:`, error.message);
+      }
+    } 
+    // ✅ NOUVEAU : SUPPRESSION D'APPAREILS
+    else if (cmd.action === 'remove' || cmd.action === 'delete') {
+      try {
+        const deviceId = cmd.deviceId;
+        if (!deviceId) {
+          console.warn("⚠️ ID d'appareil manquant pour la suppression");
+          continue;
+        }
+
+        // Supprimer des métadonnées
+        await set(ref(db, `${DEVICES_META_REF}/${deviceId}`), null);
+        
+        // Supprimer de l'état
+        await set(ref(db, `${DEVICES_STATES_REF}/${deviceId}`), null);
+        
+        console.log(`✅ Appareil supprimé: ${deviceId}`);
+        
+      } catch (error) {
+        console.error(`❌ Erreur suppression appareil:`, error.message);
       }
     }
   }
@@ -1368,7 +1076,7 @@ app.post('/api/chat', async (req, res) => {
     // ✅ Déduplication des planifications
     aiJson.planning_commands = deduplicatePlanning(aiJson.planning_commands);
     
-    // ✅ Traiter les commandes d'ajout d'appareils
+    // ✅ Traiter les commandes d'appareils (AJOUT ET SUPPRESSION)
     if (aiJson.device_commands && aiJson.device_commands.length > 0) {
       await handleDeviceCommands(aiJson.device_commands, userId);
     }
@@ -1383,7 +1091,7 @@ app.post('/api/chat', async (req, res) => {
     console.log('✅ RÉPONSE GÉNÉRÉE');
     console.log(`📤 Execute: ${aiJson.execute.length}`);
     console.log(`📅 Planning: ${aiJson.planning_commands.length}`);
-    console.log(`➕ Device Commands: ${aiJson.device_commands.length}`);
+    console.log(`🔧 Device Commands: ${aiJson.device_commands.length} (${aiJson.device_commands.filter(cmd => cmd.action === 'add').length} ajouts, ${aiJson.device_commands.filter(cmd => cmd.action === 'remove' || cmd.action === 'delete').length} suppressions)`);
     console.log(`📄 Document: ${aiJson.document_generation ? aiJson.document_generation.type : 'non'}`);
     console.log(`💡 Suggestions: ${aiJson.suggestions.length}`);
     console.log(`📝 Markdown Length: ${aiJson.reply.length} chars`);
@@ -1464,6 +1172,7 @@ app.get('/api/health', async (req, res) => {
       markdownOutput: true,
       aiPlanning: true,
       autoAddDevices: true,
+      deviceRemoval: true, // ✅ NOUVEAU : Suppression d'appareils
       lokossaTemperature: true,
       supportedFiles: "PDF, DOCX, TXT, HTML, JS, JSON, CSS, XLSX, CSV, Images",
       documentFormats: "Lettres, Rapports, CV, Factures, Contrats (JSON → Client converts)",
@@ -1501,9 +1210,11 @@ app.listen(PORT, () => {
   console.log(`   📊 Capacité: 12 images/jour (25 crédits)`);
   console.log(`   💰 Économie: +300% vs Ultra (8 crédits)`);
   console.log(`   🔥 Synchro Firebase (Appareils): Activée`);
+  console.log(`   🔥 Suppression Appareils: Activée ✅`); // ✅ NOUVEAU
   console.log(`   💾 Synchro Firebase (Chats): Activée`);
   console.log(`   📅 Planning AI: Prêt`);
   console.log(`   ➕ Auto Add Devices: Activé`);
+  console.log(`   ❌ Suppression Devices: Activé ✅`); // ✅ NOUVEAU
   console.log(`   🌡️ Température Lokossa: Temps réel`);
   console.log(`   📄 Génération de documents: Activée (JSON Bridge)`);
   console.log(`   ✅ Output Markdown: Activé`);
