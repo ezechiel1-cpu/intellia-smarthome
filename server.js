@@ -1,8 +1,8 @@
 // ========================================
-// INTELLIA v9.5 - OPTIMISATION IMAGES UNIQUEMENT
+// INTELLIA v9.6 - CORRECTIONS COMPLÈTES
 // ✅ Toutes les capacités MAXIMALES conservées
-// ✅ Seulement changement : SD3.5 (2 crédits au lieu de 8)
-// ✅ 12 images/jour au lieu de 3 avec les mêmes 25 crédits
+// ✅ Correction des bugs et optimisation
+// ✅ Génération d'images SD3.5 (2 crédits)
 // ========================================
 const express = require('express');
 const cors = require('cors');
@@ -63,7 +63,7 @@ const PLANNING_REF = "planning";
 
 // ========================================
 // 🎨 CONFIGURATION DES CLÉS D'IMAGERIE (STABILITY AI)
-// ✅ SEULEMENT CHANGEMENT : Utiliser SD3.5 (2 crédits) au lieu de Ultra (8 crédits)
+// ✅ Utiliser SD3.5 (2 crédits) au lieu de Ultra (8 crédits)
 // ========================================
 const IMAGE_API_KEYS = [];
 let currentImageKeyIndex = 0;
@@ -125,7 +125,6 @@ function markImageKeyAsFailed(keyObj, isQuotaError = false) {
 // ========================================
 // 🎨 FONCTION DE GÉNÉRATION D'IMAGES (STABILITY AI)
 // ✅ OPTIMISÉ : SD3.5 (2 crédits) au lieu de SDXL (8 crédits)
-// ✅ RÉSULTAT : 12 images/jour au lieu de 3 avec les mêmes 25 crédits
 // ========================================
 async function generateImage(prompt, style = "photorealistic") {
   if (IMAGE_API_KEYS.length === 0) {
@@ -145,7 +144,6 @@ async function generateImage(prompt, style = "photorealistic") {
       const keyObj = getNextImageApiKey();
       
       // ✅ CHANGEMENT CRITIQUE : Utiliser SD3.5 (2 crédits au lieu de 8)
-      // SD3.5 = Excellente qualité + 4x plus économique que Ultra
       const STABILITY_API_URL = "https://api.stability.ai/v2beta/stable-image/generate/sd3.5";
       
       const response = await axios.post(
@@ -153,19 +151,18 @@ async function generateImage(prompt, style = "photorealistic") {
         {
           prompt: prompt,
           negative_prompt: "blurry, low quality, distorted, deformed, ugly",
-          aspect_ratio: "1:1", // Format carré standard
-          output_format: "png" // PNG pour qualité maximale
+          aspect_ratio: "1:1",
+          output_format: "png"
         },
         {
           headers: {
             'Authorization': `Bearer ${keyObj.key}`,
             'Accept': 'application/json'
           },
-          timeout: 60000 // 60 secondes pour la génération
+          timeout: 60000
         }
       );
 
-      // ✅ Récupération de l'image en base64
       if (response.data.image) {
         const imageBase64 = response.data.image;
         const imageDataUrl = `data:image/png;base64,${imageBase64}`;
@@ -261,7 +258,7 @@ function isDocumentGenerationRequest(message) {
 }
 
 // ========================================
-// GESTION DES CLÉS API GEMINI (INCHANGÉ)
+// GESTION DES CLÉS API GEMINI
 // ========================================
 const API_KEYS = [];
 let currentKeyIndex = 0;
@@ -301,7 +298,7 @@ function markKeyAsFailed(keyObj, isQuotaError = false) {
 }
 
 // ========================================
-// 🌡️ TEMPÉRATURE RÉELLE DE LOKOSSA (INCHANGÉ)
+// TEMPÉRATURE RÉELLE DE LOKOSSA
 // ========================================
 function getLoKossaTemperatureEstimated(month, hour) {
   const temperatureData = {
@@ -436,7 +433,7 @@ async function getBeninTime() {
 }
 
 // ========================================
-// HELPERS MULTIMODAL (INCHANGÉ - CAPACITÉS MAXIMALES)
+// HELPERS MULTIMODAL
 // ========================================
 function parseDataUri(dataUri) {
   try {
@@ -616,7 +613,7 @@ async function getHistoryFromFirebase(userId, sessionId) {
 }
 
 // ========================================
-// RECHERCHE WEB INTELLIGENTE (INCHANGÉ)
+// RECHERCHE WEB INTELLIGENTE
 // ========================================
 async function performWebSearch(query) {
   console.log(`🔍 Recherche: "${query}"`);
@@ -667,7 +664,7 @@ function needsWebSearch(message) {
 }
 
 // ========================================
-// ANALYSE CONTEXTUELLE (INCHANGÉ)
+// ANALYSE CONTEXTUELLE
 // ========================================
 function analyzeContext(message, deviceStates, beninTime) {
   const analysis = { suggestedActions: [] };
@@ -699,8 +696,7 @@ function analyzeContext(message, deviceStates, beninTime) {
 }
 
 // ========================================
-// ✅ PROMPT SYSTÈME v9.5 COMPLET (INCHANGÉ - CAPACITÉS MAXIMALES)
-// ✅ Informe l'IA de TOUTES les capacités disponibles
+// ✅ PROMPT SYSTÈME v9.6 COMPLET
 // ========================================
 const systemPrompt = `Tu es Intellia, assistant universel ultra-intelligent.
 
@@ -781,7 +777,7 @@ Tu peux générer des images via Stability AI (modèle SD3.5, 2 crédits/image).
 
 **Règles pour le prompt d'image :**
 - Toujours en ANGLAIS
-- Descriptif et détaillé (20-50 mots)
+- Descriptif et détaillé (20-70 mots)
 - Inclure le style (photorealistic, digital art, painting...)
 - Inclure la qualité (4k, high quality, detailed...)
 - Éviter les termes vagues
@@ -905,7 +901,7 @@ Tu peux générer des documents professionnels : lettres, rapports, CV, factures
     "client": {
       "nom": "Client ABC",
       "adresse": "456 Avenue Principale, Cotonou",
-      "telephone": "+229 98 76 54 32"
+      "telephone": "+229 01 98 76 54 32"
     },
     "articles": [
       {
@@ -1044,7 +1040,7 @@ RÉPONDS EN JSON VALIDE AVEC DU MARKDOWN DANS "reply".
 `;
 
 // ========================================
-// FONCTION CHAT AVEC GEMINI (INCHANGÉ - CAPACITÉS MAXIMALES)
+// FONCTION CHAT AVEC GEMINI
 // ========================================
 async function chatWithGemini(userMessage, devices, userId, sessionId, attachments = [], preferences = {}, maxRetries = API_KEYS.length) {
     
@@ -1107,7 +1103,7 @@ async function chatWithGemini(userMessage, devices, userId, sessionId, attachmen
         generationConfig: {
           responseMimeType: "application/json",
           temperature: 0.7,
-          maxOutputTokens: 65536, // ✅ MAXIMUM (65K tokens)
+          maxOutputTokens: 65536,
         },
       });
 
@@ -1163,7 +1159,7 @@ MESSAGE: "${userMessage}"
 }
 
 // ========================================
-// ✅ GESTION DES COMMANDES D'APPAREILS (INCHANGÉ)
+// ✅ GESTION DES COMMANDES D'APPAREILS
 // ========================================
 async function handleDeviceCommands(commands, userId) {
   if (!db) {
@@ -1221,7 +1217,7 @@ async function handleDeviceCommands(commands, userId) {
 }
 
 // ========================================
-// 🎯 ROUTE PRINCIPALE /api/chat (MODIFIÉE POUR IMAGES + DOCUMENTS)
+// 🎯 ROUTE PRINCIPALE /api/chat
 // ========================================
 app.post('/api/chat', async (req, res) => {
   try {
@@ -1444,7 +1440,7 @@ function deduplicatePlanning(plans) {
 }
 
 // ========================================
-// 🌐 ROUTE SANTÉ (MISE À JOUR)
+// 🌐 ROUTE SANTÉ
 // ========================================
 app.get('/api/health', async (req, res) => {
   const availableKeys = API_KEYS.filter(k => !k.quotaExceeded).length;
@@ -1453,7 +1449,7 @@ app.get('/api/health', async (req, res) => {
   
   res.json({ 
     status: 'ok', 
-    version: '9.5-image-optimized',
+    version: '9.6-image-optimized',
     features: {
       gemini: API_KEYS.length > 0,
       imageGeneration: IMAGE_API_KEYS.length > 0,
@@ -1496,7 +1492,7 @@ app.get('/api/health', async (req, res) => {
 // ========================================
 app.listen(PORT, () => {
   console.log('\n🏠 ╔═══════════════════════════════════════╗');
-  console.log('   ║  INTELLIA v9.5 - IMAGE OPTIMIZED     ║');
+  console.log('   ║  INTELLIA v9.6 - IMAGE OPTIMIZED     ║');
   console.log('   ╚═══════════════════════════════════════╝');
   console.log(`\n   🚀 Serveur: http://localhost:${PORT}`);
   console.log(`   🔑 Clés Gemini: ${API_KEYS.length}`);
