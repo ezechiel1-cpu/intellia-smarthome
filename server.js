@@ -1,117 +1,792 @@
 // ========================================
-// INTELLIA v9.7 - CORRECTIONS COMPLÈTES
+// INTELLIA v9.7 - COMPLET ET FONCTIONNEL
 // ✅ Ajout suppression d'appareils
 // ✅ Génération de documents en maintenance
 // ✅ Toutes les autres capacités MAXIMALES conservées
 // ========================================
+const express = require('express');
+const cors = require('cors');
+const path = require('path');
+const axios = require('axios');
+const cheerio = require('cheerio');
+const { GoogleGenerativeAI } = require("@google/generative-ai");
+
+// ✅ Imports Firebase
+const { initializeApp } = require("firebase/app");
+const { getDatabase, ref, get, set, push } = require("firebase/database");
+
+// ✅ Imports des Parsers de Fichiers
+const pdf = require('pdf-parse');
+const mammoth = require('mammoth');
+
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+app.use(cors());
+app.use(express.json({ limit: '50mb' }));
+app.use(express.static('public'));
+
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
 
 // ========================================
-// ✅ GESTION DES COMMANDES D'APPAREILS (AVEC SUPPRESSION)
+// CONFIGURATION
 // ========================================
-async function handleDeviceCommands(commands, userId) {
-  if (!db) {
-    console.warn("⚠️ Firebase non disponible, impossible de gérer les appareils");
-    return;
+const AUTH_KEY = process.env.AUTH_KEY || "cle-secrete-intellia";
+
+// ✅ CONFIG FIREBASE
+const firebaseConfig = {
+    apiKey: "AIzaSyA5oYEu4-nOUtjOe2JJ4C9VwNniNSBdjqI",
+    authDomain: "mamaisonintelligente-14485.firebaseapp.com",
+    databaseURL: "https://mamaisonintelligente-14485-default-rtdb.firebaseio.com",
+    projectId: "mamaisonintelligente-14485",
+    storageBucket: "mamaisonintelligente-14485.firebasestorage.app",
+    messagingSenderId: "197281963087",
+    appId: "1:197281963087:web:da680779479391d91f1e3a"
+};
+
+// ✅ Initialisation de Firebase
+let db;
+try {
+    const firebaseApp = initializeApp(firebaseConfig);
+    db = getDatabase(firebaseApp);
+    console.log("🔥 Connexion à Firebase Réussie");
+} catch (e) {
+    console.error("❌ ERREUR CRITIQUE: Impossible d'initialiser Firebase.", e);
+}
+
+const DEVICES_STATES_REF = "devices";
+const DEVICES_META_REF = "devicesMeta";
+const USER_CHATS_REF = "userChats";
+const PLANNING_REF = "planning";
+
+// ========================================
+// 🎨 CONFIGURATION DES CLÉS D'IMAGERIE (STABILITY AI)
+// ========================================
+const IMAGE_API_KEYS = [];
+let currentImageKeyIndex = 0;
+
+for (let i = 1; i <= 3; i++) {
+  const key = process.env[`STABILITY_KEY_${i}`];
+  if (key && key !== "sk-xxxx" && key.startsWith('sk-')) {
+    IMAGE_API_KEYS.push({ 
+      key: key, 
+      failures: 0, 
+      lastUsed: null, 
+      quotaExceeded: false 
+    });
+  }
+}
+
+if (IMAGE_API_KEYS.length === 0) {
+  console.warn('⚠️ AUCUNE CLÉ STABILITY AI DÉTECTÉE - Génération d\'images désactivée');
+} else {
+  console.log(`🎨 ${IMAGE_API_KEYS.length} clé(s) Stability AI chargée(s)`);
+}
+
+function getNextImageApiKey() {
+  if (IMAGE_API_KEYS.length === 0) {
+    throw new Error("Aucune clé d'imagerie disponible");
+  }
+  
+  const maxAttempts = IMAGE_API_KEYS.length;
+  let attempts = 0;
+  
+  while (attempts < maxAttempts) {
+    const keyObj = IMAGE_API_KEYS[currentImageKeyIndex];
+    currentImageKeyIndex = (currentImageKeyIndex + 1) % IMAGE_API_KEYS.length;
+    
+    if (!keyObj.quotaExceeded) {
+      keyObj.lastUsed = Date.now();
+      return keyObj;
+    }
+    attempts++;
+  }
+  
+  throw new Error("Toutes les clés d'imagerie ont atteint leur quota");
+}
+
+function markImageKeyAsFailed(keyObj, isQuotaError = false) {
+  keyObj.failures++;
+  if (isQuotaError) {
+    keyObj.quotaExceeded = true;
+    console.warn(`⚠️ Clé d'imagerie en quota dépassé, réinitialisation dans 1h`);
+    setTimeout(() => { 
+      keyObj.quotaExceeded = false; 
+      keyObj.failures = 0; 
+    }, 3600000);
+  }
+}
+
+// ========================================
+// 🎨 FONCTION DE GÉNÉRATION D'IMAGES
+// ========================================
+async function generateImage(prompt, style = "photorealistic") {
+  if (IMAGE_API_KEYS.length === 0) {
+    return { 
+      success: false, 
+      error: "Service de génération d'images non configuré. Veuillez ajouter des clés Stability AI." 
+    };
   }
 
-  for (const cmd of commands) {
-    // ✅ AJOUT D'APPAREIL
-    if (cmd.action === 'add') {
-      try {
-        const deviceName = cmd.name || 'Nouvel Appareil';
-        const deviceType = cmd.type || 'lamp';
-        const deviceRoom = cmd.room || 'Non spécifié';
+  console.log(`🎨 Génération d'image demandée: "${prompt.substring(0, 50)}..."`);
+
+  const maxRetries = IMAGE_API_KEYS.length;
+  let lastError = null;
+
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      const keyObj = getNextImageApiKey();
+      const STABILITY_API_URL = "https://api.stability.ai/v2beta/stable-image/generate/sd3.5";
+      
+      const response = await axios.post(
+        STABILITY_API_URL,
+        {
+          prompt: prompt,
+          negative_prompt: "blurry, low quality, distorted, deformed, ugly",
+          aspect_ratio: "1:1",
+          output_format: "png"
+        },
+        {
+          headers: {
+            'Authorization': `Bearer ${keyObj.key}`,
+            'Accept': 'application/json'
+          },
+          timeout: 60000
+        }
+      );
+
+      if (response.data.image) {
+        const imageBase64 = response.data.image;
+        const imageDataUrl = `data:image/png;base64,${imageBase64}`;
         
-        const deviceId = deviceName.toLowerCase()
-          .replace(/\s+/g, '_')
-          .replace(/[^\w\-]/g, '')
-          .substring(0, 30) + '_' + Date.now().toString().slice(-4);
+        console.log(`✅ Image générée avec succès (${imageBase64.length} bytes) - Modèle: SD3.5 (2 crédits)`);
         
-        const deviceTypes = {
-          'lamp': { hasBrightness: true, icon: 'lightbulb' },
-          'plug': { hasBrightness: false, icon: 'plug' },
-          'ventilateur': { hasBrightness: true, icon: 'fan' },
-          'thermostat': { hasBrightness: false, icon: 'temperature-low' },
-          'volet': { hasBrightness: false, icon: 'window-maximize' }
+        return { 
+          success: true, 
+          imageUrl: imageDataUrl,
+          format: 'png',
+          size: imageBase64.length,
+          model: 'sd3.5',
+          credits_used: 2
         };
-        
-        const typeInfo = deviceTypes[deviceType] || deviceTypes['lamp'];
-        
-        const newDevice = {
-          id: deviceId,
-          name: deviceName,
-          type: deviceType,
-          room: deviceRoom,
-          hasBrightness: typeInfo.hasBrightness,
-          icon: typeInfo.icon,
-          createdAt: Date.now(),
-          createdBy: userId
-        };
-        
-        await set(ref(db, `${DEVICES_META_REF}/${deviceId}`), newDevice);
-        
-        await set(ref(db, `${DEVICES_STATES_REF}/${deviceId}`), {
-          etat: 'OFF',
-          luminosite: 0
-        });
-        
-        console.log(`✅ Appareil ajouté: ${deviceName} (${deviceId})`);
-        
-      } catch (error) {
-        console.error(`❌ Erreur ajout appareil:`, error.message);
+      } else {
+        throw new Error("Aucune image retournée par l'API");
       }
+      
+    } catch (error) {
+      lastError = error;
+      const keyObj = IMAGE_API_KEYS[(currentImageKeyIndex - 1 + IMAGE_API_KEYS.length) % IMAGE_API_KEYS.length];
+      
+      const isQuotaError = error.response?.status === 402 || 
+                          error.response?.status === 429 ||
+                          error.message?.includes('quota') ||
+                          error.message?.includes('credits');
+      
+      markImageKeyAsFailed(keyObj, isQuotaError);
+      
+      console.warn(`⚠️ Tentative ${attempt + 1}/${maxRetries} échouée (Image): ${error.message}`);
+      
+      if (attempt === maxRetries - 1) break;
+    }
+  }
+
+  return { 
+    success: false, 
+    error: `Échec de la génération : ${lastError?.response?.data?.message || lastError?.message || 'Erreur inconnue'}` 
+  };
+}
+
+function isImageGenerationRequest(message) {
+  const lowerMsg = message.toLowerCase();
+  
+  const imageKeywords = [
+    'génère une image',
+    'génère un image',
+    'crée une image',
+    'crée un image',
+    'dessine',
+    'fais une image',
+    'fais un dessin',
+    'imagine une image',
+    'fais une affiche',
+    'génère une photo',
+    'crée une illustration',
+    'montre-moi une image de',
+    'peux-tu dessiner',
+    'fais-moi une image'
+  ];
+  
+  return imageKeywords.some(keyword => lowerMsg.includes(keyword));
+}
+
+// ✅ MODIFIÉ : Fonction désactivée pour la maintenance
+function isDocumentGenerationRequest(message) {
+  return false; // Service en maintenance
+}
+
+// ========================================
+// GESTION DES CLÉS API GEMINI
+// ========================================
+const API_KEYS = [];
+let currentKeyIndex = 0;
+
+for (let i = 1; i <= 10; i++) {
+  const key = process.env[`GEMINI_KEY_${i}`];
+  if (key && key !== "VOTRE_CLE_API_ICI") {
+    API_KEYS.push({ key: key, failures: 0, lastUsed: null, quotaExceeded: false });
+  }
+}
+
+if (API_KEYS.length === 0) console.warn('⚠️ AUCUNE CLÉ API GEMINI');
+console.log(`🔑 ${API_KEYS.length} clé(s) Gemini chargée(s)`);
+
+function getNextApiKey() {
+  if (API_KEYS.length === 0) throw new Error("Aucune clé API disponible");
+  const maxAttempts = API_KEYS.length;
+  let attempts = 0;
+  while (attempts < maxAttempts) {
+    const keyObj = API_KEYS[currentKeyIndex];
+    currentKeyIndex = (currentKeyIndex + 1) % API_KEYS.length;
+    if (!keyObj.quotaExceeded) {
+      keyObj.lastUsed = Date.now();
+      return keyObj;
+    }
+    attempts++;
+  }
+  throw new Error("Toutes les clés ont atteint leur quota");
+}
+
+function markKeyAsFailed(keyObj, isQuotaError = false) {
+  keyObj.failures++;
+  if (isQuotaError) {
+    keyObj.quotaExceeded = true;
+    setTimeout(() => { keyObj.quotaExceeded = false; keyObj.failures = 0; }, 3600000);
+  }
+}
+
+// ========================================
+// TEMPÉRATURE RÉELLE DE LOKOSSA
+// ========================================
+function getLoKossaTemperatureEstimated(month, hour) {
+  const temperatureData = {
+    1: { min: 23, max: 35, avg: 29 },
+    2: { min: 25, max: 36, avg: 30.5 },
+    3: { min: 25, max: 35, avg: 30 },
+    4: { min: 24, max: 34, avg: 29 },
+    5: { min: 24, max: 32, avg: 28 },
+    6: { min: 23, max: 30, avg: 26.5 },
+    7: { min: 23, max: 29, avg: 26 },
+    8: { min: 23, max: 29, avg: 26 },
+    9: { min: 23, max: 30, avg: 26.5 },
+    10: { min: 24, max: 32, avg: 28 },
+    11: { min: 24, max: 33, avg: 28.5 },
+    12: { min: 23, max: 34, avg: 28.5 }
+  };
+
+  const monthData = temperatureData[month] || temperatureData[1];
+  let tempAdjustment = 0;
+  
+  if (hour >= 6 && hour < 12) {
+    tempAdjustment = ((hour - 6) / 6) * (monthData.max - monthData.avg);
+  } else if (hour >= 12 && hour < 18) {
+    tempAdjustment = monthData.max - monthData.avg - ((hour - 12) / 6) * (monthData.max - monthData.avg);
+  } else {
+    tempAdjustment = monthData.min - monthData.avg;
+  }
+  
+  const estimatedTemp = Math.round(monthData.avg + tempAdjustment);
+  
+  return {
+    temperature: estimatedTemp,
+    feels_like: estimatedTemp,
+    humidity: hour >= 6 && hour < 18 ? 65 : 80,
+    description: estimatedTemp >= 32 ? "Très chaud et humide" : 
+                 estimatedTemp >= 28 ? "Chaud" : 
+                 estimatedTemp >= 25 ? "Agréable" : "Frais",
+    source: 'estimation'
+  };
+}
+
+function getWeatherDescription(code) {
+  const descriptions = {
+    0: "Ciel dégagé ☀️", 1: "Principalement dégagé 🌤️", 2: "Partiellement nuageux ⛅", 3: "Couvert ☁️",
+    45: "Brouillard 🌫️", 48: "Brouillard givrant 🌫️",
+    51: "Bruine légère 🌦️", 53: "Bruine modérée 🌦️", 55: "Bruine dense 🌧️",
+    61: "Pluie faible 🌧️", 63: "Pluie modérée 🌧️", 65: "Pluie forte ⛈️",
+    71: "Neige faible ❄️", 73: "Neige modérée ❄️", 75: "Neige forte ❄️",
+    80: "Averses légères 🌦️", 81: "Averses modérées 🌧️", 82: "Averses violentes ⛈️",
+    85: "Averses de neige légères 🌨️", 86: "Averses de neige fortes 🌨️",
+    95: "Orage ⛈️", 96: "Orage avec grêle légère ⛈️", 99: "Orage avec grêle forte ⛈️"
+  };
+  return descriptions[code] || "Conditions variables";
+}
+
+async function getRealLoKossaTemperature() {
+  try {
+    console.log("🌡️ Appel Open-Meteo API...");
+    
+    const response = await axios.get(
+      'https://api.open-meteo.com/v1/forecast',
+      {
+        params: {
+          latitude: 6.64,
+          longitude: 1.97,
+          current: 'temperature_2m,relative_humidity_2m,apparent_temperature,weather_code',
+          timezone: 'Africa/Porto-Novo',
+          temperature_unit: 'celsius'
+        },
+        timeout: 3000
+      }
+    );
+    
+    const current = response.data.current;
+    
+    console.log(`✅ Température récupérée: ${Math.round(current.temperature_2m)}°C`);
+    
+    return {
+      temperature: Math.round(current.temperature_2m),
+      feels_like: Math.round(current.apparent_temperature),
+      humidity: current.relative_humidity_2m,
+      description: getWeatherDescription(current.weather_code),
+      source: 'open-meteo-api',
+      success: true
+    };
+    
+  } catch (error) {
+    console.error('💥 ERREUR:', error.message);
+    console.error(error.stack);
+    res.status(500).json({ 
+      reply: "### ❌ Erreur interne\n\nUne erreur s'est produite. Veuillez réessayer.", 
+      ...jsonErrorDefaults() 
+    });
+  }
+});
+
+function jsonErrorDefaults() {
+  return { 
+    execute: [], 
+    planning_commands: [], 
+    device_commands: [], 
+    image_generation: null,
+    suggestions: [], 
+    source: "error" 
+  };
+}
+
+function deduplicatePlanning(plans) {
+  const uniquePlannings = [];
+  const seen = new Set();
+  for (const plan of plans) {
+    if (!plan.action) continue;
+    let key;
+    switch(plan.action) {
+      case 'add':
+        if (!plan.device || !plan.time) continue;
+        key = `add_${plan.device}_${plan.time}_${plan.actionType}_${plan.power || 100}`;
+        break;
+      case 'delete_all': key = 'delete_all'; break;
+      case 'delete':
+        if (!plan.device) continue;
+        key = `delete_${plan.device}`;
+        break;
+      default: continue;
+    }
+    if (!seen.has(key)) {
+      seen.add(key);
+      uniquePlannings.push(plan);
+    }
+  }
+  return uniquePlannings;
+}
+
+// ========================================
+// 🌐 ROUTE SANTÉ
+// ========================================
+app.get('/api/health', async (req, res) => {
+  const availableKeys = API_KEYS.filter(k => !k.quotaExceeded).length;
+  const availableImageKeys = IMAGE_API_KEYS.filter(k => !k.quotaExceeded).length;
+  const beninTime = await getBeninTime();
+  
+  res.json({ 
+    status: 'ok', 
+    version: '9.7-device-management',
+    features: {
+      gemini: API_KEYS.length > 0,
+      imageGeneration: IMAGE_API_KEYS.length > 0,
+      imageModel: 'SD3.5 (2 crédits/image, 12 images/jour avec 25 crédits)',
+      documentGeneration: false,
+      webSearch: true,
+      contextMemory: "Firebase",
+      firebaseStateSync: true,
+      multimodal_Image: true,
+      multimodal_Files: true,
+      htmlOutput: false,
+      markdownOutput: true,
+      aiPlanning: true,
+      autoAddDevices: true,
+      autoDeleteDevices: true,
+      lokossaTemperature: true,
+      supportedFiles: "PDF, DOCX, TXT, HTML, JS, JSON, CSS, XLSX, CSV, Images",
+      maxTokens: 65536
+    },
+    keys: { 
+      gemini: { total: API_KEYS.length, available: availableKeys },
+      stability: { 
+        total: IMAGE_API_KEYS.length, 
+        available: availableImageKeys,
+        model: 'SD3.5',
+        cost_per_image: 2,
+        daily_capacity: '12 images/jour (25 crédits)'
+      }
+    },
+    time: {
+      benin: `${beninTime.hoursStr}:${beninTime.minutesStr}`,
+      formatted: beninTime.formatted,
+      temperature: beninTime.temperature
+    },
+    maintenance: {
+      documentGeneration: "Service temporairement indisponible - Amélioration en cours"
+    }
+  });
+});
+
+// ========================================
+// 🚀 DÉMARRAGE DU SERVEUR
+// ========================================
+app.listen(PORT, () => {
+  console.log('\n🏠 ╔═══════════════════════════════════════╗');
+  console.log('   ║  INTELLIA v9.7 - DEVICE MANAGEMENT    ║');
+  console.log('   ╚═══════════════════════════════════════╝');
+  console.log(`\n   🚀 Serveur: http://localhost:${PORT}`);
+  console.log(`   🔑 Clés Gemini: ${API_KEYS.length}`);
+  console.log(`   🎨 Clés Stability AI: ${IMAGE_API_KEYS.length}`);
+  console.log(`   🖼️ Modèle Image: SD3.5 (2 crédits/image)`);
+  console.log(`   📊 Capacité: 12 images/jour (25 crédits)`);
+  console.log(`   💰 Économie: +300% vs Ultra (8 crédits)`);
+  console.log(`   🔥 Synchro Firebase (Appareils): Activée`);
+  console.log(`   💾 Synchro Firebase (Chats): Activée`);
+  console.log(`   📅 Planning AI: Prêt`);
+  console.log(`   ➕ Auto Add Devices: Activé`);
+  console.log(`   🗑️ Auto Delete Devices: Activé`);
+  console.log(`   🌡️ Température Lokossa: Temps réel`);
+  console.log(`   📄 Génération de documents: ⚠️ EN MAINTENANCE`);
+  console.log(`   ✅ Output Markdown: Activé`);
+  console.log(`   🧠 Modèle: gemini-2.5-flash`);
+  console.log(`   🎯 MaxTokens: 65536 (MAXIMUM)`);
+  console.log(`   ⚡ Toutes capacités MAXIMALES conservées\n`);
+});.warn("⚠️ Open-Meteo API indisponible, utilisation estimation:", error.message);
+    const now = new Date();
+    const month = now.getMonth() + 1;
+    const hour = now.getHours();
+    const estimated = getLoKossaTemperatureEstimated(month, hour);
+    console.log(`📊 Température estimée: ${estimated.temperature}°C`);
+    return { 
+      ...estimated, 
+      success: false 
+    };
+  }
+}
+
+async function getBeninTime() {
+  const timeZone = 'Africa/Porto-Novo';
+  const now = new Date();
+  const optionsDate = { timeZone, weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+  const optionsTime = { timeZone, hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false };
+  const dateFormatter = new Intl.DateTimeFormat('fr-FR', optionsDate);
+  const timeFormatter = new Intl.DateTimeFormat('fr-FR', optionsTime);
+  const partsFormatter = new Intl.DateTimeFormat('en-US', { timeZone, hour: 'numeric', minute: 'numeric', hour12: false, month: 'numeric' });
+  const parts = partsFormatter.formatToParts(now);
+  let hoursPart = parts.find(p => p.type === 'hour')?.value;
+  let minutesPart = parts.find(p => p.type === 'minute')?.value;
+  let monthPart = parts.find(p => p.type === 'month')?.value;
+  
+  if (hoursPart === '24') hoursPart = '00';
+  const beninHours = parseInt(hoursPart, 10);
+  const beninMinutes = parseInt(minutesPart, 10);
+  const beninMonth = parseInt(monthPart, 10);
+  
+  const timeString = `${dateFormatter.format(now)} ${timeFormatter.format(now)}`;
+  
+  const tempInfo = await getRealLoKossaTemperature();
+  
+  return {
+    formatted: timeString,
+    hours: beninHours,
+    minutes: beninMinutes,
+    month: beninMonth,
+    hoursStr: String(beninHours).padStart(2, '0'),
+    minutesStr: String(beninMinutes).padStart(2, '0'),
+    temperature: tempInfo
+  };
+}
+
+// ========================================
+// HELPERS MULTIMODAL
+// ========================================
+function parseDataUri(dataUri) {
+  try {
+    const regex = /^data:(.+);base64,(.*)$/;
+    const match = dataUri.match(regex);
+    if (!match) return null;
+    return { mimeType: match[1], data: match[2] };
+  } catch (e) {
+    console.error("Erreur parsing Data URI:", e.message);
+    return null;
+  }
+}
+
+async function parseFileAttachment(attachment) {
+  try {
+    const parsedData = parseDataUri(attachment.data);
+    if (!parsedData) throw new Error("Invalid Data URI");
+    
+    const buffer = Buffer.from(parsedData.data, 'base64');
+    let text = "";
+    const MAX_CHARS = 500000;
+    
+    console.log(`📄 Parsing: ${attachment.name}, MIME: ${parsedData.mimeType}, Size: ${buffer.length} bytes`);
+    
+    const fileName = attachment.name.toLowerCase();
+    const ext = fileName.split('.').pop();
+    
+    switch (true) {
+      case parsedData.mimeType.startsWith('text/'):
+      case ext === 'txt':
+      case ext === 'log':
+      case ext === 'md':
+      case ext === 'csv':
+        text = buffer.toString('utf-8');
+        break;
+      
+      case ext === 'html':
+      case ext === 'htm':
+      case ext === 'xml':
+      case parsedData.mimeType.includes('html'):
+      case parsedData.mimeType.includes('xml'):
+        text = buffer.toString('utf-8');
+        break;
+      
+      case ext === 'js':
+      case ext === 'json':
+      case ext === 'css':
+      case ext === 'py':
+      case ext === 'java':
+      case ext === 'c':
+      case ext === 'cpp':
+      case ext === 'h':
+      case parsedData.mimeType.includes('javascript'):
+      case parsedData.mimeType.includes('json'):
+        text = buffer.toString('utf-8');
+        break;
+      
+      case parsedData.mimeType === 'application/pdf':
+      case ext === 'pdf':
+        const pdfData = await pdf(buffer);
+        text = pdfData.text;
+        console.log(`✅ PDF extrait: ${pdfData.numpages} pages, ${text.length} caractères`);
+        break;
+      
+      case parsedData.mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
+      case ext === 'docx':
+        try {
+          console.log(`📄 Tentative d'extraction DOCX...`);
+          const docxResult = await mammoth.extractRawText({ buffer });
+          text = docxResult.value;
+          
+          if (!text || text.trim().length === 0) {
+            console.warn(`⚠️ DOCX vide, tentative avec convertToHtml...`);
+            const htmlResult = await mammoth.convertToHtml({ buffer });
+            const $ = cheerio.load(htmlResult.value);
+            text = $.text();
+          }
+          
+          if (!text || text.trim().length === 0) {
+            return `[Fichier DOCX détecté mais le contenu est vide ou illisible.]`;
+          }
+          
+          console.log(`✅ DOCX extrait: ${text.length} caractères`);
+        } catch (docxError) {
+          console.error(`❌ Erreur DOCX:`, docxError.message);
+          return `[Erreur lors de la lecture du fichier DOCX "${attachment.name}".]`;
+        }
+        break;
+      
+      case ext === 'doc':
+        return `[Fichier .DOC ancien format détecté: ${attachment.name}. Veuillez le convertir en .DOCX.]`;
+      
+      case ext === 'xlsx':
+      case ext === 'xls':
+      case parsedData.mimeType.includes('spreadsheet'):
+        try {
+          const XLSX = require('xlsx');
+          const workbook = XLSX.read(buffer, { type: 'buffer' });
+          const sheetNames = workbook.SheetNames;
+          text = sheetNames.map(name => {
+            const sheet = workbook.Sheets[name];
+            return `[Feuille: ${name}]\n${XLSX.utils.sheet_to_txt(sheet)}`;
+          }).join('\n\n');
+          console.log(`✅ Excel extrait: ${sheetNames.length} feuille(s)`);
+        } catch (xlsxError) {
+          return `[Fichier Excel détecté mais module 'xlsx' non installé.]`;
+        }
+        break;
+      
+      case ext === 'pptx':
+      case ext === 'ppt':
+        return `[Fichier PowerPoint détecté: ${attachment.name}. Extraction non supportée.]`;
+      
+      case ext === 'zip':
+      case ext === 'rar':
+      case ext === '7z':
+        return `[Archive détectée: ${attachment.name}. Extraction non supportée.]`;
+      
+      default:
+        try {
+          const textAttempt = buffer.toString('utf-8');
+          if (/^[\x20-\x7E\s]+$/.test(textAttempt.substring(0, 10000))) {
+            text = textAttempt;
+            console.log(`✅ Fichier lu comme texte brut: ${fileName}`);
+          } else {
+            return `[Contenu du fichier '${attachment.name}' non supporté (${parsedData.mimeType}).]`;
+          }
+        } catch (e) {
+          return `[Impossible de lire '${attachment.name}' (${parsedData.mimeType})]`;
+        }
     }
     
-    // ✅ SUPPRESSION D'APPAREIL
-    else if (cmd.action === 'delete' || cmd.action === 'remove') {
-      try {
-        const deviceToDelete = cmd.device || cmd.deviceId || cmd.id;
-        
-        if (!deviceToDelete) {
-          console.warn("⚠️ Aucun appareil spécifié pour la suppression");
-          continue;
-        }
-        
-        // Supprimer de devicesMeta
-        await set(ref(db, `${DEVICES_META_REF}/${deviceToDelete}`), null);
-        
-        // Supprimer de devices (états)
-        await set(ref(db, `${DEVICES_STATES_REF}/${deviceToDelete}`), null);
-        
-        // Supprimer du planning si existant
-        const planningSnapshot = await get(ref(db, PLANNING_REF));
-        if (planningSnapshot.exists()) {
-          const planning = planningSnapshot.val();
-          const updatedPlanning = {};
-          
-          Object.keys(planning).forEach(key => {
-            if (planning[key].device !== deviceToDelete) {
-              updatedPlanning[key] = planning[key];
-            }
-          });
-          
-          await set(ref(db, PLANNING_REF), updatedPlanning);
-        }
-        
-        console.log(`✅ Appareil supprimé: ${deviceToDelete}`);
-        
-      } catch (error) {
-        console.error(`❌ Erreur suppression appareil:`, error.message);
-      }
+    if (text.length > MAX_CHARS) {
+      console.log(`⚠️ Fichier tronqué: ${text.length} -> ${MAX_CHARS} caractères`);
+      text = text.substring(0, MAX_CHARS) + `\n\n... [Contenu tronqué. Total: ${text.length} caractères]`;
     }
+    
+    return text;
+    
+  } catch (error) {
+    console.error(`❌ Erreur parsing ${attachment.name}:`, error.message);
+    return `[Erreur lors de la lecture du fichier '${attachment.name}': ${error.message}]`;
+  }
+}
+
+async function createHistoryEntry(role, text, attachments = []) {
+  const parts = [{ text: text || '' }];
+  for (const att of attachments) {
+    if (att.type === 'image') {
+      const parsed = parseDataUri(att.data);
+      if (parsed) parts.push({ inlineData: { mimeType: parsed.mimeType, data: parsed.data } });
+    } else if (att.type === 'file') {
+      const fileContent = await parseFileAttachment(att);
+      parts.push({ text: `\n[DEBUT CONTENU FICHIER: ${att.name}]\n${fileContent}\n[FIN CONTENU FICHIER]\n` });
+    }
+  }
+  return { role, parts };
+}
+
+async function getHistoryFromFirebase(userId, sessionId) {
+  if (!db || !userId || !sessionId) return [];
+  
+  try {
+    const messagesRef = ref(db, `${USER_CHATS_REF}/${userId}/${sessionId}/messages`);
+    const snapshot = await get(messagesRef);
+    if (!snapshot.exists()) return [];
+    
+    const messages = snapshot.val();
+    const sortedMessages = Object.values(messages).sort((a, b) => a.timestamp - b.timestamp);
+    const recentMessages = sortedMessages.slice(-10);
+    
+    return recentMessages;
+  } catch (error) {
+    console.error("Erreur lecture historique Firebase:", error);
+    return [];
   }
 }
 
 // ========================================
-// ✅ FONCTION DE DÉTECTION DE GÉNÉRATION DE DOCUMENTS (DÉSACTIVÉE)
+// RECHERCHE WEB INTELLIGENTE
 // ========================================
-function isDocumentGenerationRequest(message) {
-  // Fonction désactivée pendant la maintenance
-  return false;
+async function performWebSearch(query) {
+  console.log(`🔍 Recherche: "${query}"`);
+  try {
+    const searchUrl = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`;
+    const response = await axios.get(searchUrl, {
+      headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
+      timeout: 8000
+    });
+    const $ = cheerio.load(response.data);
+    const results = [];
+    $('.result').slice(0, 5).each((i, elem) => {
+      const title = $(elem).find('.result__title').text().trim();
+      const snippet = $(elem).find('.result__snippet').text().trim();
+      const url = $(elem).find('.result__url').attr('href');
+      if (title && snippet) results.push({ title, snippet, url });
+    });
+    console.log(`✅ ${results.length} résultats`);
+    return results;
+  } catch (error) {
+    console.error('❌ Erreur recherche:', error.message);
+    return [];
+  }
+}
+
+function needsWebSearch(message) {
+  const lowerMsg = message.toLowerCase().trim();
+  const noSearchPatterns = [
+    /^(c'est quoi|quel est) (ton|votre|le) nom/i, /^qui es-tu/i, /^bonjour/i, /^salut/i,
+    /^merci/i, /^ok$/i, /^d'accord$/i, /^allume/i, /^éteins/i, /^règle/i,
+    /^je (sort|sors|pars)/i, /^je (suis|reviens|rentre)/i, /^il fait (nuit|jour|sombre|chaud)/i,
+    /appareil.*état/i, /état.*appareil/i, /code (arduino|python|javascript)/i,
+    /génère.*code/i, /écris.*code/i, /explique/i, /température.*lokossa/i,
+    /génère.*image/i, /crée.*image/i, /dessine/i,
+    /génère.*pdf/i, /génère.*lettre/i, /crée.*document/i, /fais.*rapport/i, /génère.*cv/i
+  ];
+  if (noSearchPatterns.some(pattern => pattern.test(lowerMsg))) return false;
+  const webKeywords = [
+    'actualité', 'news', 'nouvelles', 'recherche', 'cherche', 'trouve',
+    'où se trouve', 'où est situé', 'combien coûte', 'prix de', 'qui est', 'c\'est qui'
+  ];
+  if (lowerMsg.includes('qui est')) {
+    const words = message.split(' ');
+    const hasProperNoun = words.some(w => w.length > 2 && w[0] === w[0].toUpperCase());
+    return hasProperNoun;
+  }
+  return webKeywords.some(kw => lowerMsg.includes(kw));
 }
 
 // ========================================
-// ✅ PROMPT SYSTÈME v9.7 COMPLET (MODIFIÉ)
+// ANALYSE CONTEXTUELLE
+// ========================================
+function analyzeContext(message, deviceStates, beninTime) {
+  const analysis = { suggestedActions: [] };
+  const lowerMsg = message.toLowerCase();
+
+  if (lowerMsg.includes('je sors') || lowerMsg.includes('je pars')) {
+    const onDevices = Object.values(deviceStates).filter(d => d.etat === 'ON');
+    if (onDevices.length > 0) {
+      analysis.suggestedActions.push({
+        type: 'security_check',
+        message: `Vous avez ${onDevices.length} appareil(s) allumé(s). Voulez-vous que je les éteigne ?`,
+        devices: onDevices.map(d => d.id)
+      });
+    }
+  }
+  
+  if (beninTime && (beninTime.hours >= 22 || beninTime.hours < 6)) {
+    const brightDevices = Object.values(deviceStates).filter(d => d.etat === 'ON' && d.luminosite > 50);
+    if (brightDevices.length > 0) {
+      analysis.suggestedActions.push({
+        type: 'energy_saving',
+        message: `Il est ${beninTime.hoursStr}:${beninTime.minutesStr}. Voulez-vous réduire la luminosité ?`,
+        devices: brightDevices.map(d => d.id)
+      });
+    }
+  }
+  
+  return analysis;
+}
+
+// ========================================
+// ✅ PROMPT SYSTÈME v9.7 (MODIFIÉ)
 // ========================================
 const systemPrompt = `Tu es Intellia, assistant universel ultra-intelligent.
 
@@ -348,7 +1023,222 @@ RÉPONDS EN JSON VALIDE AVEC DU MARKDOWN DANS "reply".
 `;
 
 // ========================================
-// 🎯 ROUTE PRINCIPALE /api/chat (MODIFIÉE)
+// FONCTION CHAT AVEC GEMINI
+// ========================================
+async function chatWithGemini(userMessage, devices, userId, sessionId, attachments = [], preferences = {}, maxRetries = API_KEYS.length) {
+    
+  let realDeviceStates = {};
+  try {
+      if (!db) throw new Error("DB non initialisée");
+      const snapshot = await get(ref(db, DEVICES_STATES_REF));
+      realDeviceStates = snapshot.val() || {};
+      console.log(`🔥 États réels récupérés: ${Object.keys(realDeviceStates).length} appareils`);
+  } catch (e) {
+      console.error("❌ ERREUR FIREBASE:", e.message);
+      realDeviceStates = {};
+  }
+
+  if (API_KEYS.length === 0) {
+    return { success: false, error: "Aucune clé Gemini disponible" };
+  }
+
+  const beninTime = await getBeninTime();
+  const contextAnalysis = analyzeContext(userMessage, realDeviceStates, beninTime);
+  
+  let webResults = [];
+  if (needsWebSearch(userMessage)) {
+    webResults = await performWebSearch(userMessage);
+  }
+
+  let lastError = null;
+
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      const keyObj = getNextApiKey();
+      const genAI = new GoogleGenerativeAI(keyObj.key);
+      const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+
+      const historyFromFirebase = await getHistoryFromFirebase(userId, sessionId);
+
+      const historyParts = await Promise.all(
+        historyFromFirebase.flatMap(async (h) => [
+          await createHistoryEntry("user", h.user, h.attachments || []),
+          await createHistoryEntry("model", h.bot)
+        ])
+      );
+
+      const chat = model.startChat({
+        history: [
+          { role: "user", parts: [{ text: systemPrompt }] },
+          { role: "model", parts: [{ text: JSON.stringify({
+                reply: "### 👋 Recevez mes chaleureuses salutations !\n\nJe suis **Intellia**, votre assistant universel. Comment puis-je vous aider aujourd'hui ?",
+                execute: [], 
+                planning_commands: [], 
+                device_commands: [], 
+                image_generation: null,
+                suggestions: [], 
+                source: "cloud"
+              })}] 
+          },
+          ...historyParts.flat()
+        ],
+        generationConfig: {
+          responseMimeType: "application/json",
+          temperature: 0.7,
+          maxOutputTokens: 65536,
+        },
+      });
+
+      const imageGenStatus = IMAGE_API_KEYS.length > 0 ? "activée (SD3.5, 2 crédits/image, 12 images/jour)" : "désactivée";
+      
+      const metadataPrompt = `
+[Heure: ${beninTime.formatted}]
+[Température Lokossa TEMPS RÉEL: ${beninTime.temperature.temperature}°C (${beninTime.temperature.description}), Ressenti: ${beninTime.temperature.feels_like}°C, Humidité: ${beninTime.temperature.humidity}%, Source: ${beninTime.temperature.source}]
+[Génération d'images: ${imageGenStatus}]
+[Génération de documents: ⚠️ EN MAINTENANCE]
+[Préfs: ${JSON.stringify(preferences)}]
+[États: ${JSON.stringify(realDeviceStates)}]
+[Appareils: ${JSON.stringify(devices)}] 
+[Analyse: ${JSON.stringify(contextAnalysis)}]
+${webResults.length > 0 ? `[Web: ${JSON.stringify(webResults.slice(0, 3))}]` : ''}
+
+MESSAGE: "${userMessage}"
+`;
+
+      const promptParts = [ { text: metadataPrompt } ];
+      for (const att of attachments) {
+        if (att.type === 'image') {
+          const parsed = parseDataUri(att.data);
+          if (parsed) promptParts.push({ inlineData: { mimeType: parsed.mimeType, data: parsed.data } });
+        } 
+        else if (att.type === 'file') {
+          const fileContent = await parseFileAttachment(att);
+          promptParts.push({ text: `\n[DEBUT FICHIER: ${att.name}]\n${fileContent}\n[FIN FICHIER]\n` });
+        }
+      }
+
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 25000);
+      const result = await chat.sendMessage(promptParts, { signal: controller.signal });
+      clearTimeout(timeout);
+
+      return { 
+        success: true, 
+        data: result.response.text(), 
+        hadWebResults: webResults.length > 0,
+      };
+
+    } catch (error) {
+      lastError = error;
+      const keyObj = API_KEYS[(currentKeyIndex - 1 + API_KEYS.length) % API_KEYS.length];
+      const isQuotaError = error.message?.includes('quota') || error.message?.includes('429') || error.message?.includes('RESOURCE_EXHAUSTED');
+      markKeyAsFailed(keyObj, isQuotaError);
+      console.warn(`⚠️ Tentative ${attempt + 1}/${maxRetries} échouée: ${error.message}`);
+      if (attempt === maxRetries - 1) break;
+    }
+  }
+  return { success: false, error: lastError };
+}
+
+// ========================================
+// ✅ GESTION DES COMMANDES D'APPAREILS (AVEC SUPPRESSION)
+// ========================================
+async function handleDeviceCommands(commands, userId) {
+  if (!db) {
+    console.warn("⚠️ Firebase non disponible, impossible de gérer les appareils");
+    return;
+  }
+
+  for (const cmd of commands) {
+    // ✅ AJOUT D'APPAREIL
+    if (cmd.action === 'add') {
+      try {
+        const deviceName = cmd.name || 'Nouvel Appareil';
+        const deviceType = cmd.type || 'lamp';
+        const deviceRoom = cmd.room || 'Non spécifié';
+        
+        const deviceId = deviceName.toLowerCase()
+          .replace(/\s+/g, '_')
+          .replace(/[^\w\-]/g, '')
+          .substring(0, 30) + '_' + Date.now().toString().slice(-4);
+        
+        const deviceTypes = {
+          'lamp': { hasBrightness: true, icon: 'lightbulb' },
+          'plug': { hasBrightness: false, icon: 'plug' },
+          'ventilateur': { hasBrightness: true, icon: 'fan' },
+          'thermostat': { hasBrightness: false, icon: 'temperature-low' },
+          'volet': { hasBrightness: false, icon: 'window-maximize' }
+        };
+        
+        const typeInfo = deviceTypes[deviceType] || deviceTypes['lamp'];
+        
+        const newDevice = {
+          id: deviceId,
+          name: deviceName,
+          type: deviceType,
+          room: deviceRoom,
+          hasBrightness: typeInfo.hasBrightness,
+          icon: typeInfo.icon,
+          createdAt: Date.now(),
+          createdBy: userId
+        };
+        
+        await set(ref(db, `${DEVICES_META_REF}/${deviceId}`), newDevice);
+        
+        await set(ref(db, `${DEVICES_STATES_REF}/${deviceId}`), {
+          etat: 'OFF',
+          luminosite: 0
+        });
+        
+        console.log(`✅ Appareil ajouté: ${deviceName} (${deviceId})`);
+        
+      } catch (error) {
+        console.error(`❌ Erreur ajout appareil:`, error.message);
+      }
+    }
+    
+    // ✅ SUPPRESSION D'APPAREIL
+    else if (cmd.action === 'delete' || cmd.action === 'remove') {
+      try {
+        const deviceToDelete = cmd.device || cmd.deviceId || cmd.id;
+        
+        if (!deviceToDelete) {
+          console.warn("⚠️ Aucun appareil spécifié pour la suppression");
+          continue;
+        }
+        
+        // Supprimer de devicesMeta
+        await set(ref(db, `${DEVICES_META_REF}/${deviceToDelete}`), null);
+        
+        // Supprimer de devices (états)
+        await set(ref(db, `${DEVICES_STATES_REF}/${deviceToDelete}`), null);
+        
+        // Supprimer du planning si existant
+        const planningSnapshot = await get(ref(db, PLANNING_REF));
+        if (planningSnapshot.exists()) {
+          const planning = planningSnapshot.val();
+          const updatedPlanning = {};
+          
+          Object.keys(planning).forEach(key => {
+            if (planning[key].device !== deviceToDelete) {
+              updatedPlanning[key] = planning[key];
+            }
+          });
+          
+          await set(ref(db, PLANNING_REF), updatedPlanning);
+        }
+        
+        console.log(`✅ Appareil supprimé: ${deviceToDelete}`);
+        
+      } catch (error) {
+        console.error(`❌ Erreur suppression appareil:`, error.message);
+      }
+    }
+  }
+}
+
+// ========================================
+// 🎯 ROUTE PRINCIPALE /api/chat
 // ========================================
 app.post('/api/chat', async (req, res) => {
   try {
@@ -409,7 +1299,6 @@ app.post('/api/chat', async (req, res) => {
         }
       }
 
-      // Vérifier si Gemini a généré une demande d'image
       if (aiJson.image_generation && aiJson.image_generation.prompt) {
         console.log(`🎨 Prompt d'image: "${aiJson.image_generation.prompt}"`);
         
@@ -453,7 +1342,7 @@ app.post('/api/chat', async (req, res) => {
       console.log('⚠️ Gemini n\'a pas généré de demande d\'image, réponse normale');
     }
 
-    // ✅ TRAITEMENT NORMAL (NON-IMAGE)
+    // ✅ TRAITEMENT NORMAL
     const startTime = Date.now();
     const result = await chatWithGemini(message, devices, userId, sessionId, attachments, preferences);
 
@@ -513,6 +1402,7 @@ app.post('/api/chat', async (req, res) => {
 
     res.json(aiJson);
     
+   
   } catch (error) {
     console.error('💥 ERREUR:', error.message);
     console.error(error.stack);
