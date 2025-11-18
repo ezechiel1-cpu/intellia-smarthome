@@ -1371,6 +1371,10 @@ body.night-mode .doc-contrat .meta { color: #94a3b8; }
   // ✅ FONCTIONNALITÉS DOCUMENTS v9.9 (CORRIGÉES)
   // ========================================
   
+// ========================================
+  // ✅ FONCTIONNALITÉS DOCUMENTS v9.9 (CORRIGÉES)
+  // ========================================
+  
   // ✅ Fonction de détection de TOKEN IMAGE
   function detectImageToken(content) {
     const imageTokenMatch = content.match(/<IMAGE_URL_TOKEN>(.*?)<\/IMAGE_URL_TOKEN>/);
@@ -1394,14 +1398,36 @@ body.night-mode .doc-contrat .meta { color: #94a3b8; }
     console.log(`✅ Fichier téléchargé: ${filename}`);
   };
 
- 
-      .catch(error => {
-        console.error("❌ Erreur de téléchargement d'image:", error);
-        alert("Impossible de télécharger l'image. Veuillez réessayer.");
-      });
+  // ------------------------------------------------------------------
+  // ⬇️ DÉBUT DE LA CORRECTION ⬇️
+  // (La fonction "window.downloadImage" était mal commentée)
+  // ------------------------------------------------------------------
+
+  window.downloadImage = function(imageUrl, filename = null) {
+      if (!filename) {
+        filename = `intellia_image_${Date.now()}.png`;
+      }
+      fetch(imageUrl)
+        .then(response => response.blob())
+        .then(blob => {
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = filename;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+          console.log(`✅ Image téléchargée: ${filename}`);
+        })
+        .catch(error => { // Le .catch est maintenant correctement rattaché
+          console.error("❌ Erreur de téléchargement d'image:", error);
+          alert("Impossible de télécharger l'image. Veuillez réessayer.");
+        });
   };
 
-
+  // ------------------------------------------------------------------
+  // ⬆️ FIN DE LA CORRECTION ⬆️
 
 
 
@@ -1680,29 +1706,7 @@ window.copyDocumentHtml = function() {
   }
 };
 
-// Fonction pour télécharger une image (DÉJÀ EXISTANTE - VÉRIFIER)
-window.downloadImage = function(imageUrl, filename = null) {
-  if (!filename) {
-    filename = `intellia_image_${Date.now()}.png`;
-  }
-  fetch(imageUrl)
-    .then(response => response.blob())
-    .then(blob => {
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      console.log(`✅ Image téléchargée: ${filename}`);
-    })
-    .catch(error => {
-      console.error("❌ Erreur téléchargement image:", error);
-      alert("❌ Impossible de télécharger l'image. Faites clic droit > Enregistrer l'image.");
-    });
-};
+
 
   // ========================================
   // RESTE DU CODE INCHANGÉ
