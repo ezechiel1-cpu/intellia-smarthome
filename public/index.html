@@ -2914,52 +2914,129 @@
   
   
  
-// ======= Exécution Automatique des Planifications =======
-// ✅ Système anti-duplication : stocke les tâches déjà exécutées cette minute
-let executedTasksThisMinute = new Set();
-let lastCheckedMinute = '';
+// ========================================
+// 🔧 CORRECTION CLIENT - À REMPLACER DANS INDEX.HTML
+// Ligne ~1180 (section "Exécution Automatique des Planifications")
+// ========================================
 
+// ✅ SUPPRIMER TOUT LE BLOC setInterval ACTUEL ET LE REMPLACER PAR CECI :
+
+// Système anti-duplication robuste côté client
+let executedTasksClient = new Map();
+let lastCheckedMinuteClient = '';
+
+// Nettoyage des anciennes exécutions (toutes les heures)
 setInterval(() => {
+  const now = Date.now();
+  const oneHourAgo = now - (60 * 60 * 1000);
+  
+  for (const [key, timestamp] of executedTasksClient.entries()) {
+    if (timestamp < oneHourAgo) {
+      executedTasksClient.delete(key);
+    }
+  }
+}, 3600000);
+
+// ✅ Vérification des planifications toutes les 30 secondes
+setInterval(async () => {
   const now = new Date();
   const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
   
-  // ✅ Réinitialiser le cache si on change de minute
-  if (currentTime !== lastCheckedMinute) {
-    executedTasksThisMinute.clear();
-    lastCheckedMinute = currentTime;
+  // Réinitialiser le cache si on change de minute
+  if (currentTime !== lastCheckedMinuteClient) {
+    console.log(`⏰ Client: Nouvelle minute détectée: ${currentTime}`);
+    lastCheckedMinuteClient = currentTime;
   }
   
-  const duePlans = appState.plans.filter(p => p.time === currentTime);
+  // Si pas de base de données, utiliser les plans locaux
+  if (!db) {
+    const duePlans = appState.plans.filter(p => p.time === currentTime);
+    
+    if (duePlans.length > 0) {
+      duePlans.forEach(plan => {
+        const taskKey = `${plan.device}-${plan.time}-${plan.createdAt}`;
+        
+        if (executedTasksClient.has(taskKey)) {
+          const lastExecution = executedTasksClient.get(taskKey);
+          if (Date.now() - lastExecution < 120000) return;
+        }
+        
+        executedTasksClient.set(taskKey, Date.now());
+        
+        const deviceName = appState.devices.find(d => d.id === plan.device)?.name || plan.device;
+        const action = plan.actionType ? (plan.actionType === "allumer" ? "ON" : "OFF") : plan.action;
+        const actionText = action === 'ON' ? 'allumé' : 'éteint';
+        const powerText = plan.power !== null ? ` à ${plan.power}%` : '';
+        
+        logActivity(`⏰ Exécution : ${deviceName} ${actionText}${powerText}`);
+        sendCommand(plan.device, action, plan.power);
+        
+        const chatMessage = `⏰ Tâche planifiée : **${deviceName}** ${actionText}${powerText}`;
+        if (el('chatFullWindow')) appendChat("bot", chatMessage);
+        if (appState.voiceNotifications) speak(`Exécution planifiée. ${deviceName} ${actionText}.`);
+        
+        sendBrowserNotification(
+          '⏰ Tâche Planifiée Exécutée',
+          `${deviceName} a été ${actionText}${powerText}`,
+          { tag: `schedule-${plan.device}-${Date.now()}` }
+        );
+        
+        // Supprimer de la liste locale
+        appState.plans = appState.plans.filter(p => p.createdAt !== plan.createdAt);
+        savePlansToLocalStorage();
+        renderPlanningListUI(appState.plans);
+      });
+    }
+    return;
+  }
   
-  if (duePlans.length > 0) {
-    duePlans.forEach(plan => {
-      const planId = plan.firebaseId || plan.createdAt;
-      const taskKey = `${plan.device}-${plan.time}-${planId}`;
+  // ✅ Si Firebase disponible, récupérer les plans directement
+  try {
+    const planningSnapshot = await get(ref(db, planningRefPath));
+    
+    if (!planningSnapshot.exists()) return;
+    
+    const allPlans = planningSnapshot.val();
+    const planEntries = Object.entries(allPlans);
+    
+    const duePlans = planEntries.filter(([id, plan]) => plan.time === currentTime);
+    
+    if (duePlans.length === 0) return;
+    
+    console.log(`⏰ Client: ${duePlans.length} tâche(s) à exécuter à ${currentTime}`);
+    
+    for (const [firebaseId, plan] of duePlans) {
+      const taskKey = `${plan.device}-${plan.time}-${firebaseId}`;
       
-      // ✅ Vérifier si cette tâche a déjà été exécutée cette minute
-      if (executedTasksThisMinute.has(taskKey)) {
-        return; // Ignorer, déjà exécutée
+      // Vérifier si déjà exécutée
+      if (executedTasksClient.has(taskKey)) {
+        const lastExecution = executedTasksClient.get(taskKey);
+        const timeSinceExecution = Date.now() - lastExecution;
+        
+        if (timeSinceExecution < 120000) {
+          console.log(`⏭️ Client: Tâche ${taskKey} déjà exécutée`);
+          continue;
+        }
       }
       
-      // ✅ Marquer comme exécutée
-      executedTasksThisMinute.add(taskKey);
+      // Marquer comme exécutée
+      executedTasksClient.set(taskKey, Date.now());
       
       const deviceName = appState.devices.find(d => d.id === plan.device)?.name || plan.device;
       
-      // Gérer les deux formats (ancien et nouveau)
-      let action, actionText;
-      if (plan.actionType) {
-        action = plan.actionType === "allumer" ? "ON" : "OFF";
-        actionText = plan.actionType === "allumer" ? "allumé" : "éteint";
-      } else {
-        action = plan.action;
-        actionText = plan.action === 'ON' ? 'allumé' : 'éteint';
-      }
+      const action = plan.actionType 
+        ? (plan.actionType === "allumer" ? "ON" : "OFF") 
+        : plan.action;
+      const actionText = action === 'ON' ? 'allumé' : 'éteint';
+      const powerValue = plan.power !== null ? plan.power : 100;
+      const powerText = powerValue !== null ? ` à ${powerValue}%` : '';
       
-      const powerText = plan.power !== null ? ` à ${plan.power}%` : '';
+      console.log(`🚀 Client: Exécution ${deviceName} ${actionText}${powerText}`);
+      
+      // Exécuter la commande
+      sendCommand(plan.device, action, powerValue);
       
       logActivity(`⏰ Exécution : ${deviceName} ${actionText}${powerText}`);
-      sendCommand(plan.device, action, plan.power);
       
       const chatMessage = `⏰ Tâche planifiée : **${deviceName}** ${actionText}${powerText}`;
       if (el('chatFullWindow')) appendChat("bot", chatMessage);
@@ -2968,22 +3045,79 @@ setInterval(() => {
       sendBrowserNotification(
         '⏰ Tâche Planifiée Exécutée',
         `${deviceName} a été ${actionText}${powerText}`,
-        { tag: `schedule-${plan.device}` } // ✅ Tag fixe pour éviter les duplications
+        { tag: `schedule-${plan.device}-${Date.now()}` }
       );
       
-      // ✅ Supprimer la tâche de la base après exécution
-      if (db) remove(ref(db, `${planningRefPath}/${planId}`));
-      else {
-        appState.plans = appState.plans.filter(p => (p.firebaseId || p.createdAt) !== planId);
-        savePlansToLocalStorage();
-        renderPlanningListUI(appState.plans);
+      // ✅ Supprimer la tâche de Firebase (le serveur le fait aussi, double sécurité)
+      try {
+        await remove(ref(db, `${planningRefPath}/${firebaseId}`));
+        console.log(`🗑️ Client: Tâche supprimée de Firebase: ${firebaseId}`);
+      } catch (deleteError) {
+        console.error(`❌ Client: Erreur suppression tâche:`, deleteError);
       }
-      
-      logActivity(`✅ Tâche exécutée : ${deviceName} ${actionText}`);
-    });
+    }
+    
+  } catch (error) {
+    console.error('❌ Client: Erreur système de planning:', error);
   }
-}, 15000);
+  
+}, 30000); // Toutes les 30 secondes
 
+// ========================================
+// 🔧 FONCTION DE NETTOYAGE CLIENT
+// ========================================
+
+async function cleanExpiredPlansClient() {
+  if (!db) {
+    // Mode local
+    const now = new Date();
+    const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+    
+    const validPlans = appState.plans.filter(plan => plan.time >= currentTime);
+    const deletedCount = appState.plans.length - validPlans.length;
+    
+    if (deletedCount > 0) {
+      appState.plans = validPlans;
+      savePlansToLocalStorage();
+      renderPlanningListUI(appState.plans);
+      logActivity(`🗑️ ${deletedCount} tâche(s) expirée(s) supprimée(s)`);
+    }
+    return;
+  }
+  
+  // Mode Firebase
+  try {
+    const planningSnapshot = await get(ref(db, planningRefPath));
+    
+    if (!planningSnapshot.exists()) return;
+    
+    const allPlans = planningSnapshot.val();
+    const now = new Date();
+    const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+    
+    let deletedCount = 0;
+    
+    for (const [id, plan] of Object.entries(allPlans)) {
+      if (plan.time < currentTime) {
+        await remove(ref(db, `${planningRefPath}/${id}`));
+        deletedCount++;
+      }
+    }
+    
+    if (deletedCount > 0) {
+      logActivity(`🗑️ ${deletedCount} tâche(s) expirée(s) supprimée(s)`);
+    }
+    
+  } catch (error) {
+    console.error('❌ Erreur nettoyage tâches expirées (client):', error);
+  }
+}
+
+// Nettoyer toutes les 10 minutes
+setInterval(cleanExpiredPlansClient, 600000);
+
+// Nettoyage au chargement de la page
+setTimeout(cleanExpiredPlansClient, 5000);
   // ======= Auth State Change Listener (Le "Gardien") =======
   if (auth) {
     onAuthStateChanged(auth, (user) => {
