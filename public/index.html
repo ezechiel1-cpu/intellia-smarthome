@@ -83,6 +83,7 @@
     body.night-mode .document-preview {
       background: rgba(30, 41, 59, 0.95);
       color: #e2e8f0;
+      border: 1px solid rgba(255, 255, 255, 0.1);
     }
 
     .container { 
@@ -288,7 +289,7 @@
     
     input[type=range] { width: 100%; }
     
-    /* MESSAGES STYLE GEMINI */
+    /* ✅ MESSAGES STYLE AMÉLIORÉ */
     .msg { 
       padding: 10px 14px; border-radius: 12px; max-width: 90%; 
       margin-bottom: 10px; word-wrap: break-word; line-height: 1.6;
@@ -363,11 +364,13 @@
       background: rgba(255,255,255,0.3);
     }
     
+    /* ✅ NOUVEAUX STYLES POUR DOCUMENTS ET IMAGES */
     .ai-image-container {
       margin: 15px 0;
       text-align: center;
       position: relative;
       display: inline-block;
+      width: 100%;
     }
     
     .ai-image-container img {
@@ -379,6 +382,7 @@
     
     .ai-document-container {
       margin: 15px 0;
+      width: 100%;
     }
     
     .document-preview {
@@ -386,10 +390,81 @@
       padding: 30px;
       border-radius: 12px;
       box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-      max-width: 800px;
-      margin: 20px auto;
+      max-width: 100%;
+      margin: 20px 0;
       font-family: Arial, sans-serif;
       color: #333;
+    }
+    
+    .document-loading {
+      text-align: center;
+      padding: 20px;
+      color: var(--muted);
+    }
+    
+    .document-loading .spinner {
+      font-size: 24px;
+      margin-bottom: 10px;
+      animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+    
+    .image-download-btn {
+      position: absolute;
+      bottom: 10px;
+      right: 10px;
+      background: rgba(0,0,0,0.7);
+      color: white;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+    
+    .ai-image-container:hover .image-download-btn {
+      opacity: 1;
+    }
+    
+    .universal-buttons {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+      flex-wrap: wrap;
+    }
+    
+    .universal-btn {
+      padding: 6px 12px;
+      border-radius: 6px;
+      border: 1px solid rgba(0,0,0,0.1);
+      background: rgba(255,255,255,0.1);
+      color: inherit;
+      cursor: pointer;
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.2s ease;
+    }
+    
+    .universal-btn:hover {
+      background: rgba(255,255,255,0.2);
+      transform: translateY(-1px);
+    }
+    
+    .universal-btn.copy {
+      background: rgba(67, 97, 238, 0.1);
+      border-color: rgba(67, 97, 238, 0.3);
+    }
+    
+    .universal-btn.download {
+      background: rgba(46, 204, 113, 0.1);
+      border-color: rgba(46, 204, 113, 0.3);
     }
     
     .msg.bot.loading::after {
@@ -448,85 +523,6 @@
       0% { transform: scale(1); opacity: 1; }
       50% { transform: scale(1.2); opacity: 0.7; }
       100% { transform: scale(1); opacity: 1; }
-    }
-    
-    /* NOUVEAU : Boutons Universels */
-    .universal-buttons {
-      display: flex;
-      gap: 8px;
-      margin-top: 12px;
-      flex-wrap: wrap;
-    }
-    
-    .universal-btn {
-      padding: 6px 12px;
-      border-radius: 6px;
-      border: 1px solid rgba(0,0,0,0.1);
-      background: rgba(255,255,255,0.1);
-      color: inherit;
-      cursor: pointer;
-      font-size: 12px;
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      transition: all 0.2s ease;
-    }
-    
-    .universal-btn:hover {
-      background: rgba(255,255,255,0.2);
-      transform: translateY(-1px);
-    }
-    
-    .universal-btn.copy {
-      background: rgba(67, 97, 238, 0.1);
-      border-color: rgba(67, 97, 238, 0.3);
-    }
-    
-    .universal-btn.download {
-      background: rgba(46, 204, 113, 0.1);
-      border-color: rgba(46, 204, 113, 0.3);
-    }
-    
-    /* NOUVEAU : Indicateur de chargement document */
-    .document-loading {
-      text-align: center;
-      padding: 20px;
-      color: var(--muted);
-    }
-    
-    .document-loading .spinner {
-      font-size: 24px;
-      margin-bottom: 10px;
-    }
-    
-    /* NOUVEAU : Bouton téléchargement image */
-    .image-download-btn {
-      position: absolute;
-      bottom: 10px;
-      right: 10px;
-      background: rgba(0,0,0,0.7);
-      color: white;
-      border: none;
-      padding: 8px 12px;
-      border-radius: 6px;
-      cursor: pointer;
-      opacity: 0;
-      transition: opacity 0.3s ease;
-    }
-    
-    .ai-image-container:hover .image-download-btn {
-      opacity: 1;
-    }
-    
-    /* NOUVEAU : Appui long mobile */
-    @media (max-width: 760px) {
-      .ai-image-container {
-        position: relative;
-      }
-      
-      .ai-image-container:active .image-download-btn {
-        opacity: 1;
-      }
     }
     
     @media (max-width: 760px) {
@@ -662,6 +658,10 @@
       .chat-history-item .btn.chat-history-delete {
         width: auto;
       }
+      
+      .ai-image-container:active .image-download-btn {
+        opacity: 1;
+      }
     }
     
     @media (min-width: 761px) {
@@ -714,6 +714,20 @@
     
     #proactive-suggestion { transition: opacity 0.5s ease-in-out; }
     #proactive-suggestion.fade-out { opacity: 0; }
+    
+    /* ✅ STYLE POUR ALERTES D'ERREUR */
+    .error-message {
+      background: rgba(231, 76, 60, 0.1);
+      border: 1px solid var(--danger);
+      border-radius: 8px;
+      padding: 12px;
+      margin: 10px 0;
+      color: var(--danger);
+    }
+    
+    .error-message i {
+      margin-right: 8px;
+    }
   </style>
 </head>
 <body>
@@ -968,9 +982,11 @@
   
   <script type="module">
   /*************************************************
-   * SmartHome Intelligence - Version 9.8 COMPLÈTE
-   * ✅ TOUTES les fonctionnalités intégrées
-   * ✅ Nouvelles fonctionnalités v9.8
+   * SmartHome Intelligence - Version 9.9 CORRIGÉE
+   * ✅ Détection documents JSON structurés
+   * ✅ Affichage images avec preview
+   * ✅ Téléchargement PDF/DOCX fonctionnel
+   * ✅ Gestion d'erreurs améliorée
    *************************************************/
 
   // ======= CONFIG =======
@@ -1039,8 +1055,32 @@
   let suggestionIndex = 0;
 
   // ========================================
-  // ✅ FONCTIONNALITÉS DOCUMENTS v9.8
+  // ✅ FONCTIONNALITÉS DOCUMENTS v9.9 (CORRIGÉES)
   // ========================================
+  
+  // ✅ Fonction de détection de TOKEN IMAGE
+  function detectImageToken(content) {
+    const imageTokenMatch = content.match(/<IMAGE_URL_TOKEN>(.*?)<\/IMAGE_URL_TOKEN>/);
+    if (imageTokenMatch) {
+      return imageTokenMatch[1];
+    }
+    return null;
+  }
+  
+  // ✅ NOUVELLE : Détection de JSON structuré pour documents
+  function detectStructuredJson(content) {
+    try {
+      // Essayer de parser directement
+      const jsonData = JSON.parse(content);
+      if (jsonData && jsonData.type && ['lettre', 'rapport', 'cv', 'facture', 'contrat'].includes(jsonData.type)) {
+        console.log('✅ Document JSON structuré détecté:', jsonData.type);
+        return jsonData;
+      }
+    } catch (e) {
+      // Pas un JSON valide, ce n'est pas un document
+    }
+    return null;
+  }
   
   window.downloadAsFile = function(filename, content, mimeType = 'text/plain') {
     const blob = new Blob([content], { type: mimeType + ';charset=utf-8' });
@@ -1103,7 +1143,7 @@
     }
     
     html += `
-      <div style="margin-top: 30px; display: flex; gap: 10px; justify-content: center;">
+      <div style="margin-top: 30px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
         <button class="btn primary" onclick="generatePdfFromJson(${JSON.stringify(jsonData).replace(/"/g, '&quot;')})">
           <i class="fas fa-file-pdf"></i> Télécharger en PDF
         </button>
@@ -1477,8 +1517,66 @@
   };
 
   // ========================================
-  // ✅ NOUVELLES FONCTIONNALITÉS v9.8
+  // ✅ NOUVELLE FONCTION handleDocumentGeneration
   // ========================================
+  function handleDocumentGeneration(jsonData, messageElement) {
+    console.log('📄 Génération du document:', jsonData.type);
+    
+    // Afficher l'indicateur de chargement
+    messageElement.innerHTML = `
+      <div class="document-loading">
+        <div class="spinner"><i class="fas fa-spinner fa-spin"></i></div>
+        <div>Génération du document en cours...</div>
+      </div>
+    `;
+    
+    // Générer le preview HTML immédiatement
+    setTimeout(() => {
+      try {
+        const htmlContent = window.formatJsonAsDocumentHtml(jsonData);
+        messageElement.innerHTML = `<div class="ai-document-container">${htmlContent}</div>`;
+        
+        // Ajouter les boutons universels pour le contenu texte
+        const textContent = extractTextFromDocument(jsonData);
+        addUniversalButtons(messageElement, textContent, `${jsonData.type || 'document'}_${Date.now()}`);
+        
+        scrollToBottom();
+        
+      } catch (error) {
+        console.error('❌ Erreur génération document:', error);
+        messageElement.innerHTML = `
+          <div class="error-message">
+            <i class="fas fa-exclamation-triangle"></i>
+            <strong>Erreur lors de la génération du document</strong><br>
+            ${error.message}
+          </div>
+        `;
+      }
+    }, 100);
+  }
+
+  // ✅ Fonction pour extraire le texte d'un document
+  function extractTextFromDocument(jsonData) {
+    switch (jsonData.type) {
+      case 'lettre':
+        return `LETTRE: ${jsonData.objet || ''}\n\nDestinataire: ${jsonData.destinataire || ''}\n\n${jsonData.corps || ''}\n\n${jsonData.formule_politesse || ''}\n${jsonData.signature || ''}`;
+      
+      case 'rapport':
+        return `RAPPORT: ${jsonData.titre || ''}\n\nAuteur: ${jsonData.auteur || ''}\n\n${jsonData.resume || ''}\n\n${jsonData.contenu || ''}`;
+      
+      case 'cv':
+        return `CV: ${jsonData.prenom || ''} ${jsonData.nom || ''}\n\n${jsonData.profil || ''}\n\nExpériences: ${JSON.stringify(jsonData.experiences || [])}\n\nFormations: ${JSON.stringify(jsonData.formations || [])}`;
+      
+      case 'facture':
+        return `FACTURE: ${jsonData.numero || ''}\n\nClient: ${jsonData.client?.nom || ''}\n\nArticles: ${JSON.stringify(jsonData.articles || [])}`;
+      
+      case 'contrat':
+        return `CONTRAT: ${jsonData.titre || ''}\n\nParties: ${jsonData.partie1?.nom || ''} / ${jsonData.partie2?.nom || ''}\n\n${jsonData.contenu || ''}`;
+      
+      default:
+        return JSON.stringify(jsonData, null, 2);
+    }
+  }
 
   // ✅ Fonction pour ajouter les boutons universels
   function addUniversalButtons(element, content, filename = 'contenu') {
@@ -1511,90 +1609,430 @@
     element.appendChild(buttonsContainer);
   }
 
-  // ✅ Fonction pour traiter les documents avec indicateur de chargement
-  function handleDocumentGeneration(jsonData, messageElement) {
-    // Afficher l'indicateur de chargement
-    messageElement.innerHTML = `
-      <div class="document-loading">
-        <div class="spinner"><i class="fas fa-spinner fa-spin"></i></div>
-        <div>Génération du document en cours...</div>
-      </div>
-    `;
+  // ========================================
+  // ✅ FONCTION appendChat CORRIGÉE v9.9
+  // ========================================
+  function appendChat(role, text, returnElement = false, attachments = []) {
+    const target = document.getElementById('chatFullWindow');
+    if (!target) return;
     
-    // Générer le preview HTML immédiatement
-    setTimeout(() => {
-      try {
-        const htmlContent = window.formatJsonAsDocumentHtml(jsonData);
-        messageElement.innerHTML = `<div class="ai-document-container">${htmlContent}</div>`;
-        
-        // Ajouter les boutons universels pour le contenu texte
-        const textContent = extractTextFromDocument(jsonData);
-        addUniversalButtons(messageElement, textContent, `${jsonData.type || 'document'}_${Date.now()}`);
-        
-      } catch (error) {
-        console.error('Erreur génération document:', error);
-        messageElement.innerHTML = '<div style="color: var(--danger);">Erreur lors de la génération du document</div>';
+    const node = document.createElement('div');
+    node.className = 'msg ' + (role === 'user' ? 'user' : 'bot');
+
+    if (role === 'user') {
+      if (text) {
+        node.textContent = text;
       }
-    }, 100);
+    } else {
+      // ✅ CAS 1 : Image
+      const imageUrl = detectImageToken(text);
+      if (imageUrl) {
+        console.log('🖼️ Image détectée');
+        const imageHtml = `
+          <div class="ai-image-container" style="position: relative; display: inline-block; width: 100%;">
+            <img src="${imageUrl}" style="max-width:100%; border-radius:12px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+            <button class="image-download-btn" onclick="window.downloadImage('${imageUrl}')">
+              <i class="fas fa-download"></i> Télécharger
+            </button>
+          </div>
+          <div style="margin-top: 15px;">
+            <button class="btn primary" onclick="window.downloadImage('${imageUrl}')">
+              <i class="fas fa-download"></i> Télécharger l'Image
+            </button>
+          </div>
+        `;
+        node.innerHTML = imageHtml;
+        target.appendChild(node);
+        scrollToBottom();
+        return node;
+      }
+      
+      // ✅ CAS 2 : Document structuré (NOUVEAU - CORRIGÉ)
+      const structuredJson = detectStructuredJson(text);
+      if (structuredJson) {
+        console.log('📄 Document structuré détecté:', structuredJson.type);
+        handleDocumentGeneration(structuredJson, node);
+        target.appendChild(node);
+        scrollToBottom();
+        return node;
+      }
+      
+      // ✅ CAS 3 : Markdown normal (Code, Texte)
+      if (text) {
+        const renderedHtml = marked.parse(text, { sanitize: false, gfm: true });
+        node.innerHTML = renderedHtml;
+        
+        // Coloration syntaxe pour les blocs de code
+        node.querySelectorAll('pre code').forEach(block => {
+          hljs.highlightElement(block);
+        });
+        
+        // Ajouter les boutons copier sur chaque bloc de code
+        addCopyButtons(node);
+        
+        // Ajouter les boutons universels pour tout le contenu
+        addUniversalButtons(node, text, `conversation_${Date.now()}`);
+        
+      } else if (returnElement) {
+        node.classList.add('loading');
+      }
+    }
+    
+    // Gestion des pièces jointes
+    if (attachments && attachments.length > 0) {
+      const attachmentsDiv = document.createElement('div');
+      attachmentsDiv.style.cssText = 'margin-top: 8px; display: flex; flex-wrap: wrap; gap: 8px;';
+      
+      attachments.forEach(att => {
+        if (att.type === 'image' && att.data) {
+          const img = document.createElement('img');
+          img.src = att.data;
+          img.style.cssText = 'max-width: 150px; max-height: 150px; border-radius: 8px; object-fit: cover; cursor: pointer;';
+          img.onclick = () => window.open(att.data, '_blank');
+          attachmentsDiv.appendChild(img);
+        } else if (att.type === 'file') {
+          const fileDiv = document.createElement('div');
+          fileDiv.style.cssText = 'padding: 8px 12px; background: rgba(0,0,0,0.1); border-radius: 6px; font-size: 13px;';
+          let iconClass = 'fa-file';
+          if (att.name.endsWith('.pdf')) iconClass = 'fa-file-pdf';
+          else if (att.name.endsWith('.docx')) iconClass = 'fa-file-word';
+          fileDiv.innerHTML = `<i class="fas ${iconClass}"></i> ${att.name}`;
+          attachmentsDiv.appendChild(fileDiv);
+        }
+      });
+      node.appendChild(attachmentsDiv);
+    }
+
+    target.appendChild(node);
+    scrollToBottom();
+    if (returnElement) return node;
+  }
+  
+  function scrollToBottom() {
+    const container = document.getElementById('chatFullWindow');
+    if (container) {
+      container.scrollTop = container.scrollHeight;
+    }
+  }
+  
+  function addCopyButtons(element) {
+    const codeBlocks = element.querySelectorAll('pre');
+    codeBlocks.forEach(block => {
+      const code = block.querySelector('code');
+      if (!code) return;
+      
+      const btn = document.createElement('button');
+      btn.className = 'copy-code-btn';
+      btn.innerHTML = '<i class="fas fa-copy"></i> Copier';
+      
+      btn.addEventListener('click', () => {
+        navigator.clipboard.writeText(code.innerText);
+        btn.innerHTML = '<i class="fas fa-check"></i> Copié !';
+        setTimeout(() => {
+          btn.innerHTML = '<i class="fas fa-copy"></i> Copier';
+        }, 2000);
+      });
+      
+      block.appendChild(btn);
+    });
+  }
+  
+  // ✅ FONCTION SIMULATETYPING CORRIGÉE v9.9
+  function simulateTyping(element, text, enableVoice = true) {
+    return new Promise((resolve, reject) => {
+      
+      if (appState.shouldStopResponse) {
+        element.innerHTML = '<br><br><em style="color: #e74c3c;">⚠️ Réponse interrompue</em>';
+        reject(new Error('Interrupted'));
+        return;
+      }
+      
+      // ✅ CAS 1 : Image
+      const imageUrl = detectImageToken(text);
+      if (imageUrl) {
+        console.log('🖼️ Affichage image dans typing');
+        const imageHtml = `
+          <div class="ai-image-container" style="position: relative; display: inline-block; width: 100%;">
+            <img src="${imageUrl}" style="max-width:100%; border-radius:12px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+            <button class="image-download-btn" onclick="window.downloadImage('${imageUrl}')">
+              <i class="fas fa-download"></i> Télécharger
+            </button>
+          </div>
+          <div style="margin-top: 15px;">
+            <button class="btn primary" onclick="window.downloadImage('${imageUrl}')">
+              <i class="fas fa-download"></i> Télécharger l'Image
+            </button>
+          </div>
+        `;
+        element.innerHTML = imageHtml;
+        element.classList.remove('loading');
+        scrollToBottom();
+        resolve();
+        return;
+      }
+      
+      // ✅ CAS 2 : Document structuré (NOUVEAU - CORRIGÉ)
+      const structuredJson = detectStructuredJson(text);
+      if (structuredJson) {
+        console.log('📄 Document détecté dans typing:', structuredJson.type);
+        handleDocumentGeneration(structuredJson, element);
+        element.classList.remove('loading');
+        scrollToBottom();
+        resolve();
+        return;
+      }
+      
+      // ✅ CAS 3 : Markdown normal
+      if (enableVoice) {
+        const plainText = htmlToPlainText(text);
+        speak(plainText, true);
+      }
+      
+      const renderedHtml = marked.parse(text, { sanitize: false, gfm: true });
+      element.innerHTML = renderedHtml;
+      
+      element.querySelectorAll('pre code').forEach(block => {
+        hljs.highlightElement(block);
+      });
+      
+      addCopyButtons(element);
+      addUniversalButtons(element, text, `conversation_${Date.now()}`);
+      
+      element.classList.remove('loading');
+      scrollToBottom();
+      resolve();
+    });
   }
 
-  // ✅ Fonction pour extraire le texte d'un document
-  function extractTextFromDocument(jsonData) {
-    switch (jsonData.type) {
-      case 'lettre':
-        return `LETTRE: ${jsonData.objet || ''}\n\nDestinataire: ${jsonData.destinataire || ''}\n\n${jsonData.corps || ''}\n\n${jsonData.formule_politesse || ''}\n${jsonData.signature || ''}`;
+  // ========================================
+  // RESTE DU CODE INCHANGÉ
+  // ========================================
+  
+  function htmlToPlainText(text) {
+    try {
+      const html = marked.parse(text, { sanitize: false, gfm: true });
+      let el = document.createElement('div');
+      let cleanHtml = html.replace(/<br\s*\/?>/gi, ' ').replace(/<\/p>/gi, ' ');
+      el.innerHTML = cleanHtml;
+      el.querySelectorAll('pre').forEach(pre => pre.remove());
+      return el.textContent || el.innerText || '';
+    } catch (e) {
+      return text;
+    }
+  }
+
+  async function handleChatSubmit(message, attachments = []) {
+    if (appState.chatInProgress) return;
+    if (!message && attachments.length === 0) return;
+
+    if (!appState.currentSessionId) {
+      createNewChatSession();
+    }
+  
+    appState.shouldStopResponse = false; 
+    appState.chatInProgress = true;
+    el('intelliaStatus').textContent = "Assistant: En cours...";
+    el('chat-loading').style.display = 'block';
+    el('chatFullSend').style.display = 'none';
+    el('stopAIBtn').style.display = 'flex'; 
+  
+    appendChat('user', message, false, attachments); 
+    el('chatFullInput').value = '';
+    appState.attachments = [];
+    renderAttachmentPreviews();
+    
+    try {
+      const reply = await sendToOnline(message, attachments);
       
-      case 'rapport':
-        return `RAPPORT: ${jsonData.titre || ''}\n\nAuteur: ${jsonData.auteur || ''}\n\n${jsonData.resume || ''}\n\n${jsonData.contenu || ''}`;
+      if (!appState.shouldStopResponse) {
+        const botMsgElement = appendChat('bot', '', true);
+        try {
+          await simulateTyping(botMsgElement, reply, true);
+        } catch (interruptError) {
+          console.log('⚠️ Typing interrompu');
+        }
+      } else {
+        appendChat('bot', '<em style="color: #e74c3c;">⚠️ Réponse interrompue par l\'utilisateur</em>');
+      }
+    } catch (error) {
+      if (!appState.shouldStopResponse) {
+        console.error("Erreur chat:", error);
+        appendChat('bot', "Désolé, une erreur s'est produite.");
+      }
+    } finally {
+      appState.chatInProgress = false;
+      appState.shouldStopResponse = false; 
+      el('chat-loading').style.display = 'none';
+      el('chatFullSend').style.display = 'flex';
+      el('stopAIBtn').style.display = 'none';
+    }
+  }
+  
+  async function handleVoiceSubmit(command) {
+    if (!command) return;
+    if (appState.chatInProgress) {
+      logActivity(`Voix ignorée (chat en cours): "${command}"`);
+      return;
+    }
+
+    if (!appState.currentSessionId) {
+      createNewChatSession();
+    }
+  
+    appState.shouldStopResponse = false; 
+    appState.chatInProgress = true;
+    el('intelliaStatus').textContent = "Assistant: En cours...";
+    el('chat-loading').style.display = 'block';
+    el('stopAIBtn').style.display = 'flex'; 
+    el('chatFullSend').style.display = 'none'; 
+  
+    appendChat('user', command);
+    logActivity(`Commande vocale: "${command}"`);
+    
+    try {
+      const reply = await sendToOnline(command, []);
       
-      case 'cv':
-        return `CV: ${jsonData.prenom || ''} ${jsonData.nom || ''}\n\n${jsonData.profil || ''}\n\nExpériences: ${JSON.stringify(jsonData.experiences || [])}\n\nFormations: ${JSON.stringify(jsonData.formations || [])}`;
+      if (!appState.shouldStopResponse) {
+        const botMsgElement = appendChat('bot', '', true);
+        try {
+          await simulateTyping(botMsgElement, reply, true);
+        } catch (interruptError) {
+          console.log('⚠️ Typing interrompu (voix)');
+        }
+      } else {
+        appendChat('bot', '<em style="color: #e74c3c;">⚠️ Réponse interrompue</em>');
+      }
+    } catch (error) {
+      if (!appState.shouldStopResponse) {
+        console.error("Erreur voix:", error);
+        appendChat('bot', "Désolé, une erreur s'est produite.");
+      }
+    } finally {
+      appState.chatInProgress = false;
+      appState.shouldStopResponse = false;
+      el('chat-loading').style.display = 'none';
+      el('chatFullSend').style.display = 'flex';
+      el('stopAIBtn').style.display = 'none';
+    }
+  }
+
+  async function sendToOnline(message, attachments = []) {
+    if (!appState.currentUser) {
+        alert("Erreur: Utilisateur non connecté. Veuillez rafraîchir.");
+        return "Erreur d'authentification.";
+    }
+    
+    const t0 = Date.now();
+    
+    try {
+      const response = await fetch(`${RENDER_API}/api/chat`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message,
+          attachments: attachments,
+          key: AUTH_KEY,
+          devices: appState.devices.map(d => ({ id: d.id, name: d.name, type: d.type, room: d.room })),
+          deviceStates: appState.deviceStates,
+          sessionId: appState.currentSessionId,
+          userId: appState.currentUser.uid,
+          preferences: {
+            voiceNotifications: appState.voiceNotifications
+          }
+        }),
+      });
       
-      case 'facture':
-        return `FACTURE: ${jsonData.numero || ''}\n\nClient: ${jsonData.client?.nom || ''}\n\nArticles: ${JSON.stringify(jsonData.articles || [])}`;
+      el('intelliaLatency').textContent = `latence: ${Date.now() - t0}ms`;
+      if (!response.ok) throw new Error(`Server error ${response.status}`);
+      const j = await response.json();
       
-      case 'contrat':
-        return `CONTRAT: ${jsonData.titre || ''}\n\nParties: ${jsonData.partie1?.nom || ''} / ${jsonData.partie2?.nom || ''}\n\n${jsonData.contenu || ''}`;
+      if (appState.shouldStopResponse) {
+          return "Interrompu.";
+      }
       
-      default:
-        return JSON.stringify(jsonData, null, 2);
+      await saveMessageToFirebase(message, j.reply, attachments);
+      
+      if (j.suggestions && j.suggestions.length > 0) displaySuggestions(j.suggestions);
+      if (j.planning_commands) handlePlanningCommands(j.planning_commands);
+      if (j.execute) handleExecuteCommands(j.execute);
+      
+      appState.intelliaOnline = true; 
+      el('intelliaStatus').textContent = "Assistant: Connecté";
+      el('statusOnline').textContent = "Assistant : disponible";
+      logActivity(`Assistant a répondu.`);
+      
+      return j.reply || "OK";
+      
+    } catch (e) {
+      if (appState.shouldStopResponse) {
+          return "Interrompu.";
+      }
+      console.warn("sendToOnline error", e);
+      appState.intelliaOnline = false;
+      el('intelliaStatus').textContent = "Assistant: Hors ligne";
+      el('statusOnline').textContent = "Assistant : indisponible";
+      logActivity(`Erreur de connexion Assistant.`);
+      return "Erreur de connexion avec l'Assistant.";
     }
   }
 
   // ========================================
-  // FONCTIONS EXISTANTES AVEC AMÉLIORATIONS
-  // ========================================
+// SUITE DU CODE JAVASCRIPT (À AJOUTER APRÈS LA LIGNE 2850 de index.html v9.9)
+// ========================================
 
-  // ======= UI: Navigation =======
-  function navigateTo(targetSection) {
-    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-    const targetEl = el(targetSection);
-    if (targetEl) targetEl.classList.add('active');
-    
-    document.querySelectorAll('.btn-nav').forEach(b => b.classList.remove('active'));
-    document.querySelectorAll(`[data-target="${targetSection}"]`).forEach(b => b.classList.add('active'));
-    
-    const titleMap = {
-      'sec-domotique': 'Domotique',
-      'sec-planning': 'Planning',
-      'sec-params': 'Paramètres',
-      'sec-intelligence': 'Assistant IA'
-    };
-    el('section-header-title').textContent = titleMap[targetSection] || 'Domotique';
+  async function handlePlanningCommands(commands) {
+    for (const cmd of commands) {
+      if (cmd.action === 'add') {
+        const p = { device: cmd.device, time: cmd.time, action: cmd.action, power: cmd.power, createdAt: Date.now() };
+        if (db) await push(ref(db, planningRefPath), p);
+      } else if (cmd.action === 'delete_all') {
+        await deleteAllPlans();
+      }
+    }
+  }
+  
+  function handleExecuteCommands(commands) {
+    for (const exec of (Array.isArray(commands) ? commands : [commands])) {
+      const [devId, action, value] = exec.split('|');
+      if (appState.devices.some(d => d.id === devId)) {
+        sendCommand(devId, action, value ? parseInt(value) : null);
+      }
+    }
+  }
+  
+  function displaySuggestions(suggestions) {
+    const container = el('proactive-suggestion');
+    if (!container || !suggestions.length > 0) return;
+    container.textContent = suggestions[0].message;
   }
 
-  document.querySelectorAll('.btn-nav').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const target = btn.dataset.target;
-      navigateTo(target);
-    });
+  el('chatFullSend')?.addEventListener('click', () => {
+    handleChatSubmit(el('chatFullInput').value, appState.attachments);
   });
-
-  el('sidebar-toggle-btn').addEventListener('click', () => {
-    el('chat-sidebar').classList.toggle('open');
-    el('sidebar-overlay').classList.toggle('open');
+  el('chatFullInput')?.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') handleChatSubmit(el('chatFullInput').value, appState.attachments);
   });
-  el('sidebar-overlay').addEventListener('click', () => {
+  
+  el('stopAIBtn')?.addEventListener('click', () => {
+    console.log('🛑 ARRÊT DEMANDÉ');
+    appState.shouldStopResponse = true;
+  
+    if (window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+    }
+    if (VoiceEngine && VoiceEngine.pauseRecognition) {
+      VoiceEngine.pauseRecognition();
+    }
+    appState.chatInProgress = false;
+  
+    el('chat-loading').style.display = 'none';
+    el('chatFullSend').style.display = 'flex';
+    el('stopAIBtn').style.display = 'none';
+    el('intelliaStatus').textContent = "Assistant: Interrompu";
+  
+    logActivity('⚠️ Réponse IA interrompue par l\'utilisateur');
+  });
+  
+  el('close-sidebar-btn')?.addEventListener('click', () => {
     el('chat-sidebar').classList.remove('open');
     el('sidebar-overlay').classList.remove('open');
   });
@@ -1761,7 +2199,7 @@
     if (!element) return;
     
     if (connected) {
-      element.textContent = type === 'local' ? 'ESP32: Connecté ✓' : 'Firebase: Connecté ✓';
+      element.textContent = type === 'local' ? 'ESP32: Connecté ✔' : 'Firebase: Connecté ✔';
       element.style.background = 'rgba(46, 213, 115, 0.3)';
     } else {
       element.textContent = type === 'local' ? 'ESP32: Déconnecté ✗' : 'Firebase: Déconnecté ✗';
@@ -2162,442 +2600,6 @@
     }
   };
   
-  // ======= Assistant Communication =======
-  
-  function htmlToPlainText(text) {
-    try {
-      const html = marked.parse(text, { sanitize: false, gfm: true });
-      let el = document.createElement('div');
-      let cleanHtml = html.replace(/<br\s*\/?>/gi, ' ').replace(/<\/p>/gi, ' ');
-      el.innerHTML = cleanHtml;
-      el.querySelectorAll('pre').forEach(pre => pre.remove());
-      return el.textContent || el.innerText || '';
-    } catch (e) {
-      return text;
-    }
-  }
-
-  function detectImageToken(content) {
-    const imageTokenMatch = content.match(/<IMAGE_URL_TOKEN>(.*?)<\/IMAGE_URL_TOKEN>/);
-    if (imageTokenMatch) {
-      return imageTokenMatch[1];
-    }
-    return null;
-  }
-  
-  function detectStructuredJson(content) {
-    try {
-      const jsonData = JSON.parse(content);
-      if (jsonData && jsonData.type && ['lettre', 'rapport', 'cv', 'facture', 'contrat'].includes(jsonData.type)) {
-        return jsonData;
-      }
-    } catch (e) {}
-    return null;
-  }
-
-  // ✅ FONCTION APPENDCHAT AMÉLIORÉE v9.8
-  function appendChat(role, text, returnElement = false, attachments = []) {
-    const target = document.getElementById('chatFullWindow');
-    if (!target) return;
-    
-    const node = document.createElement('div');
-    node.className = 'msg ' + (role === 'user' ? 'user' : 'bot');
-
-    if (role === 'user') {
-      if (text) {
-        node.textContent = text;
-      }
-    } else {
-      // ✅ CAS 1 : Image
-      const imageUrl = detectImageToken(text);
-      if (imageUrl) {
-        const imageHtml = `
-          <div class="ai-image-container" style="position: relative; display: inline-block;">
-            <img src="${imageUrl}" style="max-width:100%; border-radius:12px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
-            <button class="image-download-btn" onclick="window.downloadImage('${imageUrl}')">
-              <i class="fas fa-download"></i> Télécharger
-            </button>
-          </div>
-          <div style="margin-top: 15px;">
-            <button class="btn primary" onclick="window.downloadImage('${imageUrl}')">
-              <i class="fas fa-download"></i> Télécharger l'Image
-            </button>
-          </div>
-        `;
-        node.innerHTML = `<div class="ai-image-container">${imageHtml}</div>`;
-        target.appendChild(node);
-        scrollToBottom();
-        return node;
-      }
-      
-      // ✅ CAS 2 : Document structuré
-      const structuredJson = detectStructuredJson(text);
-      if (structuredJson) {
-        handleDocumentGeneration(structuredJson, node);
-        target.appendChild(node);
-        scrollToBottom();
-        return node;
-      }
-      
-      // ✅ CAS 3 : Markdown normal (Code, Texte)
-      if (text) {
-        const renderedHtml = marked.parse(text, { sanitize: false, gfm: true });
-        node.innerHTML = renderedHtml;
-        
-        // Coloration syntaxe pour les blocs de code
-        node.querySelectorAll('pre code').forEach(block => {
-          hljs.highlightElement(block);
-        });
-        
-        // Ajouter les boutons copier sur chaque bloc de code
-        addCopyButtons(node);
-        
-        // ✅ NOUVEAU : Ajouter les boutons universels pour tout le contenu
-        addUniversalButtons(node, text, `conversation_${Date.now()}`);
-        
-      } else if (returnElement) {
-        node.classList.add('loading');
-      }
-    }
-    
-    // Gestion des pièces jointes
-    if (attachments && attachments.length > 0) {
-      const attachmentsDiv = document.createElement('div');
-      attachmentsDiv.style.cssText = 'margin-top: 8px; display: flex; flex-wrap: wrap; gap: 8px;';
-      
-      attachments.forEach(att => {
-        if (att.type === 'image' && att.data) {
-          const img = document.createElement('img');
-          img.src = att.data;
-          img.style.cssText = 'max-width: 150px; max-height: 150px; border-radius: 8px; object-fit: cover; cursor: pointer;';
-          img.onclick = () => window.open(att.data, '_blank');
-          attachmentsDiv.appendChild(img);
-        } else if (att.type === 'file') {
-          const fileDiv = document.createElement('div');
-          fileDiv.style.cssText = 'padding: 8px 12px; background: rgba(0,0,0,0.1); border-radius: 6px; font-size: 13px;';
-          let iconClass = 'fa-file';
-          if (att.name.endsWith('.pdf')) iconClass = 'fa-file-pdf';
-          else if (att.name.endsWith('.docx')) iconClass = 'fa-file-word';
-          fileDiv.innerHTML = `<i class="fas ${iconClass}"></i> ${att.name}`;
-          attachmentsDiv.appendChild(fileDiv);
-        }
-      });
-      node.appendChild(attachmentsDiv);
-    }
-
-    target.appendChild(node);
-    scrollToBottom();
-    if (returnElement) return node;
-  }
-  
-  function scrollToBottom() {
-    const container = document.getElementById('chatFullWindow');
-    if (container) {
-      container.scrollTop = container.scrollHeight;
-    }
-  }
-  
-  function addCopyButtons(element) {
-    const codeBlocks = element.querySelectorAll('pre');
-    codeBlocks.forEach(block => {
-      const code = block.querySelector('code');
-      if (!code) return;
-      
-      const btn = document.createElement('button');
-      btn.className = 'copy-code-btn';
-      btn.innerHTML = '<i class="fas fa-copy"></i> Copier';
-      
-      btn.addEventListener('click', () => {
-        navigator.clipboard.writeText(code.innerText);
-        btn.innerHTML = '<i class="fas fa-check"></i> Copié !';
-        setTimeout(() => {
-          btn.innerHTML = '<i class="fas fa-copy"></i> Copier';
-        }, 2000);
-      });
-      
-      block.appendChild(btn);
-    });
-  }
-  
-  // ✅ FONCTION SIMULATETYPING AMÉLIORÉE v9.8
-  function simulateTyping(element, text, enableVoice = true) {
-    return new Promise((resolve, reject) => {
-      
-      if (appState.shouldStopResponse) {
-        element.innerHTML = '<br><br><em style="color: #e74c3c;">⚠️ Réponse interrompue</em>';
-        reject(new Error('Interrupted'));
-        return;
-      }
-      
-      // ✅ CAS 1 : Image
-      const imageUrl = detectImageToken(text);
-      if (imageUrl) {
-        const imageHtml = `
-          <div class="ai-image-container" style="position: relative; display: inline-block;">
-            <img src="${imageUrl}" style="max-width:100%; border-radius:12px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
-            <button class="image-download-btn" onclick="window.downloadImage('${imageUrl}')">
-              <i class="fas fa-download"></i> Télécharger
-            </button>
-          </div>
-          <div style="margin-top: 15px;">
-            <button class="btn primary" onclick="window.downloadImage('${imageUrl}')">
-              <i class="fas fa-download"></i> Télécharger l'Image
-            </button>
-          </div>
-        `;
-        element.innerHTML = `<div class="ai-image-container">${imageHtml}</div>`;
-        element.classList.remove('loading');
-        scrollToBottom();
-        resolve();
-        return;
-      }
-      
-      // ✅ CAS 2 : Document structuré
-      const structuredJson = detectStructuredJson(text);
-      if (structuredJson) {
-        handleDocumentGeneration(structuredJson, element);
-        element.classList.remove('loading');
-        scrollToBottom();
-        resolve();
-        return;
-      }
-      
-      // ✅ CAS 3 : Markdown normal
-      if (enableVoice) {
-        const plainText = htmlToPlainText(text);
-        speak(plainText, true);
-      }
-      
-      const renderedHtml = marked.parse(text, { sanitize: false, gfm: true });
-      element.innerHTML = renderedHtml;
-      
-      element.querySelectorAll('pre code').forEach(block => {
-        hljs.highlightElement(block);
-      });
-      
-      addCopyButtons(element);
-      
-      // ✅ NOUVEAU : Ajouter les boutons universels
-      addUniversalButtons(element, text, `conversation_${Date.now()}`);
-      
-      element.classList.remove('loading');
-      scrollToBottom();
-      resolve();
-    });
-  }
-
-  async function handleChatSubmit(message, attachments = []) {
-    if (appState.chatInProgress) return;
-    if (!message && attachments.length === 0) return;
-
-    if (!appState.currentSessionId) {
-      createNewChatSession();
-    }
-  
-    appState.shouldStopResponse = false; 
-    appState.chatInProgress = true;
-    el('intelliaStatus').textContent = "Assistant: En cours...";
-    el('chat-loading').style.display = 'block';
-    el('chatFullSend').style.display = 'none';
-    el('stopAIBtn').style.display = 'flex'; 
-  
-    appendChat('user', message, false, attachments); 
-    el('chatFullInput').value = '';
-    appState.attachments = [];
-    renderAttachmentPreviews();
-    
-    try {
-      const reply = await sendToOnline(message, attachments);
-      
-      if (!appState.shouldStopResponse) {
-        const botMsgElement = appendChat('bot', '', true);
-        try {
-          await simulateTyping(botMsgElement, reply, true);
-        } catch (interruptError) {
-          console.log('⚠️ Typing interrompu');
-        }
-      } else {
-        appendChat('bot', '<em style="color: #e74c3c;">⚠️ Réponse interrompue par l\'utilisateur</em>');
-      }
-    } catch (error) {
-      if (!appState.shouldStopResponse) {
-        console.error("Erreur chat:", error);
-        appendChat('bot', "Désolé, une erreur s'est produite.");
-      }
-    } finally {
-      appState.chatInProgress = false;
-      appState.shouldStopResponse = false; 
-      el('chat-loading').style.display = 'none';
-      el('chatFullSend').style.display = 'flex';
-      el('stopAIBtn').style.display = 'none';
-    }
-  }
-  
-  async function handleVoiceSubmit(command) {
-    if (!command) return;
-    if (appState.chatInProgress) {
-      logActivity(`Voix ignorée (chat en cours): "${command}"`);
-      return;
-    }
-
-    if (!appState.currentSessionId) {
-      createNewChatSession();
-    }
-  
-    appState.shouldStopResponse = false; 
-    appState.chatInProgress = true;
-    el('intelliaStatus').textContent = "Assistant: En cours...";
-    el('chat-loading').style.display = 'block';
-    el('stopAIBtn').style.display = 'flex'; 
-    el('chatFullSend').style.display = 'none'; 
-  
-    appendChat('user', command);
-    logActivity(`Commande vocale: "${command}"`);
-    
-    try {
-      const reply = await sendToOnline(command, []);
-      
-      if (!appState.shouldStopResponse) {
-        const botMsgElement = appendChat('bot', '', true);
-        try {
-          await simulateTyping(botMsgElement, reply, true);
-        } catch (interruptError) {
-          console.log('⚠️ Typing interrompu (voix)');
-        }
-      } else {
-        appendChat('bot', '<em style="color: #e74c3c;">⚠️ Réponse interrompue</em>');
-      }
-    } catch (error) {
-      if (!appState.shouldStopResponse) {
-        console.error("Erreur voix:", error);
-        appendChat('bot', "Désolé, une erreur s'est produite.");
-      }
-    } finally {
-      appState.chatInProgress = false;
-      appState.shouldStopResponse = false;
-      el('chat-loading').style.display = 'none';
-      el('chatFullSend').style.display = 'flex';
-      el('stopAIBtn').style.display = 'none';
-    }
-  }
-
-  async function sendToOnline(message, attachments = []) {
-    if (!appState.currentUser) {
-        alert("Erreur: Utilisateur non connecté. Veuillez rafraîchir.");
-        return "Erreur d'authentification.";
-    }
-    
-    const t0 = Date.now();
-    
-    try {
-      const response = await fetch(`${RENDER_API}/api/chat`, {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          message,
-          attachments: attachments,
-          key: AUTH_KEY,
-          devices: appState.devices.map(d => ({ id: d.id, name: d.name, type: d.type, room: d.room })),
-          deviceStates: appState.deviceStates,
-          sessionId: appState.currentSessionId,
-          userId: appState.currentUser.uid,
-          preferences: {
-            voiceNotifications: appState.voiceNotifications
-          }
-        }),
-      });
-      
-      el('intelliaLatency').textContent = `latence: ${Date.now() - t0}ms`;
-      if (!response.ok) throw new Error(`Server error ${response.status}`);
-      const j = await response.json();
-      
-      if (appState.shouldStopResponse) {
-          return "Interrompu.";
-      }
-      
-      await saveMessageToFirebase(message, j.reply, attachments);
-      
-      if (j.suggestions && j.suggestions.length > 0) displaySuggestions(j.suggestions);
-      if (j.planning_commands) handlePlanningCommands(j.planning_commands);
-      if (j.execute) handleExecuteCommands(j.execute);
-      
-      appState.intelliaOnline = true; 
-      el('intelliaStatus').textContent = "Assistant: Connecté";
-      el('statusOnline').textContent = "Assistant : disponible";
-      logActivity(`Assistant a répondu.`);
-      
-      return j.reply || "OK";
-      
-    } catch (e) {
-      if (appState.shouldStopResponse) {
-          return "Interrompu.";
-      }
-      console.warn("sendToOnline error", e);
-      appState.intelliaOnline = false;
-      el('intelliaStatus').textContent = "Assistant: Hors ligne";
-      el('statusOnline').textContent = "Assistant : indisponible";
-      logActivity(`Erreur de connexion Assistant.`);
-      return "Erreur de connexion avec l'Assistant.";
-    }
-  }
-
-  async function handlePlanningCommands(commands) {
-    for (const cmd of commands) {
-      if (cmd.action === 'add') {
-        const p = { device: cmd.device, time: cmd.time, action: cmd.action, power: cmd.power, createdAt: Date.now() };
-        if (db) await push(ref(db, planningRefPath), p);
-      } else if (cmd.action === 'delete_all') {
-        await deleteAllPlans();
-      }
-    }
-  }
-  
-  function handleExecuteCommands(commands) {
-    for (const exec of (Array.isArray(commands) ? commands : [commands])) {
-      const [devId, action, value] = exec.split('|');
-      if (appState.devices.some(d => d.id === devId)) {
-        sendCommand(devId, action, value ? parseInt(value) : null);
-      }
-    }
-  }
-  
-  function displaySuggestions(suggestions) {
-    const container = el('proactive-suggestion');
-    if (!container || !suggestions.length > 0) return;
-    container.textContent = suggestions[0].message;
-  }
-
-  el('chatFullSend')?.addEventListener('click', () => {
-    handleChatSubmit(el('chatFullInput').value, appState.attachments);
-  });
-  el('chatFullInput')?.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') handleChatSubmit(el('chatFullInput').value, appState.attachments);
-  });
-  
-  el('stopAIBtn')?.addEventListener('click', () => {
-    console.log('🛑 ARRÊT DEMANDÉ');
-    appState.shouldStopResponse = true;
-  
-    if (window.speechSynthesis) {
-      window.speechSynthesis.cancel();
-    }
-    if (VoiceEngine && VoiceEngine.pauseRecognition) {
-      VoiceEngine.pauseRecognition();
-    }
-    appState.chatInProgress = false;
-  
-    el('chat-loading').style.display = 'none';
-    el('chatFullSend').style.display = 'flex';
-    el('stopAIBtn').style.display = 'none';
-    el('intelliaStatus').textContent = "Assistant: Interrompu";
-  
-    logActivity('⚠️ Réponse IA interrompue par l\'utilisateur');
-  });
-  
-  el('close-sidebar-btn')?.addEventListener('click', () => {
-    el('chat-sidebar').classList.remove('open');
-    el('sidebar-overlay').classList.remove('open');
-  });
-
   // ======= Multi-Session & Historique Firebase =======
   
   function getChatHistoryRef(userId, sessionId = null) {
@@ -2731,7 +2733,7 @@
     if (isNewSession) {
       let newTitle = userMsg;
       if (!newTitle && attachments.length > 0) {
-        newTitle = `🔎 ${attachments[0].name}`;
+        newTitle = `📎 ${attachments[0].name}`;
       }
       if (!newTitle) newTitle = "Nouvelle discussion";
       newTitle = newTitle.substring(0, 30) + (newTitle.length > 30 ? '...' : '');
@@ -2912,9 +2914,41 @@
   }
   function handleSignOut() { if (auth) signOut(auth).catch((error) => console.error("Erreur Déco:", error)); }
   
-  
+  // ======= Navigation =======
+  function navigateTo(targetSection) {
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    const targetEl = el(targetSection);
+    if (targetEl) targetEl.classList.add('active');
+    
+    document.querySelectorAll('.btn-nav').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll(`[data-target="${targetSection}"]`).forEach(b => b.classList.add('active'));
+    
+    const titleMap = {
+      'sec-domotique': 'Domotique',
+      'sec-planning': 'Planning',
+      'sec-params': 'Paramètres',
+      'sec-intelligence': 'Assistant IA'
+    };
+    el('section-header-title').textContent = titleMap[targetSection] || 'Domotique';
+  }
+
+  document.querySelectorAll('.btn-nav').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const target = btn.dataset.target;
+      navigateTo(target);
+    });
+  });
+
+  el('sidebar-toggle-btn').addEventListener('click', () => {
+    el('chat-sidebar').classList.toggle('open');
+    el('sidebar-overlay').classList.toggle('open');
+  });
+  el('sidebar-overlay').addEventListener('click', () => {
+    el('chat-sidebar').classList.remove('open');
+    el('sidebar-overlay').classList.remove('open');
+  });
  
-// ========================================
+ // ========================================
 // 🔧 CORRECTION CLIENT - À REMPLACER DANS INDEX.HTML
 // Ligne ~1180 (section "Exécution Automatique des Planifications")
 // ========================================
@@ -3118,11 +3152,11 @@ setInterval(cleanExpiredPlansClient, 600000);
 
 // Nettoyage au chargement de la page
 setTimeout(cleanExpiredPlansClient, 5000);
-  // ======= Auth State Change Listener (Le "Gardien") =======
+
+  // ======= Auth State Change Listener =======
   if (auth) {
     onAuthStateChanged(auth, (user) => {
       if (user) {
-        // --- Utilisateur connecté ---
         appState.currentUser = user;
         document.querySelector('.main-app').style.display = 'block';
         el('login-overlay').style.display = 'none';
@@ -3141,7 +3175,6 @@ setTimeout(cleanExpiredPlansClient, 5000);
         navigateTo('sec-domotique');
 
       } else {
-        // --- Utilisateur déconnecté ---
         appState.currentUser = null;
         document.querySelector('.main-app').style.display = 'none';
         el('login-overlay').style.display = 'flex';
@@ -3154,7 +3187,6 @@ setTimeout(cleanExpiredPlansClient, 5000);
       }
     });
   } else {
-    // Fallback si Firebase échoue
     el('login-overlay').innerHTML = `
       <div class="login-box">
         <h2>Erreur Critique</h2>
@@ -3174,7 +3206,6 @@ setTimeout(cleanExpiredPlansClient, 5000);
       el.classList.remove('fade-out');
     }, 500);
   }
-
 
   // ======= Initialisation =======
   function initUI() {
@@ -3231,6 +3262,11 @@ setTimeout(cleanExpiredPlansClient, 5000);
   initUI(); 
 
   window.appState = appState;
+  
+  console.log('✅ SmartHome Intelligence v9.9 COMPLET - Prêt à l\'emploi');
+  console.log('📄 Documents JSON: Fonctionnels');
+  console.log('🖼️ Images: Fonctionnelles');
+  console.log('⬇️ Téléchargements PDF/DOCX: Fonctionnels');
   </script>
 </body>
 </html>
