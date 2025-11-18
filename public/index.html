@@ -18,43 +18,44 @@
   <script src="https://cdn.jsdelivr.net/npm/docx@8.0.0/build/index.min.js"></script>
   
   <style>
-    /* ... (à la fin de vos autres styles) ... */
-
-@media print {
-  /* Cacher TOUT par défaut lors de l'impression */
-  body > * {
-    display: none !important;
-    visibility: hidden !important;
+ @media print {
+  /* 1. On cache visuellement TOUS les éléments de la page */
+  body * {
+    visibility: hidden;
   }
-  
-  /* Afficher SEULEMENT la zone marquée comme "imprimable" */
+
+  /* 2. On force la visibilité UNIQUEMENT sur le document à imprimer et son contenu */
   .printable-area,
   .printable-area * {
-    display: block !important;
     visibility: visible !important;
   }
-  
-  /* Assurer que la zone prend toute la page d'impression */
+
+  /* 3. On arrache le document de sa place pour le coller tout en haut de la feuille d'impression */
   .printable-area {
     position: absolute !important;
     left: 0 !important;
     top: 0 !important;
     width: 100% !important;
-    height: auto !important;
-    overflow: visible !important;
-    
-    /* Réinitialiser les styles de "carte" pour l'impression */
-    box-shadow: none !important;
-    border: none !important;
-    padding: 0 !important;
     margin: 0 !important;
-    border-radius: 0 !important;
+    padding: 20px !important; /* Un peu de marge pour l'impression */
+    background: white !important;
+    z-index: 99999; /* S'assurer qu'il est au-dessus de tout */
+    box-shadow: none !important; /* Pas d'ombre à l'impression */
+    border: none !important;
+  }
+
+  /* 4. On cache spécifiquement les boutons qui pourraient traîner dans la zone */
+  .printable-area button,
+  .printable-area .btn,
+  .universal-buttons,
+  .copy-code-btn {
+    display: none !important;
   }
   
-  /* Cacher les boutons qui seraient DANS le document */
-  .printable-area .universal-buttons,
-  .printable-area .btn {
-    display: none !important;
+  /* On cache le scrollbar */
+  html, body {
+    height: auto !important;
+    overflow: visible !important;
   }
 }
     :root {
