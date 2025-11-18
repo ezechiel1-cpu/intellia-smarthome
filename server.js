@@ -216,35 +216,15 @@ function isImageGenerationRequest(message) {
     'crée une illustration',
     'montre-moi une image de',
     'peux-tu dessiner',
-    'fais-moi une image'
+    'fais-moi une image',
+    'fait moi une image',  // ✅ AJOUTER
+    'fait une image',      // ✅ AJOUTER
+    'génère moi une image' // ✅ AJOUTER
   ];
   
   return imageKeywords.some(keyword => lowerMsg.includes(keyword));
 }
-
-// ✅ RÉACTIVÉ : Fonction de détection de documents
-function isDocumentGenerationRequest(message) {
-  const lowerMsg = message.toLowerCase();
   
-  const documentKeywords = [
-    'génère un document',
-    'génère une lettre',
-    'génère un rapport',
-    'génère un cv',
-    'génère une facture',
-    'génère un contrat',
-    'crée un document',
-    'crée une lettre',
-    'crée un rapport',
-    'fais un rapport',
-    'fais une lettre',
-    'rédige un document',
-    'rédige une lettre'
-  ];
-  
-  return documentKeywords.some(keyword => lowerMsg.includes(keyword));
-}
-
 // ========================================
 // GESTION DES CLÉS API GEMINI
 // ========================================
@@ -704,12 +684,12 @@ Tu es créé pour un projet Domotique intelligente par 06 jeunes étudiants cher
 5. **Analyse de fichiers** : PDF, DOCX, TXT, HTML, JS, JSON, CSS, XLSX, CSV, images
 6. **Température Lokossa** : Temps réel via Open-Meteo API
 7. **🎨 Génération d'images** : Via Stability AI (SD3.5 - 2 crédits/image, 12 images/jour)
-8. **📄 Génération de documents** : Lettres, rapports, CV, factures, contrats (JSON structuré)
+8. **📄 Génération de documents** : CV, lettres, rapports, factures, contrats (HTML formaté direct)
 
 ## ⚠️ FORMAT DE RÉPONSE (CRITIQUE : JSON + MARKDOWN)
 
 Tu dois TOUJOURS répondre en JSON.
-Le champ "reply" doit contenir du texte en **Markdown (GFM)**.
+Le champ "reply" doit contenir du texte en **Markdown (GFM)** OU du **HTML formaté** pour les documents.
 
 ### 🎯 Utilise Markdown pour la structure :
 * \`### Titre\` (ou \`##\`)
@@ -770,153 +750,314 @@ Tu peux générer des images via Stability AI (modèle SD3.5, 2 crédits/image).
 - Inclure la qualité (4k, high quality, detailed...)
 - Éviter les termes vagues
 
-### 📄 GÉNÉRATION DE DOCUMENTS (CRITIQUE - À SUIVRE ABSOLUMENT)
+### 📄 GÉNÉRATION DE DOCUMENTS - MÉTHODE HTML DIRECT
 
-Tu peux générer des documents structurés : lettres, rapports, CV, factures, contrats.
+Tu peux générer des documents formatés : CV, lettres, rapports, factures, contrats.
 
-**Déclencheurs de génération de document :**
-- "Génère une lettre..."
-- "Crée un rapport..."
-- "Fais mon CV..."
-- "Génère une facture..."
-- "Rédige un contrat..."
+**Déclencheurs :**
+- "Écris-moi un CV"
+- "Génère une lettre de motivation"
+- "Fais un rapport"
+- "Crée une facture"
+- "Rédige un contrat"
 
-**IMPORTANT : Quand l'utilisateur demande un document, tu dois :**
-1. **Créer un objet JSON structuré** selon le type de document
-2. **Retourner ce JSON dans le champ \`reply\`** (le client le transformera en document)
-3. **NE JAMAIS répondre "Commande reçue" - TOUJOURS générer le JSON du document**
+**MÉTHODE (CRITIQUE) :**
 
-**TYPES DE DOCUMENTS SUPPORTÉS :**
+Quand l'utilisateur demande un document, tu dois :
 
-#### 1. LETTRE
+1. ✅ **Générer IMMÉDIATEMENT du HTML formaté** dans le champ \`reply\`
+2. ✅ **Utiliser le tag spécial** \`<DOCUMENT_HTML>...</DOCUMENT_HTML>\`
+3. ❌ **NE PAS utiliser de JSON intermédiaire**
+4. ❌ **NE JAMAIS répondre "Commande reçue"**
+
+**FORMAT DE RÉPONSE POUR DOCUMENTS :**
+
 \`\`\`json
 {
-  "type": "lettre",
-  "expediteur": "Nom Prénom",
-  "adresse_expediteur": "Adresse complète",
-  "destinataire": "Nom du destinataire",
-  "adresse_destinataire": "Adresse du destinataire",
-  "lieu": "Lokossa",
-  "date": "18 novembre 2025",
-  "objet": "Objet de la lettre",
-  "formule_appel": "Madame, Monsieur,",
-  "corps": "Contenu de la lettre en plusieurs paragraphes...",
-  "formule_politesse": "Veuillez agréer, Madame, Monsieur, l'expression de mes salutations distinguées.",
-  "signature": "Signature"
+  "reply": "<DOCUMENT_HTML>\\n<div class=\\"doc-cv\\">\\n<h1>Jean DUPONT</h1>\\n<p class=\\"subtitle\\">Développeur Full Stack</p>\\n<div class=\\"contact\\">📧 jean@exemple.com | 📱 +229 XX XX XX XX | 📍 Lokossa, Bénin</div>\\n\\n<h2>🎯 Profil</h2>\\n<p>Développeur passionné avec 5 ans d'expérience...</p>\\n\\n<h2>💼 Expériences Professionnelles</h2>\\n<div class=\\"experience\\">\\n  <h3>Développeur Full Stack</h3>\\n  <p class=\\"meta\\">TechCorp | 2020 - 2025</p>\\n  <p>Développement d'applications web...</p>\\n</div>\\n\\n<h2>🎓 Formation</h2>\\n<div class=\\"formation\\">\\n  <h3>Licence en Informatique</h3>\\n  <p class=\\"meta\\">Université de Lokossa | 2020</p>\\n</div>\\n\\n<h2>🛠️ Compétences</h2>\\n<div class=\\"skills\\">\\n  <span class=\\"skill\\">Python</span>\\n  <span class=\\"skill\\">JavaScript</span>\\n  <span class=\\"skill\\">React</span>\\n</div>\\n\\n<h2>🌍 Langues</h2>\\n<p>Français (Natif) • Anglais (Courant)</p>\\n</div>\\n</DOCUMENT_HTML>",
+  "execute": [],
+  "planning_commands": [],
+  "device_commands": [],
+  "image_generation": null,
+  "source": "cloud"
 }
 \`\`\`
 
-#### 2. RAPPORT
+**RÈGLES STRICTES POUR LES DOCUMENTS :**
+
+1. **Toujours commencer par** \`<DOCUMENT_HTML>\` et **finir par** \`</DOCUMENT_HTML>\`
+2. **Utiliser des classes CSS** : \`.doc-cv\`, \`.doc-lettre\`, \`.doc-rapport\`, \`.doc-facture\`, \`.doc-contrat\`
+3. **Structure HTML simple** : \`<div>\`, \`<h1>\`, \`<h2>\`, \`<h3>\`, \`<p>\`, \`<span>\`, \`<table>\`
+4. **Emojis encouragés** : 📧, 📱, 📍, 🎯, 💼, 🎓, 🛠️, 🌍, 📅, ✍️
+5. **Échapper correctement les guillemets** : Utilise \`\\"\` dans le JSON
+
+**TEMPLATES HTML À UTILISER :**
+
+#### 📄 TEMPLATE CV :
+\`\`\`html
+<DOCUMENT_HTML>
+<div class="doc-cv">
+  <h1>PRÉNOM NOM</h1>
+  <p class="subtitle">Titre du Poste</p>
+  <div class="contact">📧 email@exemple.com | 📱 +229 XX XX XX XX | 📍 Lokossa, Bénin</div>
+  
+  <h2>🎯 Profil</h2>
+  <p>Description professionnelle en 2-3 lignes...</p>
+  
+  <h2>💼 Expériences Professionnelles</h2>
+  <div class="experience">
+    <h3>Titre du Poste</h3>
+    <p class="meta">Entreprise | Période (ex: 2020-2025)</p>
+    <p>Description des missions et réalisations...</p>
+  </div>
+  <div class="experience">
+    <h3>Autre Poste</h3>
+    <p class="meta">Autre Entreprise | Période</p>
+    <p>Description...</p>
+  </div>
+  
+  <h2>🎓 Formation</h2>
+  <div class="formation">
+    <h3>Diplôme</h3>
+    <p class="meta">École/Université | Année</p>
+  </div>
+  
+  <h2>🛠️ Compétences</h2>
+  <div class="skills">
+    <span class="skill">Compétence 1</span>
+    <span class="skill">Compétence 2</span>
+    <span class="skill">Compétence 3</span>
+    <span class="skill">Compétence 4</span>
+  </div>
+  
+  <h2>🌍 Langues</h2>
+  <p>Français (Natif) • Anglais (Courant) • Autre (Niveau)</p>
+</div>
+</DOCUMENT_HTML>
+\`\`\`
+
+#### 📄 TEMPLATE LETTRE :
+\`\`\`html
+<DOCUMENT_HTML>
+<div class="doc-lettre">
+  <div class="expediteur">
+    <strong>Prénom NOM</strong><br>
+    Adresse complète<br>
+    Code postal, Ville
+  </div>
+  
+  <div class="destinataire">
+    <strong>À l'attention de :</strong><br>
+    Nom du Destinataire<br>
+    Entreprise<br>
+    Adresse
+  </div>
+  
+  <div class="lieu-date">Lokossa, le 19 novembre 2025</div>
+  
+  <div class="objet"><strong>Objet :</strong> Objet de la lettre</div>
+  
+  <div class="corps">
+    <p>Madame, Monsieur,</p>
+    
+    <p>Premier paragraphe d'introduction...</p>
+    
+    <p>Deuxième paragraphe développant le sujet...</p>
+    
+    <p>Troisième paragraphe si nécessaire...</p>
+  </div>
+  
+  <div class="formule">
+    <p>Veuillez agréer, Madame, Monsieur, l'expression de mes salutations distinguées.</p>
+    <br>
+    <p>Signature</p>
+  </div>
+</div>
+</DOCUMENT_HTML>
+\`\`\`
+
+#### 📄 TEMPLATE RAPPORT :
+\`\`\`html
+<DOCUMENT_HTML>
+<div class="doc-rapport">
+  <h1>TITRE DU RAPPORT</h1>
+  <p class="subtitle">Sous-titre (optionnel)</p>
+  <p class="meta">📅 19 novembre 2025 | ✍️ Auteur</p>
+  
+  <div class="resume">
+    <h2>Résumé</h2>
+    <p>Résumé exécutif du rapport en 3-5 lignes...</p>
+  </div>
+  
+  <h2>1. Introduction</h2>
+  <p>Contexte et objectifs du rapport...</p>
+  
+  <h2>2. Méthodologie</h2>
+  <p>Approche utilisée pour la recherche/analyse...</p>
+  
+  <h2>3. Résultats</h2>
+  <p>Présentation des résultats obtenus...</p>
+  
+  <h2>4. Analyse</h2>
+  <p>Interprétation et discussion des résultats...</p>
+  
+  <h2>5. Conclusion</h2>
+  <p>Synthèse et recommandations...</p>
+</div>
+</DOCUMENT_HTML>
+\`\`\`
+
+#### 📄 TEMPLATE FACTURE :
+\`\`\`html
+<DOCUMENT_HTML>
+<div class="doc-facture">
+  <div class="facture-header">
+    <div>
+      <h1>FACTURE</h1>
+      <p>N° 2025-001</p>
+    </div>
+    <div>
+      <p>📅 19 novembre 2025</p>
+    </div>
+  </div>
+  
+  <div class="facture-parties">
+    <div class="emetteur">
+      <strong>Émetteur</strong><br>
+      Nom de l'Entreprise<br>
+      Adresse<br>
+      📧 contact@entreprise.com<br>
+      📱 +229 XX XX XX XX
+    </div>
+    <div class="client">
+      <strong>Facturé à</strong><br>
+      Nom du Client<br>
+      Adresse Client<br>
+      📱 +229 XX XX XX XX
+    </div>
+  </div>
+  
+  <table class="facture-table">
+    <thead>
+      <tr>
+        <th>Description</th>
+        <th>Quantité</th>
+        <th>Prix Unitaire</th>
+        <th>Total</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Prestation de service</td>
+        <td>1</td>
+        <td>50 000 FCFA</td>
+        <td>50 000 FCFA</td>
+      </tr>
+      <tr>
+        <td>Autre article</td>
+        <td>2</td>
+        <td>25 000 FCFA</td>
+        <td>50 000 FCFA</td>
+      </tr>
+    </tbody>
+    <tfoot>
+      <tr>
+        <th colspan="3">TOTAL</th>
+        <th>100 000 FCFA</th>
+      </tr>
+    </tfoot>
+  </table>
+  
+  <div class="facture-notes">
+    <strong>Notes :</strong> Paiement sous 30 jours. Merci de votre confiance.
+  </div>
+</div>
+</DOCUMENT_HTML>
+\`\`\`
+
+#### 📄 TEMPLATE CONTRAT :
+\`\`\`html
+<DOCUMENT_HTML>
+<div class="doc-contrat">
+  <h1>CONTRAT DE PRESTATION DE SERVICES</h1>
+  <p class="meta">📅 Lokossa, le 19 novembre 2025</p>
+  
+  <h2>ENTRE LES SOUSSIGNÉS :</h2>
+  
+  <div class="partie">
+    <p><strong>Partie 1 (Le Prestataire) :</strong></p>
+    <p>Nom/Raison sociale<br>
+    Adresse complète<br>
+    Représenté par : Nom du représentant</p>
+  </div>
+  
+  <div class="partie">
+    <p><strong>ET</strong></p>
+  </div>
+  
+  <div class="partie">
+    <p><strong>Partie 2 (Le Client) :</strong></p>
+    <p>Nom/Raison sociale<br>
+    Adresse complète<br>
+    Représenté par : Nom du représentant</p>
+  </div>
+  
+  <h2>ARTICLE 1 : OBJET DU CONTRAT</h2>
+  <p>Le présent contrat a pour objet de définir les conditions dans lesquelles le Prestataire s'engage à fournir...</p>
+  
+  <h2>ARTICLE 2 : DURÉE</h2>
+  <p>Le contrat est conclu pour une durée de [X mois/années], à compter du [date].</p>
+  
+  <h2>ARTICLE 3 : OBLIGATIONS DU PRESTATAIRE</h2>
+  <p>Le Prestataire s'engage à...</p>
+  
+  <h2>ARTICLE 4 : CONDITIONS FINANCIÈRES</h2>
+  <p>Le montant total de la prestation est fixé à [montant] FCFA...</p>
+  
+  <h2>ARTICLE 5 : RÉSILIATION</h2>
+  <p>Le présent contrat pourra être résilié dans les conditions suivantes...</p>
+  
+  <div style="margin-top: 60px; display: flex; justify-content: space-between;">
+    <div style="text-align: center;">
+      <p><strong>Le Prestataire</strong></p>
+      <br><br>
+      <p>_____________________</p>
+      <p>Signature</p>
+    </div>
+    <div style="text-align: center;">
+      <p><strong>Le Client</strong></p>
+      <br><br>
+      <p>_____________________</p>
+      <p>Signature</p>
+    </div>
+  </div>
+</div>
+</DOCUMENT_HTML>
+\`\`\`
+
+**CONSEILS POUR GÉNÉRER DES DOCUMENTS DE QUALITÉ :**
+
+1. **Adapter le contenu** : Utilise les informations fournies par l'utilisateur
+2. **Rester professionnel** : Ton formel, langage soutenu
+3. **Être complet** : Ne pas laisser de sections vides avec "[...]"
+4. **Personnaliser** : Si l'utilisateur donne son nom, utilise-le
+5. **Être cohérent** : Les dates, noms, montants doivent être logiques
+
+**EXEMPLES DE DEMANDES ET RÉPONSES :**
+
+❌ **MAUVAIS :**
 \`\`\`json
 {
-  "type": "rapport",
-  "titre": "Titre du rapport",
-  "sous_titre": "Sous-titre optionnel",
-  "auteur": "Nom de l'auteur",
-  "date": "18 novembre 2025",
-  "resume": "Résumé du rapport...",
-  "sections": [
-    {
-      "titre": "Introduction",
-      "contenu": "Contenu de la section..."
-    },
-    {
-      "titre": "Développement",
-      "contenu": "Contenu..."
-    }
-  ],
-  "conclusion": "Conclusion du rapport..."
+  "reply": "Commande reçue. Je vais générer votre CV."
 }
 \`\`\`
 
-#### 3. CV
+✅ **BON :**
 \`\`\`json
 {
-  "type": "cv",
-  "prenom": "Prénom",
-  "nom": "Nom",
-  "titre_poste": "Développeur Full Stack",
-  "email": "email@example.com",
-  "telephone": "+229 XX XX XX XX",
-  "adresse": "Lokossa, Bénin",
-  "profil": "Description professionnelle...",
-  "experiences": [
-    {
-      "poste": "Développeur",
-      "entreprise": "Entreprise X",
-      "periode": "2020 - 2023",
-      "description": "Missions..."
-    }
-  ],
-  "formations": [
-    {
-      "diplome": "Licence en Informatique",
-      "etablissement": "Université de Lokossa",
-      "annee": "2020"
-    }
-  ],
-  "competences": ["Python", "JavaScript", "React"],
-  "langues": [
-    {"langue": "Français", "niveau": "Natif"},
-    {"langue": "Anglais", "niveau": "Courant"}
-  ]
+  "reply": "<DOCUMENT_HTML>\\n<div class=\\"doc-cv\\">\\n<h1>Votre NOM</h1>\\n<p class=\\"subtitle\\">Votre Profession</p>\\n[... contenu complet du CV ...]\\n</div>\\n</DOCUMENT_HTML>"
 }
 \`\`\`
-
-#### 4. FACTURE
-\`\`\`json
-{
-  "type": "facture",
-  "numero": "2025-001",
-  "date": "18 novembre 2025",
-  "emetteur": {
-    "nom": "Entreprise ABC",
-    "adresse": "Lokossa, Bénin",
-    "telephone": "+229 XX XX XX XX",
-    "email": "contact@abc.com"
-  },
-  "client": {
-    "nom": "Client XYZ",
-    "adresse": "Adresse client",
-    "telephone": "+229 XX XX XX XX"
-  },
-  "articles": [
-    {
-      "description": "Prestation de service",
-      "quantite": 1,
-      "prix_unitaire": 50000
-    }
-  ],
-  "notes": "Paiement sous 30 jours"
-}
-\`\`\`
-
-#### 5. CONTRAT
-\`\`\`json
-{
-  "type": "contrat",
-  "titre": "CONTRAT DE PRESTATION DE SERVICES",
-  "type_contrat": "Prestation de services",
-  "partie1": {
-    "nom": "Entreprise A",
-    "adresse": "Adresse A"
-  },
-  "partie2": {
-    "nom": "Entreprise B",
-    "adresse": "Adresse B"
-  },
-  "lieu": "Lokossa",
-  "date": "18 novembre 2025",
-  "contenu": "ARTICLE 1 : Objet\\n\\nLe présent contrat...\\n\\nARTICLE 2 : Durée\\n\\nLa durée du contrat..."
-}
-\`\`\`
-
-**IMPORTANT pour les documents :**
-- Le champ \`reply\` doit contenir le JSON complet (pas de Markdown)
-- Le client transformera automatiquement ce JSON en document formaté
-- L'utilisateur pourra télécharger en PDF ou DOCX
-- Assure-toi que tous les champs obligatoires sont remplis
-- **NE JAMAIS répondre "Commande reçue" - TOUJOURS générer le document**
 
 ### 📅 GESTION DU PLANNING (CRITIQUE)
 
@@ -967,7 +1108,7 @@ Si l'utilisateur demande une action à un **moment futur** ("à 16h34", "dans 15
 * Pour une lampe, la \`power\` est obligatoire (entre 0 et 100). Pour une prise (\`plug\`), mets \`power: 100\` pour ON et \`power: 0\` pour OFF.
 * L'\`action\` est toujours \`"add"\` pour ajouter une tâche.
 
-### 🗑️ SUPPRESSION DE PLANIFICATIONS (NOUVEAU - INTELLIGENT)
+### 🗑️ SUPPRESSION DE PLANIFICATIONS (INTELLIGENT)
 
 Tu peux supprimer des planifications de 3 façons :
 
@@ -1139,11 +1280,11 @@ Si l'utilisateur demande de supprimer un appareil (ex: "Supprime la lampe jardin
 - "Désinstalle la/le [appareil]"
 
 ### ❌ INTERDICTIONS :
-1. ❌ JAMAIS envoyer de balises HTML (<p>, <h2>, <strong style=...>) dans "reply" sauf pour les documents (JSON structuré).
-2. ❌ Le client (index.html) s'occupe de transformer le Markdown en HTML.
+1. ❌ JAMAIS envoyer de balises HTML (<p>, <h2>, <strong style=...>) dans "reply" **SAUF pour les documents** (avec \`<DOCUMENT_HTML>\`).
+2. ❌ Le client (index.html) s'occupe de transformer le Markdown en HTML pour les réponses normales.
 3. ❌ Ne JAMAIS rechercher sur le web pour la température de Lokossa (elle est fournie).
 4. ❌ Ne JAMAIS générer d'images toi-même, utilise le champ \`image_generation\`.
-5. ❌ Pour les documents, retourne le JSON structuré dans \`reply\`, pas du Markdown.
+5. ❌ Pour les documents, utilise \`<DOCUMENT_HTML>...\` dans \`reply\`, pas de JSON structuré.
 6. ❌ NE JAMAIS répondre "Commande reçue" sans contexte - TOUJOURS générer du contenu utile.
 7. ❌ TOUJOURS vérifier [États] et [Planifications] avant de répondre pour être intelligent.
 
@@ -1167,15 +1308,15 @@ Si l'utilisateur demande de supprimer un appareil (ex: "Supprime la lampe jardin
 4. **Naturalité:** Réponses NATURELLES et CONVERSATIONNELLES.
 5. **CONTEXTE:** Si message court ("les","tout", "oui"), analyse l'historique.
 6. **Fichiers:** Base ta réponse sur le contenu fourni.
-7. **PRÉSENTATION:** Utilise la structure Markdown (titres, listes, gras) sauf pour documents (JSON).
+7. **PRÉSENTATION:** Utilise la structure Markdown (titres, listes, gras) SAUF pour documents (HTML avec \`<DOCUMENT_HTML>\`).
 8. **Température Lokossa:** Toujours disponible dans les métadonnées, ne cherche JAMAIS sur le web.
 9. **Images:** Utilise le champ \`image_generation\` avec un prompt en ANGLAIS.
-10. **Documents:** Retourne un JSON structuré selon le type (lettre, rapport, CV, facture, contrat).
+10. **Documents:** Retourne du HTML formaté avec \`<DOCUMENT_HTML>...\` directement dans \`reply\`.
 11. **Suppression:** Utilise \`device_commands\` avec \`action: "delete"\` pour supprimer des appareils.
 12. **Suppression planning:** Utilise \`planning_commands\` avec les bonnes actions.
 13. **Intelligence:** Détecte les incohérences (ex: planifier l'allumage d'une lampe déjà allumée).
 
-RÉPONDS EN JSON VALIDE AVEC DU MARKDOWN DANS "reply" (sauf pour documents = JSON structuré).
+RÉPONDS EN JSON VALIDE AVEC DU MARKDOWN DANS "reply" (sauf pour documents = HTML avec \`<DOCUMENT_HTML>\`).
 NE JAMAIS répondre "Commande reçue" sans contexte - TOUJOURS fournir une réponse utile et détaillée.
 TOUJOURS vérifier les états et planifications avant de répondre pour être intelligent et contextuel.
 `;
@@ -1283,39 +1424,53 @@ async function handleDeviceCommands(commands, userId) {
 async function handlePlanningCommands(commands) {
   if (!commands || commands.length === 0) return;
   
+  // ✅ CE BLOC DOIT EXISTER (ANTI-DUPLICATION)
+  const uniqueCommands = [];
+  const seen = new Set();
+  
   for (const cmd of commands) {
+    let key;
+    if (cmd.action === 'add') {
+      key = `add-${cmd.device}-${cmd.time}-${cmd.actionType}-${cmd.power}`;
+    } else if (cmd.action === 'delete_all') {
+      key = 'delete_all';
+    } else if (cmd.action === 'delete_specific') {
+      key = `delete-${cmd.device}-${cmd.time || 'any'}`;
+    } else {
+      continue; // Ignorer les actions inconnues
+    }
     
-    // ✅ 1. SUPPRESSION DE TOUTES LES TÂCHES
+    if (!seen.has(key)) {
+      seen.add(key);
+      uniqueCommands.push(cmd);
+    } else {
+      console.log(`⚠️ Commande dupliquée ignorée : ${key}`);
+    }
+  }
+  
+  // ✅ TRAITER UNIQUEMENT LES COMMANDES UNIQUES
+  for (const cmd of uniqueCommands) {
+    
+    // 1. SUPPRESSION DE TOUTES LES TÂCHES
     if (cmd.action === 'delete_all') {
       console.log('🗑️ Suppression de TOUTES les planifications demandée');
-      
-      if (!db) {
-        console.warn('⚠️ Firebase non disponible pour suppression planning');
-        continue;
-      }
-      
+      if (!db) continue;
       try {
         await set(ref(db, PLANNING_REF), null);
         console.log('✅ Toutes les planifications supprimées de Firebase');
       } catch (error) {
         console.error('❌ Erreur suppression toutes planifications:', error);
       }
-      
       continue;
     }
     
-    // ✅ 2. SUPPRESSION SPÉCIFIQUE (PAR APPAREIL OU APPAREIL+HEURE)
+    // 2. SUPPRESSION SPÉCIFIQUE
     if (cmd.action === 'delete_specific') {
       console.log(`🗑️ Suppression spécifique: device=${cmd.device}, time=${cmd.time}`);
-      
-      if (!db) {
-        console.warn('⚠️ Firebase non disponible');
-        continue;
-      }
+      if (!db) continue;
       
       try {
         const planningSnapshot = await get(ref(db, PLANNING_REF));
-        
         if (!planningSnapshot.exists()) {
           console.log('⚠️ Aucune planification dans Firebase');
           continue;
@@ -1330,7 +1485,13 @@ async function handlePlanningCommands(commands) {
             if (plan.device === cmd.device && plan.time === cmd.time) {
               await remove(ref(db, `${PLANNING_REF}/${planId}`));
               deletedCount++;
-              console.log(`✅ Planification supprimée: ${cmd.device}`);
+              console.log(`✅ Planification supprimée: ${cmd.device} à ${cmd.time}`);
+            }
+          } else {
+            // Sinon, supprimer toutes les tâches de cet appareil
+            if (plan.device === cmd.device) {
+              await remove(ref(db, `${PLANNING_REF}/${planId}`));
+              deletedCount++;
             }
           }
         }
@@ -1348,7 +1509,7 @@ async function handlePlanningCommands(commands) {
       continue;
     }
     
-    // ✅ 3. AJOUT D'UNE TÂCHE
+    // 3. AJOUT D'UNE TÂCHE
     if (cmd.action === 'add') {
       console.log(`📅 Ajout planification: ${cmd.device} à ${cmd.time}`);
       
@@ -1357,20 +1518,40 @@ async function handlePlanningCommands(commands) {
         time: cmd.time, 
         action: cmd.actionType === 'allumer' ? 'ON' : 'OFF',
         actionType: cmd.actionType,
-        power: cmd.power !== null && cmd.power !== undefined ? parseInt(cmd.power) : 100, 
+        power: cmd.power !== null && cmd.power !== undefined ? parseInt(cmd.power) : 100,
         createdAt: Date.now() 
       };
       
       if (db) {
-        await push(ref(db, PLANNING_REF), payload);
-        console.log('✅ Planification ajoutée à Firebase');
+        // ✅ VÉRIFIER SI UNE TÂCHE IDENTIQUE EXISTE DÉJÀ
+        try {
+          const planningSnapshot = await get(ref(db, PLANNING_REF));
+          let alreadyExists = false;
+          
+          if (planningSnapshot.exists()) {
+            const existingPlans = planningSnapshot.val();
+            alreadyExists = Object.values(existingPlans).some(p => 
+              p.device === payload.device && 
+              p.time === payload.time && 
+              p.action === payload.action
+            );
+          }
+          
+          if (!alreadyExists) {
+            await push(ref(db, PLANNING_REF), payload);
+            console.log('✅ Planification ajoutée à Firebase');
+          } else {
+            console.log('⚠️ Planification identique existe déjà, ajout ignoré');
+          }
+        } catch (error) {
+          console.error('❌ Erreur ajout planification:', error);
+        }
       }
       
       continue;
     }
   }
 }
-
 function deduplicatePlanning(plans) {
   const uniquePlannings = [];
   const seen = new Set();
@@ -1509,7 +1690,7 @@ async function chatWithGemini(userMessage, devices, userId, sessionId, attachmen
 [Heure: ${beninTime.formatted}]
 [Température Lokossa TEMPS RÉEL: ${beninTime.temperature.temperature}°C (${beninTime.temperature.description}), Ressenti: ${beninTime.temperature.feels_like}°C, Humidité: ${beninTime.temperature.humidity}%, Source: ${beninTime.temperature.source}]
 [Génération d'images: ${imageGenStatus}]
-[Génération de documents: activée (JSON structuré)]
+[Génération de documents: activée (HTML direct)]
 [Préfs: ${JSON.stringify(preferences)}]
 [États: ${JSON.stringify(realDeviceStates)}]
 [Appareils: ${JSON.stringify(devices)}]
@@ -1521,7 +1702,13 @@ ${webResults.length > 0 ? `[Web: ${JSON.stringify(webResults.slice(0, 3))}]` : '
 
 MESSAGE: "${userMessage}"
 `;
-
+function simulateTyping(element, text) {
+  const documentHtmlMatch = text.match(/<DOCUMENT_HTML>([\s\S]*?)<\/DOCUMENT_HTML>/);
+  if (documentHtmlMatch) {
+    // HTML déjà prêt, affichage direct
+    element.innerHTML = documentHtmlMatch[1];
+  }
+}
       const promptParts = [ { text: metadataPrompt } ];
       for (const att of attachments) {
         if (att.type === 'image') {
@@ -1556,10 +1743,6 @@ MESSAGE: "${userMessage}"
   }
   return { success: false, error: lastError };
 }
-
-// ========================================
-// 🎯 ROUTE PRINCIPALE /api/chat
-// ========================================
 app.post('/api/chat', async (req, res) => {
   try {
     let { 
@@ -1662,7 +1845,7 @@ app.post('/api/chat', async (req, res) => {
       console.log('⚠️ Gemini n\'a pas généré de demande d\'image, réponse normale');
     }
 
-    // ✅ TRAITEMENT NORMAL
+    // ✅ TRAITEMENT NORMAL (UNIFORME POUR TOUT)
     const startTime = Date.now();
     const result = await chatWithGemini(message, devices, userId, sessionId, attachments, preferences);
 
@@ -1700,7 +1883,7 @@ app.post('/api/chat', async (req, res) => {
     aiJson.planning_commands = aiJson.planning_commands || [];
     aiJson.device_commands = aiJson.device_commands || [];
     aiJson.suggestions = aiJson.suggestions || [];
-    aiJson.image_generation = null;
+    aiJson.image_generation = null; // ✅ TOUJOURS null ici (déjà traité)
     
     // ✅ Déduplication des planifications
     aiJson.planning_commands = deduplicatePlanning(aiJson.planning_commands);
@@ -1736,7 +1919,6 @@ app.post('/api/chat', async (req, res) => {
     });
   }
 });
-
 // ========================================
 // 🌐 ROUTE SANTÉ
 // ========================================
@@ -1758,7 +1940,7 @@ app.get('/api/health', async (req, res) => {
       firebaseStateSync: true,
       multimodal_Image: true,
       multimodal_Files: true,
-      htmlOutput: false,
+      htmlOutput: true,
       markdownOutput: true,
       aiPlanning: true,
       intelligentPlanning: true,
