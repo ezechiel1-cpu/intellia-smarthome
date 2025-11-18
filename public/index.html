@@ -728,6 +728,319 @@
     .error-message i {
       margin-right: 8px;
     }
+    /* ========================================
+   STYLES DOCUMENTS GÉNÉRÉS (HTML DIRECT)
+   ======================================== */
+
+.doc-cv, .doc-lettre, .doc-rapport, .doc-facture, .doc-contrat {
+  background: white;
+  padding: 40px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  max-width: 800px;
+  margin: 20px auto;
+  font-family: 'Segoe UI', Arial, sans-serif;
+  color: #333;
+  line-height: 1.8;
+}
+
+body.night-mode .doc-cv,
+body.night-mode .doc-lettre,
+body.night-mode .doc-rapport,
+body.night-mode .doc-facture,
+body.night-mode .doc-contrat {
+  background: rgba(30, 41, 59, 0.95);
+  color: #e2e8f0;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* === CV === */
+.doc-cv h1 {
+  color: #4361ee;
+  font-size: 32px;
+  margin-bottom: 5px;
+  text-align: center;
+  border-bottom: none;
+}
+body.night-mode .doc-cv h1 { color: var(--accent-cyan); }
+
+.doc-cv .subtitle {
+  text-align: center;
+  color: #666;
+  font-size: 18px;
+  margin-bottom: 10px;
+}
+body.night-mode .doc-cv .subtitle { color: #94a3b8; }
+
+.doc-cv .contact {
+  text-align: center;
+  color: #999;
+  font-size: 14px;
+  margin-bottom: 30px;
+  padding-bottom: 20px;
+  border-bottom: 2px solid #4361ee;
+}
+body.night-mode .doc-cv .contact { 
+  color: #94a3b8; 
+  border-bottom-color: var(--accent-cyan);
+}
+
+.doc-cv h2 {
+  color: #4361ee;
+  font-size: 20px;
+  margin-top: 25px;
+  margin-bottom: 15px;
+  border-left: 4px solid #4361ee;
+  padding-left: 15px;
+  border-bottom: none;
+}
+body.night-mode .doc-cv h2 { 
+  color: var(--accent-cyan); 
+  border-left-color: var(--accent-cyan);
+}
+
+.doc-cv .experience, .doc-cv .formation {
+  margin: 20px 0;
+  padding-left: 20px;
+}
+
+.doc-cv .experience h3, .doc-cv .formation h3 {
+  font-size: 16px;
+  color: #333;
+  margin-bottom: 5px;
+}
+body.night-mode .doc-cv .experience h3,
+body.night-mode .doc-cv .formation h3 { color: #e2e8f0; }
+
+.doc-cv .meta {
+  color: #666;
+  font-size: 14px;
+  margin-bottom: 10px;
+}
+body.night-mode .doc-cv .meta { color: #94a3b8; }
+
+.doc-cv .skills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.doc-cv .skill {
+  background: #e9ecef;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 14px;
+  color: #333;
+}
+body.night-mode .doc-cv .skill {
+  background: rgba(51, 65, 85, 0.6);
+  color: #e2e8f0;
+}
+
+/* === LETTRE === */
+.doc-lettre .expediteur,
+.doc-lettre .destinataire,
+.doc-lettre .lieu-date,
+.doc-lettre .objet,
+.doc-lettre .corps,
+.doc-lettre .formule {
+  margin-bottom: 20px;
+}
+
+.doc-lettre .expediteur { text-align: right; }
+.doc-lettre .lieu-date { text-align: right; }
+.doc-lettre .objet { font-weight: bold; }
+.doc-lettre .corps p { text-align: justify; margin-bottom: 15px; }
+.doc-lettre .formule { margin-top: 40px; }
+
+/* === RAPPORT === */
+.doc-rapport h1 {
+  text-align: center;
+  color: #4361ee;
+  font-size: 28px;
+  margin-bottom: 10px;
+  border-bottom: none;
+}
+body.night-mode .doc-rapport h1 { color: var(--accent-cyan); }
+
+.doc-rapport .subtitle {
+  text-align: center;
+  color: #666;
+  margin-bottom: 5px;
+}
+body.night-mode .doc-rapport .subtitle { color: #94a3b8; }
+
+.doc-rapport .meta {
+  text-align: center;
+  color: #999;
+  font-size: 14px;
+  margin-bottom: 30px;
+}
+body.night-mode .doc-rapport .meta { color: #94a3b8; }
+
+.doc-rapport .resume {
+  background: #f8f9fa;
+  padding: 20px;
+  border-radius: 8px;
+  margin: 20px 0;
+}
+body.night-mode .doc-rapport .resume {
+  background: rgba(51, 65, 85, 0.3);
+}
+
+.doc-rapport h2 {
+  color: #4361ee;
+  border-bottom: 2px solid #4361ee;
+  padding-bottom: 10px;
+  margin-top: 30px;
+  margin-bottom: 15px;
+}
+body.night-mode .doc-rapport h2 {
+  color: var(--accent-cyan);
+  border-bottom-color: var(--accent-cyan);
+}
+
+/* === FACTURE === */
+.doc-facture .facture-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+  border-bottom: 3px solid #4361ee;
+  padding-bottom: 15px;
+}
+body.night-mode .doc-facture .facture-header {
+  border-bottom-color: var(--accent-cyan);
+}
+
+.doc-facture .facture-header h1 {
+  color: #4361ee;
+  font-size: 32px;
+  margin: 0;
+  border: none;
+}
+body.night-mode .doc-facture .facture-header h1 { color: var(--accent-cyan); }
+
+.doc-facture .facture-parties {
+  display: flex;
+  justify-content: space-between;
+  margin: 20px 0 30px;
+  gap: 20px;
+}
+
+.doc-facture .emetteur, .doc-facture .client {
+  flex: 1;
+  padding: 15px;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+body.night-mode .doc-facture .emetteur,
+body.night-mode .doc-facture .client {
+  background: rgba(51, 65, 85, 0.3);
+}
+
+.doc-facture .facture-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 20px 0;
+}
+
+.doc-facture .facture-table th,
+.doc-facture .facture-table td {
+  padding: 12px;
+  border-bottom: 1px solid #ddd;
+  text-align: left;
+}
+body.night-mode .doc-facture .facture-table th,
+body.night-mode .doc-facture .facture-table td {
+  border-bottom-color: rgba(255, 255, 255, 0.1);
+}
+
+.doc-facture .facture-table thead {
+  background: #4361ee;
+  color: white;
+}
+body.night-mode .doc-facture .facture-table thead {
+  background: var(--accent-cyan);
+}
+
+.doc-facture .facture-table tfoot {
+  background: #e9ecef;
+  font-weight: bold;
+  font-size: 18px;
+}
+body.night-mode .doc-facture .facture-table tfoot {
+  background: rgba(51, 65, 85, 0.6);
+}
+
+.doc-facture .facture-notes {
+  margin-top: 20px;
+  padding: 15px;
+  background: #fff3cd;
+  border-left: 4px solid #ffc107;
+  border-radius: 4px;
+}
+body.night-mode .doc-facture .facture-notes {
+  background: rgba(255, 193, 7, 0.2);
+  border-left-color: #ffc107;
+}
+
+/* === CONTRAT === */
+.doc-contrat h1 {
+  text-align: center;
+  color: #4361ee;
+  font-size: 28px;
+  margin-bottom: 20px;
+  border-bottom: none;
+}
+body.night-mode .doc-contrat h1 { color: var(--accent-cyan); }
+
+.doc-contrat h2 {
+  color: #4361ee;
+  font-size: 18px;
+  margin-top: 30px;
+  margin-bottom: 15px;
+  border-bottom: 2px solid #4361ee;
+  padding-bottom: 8px;
+}
+body.night-mode .doc-contrat h2 {
+  color: var(--accent-cyan);
+  border-bottom-color: var(--accent-cyan);
+}
+
+.doc-contrat .partie {
+  margin: 15px 0;
+  padding-left: 20px;
+}
+
+.doc-contrat .meta {
+  text-align: center;
+  color: #666;
+  font-size: 14px;
+  margin-bottom: 30px;
+}
+body.night-mode .doc-contrat .meta { color: #94a3b8; }
+
+/* === RESPONSIVE === */
+@media (max-width: 760px) {
+  .doc-cv, .doc-lettre, .doc-rapport, .doc-facture, .doc-contrat {
+    padding: 20px;
+  }
+  
+  .doc-facture .facture-parties {
+    flex-direction: column;
+  }
+  
+  .doc-facture .facture-table {
+    font-size: 13px;
+  }
+  
+  .doc-facture .facture-table th,
+  .doc-facture .facture-table td {
+    padding: 8px;
+  }
+}
   </style>
 </head>
 <body>
@@ -1067,20 +1380,6 @@
     return null;
   }
   
-  // ✅ NOUVELLE : Détection de JSON structuré pour documents
-  function detectStructuredJson(content) {
-    try {
-      // Essayer de parser directement
-      const jsonData = JSON.parse(content);
-      if (jsonData && jsonData.type && ['lettre', 'rapport', 'cv', 'facture', 'contrat'].includes(jsonData.type)) {
-        console.log('✅ Document JSON structuré détecté:', jsonData.type);
-        return jsonData;
-      }
-    } catch (e) {
-      // Pas un JSON valide, ce n'est pas un document
-    }
-    return null;
-  }
   
   window.downloadAsFile = function(filename, content, mimeType = 'text/plain') {
     const blob = new Blob([content], { type: mimeType + ';charset=utf-8' });
@@ -1095,488 +1394,16 @@
     console.log(`✅ Fichier téléchargé: ${filename}`);
   };
 
-  window.downloadImage = function(imageUrl, filename = null) {
-    if (!filename) {
-      filename = `intellia_image_${Date.now()}.png`;
-    }
-    fetch(imageUrl)
-      .then(response => response.blob())
-      .then(blob => {
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-        console.log(`✅ Image téléchargée: ${filename}`);
-      })
+ 
       .catch(error => {
         console.error("❌ Erreur de téléchargement d'image:", error);
         alert("Impossible de télécharger l'image. Veuillez réessayer.");
       });
   };
 
-  window.formatJsonAsDocumentHtml = function(jsonData) {
-    const type = jsonData.type || 'document';
-    let html = '<div class="document-preview">';
-    
-    switch(type) {
-      case 'lettre':
-        html += formatLetterHtml(jsonData);
-        break;
-      case 'rapport':
-        html += formatReportHtml(jsonData);
-        break;
-      case 'cv':
-        html += formatCvHtml(jsonData);
-        break;
-      case 'facture':
-        html += formatInvoiceHtml(jsonData);
-        break;
-      case 'contrat':
-        html += formatContractHtml(jsonData);
-        break;
-      default:
-        html += formatGenericDocumentHtml(jsonData);
-    }
-    
-    html += `
-      <div style="margin-top: 30px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
-        <button class="btn primary" onclick="generatePdfFromJson(${JSON.stringify(jsonData).replace(/"/g, '&quot;')})">
-          <i class="fas fa-file-pdf"></i> Télécharger en PDF
-        </button>
-        <button class="btn success" onclick="generateDocxFromJson(${JSON.stringify(jsonData).replace(/"/g, '&quot;')})">
-          <i class="fas fa-file-word"></i> Télécharger en DOCX
-        </button>
-      </div>
-    </div>`;
-    
-    return html;
-  };
 
-  function formatLetterHtml(data) {
-    return `
-      <div style="text-align: right; margin-bottom: 30px;">
-        <strong>${data.expediteur || 'Expéditeur'}</strong><br>
-        ${data.adresse_expediteur || ''}
-      </div>
-      <div style="margin-bottom: 30px;">
-        <strong>À l'attention de :</strong><br>
-        ${data.destinataire || 'Destinataire'}<br>
-        ${data.adresse_destinataire || ''}
-      </div>
-      <div style="text-align: right; margin-bottom: 30px;">
-        ${data.lieu || 'Lokossa'}, le ${data.date || new Date().toLocaleDateString('fr-FR')}
-      </div>
-      <div style="margin-bottom: 20px;">
-        <strong>Objet :</strong> ${data.objet || 'Sans objet'}
-      </div>
-      <div style="margin-bottom: 30px; line-height: 1.8; text-align: justify;">
-        ${data.formule_appel || 'Madame, Monsieur,'}<br><br>
-        ${(data.corps || '').replace(/\n/g, '<br><br>')}
-      </div>
-      <div style="margin-top: 40px;">
-        ${data.formule_politesse || 'Veuillez agréer, Madame, Monsieur, l\'expression de mes salutations distinguées.'}<br><br>
-        ${data.signature || data.expediteur || ''}
-      </div>
-    `;
-  }
 
-  function formatReportHtml(data) {
-    let html = `
-      <div style="text-align: center; margin-bottom: 40px;">
-        <h1 style="color: #4361ee; font-size: 28px; margin-bottom: 10px;">
-          ${data.titre || 'RAPPORT'}
-        </h1>
-        <p style="color: #666;">${data.sous_titre || ''}</p>
-        <p style="color: #999; font-size: 14px;">${data.date || new Date().toLocaleDateString('fr-FR')}</p>
-      </div>
-    `;
-    
-    if (data.auteur) {
-      html += `<div style="margin-bottom: 20px;"><strong>Auteur :</strong> ${data.auteur}</div>`;
-    }
-    
-    if (data.resume) {
-      html += `
-        <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 30px;">
-          <h3 style="color: #4361ee; margin-top: 0;">Résumé</h3>
-          <p style="line-height: 1.6;">${data.resume}</p>
-        </div>
-      `;
-    }
-    
-    if (data.sections && Array.isArray(data.sections)) {
-      data.sections.forEach((section, index) => {
-        html += `
-          <div style="margin-bottom: 30px;">
-            <h2 style="color: #4361ee; border-bottom: 2px solid #4361ee; padding-bottom: 10px;">
-              ${index + 1}. ${section.titre || 'Section ' + (index + 1)}
-            </h2>
-            <div style="line-height: 1.8; text-align: justify;">
-              ${(section.contenu || '').replace(/\n/g, '<br>')}
-            </div>
-          </div>
-        `;
-      });
-    } else if (data.contenu) {
-      html += `<div style="line-height: 1.8; text-align: justify;">${data.contenu.replace(/\n/g, '<br>')}</div>`;
-    }
-    
-    if (data.conclusion) {
-      html += `
-        <div style="margin-top: 40px; background: #f8f9fa; padding: 20px; border-radius: 8px;">
-          <h3 style="color: #4361ee; margin-top: 0;">Conclusion</h3>
-          <p style="line-height: 1.6;">${data.conclusion}</p>
-        </div>
-      `;
-    }
-    
-    return html;
-  }
 
-  function formatCvHtml(data) {
-    let html = `
-      <div style="text-align: center; margin-bottom: 40px; border-bottom: 3px solid #4361ee; padding-bottom: 20px;">
-        <h1 style="color: #4361ee; font-size: 32px; margin: 0;">
-          ${data.prenom || ''} ${data.nom || ''}
-        </h1>
-        <p style="color: #666; margin-top: 10px;">${data.titre_poste || ''}</p>
-        <p style="color: #999; font-size: 14px;">
-          ${data.email || ''} ${data.email && data.telephone ? '|' : ''} ${data.telephone || ''}
-        </p>
-        ${data.adresse ? `<p style="color: #999; font-size: 14px;">${data.adresse}</p>` : ''}
-      </div>
-    `;
-    
-    if (data.profil) {
-      html += `
-        <div style="margin-bottom: 30px;">
-          <h2 style="color: #4361ee; border-left: 4px solid #4361ee; padding-left: 15px;">Profil</h2>
-          <p style="line-height: 1.6; text-align: justify;">${data.profil}</p>
-        </div>
-      `;
-    }
-    
-    if (data.experiences && Array.isArray(data.experiences)) {
-      html += `<div style="margin-bottom: 30px;">
-        <h2 style="color: #4361ee; border-left: 4px solid #4361ee; padding-left: 15px;">Expériences Professionnelles</h2>`;
-      data.experiences.forEach(exp => {
-        html += `
-          <div style="margin: 20px 0; padding-left: 20px;">
-            <strong style="font-size: 16px;">${exp.poste || ''}</strong> - <em>${exp.entreprise || ''}</em><br>
-            <small style="color: #666;">${exp.periode || ''}</small>
-            ${exp.description ? `<p style="margin-top: 8px; line-height: 1.6;">${exp.description}</p>` : ''}
-          </div>
-        `;
-      });
-      html += `</div>`;
-    }
-    
-    if (data.formations && Array.isArray(data.formations)) {
-      html += `<div style="margin-bottom: 30px;">
-        <h2 style="color: #4361ee; border-left: 4px solid #4361ee; padding-left: 15px;">Formation</h2>`;
-      data.formations.forEach(form => {
-        html += `
-          <div style="margin: 20px 0; padding-left: 20px;">
-            <strong style="font-size: 16px;">${form.diplome || ''}</strong><br>
-            <em>${form.etablissement || ''}</em> - <small style="color: #666;">${form.annee || ''}</small>
-          </div>
-        `;
-      });
-      html += `</div>`;
-    }
-    
-    if (data.competences && Array.isArray(data.competences)) {
-      html += `
-        <div style="margin-bottom: 30px;">
-          <h2 style="color: #4361ee; border-left: 4px solid #4361ee; padding-left: 15px;">Compétences</h2>
-          <div style="display: flex; flex-wrap: wrap; gap: 10px; padding-left: 20px;">
-            ${data.competences.map(comp => `<span style="background: #e9ecef; padding: 8px 16px; border-radius: 20px; font-size: 14px;">${comp}</span>`).join('')}
-          </div>
-        </div>
-      `;
-    }
-    
-    if (data.langues && Array.isArray(data.langues)) {
-      html += `
-        <div style="margin-bottom: 30px;">
-          <h2 style="color: #4361ee; border-left: 4px solid #4361ee; padding-left: 15px;">Langues</h2>
-          <div style="padding-left: 20px;">
-            ${data.langues.map(lang => `<p>${lang.langue || ''} - <em>${lang.niveau || ''}</em></p>`).join('')}
-          </div>
-        </div>
-      `;
-    }
-    
-    return html;
-  }
-
-  function formatInvoiceHtml(data) {
-    let html = `
-      <div style="display: flex; justify-content: space-between; margin-bottom: 40px;">
-        <div>
-          <h1 style="color: #4361ee; font-size: 32px; margin: 0;">FACTURE</h1>
-          <p style="color: #666;">N° ${data.numero || 'XXXX'}</p>
-          <p style="color: #666;">Date: ${data.date || new Date().toLocaleDateString('fr-FR')}</p>
-        </div>
-        <div style="text-align: right;">
-          <strong>${data.emetteur?.nom || 'Entreprise'}</strong><br>
-          ${data.emetteur?.adresse || ''}<br>
-          ${data.emetteur?.telephone || ''}<br>
-          ${data.emetteur?.email || ''}
-        </div>
-      </div>
-      
-      <div style="margin-bottom: 30px; padding: 20px; background: #f8f9fa; border-radius: 8px;">
-        <strong>Facturé à :</strong><br>
-        ${data.client?.nom || 'Client'}<br>
-        ${data.client?.adresse || ''}<br>
-        ${data.client?.telephone || ''}
-      </div>
-    `;
-    
-    if (data.articles && Array.isArray(data.articles)) {
-      html += `
-        <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px;">
-          <thead>
-            <tr style="background: #4361ee; color: white;">
-              <th style="padding: 12px; text-align: left;">Description</th>
-              <th style="padding: 12px; text-align: center;">Quantité</th>
-              <th style="padding: 12px; text-align: right;">Prix Unitaire</th>
-              <th style="padding: 12px; text-align: right;">Total</th>
-            </tr>
-          </thead>
-          <tbody>
-      `;
-      
-      let total = 0;
-      data.articles.forEach((article, index) => {
-        const quantite = article.quantite || 1;
-        const prixUnitaire = article.prix_unitaire || 0;
-        const totalLigne = quantite * prixUnitaire;
-        total += totalLigne;
-        
-        html += `
-          <tr style="border-bottom: 1px solid #ddd; ${index % 2 === 0 ? 'background: #f8f9fa;' : ''}">
-            <td style="padding: 12px;">${article.description || ''}</td>
-            <td style="padding: 12px; text-align: center;">${quantite}</td>
-            <td style="padding: 12px; text-align: right;">${prixUnitaire.toFixed(2)} FCFA</td>
-            <td style="padding: 12px; text-align: right;">${totalLigne.toFixed(2)} FCFA</td>
-          </tr>
-        `;
-      });
-      
-      html += `
-          </tbody>
-          <tfoot>
-            <tr style="background: #e9ecef; font-weight: bold;">
-              <td colspan="3" style="padding: 12px; text-align: right;">TOTAL</td>
-              <td style="padding: 12px; text-align: right; color: #4361ee; font-size: 18px;">${total.toFixed(2)} FCFA</td>
-            </tr>
-          </tfoot>
-        </table>
-      `;
-    }
-    
-    if (data.notes) {
-      html += `
-        <div style="margin-top: 30px; padding: 15px; background: #fff3cd; border-left: 4px solid #ffc107; border-radius: 4px;">
-          <strong>Notes :</strong><br>
-          ${data.notes}
-        </div>
-      `;
-    }
-    
-    return html;
-  }
-
-  function formatContractHtml(data) {
-    return `
-      <div style="text-align: center; margin-bottom: 40px;">
-        <h1 style="color: #4361ee; font-size: 28px; margin-bottom: 10px;">
-          ${data.titre || 'CONTRAT'}
-        </h1>
-        <p style="color: #666;">${data.type_contrat || ''}</p>
-      </div>
-      
-      <div style="margin-bottom: 30px;">
-        <strong>Entre les soussignés :</strong><br><br>
-        <strong>Partie 1 :</strong> ${data.partie1?.nom || ''}<br>
-        ${data.partie1?.adresse || ''}<br><br>
-        <strong>Partie 2 :</strong> ${data.partie2?.nom || ''}<br>
-        ${data.partie2?.adresse || ''}
-      </div>
-      
-      <div style="margin-bottom: 30px; line-height: 1.8; text-align: justify;">
-        ${(data.contenu || '').replace(/\n/g, '<br><br>')}
-      </div>
-      
-      <div style="margin-top: 60px; display: flex; justify-content: space-between;">
-        <div style="text-align: center;">
-          <p>Fait à ${data.lieu || 'Lokossa'}, le ${data.date || new Date().toLocaleDateString('fr-FR')}</p>
-          <br><br>
-          <strong>Signature Partie 1</strong><br>
-          ___________________
-        </div>
-        <div style="text-align: center;">
-          <p>&nbsp;</p>
-          <br><br>
-          <strong>Signature Partie 2</strong><br>
-          ___________________
-        </div>
-      </div>
-    `;
-  }
-
-  function formatGenericDocumentHtml(data) {
-    let html = '';
-    if (data.titre) {
-      html += `<h1 style="color: #4361ee; text-align: center; margin-bottom: 30px;">${data.titre}</h1>`;
-    }
-    if (data.contenu) {
-      html += `<div style="line-height: 1.8; text-align: justify;">${data.contenu.replace(/\n/g, '<br>')}</div>`;
-    } else {
-      html += `<div style="line-height: 1.8; text-align: justify;">${JSON.stringify(data, null, 2).replace(/\n/g, '<br>')}</div>`;
-    }
-    return html;
-  }
-
-  window.generatePdfFromJson = function(jsonData) {
-    if (typeof jspdf === 'undefined' || !jspdf.jsPDF) {
-      alert('❌ Bibliothèque jsPDF non chargée. Veuillez rafraîchir la page.');
-      return;
-    }
-    
-    const { jsPDF } = jspdf;
-    const doc = new jsPDF();
-    doc.setFont('helvetica');
-    
-    const type = jsonData.type || 'document';
-    
-    doc.setFontSize(18);
-    doc.text(jsonData.titre || type.toUpperCase(), 20, 20);
-    
-    doc.setFontSize(12);
-    let y = 40;
-    const maxWidth = 170;
-    
-    if (jsonData.contenu) {
-      const lines = doc.splitTextToSize(jsonData.contenu, maxWidth);
-      lines.forEach(line => {
-        if (y > 280) {
-          doc.addPage();
-          y = 20;
-        }
-        doc.text(line, 20, y);
-        y += 7;
-      });
-    }
-    
-    const filename = `${type}_${Date.now()}.pdf`;
-    doc.save(filename);
-    console.log(`✅ PDF généré: ${filename}`);
-  };
-
-  window.generateDocxFromJson = function(jsonData) {
-    if (typeof docx === 'undefined') {
-      alert('❌ Bibliothèque docx.js non chargée. Veuillez rafraîchir la page.');
-      return;
-    }
-    
-    const { Document, Packer, Paragraph, TextRun, HeadingLevel } = docx;
-    
-    const sections = [
-      new Paragraph({
-        text: jsonData.titre || 'Document',
-        heading: HeadingLevel.HEADING_1
-      }),
-      new Paragraph({ text: '' }),
-      new Paragraph({
-        text: jsonData.contenu || JSON.stringify(jsonData, null, 2)
-      })
-    ];
-    
-    const doc = new Document({
-      sections: [{ children: sections }]
-    });
-    
-    Packer.toBlob(doc).then(blob => {
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${jsonData.type || 'document'}_${Date.now()}.docx`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      console.log(`✅ DOCX généré: ${a.download}`);
-    });
-  };
-
-  // ========================================
-  // ✅ NOUVELLE FONCTION handleDocumentGeneration
-  // ========================================
-  function handleDocumentGeneration(jsonData, messageElement) {
-    console.log('📄 Génération du document:', jsonData.type);
-    
-    // Afficher l'indicateur de chargement
-    messageElement.innerHTML = `
-      <div class="document-loading">
-        <div class="spinner"><i class="fas fa-spinner fa-spin"></i></div>
-        <div>Génération du document en cours...</div>
-      </div>
-    `;
-    
-    // Générer le preview HTML immédiatement
-    setTimeout(() => {
-      try {
-        const htmlContent = window.formatJsonAsDocumentHtml(jsonData);
-        messageElement.innerHTML = `<div class="ai-document-container">${htmlContent}</div>`;
-        
-        // Ajouter les boutons universels pour le contenu texte
-        const textContent = extractTextFromDocument(jsonData);
-        addUniversalButtons(messageElement, textContent, `${jsonData.type || 'document'}_${Date.now()}`);
-        
-        scrollToBottom();
-        
-      } catch (error) {
-        console.error('❌ Erreur génération document:', error);
-        messageElement.innerHTML = `
-          <div class="error-message">
-            <i class="fas fa-exclamation-triangle"></i>
-            <strong>Erreur lors de la génération du document</strong><br>
-            ${error.message}
-          </div>
-        `;
-      }
-    }, 100);
-  }
-
-  // ✅ Fonction pour extraire le texte d'un document
-  function extractTextFromDocument(jsonData) {
-    switch (jsonData.type) {
-      case 'lettre':
-        return `LETTRE: ${jsonData.objet || ''}\n\nDestinataire: ${jsonData.destinataire || ''}\n\n${jsonData.corps || ''}\n\n${jsonData.formule_politesse || ''}\n${jsonData.signature || ''}`;
-      
-      case 'rapport':
-        return `RAPPORT: ${jsonData.titre || ''}\n\nAuteur: ${jsonData.auteur || ''}\n\n${jsonData.resume || ''}\n\n${jsonData.contenu || ''}`;
-      
-      case 'cv':
-        return `CV: ${jsonData.prenom || ''} ${jsonData.nom || ''}\n\n${jsonData.profil || ''}\n\nExpériences: ${JSON.stringify(jsonData.experiences || [])}\n\nFormations: ${JSON.stringify(jsonData.formations || [])}`;
-      
-      case 'facture':
-        return `FACTURE: ${jsonData.numero || ''}\n\nClient: ${jsonData.client?.nom || ''}\n\nArticles: ${JSON.stringify(jsonData.articles || [])}`;
-      
-      case 'contrat':
-        return `CONTRAT: ${jsonData.titre || ''}\n\nParties: ${jsonData.partie1?.nom || ''} / ${jsonData.partie2?.nom || ''}\n\n${jsonData.contenu || ''}`;
-      
-      default:
-        return JSON.stringify(jsonData, null, 2);
-    }
-  }
 
   // ✅ Fonction pour ajouter les boutons universels
   function addUniversalButtons(element, content, filename = 'contenu') {
@@ -1609,104 +1436,108 @@
     element.appendChild(buttonsContainer);
   }
 
-  // ========================================
-  // ✅ FONCTION appendChat CORRIGÉE v9.9
-  // ========================================
-  function appendChat(role, text, returnElement = false, attachments = []) {
-    const target = document.getElementById('chatFullWindow');
-    if (!target) return;
-    
-    const node = document.createElement('div');
-    node.className = 'msg ' + (role === 'user' ? 'user' : 'bot');
+function appendChat(role, text, returnElement = false, attachments = []) {
+  const target = document.getElementById('chatFullWindow');
+  if (!target) return;
+  
+  const node = document.createElement('div');
+  node.className = 'msg ' + (role === 'user' ? 'user' : 'bot');
 
-    if (role === 'user') {
-      if (text) {
-        node.textContent = text;
-      }
-    } else {
-      // ✅ CAS 1 : Image
-      const imageUrl = detectImageToken(text);
-      if (imageUrl) {
-        console.log('🖼️ Image détectée');
-        const imageHtml = `
-          <div class="ai-image-container" style="position: relative; display: inline-block; width: 100%;">
-            <img src="${imageUrl}" style="max-width:100%; border-radius:12px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
-            <button class="image-download-btn" onclick="window.downloadImage('${imageUrl}')">
-              <i class="fas fa-download"></i> Télécharger
-            </button>
-          </div>
-          <div style="margin-top: 15px;">
-            <button class="btn primary" onclick="window.downloadImage('${imageUrl}')">
-              <i class="fas fa-download"></i> Télécharger l'Image
-            </button>
-          </div>
-        `;
-        node.innerHTML = imageHtml;
-        target.appendChild(node);
-        scrollToBottom();
-        return node;
-      }
-      
-      // ✅ CAS 2 : Document structuré (NOUVEAU - CORRIGÉ)
-      const structuredJson = detectStructuredJson(text);
-      if (structuredJson) {
-        console.log('📄 Document structuré détecté:', structuredJson.type);
-        handleDocumentGeneration(structuredJson, node);
-        target.appendChild(node);
-        scrollToBottom();
-        return node;
-      }
-      
-      // ✅ CAS 3 : Markdown normal (Code, Texte)
-      if (text) {
-        const renderedHtml = marked.parse(text, { sanitize: false, gfm: true });
-        node.innerHTML = renderedHtml;
-        
-        // Coloration syntaxe pour les blocs de code
-        node.querySelectorAll('pre code').forEach(block => {
-          hljs.highlightElement(block);
-        });
-        
-        // Ajouter les boutons copier sur chaque bloc de code
-        addCopyButtons(node);
-        
-        // Ajouter les boutons universels pour tout le contenu
-        addUniversalButtons(node, text, `conversation_${Date.now()}`);
-        
-      } else if (returnElement) {
-        node.classList.add('loading');
-      }
+  if (role === 'user') {
+    if (text) {
+      node.textContent = text;
+    }
+  } else {
+    // ✅ CAS 1 : Image
+    const imageUrl = detectImageToken(text);
+    if (imageUrl) {
+      const imageHtml = `
+        <div class="ai-image-container" style="position: relative; display: inline-block;">
+          <img src="${imageUrl}" style="max-width:100%; border-radius:12px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+          <button class="image-download-btn" onclick="window.downloadImage('${imageUrl}')">
+            <i class="fas fa-download"></i> Télécharger
+          </button>
+        </div>
+        <div style="margin-top: 15px;">
+          <button class="btn primary" onclick="window.downloadImage('${imageUrl}')">
+            <i class="fas fa-download"></i> Télécharger l'Image
+          </button>
+        </div>
+      `;
+      node.innerHTML = imageHtml;
+      target.appendChild(node);
+      scrollToBottom();
+      return node;
     }
     
-    // Gestion des pièces jointes
-    if (attachments && attachments.length > 0) {
-      const attachmentsDiv = document.createElement('div');
-      attachmentsDiv.style.cssText = 'margin-top: 8px; display: flex; flex-wrap: wrap; gap: 8px;';
+    // ✅ CAS 2 : Document HTML Direct (NOUVEAU)
+    const documentHtmlMatch = text.match(/<DOCUMENT_HTML>([\s\S]*?)<\/DOCUMENT_HTML>/);
+    if (documentHtmlMatch) {
+      const documentHtml = documentHtmlMatch[1].trim();
       
-      attachments.forEach(att => {
-        if (att.type === 'image' && att.data) {
-          const img = document.createElement('img');
-          img.src = att.data;
-          img.style.cssText = 'max-width: 150px; max-height: 150px; border-radius: 8px; object-fit: cover; cursor: pointer;';
-          img.onclick = () => window.open(att.data, '_blank');
-          attachmentsDiv.appendChild(img);
-        } else if (att.type === 'file') {
-          const fileDiv = document.createElement('div');
-          fileDiv.style.cssText = 'padding: 8px 12px; background: rgba(0,0,0,0.1); border-radius: 6px; font-size: 13px;';
-          let iconClass = 'fa-file';
-          if (att.name.endsWith('.pdf')) iconClass = 'fa-file-pdf';
-          else if (att.name.endsWith('.docx')) iconClass = 'fa-file-word';
-          fileDiv.innerHTML = `<i class="fas ${iconClass}"></i> ${att.name}`;
-          attachmentsDiv.appendChild(fileDiv);
-        }
+      node.innerHTML = `
+        ${documentHtml}
+        <div style="margin-top: 30px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+          <button class="btn primary" onclick="printDocument()">
+            <i class="fas fa-print"></i> Imprimer
+          </button>
+          <button class="btn success" onclick="copyDocumentHtml()">
+            <i class="fas fa-copy"></i> Copier le HTML
+          </button>
+        </div>
+      `;
+      
+      target.appendChild(node);
+      scrollToBottom();
+      return node;
+    }
+    
+    // ✅ CAS 3 : Markdown normal
+    if (text) {
+      const renderedHtml = marked.parse(text, { sanitize: false, gfm: true });
+      node.innerHTML = renderedHtml;
+      
+      node.querySelectorAll('pre code').forEach(block => {
+        hljs.highlightElement(block);
       });
-      node.appendChild(attachmentsDiv);
+      
+      addCopyButtons(node);
+      addUniversalButtons(node, text, `conversation_${Date.now()}`);
+      
+    } else if (returnElement) {
+      node.classList.add('loading');
     }
-
-    target.appendChild(node);
-    scrollToBottom();
-    if (returnElement) return node;
   }
+  
+  // Gestion des pièces jointes (GARDER TEL QUEL)
+  if (attachments && attachments.length > 0) {
+    const attachmentsDiv = document.createElement('div');
+    attachmentsDiv.style.cssText = 'margin-top: 8px; display: flex; flex-wrap: wrap; gap: 8px;';
+    
+    attachments.forEach(att => {
+      if (att.type === 'image' && att.data) {
+        const img = document.createElement('img');
+        img.src = att.data;
+        img.style.cssText = 'max-width: 150px; max-height: 150px; border-radius: 8px; object-fit: cover; cursor: pointer;';
+        img.onclick = () => window.open(att.data, '_blank');
+        attachmentsDiv.appendChild(img);
+      } else if (att.type === 'file') {
+        const fileDiv = document.createElement('div');
+        fileDiv.style.cssText = 'padding: 8px 12px; background: rgba(0,0,0,0.1); border-radius: 6px; font-size: 13px;';
+        let iconClass = 'fa-file';
+        if (att.name.endsWith('.pdf')) iconClass = 'fa-file-pdf';
+        else if (att.name.endsWith('.docx')) iconClass = 'fa-file-word';
+        fileDiv.innerHTML = `<i class="fas ${iconClass}"></i> ${att.name}`;
+        attachmentsDiv.appendChild(fileDiv);
+      }
+    });
+    node.appendChild(attachmentsDiv);
+  }
+
+  target.appendChild(node);
+  scrollToBottom();
+  if (returnElement) return node;
+}
   
   function scrollToBottom() {
     const container = document.getElementById('chatFullWindow');
@@ -1737,72 +1568,141 @@
     });
   }
   
-  // ✅ FONCTION SIMULATETYPING CORRIGÉE v9.9
-  function simulateTyping(element, text, enableVoice = true) {
-    return new Promise((resolve, reject) => {
-      
-      if (appState.shouldStopResponse) {
-        element.innerHTML = '<br><br><em style="color: #e74c3c;">⚠️ Réponse interrompue</em>';
-        reject(new Error('Interrupted'));
-        return;
-      }
-      
-      // ✅ CAS 1 : Image
-      const imageUrl = detectImageToken(text);
-      if (imageUrl) {
-        console.log('🖼️ Affichage image dans typing');
-        const imageHtml = `
-          <div class="ai-image-container" style="position: relative; display: inline-block; width: 100%;">
-            <img src="${imageUrl}" style="max-width:100%; border-radius:12px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
-            <button class="image-download-btn" onclick="window.downloadImage('${imageUrl}')">
-              <i class="fas fa-download"></i> Télécharger
-            </button>
-          </div>
-          <div style="margin-top: 15px;">
-            <button class="btn primary" onclick="window.downloadImage('${imageUrl}')">
-              <i class="fas fa-download"></i> Télécharger l'Image
-            </button>
-          </div>
-        `;
-        element.innerHTML = imageHtml;
-        element.classList.remove('loading');
-        scrollToBottom();
-        resolve();
-        return;
-      }
-      
-      // ✅ CAS 2 : Document structuré (NOUVEAU - CORRIGÉ)
-      const structuredJson = detectStructuredJson(text);
-      if (structuredJson) {
-        console.log('📄 Document détecté dans typing:', structuredJson.type);
-        handleDocumentGeneration(structuredJson, element);
-        element.classList.remove('loading');
-        scrollToBottom();
-        resolve();
-        return;
-      }
-      
-      // ✅ CAS 3 : Markdown normal
-      if (enableVoice) {
-        const plainText = htmlToPlainText(text);
-        speak(plainText, true);
-      }
-      
-      const renderedHtml = marked.parse(text, { sanitize: false, gfm: true });
-      element.innerHTML = renderedHtml;
-      
-      element.querySelectorAll('pre code').forEach(block => {
-        hljs.highlightElement(block);
-      });
-      
-      addCopyButtons(element);
-      addUniversalButtons(element, text, `conversation_${Date.now()}`);
-      
+ function simulateTyping(element, text, enableVoice = true) {
+  return new Promise((resolve, reject) => {
+    
+    if (appState.shouldStopResponse) {
+      element.innerHTML = '<br><br><em style="color: #e74c3c;">⚠️ Réponse interrompue</em>';
+      reject(new Error('Interrupted'));
+      return;
+    }
+    
+    // ✅ CAS 1 : Image
+    const imageUrl = detectImageToken(text);
+    if (imageUrl) {
+      const imageHtml = `
+        <div class="ai-image-container" style="position: relative; display: inline-block;">
+          <img src="${imageUrl}" style="max-width:100%; border-radius:12px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+          <button class="image-download-btn" onclick="window.downloadImage('${imageUrl}')">
+            <i class="fas fa-download"></i> Télécharger
+          </button>
+        </div>
+        <div style="margin-top: 15px;">
+          <button class="btn primary" onclick="window.downloadImage('${imageUrl}')">
+            <i class="fas fa-download"></i> Télécharger l'Image
+          </button>
+        </div>
+      `;
+      element.innerHTML = imageHtml;
       element.classList.remove('loading');
       scrollToBottom();
       resolve();
+      return;
+    }
+    
+    // ✅ CAS 2 : Document HTML Direct (NOUVEAU)
+    const documentHtmlMatch = text.match(/<DOCUMENT_HTML>([\s\S]*?)<\/DOCUMENT_HTML>/);
+    if (documentHtmlMatch) {
+      const documentHtml = documentHtmlMatch[1].trim();
+      
+      element.innerHTML = `
+        ${documentHtml}
+        <div style="margin-top: 30px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+          <button class="btn primary" onclick="printDocument()">
+            <i class="fas fa-print"></i> Imprimer
+          </button>
+          <button class="btn success" onclick="copyDocumentHtml()">
+            <i class="fas fa-copy"></i> Copier le HTML
+          </button>
+        </div>
+      `;
+      
+      element.classList.remove('loading');
+      scrollToBottom();
+      
+      // ✅ Synthèse vocale pour documents
+      if (enableVoice) {
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = documentHtml;
+        const plainText = tempDiv.innerText.substring(0, 200);
+        speak(`Document généré avec succès. ${plainText}`);
+      }
+      
+      resolve();
+      return;
+    }
+    
+    // ✅ CAS 3 : Markdown normal (code, texte, etc.)
+    if (enableVoice) {
+      const plainText = htmlToPlainText(text);
+      speak(plainText, true);
+    }
+    
+    const renderedHtml = marked.parse(text, { sanitize: false, gfm: true });
+    element.innerHTML = renderedHtml;
+    
+    // Coloration syntaxe
+    element.querySelectorAll('pre code').forEach(block => {
+      hljs.highlightElement(block);
     });
+    
+    // Boutons copier sur les blocs de code
+    addCopyButtons(element);
+    
+    // Boutons universels (copier/télécharger)
+    addUniversalButtons(element, text, `conversation_${Date.now()}`);
+    
+    element.classList.remove('loading');
+    scrollToBottom();
+    resolve();
+  });
+}
+    // ✅ NOUVELLES FONCTIONS POUR DOCUMENTS HTML
+
+// Fonction pour imprimer le document
+window.printDocument = function() {
+  window.print();
+};
+
+// Fonction pour copier le HTML du document
+window.copyDocumentHtml = function() {
+  const docElement = document.querySelector('.doc-cv, .doc-lettre, .doc-rapport, .doc-facture, .doc-contrat');
+  if (docElement) {
+    const html = docElement.outerHTML;
+    navigator.clipboard.writeText(html).then(() => {
+      alert('✅ HTML copié dans le presse-papier !');
+    }).catch(err => {
+      console.error('❌ Erreur copie:', err);
+      alert('❌ Impossible de copier. Utilisez Ctrl+C manuellement.');
+    });
+  } else {
+    alert('❌ Aucun document trouvé à copier.');
   }
+};
+
+// Fonction pour télécharger une image (DÉJÀ EXISTANTE - VÉRIFIER)
+window.downloadImage = function(imageUrl, filename = null) {
+  if (!filename) {
+    filename = `intellia_image_${Date.now()}.png`;
+  }
+  fetch(imageUrl)
+    .then(response => response.blob())
+    .then(blob => {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      console.log(`✅ Image téléchargée: ${filename}`);
+    })
+    .catch(error => {
+      console.error("❌ Erreur téléchargement image:", error);
+      alert("❌ Impossible de télécharger l'image. Faites clic droit > Enregistrer l'image.");
+    });
+};
 
   // ========================================
   // RESTE DU CODE INCHANGÉ
@@ -3095,7 +2995,7 @@ setInterval(async () => {
     console.error('❌ Client: Erreur système de planning:', error);
   }
   
-}, 30000); // Toutes les 30 secondes
+}, 60000); // Toutes les 30 secondes
 
 // ========================================
 // 🔧 FONCTION DE NETTOYAGE CLIENT
