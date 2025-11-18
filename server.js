@@ -1828,14 +1828,4 @@ app.listen(PORT, () => {
   console.log(`   • Détection d'incohérences: AJOUTÉE`);
   console.log(`   • Réponses "Commande reçue": CORRIGÉE`);
   console.log(`   • Documents non générés: CORRIGÉE\n`);
-});rimée: ${cmd.device} à ${cmd.time}`);
-            }
-          
-         // Sinon, matcher uniquement device
-else {
-  if (plan.device === cmd.device) {
-    await remove(ref(db, `${PLANNING_REF}/${planId}`));
-    deletedCount++;
-    console.log(`✅ Planification supprimée: ${cmd.device}`);
-  }
-}
+});
