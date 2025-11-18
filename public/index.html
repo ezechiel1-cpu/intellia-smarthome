@@ -18,44 +18,36 @@
   <script src="https://cdn.jsdelivr.net/npm/docx@8.0.0/build/index.min.js"></script>
   
   <style>
- @media print {
-  /* 1. On cache visuellement TOUS les éléments de la page */
-  body * {
-    visibility: hidden;
+@media print {
+  /* 1. On cache absolument TOUT ce qui est dans le body */
+  body > * {
+    display: none !important;
   }
 
-  /* 2. On force la visibilité UNIQUEMENT sur le document à imprimer et son contenu */
-  .printable-area,
-  .printable-area * {
-    visibility: visible !important;
-  }
-
-  /* 3. On arrache le document de sa place pour le coller tout en haut de la feuille d'impression */
-  .printable-area {
+  /* 2. On affiche UNIQUEMENT la zone tampon */
+  #print-staging-area {
+    display: block !important;
     position: absolute !important;
     left: 0 !important;
     top: 0 !important;
     width: 100% !important;
     margin: 0 !important;
-    padding: 20px !important; /* Un peu de marge pour l'impression */
-    background: white !important;
-    z-index: 99999; /* S'assurer qu'il est au-dessus de tout */
-    box-shadow: none !important; /* Pas d'ombre à l'impression */
-    border: none !important;
+    padding: 0 !important;
+    z-index: 999999 !important;
   }
 
-  /* 4. On cache spécifiquement les boutons qui pourraient traîner dans la zone */
-  .printable-area button,
-  .printable-area .btn,
-  .universal-buttons,
-  .copy-code-btn {
-    display: none !important;
+  /* 3. On s'assure que le contenu dans la zone tampon est visible et noir sur blanc */
+  #print-staging-area * {
+    visibility: visible !important;
+    color: black !important; /* Force le noir pour éviter le texte blanc invisible */
+    background: white !important;
+    -webkit-print-color-adjust: exact; /* Pour imprimer les couleurs de fond (barres bleues du CV) */
+    print-color-adjust: exact;
   }
   
-  /* On cache le scrollbar */
-  html, body {
-    height: auto !important;
-    overflow: visible !important;
+  /* Cache les boutons qui auraient été copiés par erreur */
+  .universal-buttons, button, .btn, .copy-code-btn {
+    display: none !important;
   }
 }
     :root {
@@ -1332,7 +1324,7 @@ body.night-mode .doc-contrat .meta { color: #94a3b8; }
     </footer>
       
   </div>
-  
+  <div id="print-staging-area"></div>
   <script type="module">
   /*************************************************
    * SmartHome Intelligence - Version 9.9 CORRIGÉE
@@ -1726,46 +1718,35 @@ function appendChat(role, text, returnElement = false, attachments = []) {
 // Fonction pour imprimer le document
 
 window.printDocument = function(buttonElement) {
-  // 1. Trouver le conteneur du message bot le plus proche
-  const botMessageContainer = buttonElement.closest('.msg.bot');
-  if (!botMessageContainer) {
-    console.error("Impossible de trouver le conteneur du message bot.");
-    return;
-  }
-  
-  // 2. Trouver le document (CV, Facture, etc.) à l'intérieur de ce conteneur
-  const documentToPrint = botMessageContainer.querySelector('.doc-cv, .doc-lettre, .doc-rapport, .doc-facture, .doc-contrat');
+  // 1. Trouver le document à imprimer
+  const documentToPrint = buttonElement.closest('.msg.bot')?.querySelector('.doc-cv, .doc-lettre, .doc-rapport, .doc-facture, .doc-contrat');
   
   if (!documentToPrint) {
-    console.error("Impossible de trouver le contenu du document à imprimer.");
-    // Si on ne trouve pas, on lance l'impression normale en dernier recours
-    window.print();
+    alert("Erreur : Impossible de trouver le document.");
     return;
   }
 
-  // 3. Ajouter la classe 'printable-area' au document
-  // C'est cette classe que notre CSS @media print recherche
-  documentToPrint.classList.add('printable-area');
-  
-  // 4. Définir un gestionnaire pour nettoyer APRES l'impression
-  const afterPrintHandler = () => {
-    documentToPrint.classList.remove('printable-area');
-    window.removeEventListener('afterprint', afterPrintHandler);
-  };
-  window.addEventListener('afterprint', afterPrintHandler);
+  // 2. Récupérer la zone tampon
+  const stagingArea = document.getElementById('print-staging-area');
+  if (!stagingArea) {
+    alert("Erreur : Zone d'impression manquante (Étape 1 non faite).");
+    return;
+  }
 
-  // 5. Lancer l'impression
+  // 3. COPIER le contenu (HTML) du document vers la zone tampon
+  stagingArea.innerHTML = documentToPrint.outerHTML;
+
+  // 4. Lancer l'impression
+  // Le CSS @media print va cacher tout le site et ne montrer que stagingArea
   window.print();
 
-  // 6. Nettoyage de secours (si 'afterprint' ne se déclenche pas)
+  // 5. Nettoyer après l'impression (pour ne pas alourdir la page)
+  // On attend un peu pour être sûr que l'impression est lancée
   setTimeout(() => {
-     if (documentToPrint.classList.contains('printable-area')) {
-         documentToPrint.classList.remove('printable-area');
-         window.removeEventListener('afterprint', afterPrintHandler);
-     }
-  }, 1000); 
+    stagingArea.innerHTML = '';
+  }, 1000);
 };
-
+ 
 // Fonction pour copier le HTML du document
 window.copyDocumentHtml = function() {
   const docElement = document.querySelector('.doc-cv, .doc-lettre, .doc-rapport, .doc-facture, .doc-contrat');
