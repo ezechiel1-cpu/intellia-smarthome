@@ -1830,7 +1830,7 @@ app.listen(PORT, () => {
   console.log(`   • Documents non générés: CORRIGÉE\n`);
 });rimée: ${cmd.device} à ${cmd.time}`);
             }
-          } 
+          
          // Sinon, matcher uniquement device
 else {
   if (plan.device === cmd.device) {
