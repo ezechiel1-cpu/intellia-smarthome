@@ -2065,9 +2065,6 @@ pied de page
         </div>
       </section>
 
-      <div class="doc-footer small muted">
-        Document généré automatiquement — Version 2025++ — INTELLIA
-      </div>
     </main>
   </div>
 </div>
@@ -3428,7 +3425,6 @@ Quand l'utilisateur demande un document, tu dois :
     </div>
   </div>
 
-  <div class="footer">Document généré automatiquement — Version 2025 — INTELLIA</div>
 </div>
 </DOCUMENT_HTML>
 
@@ -3519,7 +3515,6 @@ Quand l'utilisateur demande un document, tu dois :
     </div>
   </div>
 
-  <div class="footer">Merci de votre confiance — Document généré automatiquement — Version 2025</div>
 </div>
 </DOCUMENT_HTML>
 
@@ -3597,7 +3592,6 @@ Quand l'utilisateur demande un document, tu dois :
     </div>
   </div>
 
-  <div class="footer" style="font-size:12px;color:var(--muted);text-align:center;margin-top:18px;">Document généré automatiquement — DEV 2025</div>
 </div>
 </DOCUMENT_HTML>
 
@@ -3678,7 +3672,6 @@ Quand l'utilisateur demande un document, tu dois :
     <div style="font-size:13px;color:var(--muted)">Signature</div>
   </div>
 
-  <div class="footer">Document généré automatiquement — Version 2025 — INTELLIA</div>
 </div>
 </DOCUMENT_HTML>
 <!-- ========================================================= -->
@@ -3807,7 +3800,6 @@ Quand l'utilisateur demande un document, tu dois :
     </div>
   </div>
 
-  <div class="footer">Document généré automatiquement — Version 2025 — INTELLIA</div>
 </div>
 </DOCUMENT_HTML>
 
@@ -3898,7 +3890,7 @@ Quand l'utilisateur demande un document, tu dois :
     </div>
   </div>
 
-  <div class="footer">Merci de votre confiance — Document généré automatiquement — Version 2025</div>
+ 
 </div>
 </DOCUMENT_HTML>
 
@@ -3976,7 +3968,7 @@ Quand l'utilisateur demande un document, tu dois :
     </div>
   </div>
 
-  <div class="footer" style="font-size:12px;color:var(--muted);text-align:center;margin-top:18px;">Document généré automatiquement — DEV 2025</div>
+ 
 </div>
 </DOCUMENT_HTML>
 
@@ -4016,7 +4008,7 @@ Quand l'utilisateur demande un document, tu dois :
     <div style="font-size:13px;color:var(--muted)">Signature</div>
   </div>
 
-  <div class="footer">Document généré automatiquement — INTELLIA — Version 2025</div>
+  
 </div>
 </DOCUMENT_HTML>
 
@@ -4148,7 +4140,7 @@ Quand l'utilisateur demande un document, tu dois :
     </div>
   </div>
 
-  <div class="footer">Document technique — Généré automatiquement — Version 2025 — INTELLIA</div>
+
 </div>
 </DOCUMENT_HTML>
 
@@ -4250,7 +4242,7 @@ Quand l'utilisateur demande un document, tu dois :
     </div>
   </div>
 
-  <div class="footer">Document long — Généré automatiquement — Version 2025 — INTELLIA</div>
+ 
 </div>
 </DOCUMENT_HTML>
 
@@ -4315,8 +4307,6 @@ Quand l'utilisateur demande un document, tu dois :
     <div class="meta">Fonction — Nom de l'Entreprise</div>
   </div>
 
-  <div class="footer">Document généré automatiquement — INTELLIA — Version 2025</div>
-</div>
 </DOCUMENT_HTML>
 
 <!-- ========================================================= -->
@@ -4354,7 +4344,7 @@ Quand l'utilisateur demande un document, tu dois :
     <div style="font-size:13px;color:var(--muted)">Signature personnelle</div>
   </div>
 
-  <div class="footer">Document personnel — Version 2025</div>
+ 
 </div>
 </DOCUMENT_HTML>
 
@@ -4438,7 +4428,6 @@ Quand l'utilisateur demande un document, tu dois :
     </main>
   </div>
 
-  <div class="footer">CV généré automatiquement — Version 2025 — INTELLIA</div>
 </div>
 </DOCUMENT_HTML>
 
@@ -4496,7 +4485,7 @@ Quand l'utilisateur demande un document, tu dois :
     </div>
   </div>
 
-  <div class="footer">Certificat officiel — Version 2025 — INTELLIA</div>
+
 </div>
 </DOCUMENT_HTML>
 
@@ -4567,8 +4556,6 @@ Quand l'utilisateur demande un document, tu dois :
       <div class="meta">Nom & Fonction</div>
     </div>
   </div>
-
-  <div class="footer">Procès-verbal — Généré automatiquement — Version 2025 — INTELLIA</div>
 </div>
 </DOCUMENT_HTML>
 
@@ -4614,7 +4601,6 @@ Quand l'utilisateur demande un document, tu dois :
     <div class="meta">Nom & Fonction</div>
   </div>
 
-  <div class="footer">Note interne — Version 2025 — INTELLIA</div>
 </div>
 </DOCUMENT_HTML>
 
@@ -4671,7 +4657,6 @@ Quand l'utilisateur demande un document, tu dois :
     </div>
   </div>
 
-  <div class="footer">Protocole — Version 2025 — INTELLIA</div>
 </div>
 </DOCUMENT_HTML>
 
@@ -4706,7 +4691,6 @@ Quand l'utilisateur demande un document, tu dois :
   <h2>Conclusion</h2>
   <p>Synthèse générale et recommandations finales, si applicable.</p>
 
-  <div class="footer">Document libre — Fallback INTELLIA — Version 2025</div>
 </div>
 </DOCUMENT_HTML>
 
