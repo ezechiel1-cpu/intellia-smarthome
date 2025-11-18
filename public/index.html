@@ -18,6 +18,45 @@
   <script src="https://cdn.jsdelivr.net/npm/docx@8.0.0/build/index.min.js"></script>
   
   <style>
+    /* ... (à la fin de vos autres styles) ... */
+
+@media print {
+  /* Cacher TOUT par défaut lors de l'impression */
+  body > * {
+    display: none !important;
+    visibility: hidden !important;
+  }
+  
+  /* Afficher SEULEMENT la zone marquée comme "imprimable" */
+  .printable-area,
+  .printable-area * {
+    display: block !important;
+    visibility: visible !important;
+  }
+  
+  /* Assurer que la zone prend toute la page d'impression */
+  .printable-area {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    height: auto !important;
+    overflow: visible !important;
+    
+    /* Réinitialiser les styles de "carte" pour l'impression */
+    box-shadow: none !important;
+    border: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border-radius: 0 !important;
+  }
+  
+  /* Cacher les boutons qui seraient DANS le document */
+  .printable-area .universal-buttons,
+  .printable-area .btn {
+    display: none !important;
+  }
+}
     :root {
       --primary:#4361ee; --accent-cyan:#06b6d4; --panel:#14151a; 
       --card-bg:rgba(255,255,255,0.95); --muted:#9aa3b2; --dark:#212529; 
@@ -1367,9 +1406,7 @@ body.night-mode .doc-contrat .meta { color: #94a3b8; }
   ];
   let suggestionIndex = 0;
 
-  // ========================================
-  // ✅ FONCTIONNALITÉS DOCUMENTS v9.9 (CORRIGÉES)
-  // ========================================
+ 
   
 // ========================================
   // ✅ FONCTIONNALITÉS DOCUMENTS v9.9 (CORRIGÉES)
@@ -1634,7 +1671,7 @@ function appendChat(role, text, returnElement = false, attachments = []) {
       element.innerHTML = `
         ${documentHtml}
         <div style="margin-top: 30px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
-          <button class="btn primary" onclick="printDocument()">
+          <button class="btn primary" onclick="window.printDocument(this)">
             <i class="fas fa-print"></i> Imprimer
           </button>
           <button class="btn success" onclick="copyDocumentHtml()">
@@ -1686,8 +1723,46 @@ function appendChat(role, text, returnElement = false, attachments = []) {
     // ✅ NOUVELLES FONCTIONS POUR DOCUMENTS HTML
 
 // Fonction pour imprimer le document
-window.printDocument = function() {
+
+window.printDocument = function(buttonElement) {
+  // 1. Trouver le conteneur du message bot le plus proche
+  const botMessageContainer = buttonElement.closest('.msg.bot');
+  if (!botMessageContainer) {
+    console.error("Impossible de trouver le conteneur du message bot.");
+    return;
+  }
+  
+  // 2. Trouver le document (CV, Facture, etc.) à l'intérieur de ce conteneur
+  const documentToPrint = botMessageContainer.querySelector('.doc-cv, .doc-lettre, .doc-rapport, .doc-facture, .doc-contrat');
+  
+  if (!documentToPrint) {
+    console.error("Impossible de trouver le contenu du document à imprimer.");
+    // Si on ne trouve pas, on lance l'impression normale en dernier recours
+    window.print();
+    return;
+  }
+
+  // 3. Ajouter la classe 'printable-area' au document
+  // C'est cette classe que notre CSS @media print recherche
+  documentToPrint.classList.add('printable-area');
+  
+  // 4. Définir un gestionnaire pour nettoyer APRES l'impression
+  const afterPrintHandler = () => {
+    documentToPrint.classList.remove('printable-area');
+    window.removeEventListener('afterprint', afterPrintHandler);
+  };
+  window.addEventListener('afterprint', afterPrintHandler);
+
+  // 5. Lancer l'impression
   window.print();
+
+  // 6. Nettoyage de secours (si 'afterprint' ne se déclenche pas)
+  setTimeout(() => {
+     if (documentToPrint.classList.contains('printable-area')) {
+         documentToPrint.classList.remove('printable-area');
+         window.removeEventListener('afterprint', afterPrintHandler);
+     }
+  }, 1000); 
 };
 
 // Fonction pour copier le HTML du document
