@@ -1513,7 +1513,7 @@ async function handlePlanningCommands(commands) {
     if (cmd.action === 'add') {
       console.log(`📅 Ajout planification: ${cmd.device} à ${cmd.time}`);
       
-      const payload = { 
+    /*  const payload = { 
         device: cmd.device, 
         time: cmd.time, 
         action: cmd.actionType === 'allumer' ? 'ON' : 'OFF',
@@ -1547,7 +1547,7 @@ async function handlePlanningCommands(commands) {
           console.error('❌ Erreur ajout planification:', error);
         }
       }
-      
+      */
       continue;
     }
   }
