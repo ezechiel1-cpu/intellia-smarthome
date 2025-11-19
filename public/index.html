@@ -3,58 +3,22 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
-  <title>SmartHome Intelligence - Mon Assistant Autonome</title>
+  <title>SmartHome Intelligence - v10.0 Artifacts</title>
   <meta name="theme-color" content="#06b6d4" />
   
   <!-- ✅ CDN Existants -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/13.0.0/marked.min.js"></script>
   
-  <!-- ✅ CDN pour Génération de Documents -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/docx@8.0.0/build/index.min.js"></script>
-  
   <style>
-@media print {
-  /* 1. On cache absolument TOUT ce qui est dans le body */
-  body > * {
-    display: none !important;
-  }
-
-  /* 2. On affiche UNIQUEMENT la zone tampon */
-  #print-staging-area {
-    display: block !important;
-    position: absolute !important;
-    left: 0 !important;
-    top: 0 !important;
-    width: 100% !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    z-index: 999999 !important;
-  }
-
-  /* 3. On s'assure que le contenu dans la zone tampon est visible et noir sur blanc */
-  #print-staging-area * {
-    visibility: visible !important;
-    color: black !important; /* Force le noir pour éviter le texte blanc invisible */
-    background: white !important;
-    -webkit-print-color-adjust: exact; /* Pour imprimer les couleurs de fond (barres bleues du CV) */
-    print-color-adjust: exact;
-  }
-  
-  /* Cache les boutons qui auraient été copiés par erreur */
-  .universal-buttons, button, .btn, .copy-code-btn {
-    display: none !important;
-  }
-}
     :root {
       --primary:#4361ee; --accent-cyan:#06b6d4; --panel:#14151a; 
       --card-bg:rgba(255,255,255,0.95); --muted:#9aa3b2; --dark:#212529; 
       --light:#f8f9fa; --shadow:0 10px 20px rgba(0,0,0,0.08);
       --danger: #e74c3c; --success: #2ecc71; --warning: #f39c12;
+      --code-bg: #0d1117; --code-text: #c9d1d9;
     }
     
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -67,6 +31,9 @@
       transition: background 0.3s ease, color 0.3s ease;
     }
     
+    /* ========================================
+       MODE NUIT
+       ======================================== */
     body.night-mode {
       background: linear-gradient(135deg, #0e0f13, #0f1724); color: #e2e8f0;
     }
@@ -112,10 +79,32 @@
     body.night-mode .msg.bot code:not(pre code) {
       background: rgba(255,255,255,0.1);
     }
-    body.night-mode .document-preview {
-      background: rgba(30, 41, 59, 0.95);
-      color: #e2e8f0;
+    
+    /* ========================================
+       BLOCS DE CODE - FOND NOIR (COMME GEMINI)
+       ======================================== */
+    .msg.bot pre {
+      background: var(--code-bg) !important;
+      color: var(--code-text) !important;
+      padding: 16px;
+      border-radius: 8px;
+      margin-bottom: 12px;
+      overflow-x: auto;
+      font-family: 'Monaco', 'Consolas', 'Courier New', monospace;
+      font-size: 14px;
+      position: relative;
       border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .msg.bot pre code {
+      background: none !important;
+      padding: 0;
+      border-radius: 0;
+      color: var(--code-text) !important;
+    }
+    
+    body.night-mode .msg.bot pre {
+      background: var(--code-bg) !important;
+      border: 1px solid rgba(255, 255, 255, 0.15);
     }
 
     .container { 
@@ -136,7 +125,9 @@
     .section { display: none; }
     .section.active { display: block; }
     
-    /* SECTION CHAT */
+    /* ========================================
+       SECTION CHAT - LAYOUT PRINCIPAL
+       ======================================== */
     #sec-intelligence {
       height: 100%; 
       padding-top: 0; 
@@ -278,6 +269,117 @@
     .remove-attachment { cursor: pointer; font-size: 14px; color: var(--danger); }
     #file-input { display: none; }
 
+    /* ========================================
+       MESSAGES
+       ======================================== */
+    .msg { 
+      padding: 10px 14px; border-radius: 12px; max-width: 90%; 
+      margin-bottom: 10px; word-wrap: break-word; line-height: 1.6;
+    }
+    .msg.user { 
+      align-self: flex-end; background: linear-gradient(135deg, #4895ef, #4361ee); color: white; 
+    }
+    
+    .msg.bot {
+      align-self: flex-start;
+      background: var(--card-bg);
+      border: 1px solid rgba(0,0,0,0.06);
+      color: var(--dark);
+      width: 100%;
+      max-width: 100%;
+      white-space: normal;
+      overflow-wrap: break-word;
+    }
+
+    .msg.bot h1, .msg.bot h2, .msg.bot h3 {
+      margin-top: 16px; margin-bottom: 8px;
+      color: var(--primary);
+    }
+    .msg.bot p { margin-bottom: 12px; }
+    .msg.bot ul, .msg.bot ol {
+      margin-left: 20px; margin-bottom: 12px;
+    }
+    .msg.bot li { margin-bottom: 4px; }
+    .msg.bot strong { color: var(--primary); }
+    .msg.bot code:not(pre code) {
+      background: rgba(0,0,0,0.05);
+      padding: 2px 4px;
+      border-radius: 4px;
+      font-family: monospace;
+    }
+    
+    /* ========================================
+       BOUTON COPIER CODE
+       ======================================== */
+    .copy-code-btn {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      background: rgba(255,255,255,0.1);
+      color: white;
+      border: none;
+      padding: 6px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+      opacity: 0;
+      transition: opacity 0.2s ease;
+    }
+    .msg.bot pre:hover .copy-code-btn {
+      opacity: 1;
+    }
+    .copy-code-btn:active {
+      background: rgba(255,255,255,0.3);
+    }
+    
+    /* ========================================
+       BOUTON CONTINUER (COMME CLAUDE)
+       ======================================== */
+    .continue-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 20px;
+      background: linear-gradient(135deg, #4361ee, #3651de);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 15px;
+      font-weight: 600;
+      margin-top: 15px;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 12px rgba(67, 97, 238, 0.3);
+    }
+    
+    .continue-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(67, 97, 238, 0.4);
+      background: linear-gradient(135deg, #3651de, #2941ce);
+    }
+    
+    .continue-btn:active {
+      transform: translateY(0);
+    }
+    
+    .continue-btn i {
+      animation: pulse-icon 1.5s ease-in-out infinite;
+    }
+    
+    @keyframes pulse-icon {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+    
+    .msg.bot.loading::after {
+      content: '▋'; animation: blink 1s step-end infinite; color: var(--primary);
+    }
+
+    @keyframes blink { 50% { opacity: 0; } }
+    
+    /* ========================================
+       STYLES DOMOTIQUE
+       ======================================== */
     .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
     .card { background: var(--card-bg); border-radius: 12px; padding: 14px; box-shadow: var(--shadow); }
     .chip { display: inline-block; padding: 6px 10px; border-radius: 999px; background: rgba(0,0,0,0.05); margin-right: 8px; font-size: 13px; }
@@ -320,190 +422,6 @@
     .btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
     
     input[type=range] { width: 100%; }
-    
-    /* ✅ MESSAGES STYLE AMÉLIORÉ */
-    .msg { 
-      padding: 10px 14px; border-radius: 12px; max-width: 90%; 
-      margin-bottom: 10px; word-wrap: break-word; line-height: 1.6;
-    }
-    .msg.user { 
-      align-self: flex-end; background: linear-gradient(135deg, #4895ef, #4361ee); color: white; 
-    }
-    
-    .msg.bot {
-      align-self: flex-start;
-      background: var(--card-bg);
-      border: 1px solid rgba(0,0,0,0.06);
-      color: var(--dark);
-      width: 100%;
-      max-width: 100%;
-      white-space: normal;
-      overflow-wrap: break-word;
-    }
-
-    .msg.bot h1, .msg.bot h2, .msg.bot h3 {
-      margin-top: 16px; margin-bottom: 8px;
-      color: var(--primary);
-    }
-    .msg.bot p { margin-bottom: 12px; }
-    .msg.bot ul, .msg.bot ol {
-      margin-left: 20px; margin-bottom: 12px;
-    }
-    .msg.bot li { margin-bottom: 4px; }
-    .msg.bot strong { color: var(--primary); }
-    .msg.bot code:not(pre code) {
-      background: rgba(0,0,0,0.05);
-      padding: 2px 4px;
-      border-radius: 4px;
-      font-family: monospace;
-    }
-
-    .msg.bot pre {
-      background: #0d1117;
-      color: #c9d1d9;
-      padding: 16px;
-      border-radius: 8px;
-      margin-bottom: 12px;
-      overflow-x: auto;
-      font-family: 'Courier New', Courier, monospace;
-      font-size: 14px;
-      position: relative;
-    }
-    .msg.bot pre code {
-      background: none;
-      padding: 0;
-      border-radius: 0;
-    }
-    
-    .copy-code-btn {
-      position: absolute;
-      top: 8px;
-      right: 8px;
-      background: rgba(255,255,255,0.1);
-      color: white;
-      border: none;
-      padding: 6px 10px;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 13px;
-      opacity: 0;
-      transition: opacity 0.2s ease;
-    }
-    .msg.bot pre:hover .copy-code-btn {
-      opacity: 1;
-    }
-    .copy-code-btn:active {
-      background: rgba(255,255,255,0.3);
-    }
-    
-    /* ✅ NOUVEAUX STYLES POUR DOCUMENTS ET IMAGES */
-    .ai-image-container {
-      margin: 15px 0;
-      text-align: center;
-      position: relative;
-      display: inline-block;
-      width: 100%;
-    }
-    
-    .ai-image-container img {
-      max-width: 100%;
-      border-radius: 12px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-      margin-bottom: 10px;
-    }
-    
-    .ai-document-container {
-      margin: 15px 0;
-      width: 100%;
-    }
-    
-    .document-preview {
-      background: white;
-      padding: 30px;
-      border-radius: 12px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-      max-width: 100%;
-      margin: 20px 0;
-      font-family: Arial, sans-serif;
-      color: #333;
-    }
-    
-    .document-loading {
-      text-align: center;
-      padding: 20px;
-      color: var(--muted);
-    }
-    
-    .document-loading .spinner {
-      font-size: 24px;
-      margin-bottom: 10px;
-      animation: spin 1s linear infinite;
-    }
-    
-    @keyframes spin {
-      from { transform: rotate(0deg); }
-      to { transform: rotate(360deg); }
-    }
-    
-    .image-download-btn {
-      position: absolute;
-      bottom: 10px;
-      right: 10px;
-      background: rgba(0,0,0,0.7);
-      color: white;
-      border: none;
-      padding: 8px 12px;
-      border-radius: 6px;
-      cursor: pointer;
-      opacity: 0;
-      transition: opacity 0.3s ease;
-    }
-    
-    .ai-image-container:hover .image-download-btn {
-      opacity: 1;
-    }
-    
-    .universal-buttons {
-      display: flex;
-      gap: 8px;
-      margin-top: 12px;
-      flex-wrap: wrap;
-    }
-    
-    .universal-btn {
-      padding: 6px 12px;
-      border-radius: 6px;
-      border: 1px solid rgba(0,0,0,0.1);
-      background: rgba(255,255,255,0.1);
-      color: inherit;
-      cursor: pointer;
-      font-size: 12px;
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      transition: all 0.2s ease;
-    }
-    
-    .universal-btn:hover {
-      background: rgba(255,255,255,0.2);
-      transform: translateY(-1px);
-    }
-    
-    .universal-btn.copy {
-      background: rgba(67, 97, 238, 0.1);
-      border-color: rgba(67, 97, 238, 0.3);
-    }
-    
-    .universal-btn.download {
-      background: rgba(46, 204, 113, 0.1);
-      border-color: rgba(46, 204, 113, 0.3);
-    }
-    
-    .msg.bot.loading::after {
-      content: '▋'; animation: blink 1s step-end infinite; color: var(--primary);
-    }
-
-    @keyframes blink { 50% { opacity: 0; } }
     
     .flex { display: flex; gap: 10px; align-items: center; }
     label { display: block; margin: 6px 0; font-size: 13px; }
@@ -557,6 +475,9 @@
       100% { transform: scale(1); opacity: 1; }
     }
     
+    /* ========================================
+       RESPONSIVE
+       ======================================== */
     @media (max-width: 760px) {
       .grid { grid-template-columns: 1fr; }
       .controls { flex-direction: column; }
@@ -690,10 +611,6 @@
       .chat-history-item .btn.chat-history-delete {
         width: auto;
       }
-      
-      .ai-image-container:active .image-download-btn {
-        opacity: 1;
-      }
     }
     
     @media (min-width: 761px) {
@@ -713,6 +630,9 @@
       }
     }
 
+    /* ========================================
+       LOGIN OVERLAY
+       ======================================== */
     #login-overlay {
       position: fixed; top: 0; left: 0; right: 0; bottom: 0;
       background: linear-gradient(135deg, #f5f7fa, #c3cfe2);
@@ -747,332 +667,312 @@
     #proactive-suggestion { transition: opacity 0.5s ease-in-out; }
     #proactive-suggestion.fade-out { opacity: 0; }
     
-    /* ✅ STYLE POUR ALERTES D'ERREUR */
-    .error-message {
-      background: rgba(231, 76, 60, 0.1);
-      border: 1px solid var(--danger);
-      border-radius: 8px;
-      padding: 12px;
-      margin: 10px 0;
-      color: var(--danger);
-    }
-    
-    .error-message i {
-      margin-right: 8px;
-    }
     /* ========================================
-   STYLES DOCUMENTS GÉNÉRÉS (HTML DIRECT)
-   ======================================== */
+       DOCUMENTS GÉNÉRÉS (HTML)
+       ======================================== */
+    .doc-cv, .doc-lettre, .doc-rapport, .doc-facture, .doc-contrat {
+      background: white;
+      padding: 40px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      max-width: 800px;
+      margin: 20px auto;
+      font-family: 'Segoe UI', Arial, sans-serif;
+      color: #333;
+      line-height: 1.8;
+    }
 
-.doc-cv, .doc-lettre, .doc-rapport, .doc-facture, .doc-contrat {
-  background: white;
-  padding: 40px;
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-  max-width: 800px;
-  margin: 20px auto;
-  font-family: 'Segoe UI', Arial, sans-serif;
-  color: #333;
-  line-height: 1.8;
-}
+    body.night-mode .doc-cv,
+    body.night-mode .doc-lettre,
+    body.night-mode .doc-rapport,
+    body.night-mode .doc-facture,
+    body.night-mode .doc-contrat {
+      background: rgba(30, 41, 59, 0.95);
+      color: #e2e8f0;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
 
-body.night-mode .doc-cv,
-body.night-mode .doc-lettre,
-body.night-mode .doc-rapport,
-body.night-mode .doc-facture,
-body.night-mode .doc-contrat {
-  background: rgba(30, 41, 59, 0.95);
-  color: #e2e8f0;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-}
+    .doc-cv h1 {
+      color: #4361ee;
+      font-size: 32px;
+      margin-bottom: 5px;
+      text-align: center;
+      border-bottom: none;
+    }
+    body.night-mode .doc-cv h1 { color: var(--accent-cyan); }
 
-/* === CV === */
-.doc-cv h1 {
-  color: #4361ee;
-  font-size: 32px;
-  margin-bottom: 5px;
-  text-align: center;
-  border-bottom: none;
-}
-body.night-mode .doc-cv h1 { color: var(--accent-cyan); }
+    .doc-cv .subtitle {
+      text-align: center;
+      color: #666;
+      font-size: 18px;
+      margin-bottom: 10px;
+    }
+    body.night-mode .doc-cv .subtitle { color: #94a3b8; }
 
-.doc-cv .subtitle {
-  text-align: center;
-  color: #666;
-  font-size: 18px;
-  margin-bottom: 10px;
-}
-body.night-mode .doc-cv .subtitle { color: #94a3b8; }
+    .doc-cv .contact {
+      text-align: center;
+      color: #999;
+      font-size: 14px;
+      margin-bottom: 30px;
+      padding-bottom: 20px;
+      border-bottom: 2px solid #4361ee;
+    }
+    body.night-mode .doc-cv .contact { 
+      color: #94a3b8; 
+      border-bottom-color: var(--accent-cyan);
+    }
 
-.doc-cv .contact {
-  text-align: center;
-  color: #999;
-  font-size: 14px;
-  margin-bottom: 30px;
-  padding-bottom: 20px;
-  border-bottom: 2px solid #4361ee;
-}
-body.night-mode .doc-cv .contact { 
-  color: #94a3b8; 
-  border-bottom-color: var(--accent-cyan);
-}
+    .doc-cv h2 {
+      color: #4361ee;
+      font-size: 20px;
+      margin-top: 25px;
+      margin-bottom: 15px;
+      border-left: 4px solid #4361ee;
+      padding-left: 15px;
+      border-bottom: none;
+    }
+    body.night-mode .doc-cv h2 { 
+      color: var(--accent-cyan); 
+      border-left-color: var(--accent-cyan);
+    }
 
-.doc-cv h2 {
-  color: #4361ee;
-  font-size: 20px;
-  margin-top: 25px;
-  margin-bottom: 15px;
-  border-left: 4px solid #4361ee;
-  padding-left: 15px;
-  border-bottom: none;
-}
-body.night-mode .doc-cv h2 { 
-  color: var(--accent-cyan); 
-  border-left-color: var(--accent-cyan);
-}
+    .doc-cv .experience, .doc-cv .formation {
+      margin: 20px 0;
+      padding-left: 20px;
+    }
 
-.doc-cv .experience, .doc-cv .formation {
-  margin: 20px 0;
-  padding-left: 20px;
-}
+    .doc-cv .experience h3, .doc-cv .formation h3 {
+      font-size: 16px;
+      color: #333;
+      margin-bottom: 5px;
+    }
+    body.night-mode .doc-cv .experience h3,
+    body.night-mode .doc-cv .formation h3 { color: #e2e8f0; }
 
-.doc-cv .experience h3, .doc-cv .formation h3 {
-  font-size: 16px;
-  color: #333;
-  margin-bottom: 5px;
-}
-body.night-mode .doc-cv .experience h3,
-body.night-mode .doc-cv .formation h3 { color: #e2e8f0; }
+    .doc-cv .meta {
+      color: #666;
+      font-size: 14px;
+      margin-bottom: 10px;
+    }
+    body.night-mode .doc-cv .meta { color: #94a3b8; }
 
-.doc-cv .meta {
-  color: #666;
-  font-size: 14px;
-  margin-bottom: 10px;
-}
-body.night-mode .doc-cv .meta { color: #94a3b8; }
+    .doc-cv .skills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 10px;
+    }
 
-.doc-cv .skills {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-top: 10px;
-}
+    .doc-cv .skill {
+      background: #e9ecef;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 14px;
+      color: #333;
+    }
+    body.night-mode .doc-cv .skill {
+      background: rgba(51, 65, 85, 0.6);
+      color: #e2e8f0;
+    }
 
-.doc-cv .skill {
-  background: #e9ecef;
-  padding: 8px 16px;
-  border-radius: 20px;
-  font-size: 14px;
-  color: #333;
-}
-body.night-mode .doc-cv .skill {
-  background: rgba(51, 65, 85, 0.6);
-  color: #e2e8f0;
-}
+    .doc-lettre .expediteur,
+    .doc-lettre .destinataire,
+    .doc-lettre .lieu-date,
+    .doc-lettre .objet,
+    .doc-lettre .corps,
+    .doc-lettre .formule {
+      margin-bottom: 20px;
+    }
 
-/* === LETTRE === */
-.doc-lettre .expediteur,
-.doc-lettre .destinataire,
-.doc-lettre .lieu-date,
-.doc-lettre .objet,
-.doc-lettre .corps,
-.doc-lettre .formule {
-  margin-bottom: 20px;
-}
+    .doc-lettre .expediteur { text-align: right; }
+    .doc-lettre .lieu-date { text-align: right; }
+    .doc-lettre .objet { font-weight: bold; }
+    .doc-lettre .corps p { text-align: justify; margin-bottom: 15px; }
+    .doc-lettre .formule { margin-top: 40px; }
 
-.doc-lettre .expediteur { text-align: right; }
-.doc-lettre .lieu-date { text-align: right; }
-.doc-lettre .objet { font-weight: bold; }
-.doc-lettre .corps p { text-align: justify; margin-bottom: 15px; }
-.doc-lettre .formule { margin-top: 40px; }
+    .doc-rapport h1 {
+      text-align: center;
+      color: #4361ee;
+      font-size: 28px;
+      margin-bottom: 10px;
+      border-bottom: none;
+    }
+    body.night-mode .doc-rapport h1 { color: var(--accent-cyan); }
 
-/* === RAPPORT === */
-.doc-rapport h1 {
-  text-align: center;
-  color: #4361ee;
-  font-size: 28px;
-  margin-bottom: 10px;
-  border-bottom: none;
-}
-body.night-mode .doc-rapport h1 { color: var(--accent-cyan); }
+    .doc-rapport .subtitle {
+      text-align: center;
+      color: #666;
+      margin-bottom: 5px;
+    }
+    body.night-mode .doc-rapport .subtitle { color: #94a3b8; }
 
-.doc-rapport .subtitle {
-  text-align: center;
-  color: #666;
-  margin-bottom: 5px;
-}
-body.night-mode .doc-rapport .subtitle { color: #94a3b8; }
+    .doc-rapport .meta {
+      text-align: center;
+      color: #999;
+      font-size: 14px;
+      margin-bottom: 30px;
+    }
+    body.night-mode .doc-rapport .meta { color: #94a3b8; }
 
-.doc-rapport .meta {
-  text-align: center;
-  color: #999;
-  font-size: 14px;
-  margin-bottom: 30px;
-}
-body.night-mode .doc-rapport .meta { color: #94a3b8; }
+    .doc-rapport .resume {
+      background: #f8f9fa;
+      padding: 20px;
+      border-radius: 8px;
+      margin: 20px 0;
+    }
+    body.night-mode .doc-rapport .resume {
+      background: rgba(51, 65, 85, 0.3);
+    }
 
-.doc-rapport .resume {
-  background: #f8f9fa;
-  padding: 20px;
-  border-radius: 8px;
-  margin: 20px 0;
-}
-body.night-mode .doc-rapport .resume {
-  background: rgba(51, 65, 85, 0.3);
-}
+    .doc-rapport h2 {
+      color: #4361ee;
+      border-bottom: 2px solid #4361ee;
+      padding-bottom: 10px;
+      margin-top: 30px;
+      margin-bottom: 15px;
+    }
+    body.night-mode .doc-rapport h2 {
+      color: var(--accent-cyan);
+      border-bottom-color: var(--accent-cyan);
+    }
 
-.doc-rapport h2 {
-  color: #4361ee;
-  border-bottom: 2px solid #4361ee;
-  padding-bottom: 10px;
-  margin-top: 30px;
-  margin-bottom: 15px;
-}
-body.night-mode .doc-rapport h2 {
-  color: var(--accent-cyan);
-  border-bottom-color: var(--accent-cyan);
-}
+    .doc-facture .facture-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 30px;
+      border-bottom: 3px solid #4361ee;
+      padding-bottom: 15px;
+    }
+    body.night-mode .doc-facture .facture-header {
+      border-bottom-color: var(--accent-cyan);
+    }
 
-/* === FACTURE === */
-.doc-facture .facture-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 30px;
-  border-bottom: 3px solid #4361ee;
-  padding-bottom: 15px;
-}
-body.night-mode .doc-facture .facture-header {
-  border-bottom-color: var(--accent-cyan);
-}
+    .doc-facture .facture-header h1 {
+      color: #4361ee;
+      font-size: 32px;
+      margin: 0;
+      border: none;
+    }
+    body.night-mode .doc-facture .facture-header h1 { color: var(--accent-cyan); }
 
-.doc-facture .facture-header h1 {
-  color: #4361ee;
-  font-size: 32px;
-  margin: 0;
-  border: none;
-}
-body.night-mode .doc-facture .facture-header h1 { color: var(--accent-cyan); }
+    .doc-facture .facture-parties {
+      display: flex;
+      justify-content: space-between;
+      margin: 20px 0 30px;
+      gap: 20px;
+    }
 
-.doc-facture .facture-parties {
-  display: flex;
-  justify-content: space-between;
-  margin: 20px 0 30px;
-  gap: 20px;
-}
+    .doc-facture .emetteur, .doc-facture .client {
+      flex: 1;
+      padding: 15px;
+      background: #f8f9fa;
+      border-radius: 8px;
+    }
+    body.night-mode .doc-facture .emetteur,
+    body.night-mode .doc-facture .client {
+      background: rgba(51, 65, 85, 0.3);
+    }
 
-.doc-facture .emetteur, .doc-facture .client {
-  flex: 1;
-  padding: 15px;
-  background: #f8f9fa;
-  border-radius: 8px;
-}
-body.night-mode .doc-facture .emetteur,
-body.night-mode .doc-facture .client {
-  background: rgba(51, 65, 85, 0.3);
-}
+    .doc-facture .facture-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 20px 0;
+    }
 
-.doc-facture .facture-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin: 20px 0;
-}
+    .doc-facture .facture-table th,
+    .doc-facture .facture-table td {
+      padding: 12px;
+      border-bottom: 1px solid #ddd;
+      text-align: left;
+    }
+    body.night-mode .doc-facture .facture-table th,
+    body.night-mode .doc-facture .facture-table td {
+      border-bottom-color: rgba(255, 255, 255, 0.1);
+    }
 
-.doc-facture .facture-table th,
-.doc-facture .facture-table td {
-  padding: 12px;
-  border-bottom: 1px solid #ddd;
-  text-align: left;
-}
-body.night-mode .doc-facture .facture-table th,
-body.night-mode .doc-facture .facture-table td {
-  border-bottom-color: rgba(255, 255, 255, 0.1);
-}
+    .doc-facture .facture-table thead {
+      background: #4361ee;
+      color: white;
+    }
+    body.night-mode .doc-facture .facture-table thead {
+      background: var(--accent-cyan);
+    }
 
-.doc-facture .facture-table thead {
-  background: #4361ee;
-  color: white;
-}
-body.night-mode .doc-facture .facture-table thead {
-  background: var(--accent-cyan);
-}
+    .doc-facture .facture-table tfoot {
+      background: #e9ecef;
+      font-weight: bold;
+      font-size: 18px;
+    }
+    body.night-mode .doc-facture .facture-table tfoot {
+      background: rgba(51, 65, 85, 0.6);
+    }
 
-.doc-facture .facture-table tfoot {
-  background: #e9ecef;
-  font-weight: bold;
-  font-size: 18px;
-}
-body.night-mode .doc-facture .facture-table tfoot {
-  background: rgba(51, 65, 85, 0.6);
-}
+    .doc-facture .facture-notes {
+      margin-top: 20px;
+      padding: 15px;
+      background: #fff3cd;
+      border-left: 4px solid #ffc107;
+      border-radius: 4px;
+    }
+    body.night-mode .doc-facture .facture-notes {
+      background: rgba(255, 193, 7, 0.2);
+      border-left-color: #ffc107;
+    }
 
-.doc-facture .facture-notes {
-  margin-top: 20px;
-  padding: 15px;
-  background: #fff3cd;
-  border-left: 4px solid #ffc107;
-  border-radius: 4px;
-}
-body.night-mode .doc-facture .facture-notes {
-  background: rgba(255, 193, 7, 0.2);
-  border-left-color: #ffc107;
-}
+    .doc-contrat h1 {
+      text-align: center;
+      color: #4361ee;
+      font-size: 28px;
+      margin-bottom: 20px;
+      border-bottom: none;
+    }
+    body.night-mode .doc-contrat h1 { color: var(--accent-cyan); }
 
-/* === CONTRAT === */
-.doc-contrat h1 {
-  text-align: center;
-  color: #4361ee;
-  font-size: 28px;
-  margin-bottom: 20px;
-  border-bottom: none;
-}
-body.night-mode .doc-contrat h1 { color: var(--accent-cyan); }
+    .doc-contrat h2 {
+      color: #4361ee;
+      font-size: 18px;
+      margin-top: 30px;
+      margin-bottom: 15px;
+      border-bottom: 2px solid #4361ee;
+      padding-bottom: 8px;
+    }
+    body.night-mode .doc-contrat h2 {
+      color: var(--accent-cyan);
+      border-bottom-color: var(--accent-cyan);
+    }
 
-.doc-contrat h2 {
-  color: #4361ee;
-  font-size: 18px;
-  margin-top: 30px;
-  margin-bottom: 15px;
-  border-bottom: 2px solid #4361ee;
-  padding-bottom: 8px;
-}
-body.night-mode .doc-contrat h2 {
-  color: var(--accent-cyan);
-  border-bottom-color: var(--accent-cyan);
-}
+    .doc-contrat .partie {
+      margin: 15px 0;
+      padding-left: 20px;
+    }
 
-.doc-contrat .partie {
-  margin: 15px 0;
-  padding-left: 20px;
-}
+    .doc-contrat .meta {
+      text-align: center;
+      color: #666;
+      font-size: 14px;
+      margin-bottom: 30px;
+    }
+    body.night-mode .doc-contrat .meta { color: #94a3b8; }
 
-.doc-contrat .meta {
-  text-align: center;
-  color: #666;
-  font-size: 14px;
-  margin-bottom: 30px;
-}
-body.night-mode .doc-contrat .meta { color: #94a3b8; }
-
-/* === RESPONSIVE === */
-@media (max-width: 760px) {
-  .doc-cv, .doc-lettre, .doc-rapport, .doc-facture, .doc-contrat {
-    padding: 20px;
-  }
-  
-  .doc-facture .facture-parties {
-    flex-direction: column;
-  }
-  
-  .doc-facture .facture-table {
-    font-size: 13px;
-  }
-  
-  .doc-facture .facture-table th,
-  .doc-facture .facture-table td {
-    padding: 8px;
-  }
-}
+    @media (max-width: 760px) {
+      .doc-cv, .doc-lettre, .doc-rapport, .doc-facture, .doc-contrat {
+        padding: 20px;
+      }
+      
+      .doc-facture .facture-parties {
+        flex-direction: column;
+      }
+      
+      .doc-facture .facture-table {
+        font-size: 13px;
+      }
+      
+      .doc-facture .facture-table th,
+      .doc-facture .facture-table td {
+        padding: 8px;
+      }
+    }
   </style>
 </head>
 <body>
@@ -1080,7 +980,7 @@ body.night-mode .doc-contrat .meta { color: #94a3b8; }
   <div id="login-overlay">
     <div class="login-box">
       <div class="app-icon"><i class="fas fa-home-user"></i></div>
-      <h2>SmartHome Intelligence</h2>
+      <h2>SmartHome Intelligence v10.0</h2>
       <p>Veuillez vous connecter pour accéder à votre assistant domotique.</p>
       <button class="btn primary" id="googleSignInOverlayBtn" style="width:100%; justify-content:center;">
           <svg style="width:20px; height:20px; margin-right:8px;" viewBox="0 0 24 24"><path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" style="color:#4285F4"></path><path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" style="color:#34A853"></path><path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" style="color:#FBBC05"></path><path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" style="color:#EA4335"></path><path fill="none" d="M1 1h22v22H1z"></path></svg>
@@ -1103,6 +1003,7 @@ body.night-mode .doc-contrat .meta { color: #94a3b8; }
         </div>
       </header>
 
+      <!-- SECTION DOMOTIQUE -->
       <section id="sec-domotique" class="section active">
         <div class="grid" style="grid-template-columns:1fr">
           <div>
@@ -1159,6 +1060,7 @@ body.night-mode .doc-contrat .meta { color: #94a3b8; }
         </div>
       </section>
 
+      <!-- SECTION INTELLIGENCE / CHAT -->
       <section id="sec-intelligence" class="section">
         <button id="sidebar-toggle-btn"><i class="fas fa-bars"></i></button>
         <div id="sidebar-overlay"></div>
@@ -1225,6 +1127,7 @@ body.night-mode .doc-contrat .meta { color: #94a3b8; }
         </div>
       </section>
 
+      <!-- SECTION PLANNING -->
       <section id="sec-planning" class="section">
         <div class="two-column">
           <div class="card">
@@ -1253,6 +1156,7 @@ body.night-mode .doc-contrat .meta { color: #94a3b8; }
         </div>
       </section>
 
+      <!-- SECTION PARAMÈTRES -->
       <section id="sec-params" class="section">
         <div class="card">
           <h2>Paramètres du Système</h2>
@@ -1324,14 +1228,14 @@ body.night-mode .doc-contrat .meta { color: #94a3b8; }
     </footer>
       
   </div>
-  <div id="print-staging-area"></div>
+  
   <script type="module">
   /*************************************************
-   * SmartHome Intelligence - Version 9.9 CORRIGÉE
-   * ✅ Détection documents JSON structurés
-   * ✅ Affichage images avec preview
-   * ✅ Téléchargement PDF/DOCX fonctionnel
-   * ✅ Gestion d'erreurs améliorée
+   * SmartHome Intelligence - Version 10.0 ARTIFACTS
+   * ✅ Système de continuation (comme Claude)
+   * ✅ Blocs de code fond noir (comme Gemini)
+   * ✅ Lecture vocale UNIQUEMENT texte (pas HTML/CSS)
+   * ✅ Interface Artifacts complète
    *************************************************/
 
   // ======= CONFIG =======
@@ -1399,201 +1303,136 @@ body.night-mode .doc-contrat .meta { color: #94a3b8; }
   ];
   let suggestionIndex = 0;
 
- 
-  
-// ========================================
-  // ✅ FONCTIONNALITÉS DOCUMENTS v9.9 (CORRIGÉES)
   // ========================================
-  
-  // ✅ Fonction de détection de TOKEN IMAGE
-  function detectImageToken(content) {
-    const imageTokenMatch = content.match(/<IMAGE_URL_TOKEN>(.*?)<\/IMAGE_URL_TOKEN>/);
-    if (imageTokenMatch) {
-      return imageTokenMatch[1];
+  // ✅ FONCTION POUR EXTRAIRE TEXTE LISIBLE
+  // (Ignore HTML/CSS/Code pour la lecture vocale)
+  // ========================================
+  function extractReadableText(content) {
+    // Si c'est du HTML de document (CV, lettre, etc.)
+    if (content.includes('<DOCUMENT_HTML>') || content.includes('doc-cv') || content.includes('doc-lettre')) {
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = content.replace(/<DOCUMENT_HTML>/g, '').replace(/<\/DOCUMENT_HTML>/g, '');
+      
+      // Retirer les balises style et script
+      tempDiv.querySelectorAll('style, script').forEach(el => el.remove());
+      
+      // Extraire uniquement le texte
+      const text = tempDiv.innerText || tempDiv.textContent || '';
+      
+      // Limiter à 500 caractères pour ne pas avoir une lecture trop longue
+      return text.substring(0, 500).trim();
     }
-    return null;
+    
+    // Si c'est du Markdown avec code
+    if (content.includes('```')) {
+      // Retirer tous les blocs de code
+      const withoutCode = content.replace(/```[\s\S]*?```/g, '');
+      
+      // Convertir le Markdown restant en HTML puis extraire le texte
+      const html = marked.parse(withoutCode);
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = html;
+      
+      const text = tempDiv.innerText || tempDiv.textContent || '';
+      return text.substring(0, 500).trim();
+    }
+    
+    // Sinon, convertir le Markdown en texte
+    const html = marked.parse(content);
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = html;
+    
+    // Retirer les blocs pre/code
+    tempDiv.querySelectorAll('pre, code').forEach(el => el.remove());
+    
+    const text = tempDiv.innerText || tempDiv.textContent || '';
+    return text.substring(0, 500).trim();
   }
-  
-  
-  window.downloadAsFile = function(filename, content, mimeType = 'text/plain') {
-    const blob = new Blob([content], { type: mimeType + ';charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    console.log(`✅ Fichier téléchargé: ${filename}`);
-  };
 
-  // ------------------------------------------------------------------
-  // ⬇️ DÉBUT DE LA CORRECTION ⬇️
-  // (La fonction "window.downloadImage" était mal commentée)
-  // ------------------------------------------------------------------
+  // ========================================
+  // ✅ FONCTION D'AFFICHAGE DES MESSAGES
+  // ========================================
+  function appendChat(role, text, returnElement = false, attachments = []) {
+    const target = document.getElementById('chatFullWindow');
+    if (!target) return;
+    
+    const node = document.createElement('div');
+    node.className = 'msg ' + (role === 'user' ? 'user' : 'bot');
 
-  window.downloadImage = function(imageUrl, filename = null) {
-      if (!filename) {
-        filename = `intellia_image_${Date.now()}.png`;
+    if (role === 'user') {
+      if (text) {
+        node.textContent = text;
       }
-      fetch(imageUrl)
-        .then(response => response.blob())
-        .then(blob => {
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = filename;
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-          URL.revokeObjectURL(url);
-          console.log(`✅ Image téléchargée: ${filename}`);
-        })
-        .catch(error => { // Le .catch est maintenant correctement rattaché
-          console.error("❌ Erreur de téléchargement d'image:", error);
-          alert("Impossible de télécharger l'image. Veuillez réessayer.");
+    } else {
+      // ✅ CAS : Document HTML Direct
+      const documentHtmlMatch = text.match(/<DOCUMENT_HTML>([\s\S]*?)<\/DOCUMENT_HTML>/);
+      if (documentHtmlMatch) {
+        const documentHtml = documentHtmlMatch[1].trim();
+        
+        node.innerHTML = `
+          ${documentHtml}
+          <div style="margin-top: 30px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+            <button class="btn primary" onclick="printDocument()">
+              <i class="fas fa-print"></i> Imprimer
+            </button>
+            <button class="btn success" onclick="copyDocumentHtml()">
+              <i class="fas fa-copy"></i> Copier le HTML
+            </button>
+          </div>
+        `;
+        
+        target.appendChild(node);
+        scrollToBottom();
+        return node;
+      }
+      
+      // ✅ CAS : Markdown normal
+      if (text) {
+        const renderedHtml = marked.parse(text, { sanitize: false, gfm: true });
+        node.innerHTML = renderedHtml;
+        
+        // Coloration syntaxique
+        node.querySelectorAll('pre code').forEach(block => {
+          hljs.highlightElement(block);
         });
-  };
-
-  // ------------------------------------------------------------------
-  // ⬆️ FIN DE LA CORRECTION ⬆️
-
-
-
-  // ✅ Fonction pour ajouter les boutons universels
-  function addUniversalButtons(element, content, filename = 'contenu') {
-    const buttonsContainer = document.createElement('div');
-    buttonsContainer.className = 'universal-buttons';
-    
-    // Bouton Copier
-    const copyBtn = document.createElement('button');
-    copyBtn.className = 'universal-btn copy';
-    copyBtn.innerHTML = '<i class="fas fa-copy"></i> Copier';
-    copyBtn.onclick = () => {
-      navigator.clipboard.writeText(content);
-      copyBtn.innerHTML = '<i class="fas fa-check"></i> Copié !';
-      setTimeout(() => {
-        copyBtn.innerHTML = '<i class="fas fa-copy"></i> Copier';
-      }, 2000);
-    };
-    
-    // Bouton Télécharger
-    const downloadBtn = document.createElement('button');
-    downloadBtn.className = 'universal-btn download';
-    downloadBtn.innerHTML = '<i class="fas fa-download"></i> Télécharger';
-    downloadBtn.onclick = () => {
-      const extension = filename.includes('.') ? '' : '.txt';
-      window.downloadAsFile(filename + extension, content);
-    };
-    
-    buttonsContainer.appendChild(copyBtn);
-    buttonsContainer.appendChild(downloadBtn);
-    element.appendChild(buttonsContainer);
-  }
-
-function appendChat(role, text, returnElement = false, attachments = []) {
-  const target = document.getElementById('chatFullWindow');
-  if (!target) return;
-  
-  const node = document.createElement('div');
-  node.className = 'msg ' + (role === 'user' ? 'user' : 'bot');
-
-  if (role === 'user') {
-    if (text) {
-      node.textContent = text;
-    }
-  } else {
-    // ✅ CAS 1 : Image
-    const imageUrl = detectImageToken(text);
-    if (imageUrl) {
-      const imageHtml = `
-        <div class="ai-image-container" style="position: relative; display: inline-block;">
-          <img src="${imageUrl}" style="max-width:100%; border-radius:12px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
-          <button class="image-download-btn" onclick="window.downloadImage('${imageUrl}')">
-            <i class="fas fa-download"></i> Télécharger
-          </button>
-        </div>
-        <div style="margin-top: 15px;">
-          <button class="btn primary" onclick="window.downloadImage('${imageUrl}')">
-            <i class="fas fa-download"></i> Télécharger l'Image
-          </button>
-        </div>
-      `;
-      node.innerHTML = imageHtml;
-      target.appendChild(node);
-      scrollToBottom();
-      return node;
-    }
-    
-    // ✅ CAS 2 : Document HTML Direct (NOUVEAU)
-    const documentHtmlMatch = text.match(/<DOCUMENT_HTML>([\s\S]*?)<\/DOCUMENT_HTML>/);
-    if (documentHtmlMatch) {
-      const documentHtml = documentHtmlMatch[1].trim();
-      
-      node.innerHTML = `
-        ${documentHtml}
-        <div style="margin-top: 30px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
-          <button class="btn primary" onclick="printDocument()">
-            <i class="fas fa-print"></i> Imprimer
-          </button>
-          <button class="btn success" onclick="copyDocumentHtml()">
-            <i class="fas fa-copy"></i> Copier le HTML
-          </button>
-        </div>
-      `;
-      
-      target.appendChild(node);
-      scrollToBottom();
-      return node;
-    }
-    
-    // ✅ CAS 3 : Markdown normal
-    if (text) {
-      const renderedHtml = marked.parse(text, { sanitize: false, gfm: true });
-      node.innerHTML = renderedHtml;
-      
-      node.querySelectorAll('pre code').forEach(block => {
-        hljs.highlightElement(block);
-      });
-      
-      addCopyButtons(node);
-      addUniversalButtons(node, text, `conversation_${Date.now()}`);
-      
-    } else if (returnElement) {
-      node.classList.add('loading');
-    }
-  }
-  
-  // Gestion des pièces jointes (GARDER TEL QUEL)
-  if (attachments && attachments.length > 0) {
-    const attachmentsDiv = document.createElement('div');
-    attachmentsDiv.style.cssText = 'margin-top: 8px; display: flex; flex-wrap: wrap; gap: 8px;';
-    
-    attachments.forEach(att => {
-      if (att.type === 'image' && att.data) {
-        const img = document.createElement('img');
-        img.src = att.data;
-        img.style.cssText = 'max-width: 150px; max-height: 150px; border-radius: 8px; object-fit: cover; cursor: pointer;';
-        img.onclick = () => window.open(att.data, '_blank');
-        attachmentsDiv.appendChild(img);
-      } else if (att.type === 'file') {
-        const fileDiv = document.createElement('div');
-        fileDiv.style.cssText = 'padding: 8px 12px; background: rgba(0,0,0,0.1); border-radius: 6px; font-size: 13px;';
-        let iconClass = 'fa-file';
-        if (att.name.endsWith('.pdf')) iconClass = 'fa-file-pdf';
-        else if (att.name.endsWith('.docx')) iconClass = 'fa-file-word';
-        fileDiv.innerHTML = `<i class="fas ${iconClass}"></i> ${att.name}`;
-        attachmentsDiv.appendChild(fileDiv);
+        
+        // Boutons copier sur les blocs de code
+        addCopyButtons(node);
+        
+      } else if (returnElement) {
+        node.classList.add('loading');
       }
-    });
-    node.appendChild(attachmentsDiv);
-  }
+    }
+    
+    // Gestion des pièces jointes
+    if (attachments && attachments.length > 0) {
+      const attachmentsDiv = document.createElement('div');
+      attachmentsDiv.style.cssText = 'margin-top: 8px; display: flex; flex-wrap: wrap; gap: 8px;';
+      
+      attachments.forEach(att => {
+        if (att.type === 'image' && att.data) {
+          const img = document.createElement('img');
+          img.src = att.data;
+          img.style.cssText = 'max-width: 150px; max-height: 150px; border-radius: 8px; object-fit: cover; cursor: pointer;';
+          img.onclick = () => window.open(att.data, '_blank');
+          attachmentsDiv.appendChild(img);
+        } else if (att.type === 'file') {
+          const fileDiv = document.createElement('div');
+          fileDiv.style.cssText = 'padding: 8px 12px; background: rgba(0,0,0,0.1); border-radius: 6px; font-size: 13px;';
+          let iconClass = 'fa-file';
+          if (att.name.endsWith('.pdf')) iconClass = 'fa-file-pdf';
+          else if (att.name.endsWith('.docx')) iconClass = 'fa-file-word';
+          fileDiv.innerHTML = `<i class="fas ${iconClass}"></i> ${att.name}`;
+          attachmentsDiv.appendChild(fileDiv);
+        }
+      });
+      node.appendChild(attachmentsDiv);
+    }
 
-  target.appendChild(node);
-  scrollToBottom();
-  if (returnElement) return node;
-}
+    target.appendChild(node);
+    scrollToBottom();
+    if (returnElement) return node;
+  }
   
   function scrollToBottom() {
     const container = document.getElementById('chatFullWindow');
@@ -1624,164 +1463,138 @@ function appendChat(role, text, returnElement = false, attachments = []) {
     });
   }
   
- function simulateTyping(element, text, enableVoice = true) {
-  return new Promise((resolve, reject) => {
-    
-    if (appState.shouldStopResponse) {
-      element.innerHTML = '<br><br><em style="color: #e74c3c;">⚠️ Réponse interrompue</em>';
-      reject(new Error('Interrupted'));
-      return;
-    }
-    
-    // ✅ CAS 1 : Image
-    const imageUrl = detectImageToken(text);
-    if (imageUrl) {
-      const imageHtml = `
-        <div class="ai-image-container" style="position: relative; display: inline-block;">
-          <img src="${imageUrl}" style="max-width:100%; border-radius:12px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
-          <button class="image-download-btn" onclick="window.downloadImage('${imageUrl}')">
-            <i class="fas fa-download"></i> Télécharger
-          </button>
-        </div>
-        <div style="margin-top: 15px;">
-          <button class="btn primary" onclick="window.downloadImage('${imageUrl}')">
-            <i class="fas fa-download"></i> Télécharger l'Image
-          </button>
-        </div>
-      `;
-      element.innerHTML = imageHtml;
-      element.classList.remove('loading');
-      scrollToBottom();
-      resolve();
-      return;
-    }
-    
-    // ✅ CAS 2 : Document HTML Direct (NOUVEAU)
-    const documentHtmlMatch = text.match(/<DOCUMENT_HTML>([\s\S]*?)<\/DOCUMENT_HTML>/);
-    if (documentHtmlMatch) {
-      const documentHtml = documentHtmlMatch[1].trim();
+  // ========================================
+  // ✅ SIMULATION TYPING AVEC CONTINUATION
+  // ========================================
+  function simulateTyping(element, text, enableVoice = true, needsContinuation = false, continuationContext = null) {
+    return new Promise((resolve, reject) => {
       
-      element.innerHTML = `
-        ${documentHtml}
-        <div style="margin-top: 30px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
-          <button class="btn primary" onclick="window.printDocument(this)">
-            <i class="fas fa-print"></i> Imprimer
-          </button>
-          <button class="btn success" onclick="copyDocumentHtml()">
-            <i class="fas fa-copy"></i> Copier le HTML
-          </button>
-        </div>
-      `;
-      
-      element.classList.remove('loading');
-      scrollToBottom();
-      
-      // ✅ Synthèse vocale pour documents
-      if (enableVoice) {
-        const tempDiv = document.createElement('div');
-        tempDiv.innerHTML = documentHtml;
-        const plainText = tempDiv.innerText.substring(0, 200);
-        speak(`Document généré avec succès. ${plainText}`);
+      if (appState.shouldStopResponse) {
+        element.innerHTML = '<br><br><em style="color: #e74c3c;">⚠️ Réponse interrompue</em>';
+        reject(new Error('Interrupted'));
+        return;
       }
       
+      // ✅ CAS : Document HTML Direct
+      const documentHtmlMatch = text.match(/<DOCUMENT_HTML>([\s\S]*?)<\/DOCUMENT_HTML>/);
+      if (documentHtmlMatch) {
+        const documentHtml = documentHtmlMatch[1].trim();
+        
+        element.innerHTML = `
+          ${documentHtml}
+          <div style="margin-top: 30px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+            <button class="btn primary" onclick="printDocument()">
+              <i class="fas fa-print"></i> Imprimer
+            </button>
+            <button class="btn success" onclick="copyDocumentHtml()">
+              <i class="fas fa-copy"></i> Copier le HTML
+            </button>
+          </div>
+        `;
+        
+        element.classList.remove('loading');
+        scrollToBottom();
+        
+        // ✅ Synthèse vocale pour documents (texte seulement)
+        if (enableVoice && appState.voiceNotifications) {
+          const readableText = extractReadableText(documentHtml);
+          if (readableText) {
+            speak(`Document généré avec succès. ${readableText}`);
+          }
+        }
+        
+        resolve();
+        return;
+      }
+      
+      // ✅ CAS : Markdown normal (code, texte, etc.)
+      if (enableVoice && appState.voiceNotifications) {
+        const readableText = extractReadableText(text);
+        if (readableText) {
+          speak(readableText, true);
+        }
+      }
+      
+      const renderedHtml = marked.parse(text, { sanitize: false, gfm: true });
+      element.innerHTML = renderedHtml;
+      
+      // Coloration syntaxique
+      element.querySelectorAll('pre code').forEach(block => {
+        hljs.highlightElement(block);
+      });
+      
+      // Boutons copier
+      addCopyButtons(element);
+      
+      // ✅ BOUTON CONTINUER (si nécessaire)
+      if (needsContinuation) {
+        const continueBtn = document.createElement('button');
+        continueBtn.className = 'continue-btn';
+        continueBtn.innerHTML = '<i class="fas fa-chevron-down"></i> Continuer';
+        continueBtn.onclick = () => handleContinuation(continuationContext);
+        element.appendChild(continueBtn);
+      }
+      
+      element.classList.remove('loading');
+      scrollToBottom();
       resolve();
-      return;
-    }
-    
-    // ✅ CAS 3 : Markdown normal (code, texte, etc.)
-    if (enableVoice) {
-      const plainText = htmlToPlainText(text);
-      speak(plainText, true);
-    }
-    
-    const renderedHtml = marked.parse(text, { sanitize: false, gfm: true });
-    element.innerHTML = renderedHtml;
-    
-    // Coloration syntaxe
-    element.querySelectorAll('pre code').forEach(block => {
-      hljs.highlightElement(block);
     });
-    
-    // Boutons copier sur les blocs de code
-    addCopyButtons(element);
-    
-    // Boutons universels (copier/télécharger)
-    addUniversalButtons(element, text, `conversation_${Date.now()}`);
-    
-    element.classList.remove('loading');
-    scrollToBottom();
-    resolve();
-  });
-}
-    // ✅ NOUVELLES FONCTIONS POUR DOCUMENTS HTML
-
-// Fonction pour imprimer le document
-
-window.printDocument = function(buttonElement) {
-  // 1. Trouver le document à imprimer
-  const documentToPrint = buttonElement.closest('.msg.bot')?.querySelector('.doc-cv, .doc-lettre, .doc-rapport, .doc-facture, .doc-contrat');
+  }
   
-  if (!documentToPrint) {
-    alert("Erreur : Impossible de trouver le document.");
-    return;
-  }
-
-  // 2. Récupérer la zone tampon
-  const stagingArea = document.getElementById('print-staging-area');
-  if (!stagingArea) {
-    alert("Erreur : Zone d'impression manquante (Étape 1 non faite).");
-    return;
-  }
-
-  // 3. COPIER le contenu (HTML) du document vers la zone tampon
-  stagingArea.innerHTML = documentToPrint.outerHTML;
-
-  // 4. Lancer l'impression
-  // Le CSS @media print va cacher tout le site et ne montrer que stagingArea
-  window.print();
-
-  // 5. Nettoyer après l'impression (pour ne pas alourdir la page)
-  // On attend un peu pour être sûr que l'impression est lancée
-  setTimeout(() => {
-    stagingArea.innerHTML = '';
-  }, 1000);
-};
- 
-// Fonction pour copier le HTML du document
-window.copyDocumentHtml = function() {
-  const docElement = document.querySelector('.doc-cv, .doc-lettre, .doc-rapport, .doc-facture, .doc-contrat');
-  if (docElement) {
-    const html = docElement.outerHTML;
-    navigator.clipboard.writeText(html).then(() => {
-      alert('✅ HTML copié dans le presse-papier !');
-    }).catch(err => {
-      console.error('❌ Erreur copie:', err);
-      alert('❌ Impossible de copier. Utilisez Ctrl+C manuellement.');
-    });
-  } else {
-    alert('❌ Aucun document trouvé à copier.');
-  }
-};
-
-
-
   // ========================================
-  // RESTE DU CODE INCHANGÉ
+  // ✅ GESTION DE LA CONTINUATION
   // ========================================
-  
-  function htmlToPlainText(text) {
+  async function handleContinuation(context) {
+    console.log('🔄 Continuation demandée', context);
+    
+    // Désactiver le bouton
+    const continueBtn = event.target;
+    continueBtn.disabled = true;
+    continueBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Chargement...';
+    
+    appState.chatInProgress = true;
+    appState.shouldStopResponse = false;
+    el('intelliaStatus').textContent = "Assistant: En cours...";
+    el('chat-loading').style.display = 'block';
+    el('chatFullSend').style.display = 'none';
+    el('stopAIBtn').style.display = 'flex';
+    
     try {
-      const html = marked.parse(text, { sanitize: false, gfm: true });
-      let el = document.createElement('div');
-      let cleanHtml = html.replace(/<br\s*\/?>/gi, ' ').replace(/<\/p>/gi, ' ');
-      el.innerHTML = cleanHtml;
-      el.querySelectorAll('pre').forEach(pre => pre.remove());
-      return el.textContent || el.innerText || '';
-    } catch (e) {
-      return text;
+      // Envoyer une requête de continuation
+      const reply = await sendToOnline("Continue", [], true); // true = continuationMode
+      
+      if (!appState.shouldStopResponse) {
+        const botMsgElement = appendChat('bot', '', true);
+        try {
+          await simulateTyping(
+            botMsgElement, 
+            reply, 
+            true, 
+            false // On vérifie si une nouvelle continuation est nécessaire dans la réponse
+          );
+        } catch (interruptError) {
+          console.log('⚠️ Typing interrompu');
+        }
+      } else {
+        appendChat('bot', '<em style="color: #e74c3c;">⚠️ Réponse interrompue</em>');
+      }
+    } catch (error) {
+      if (!appState.shouldStopResponse) {
+        console.error("Erreur continuation:", error);
+        appendChat('bot', "Désolé, une erreur s'est produite lors de la continuation.");
+      }
+    } finally {
+      appState.chatInProgress = false;
+      appState.shouldStopResponse = false;
+      el('chat-loading').style.display = 'none';
+      el('chatFullSend').style.display = 'flex';
+      el('stopAIBtn').style.display = 'none';
     }
   }
 
+  // ========================================
+  // ✅ FONCTION PRINCIPALE CHAT
+  // ========================================
   async function handleChatSubmit(message, attachments = []) {
     if (appState.chatInProgress) return;
     if (!message && attachments.length === 0) return;
@@ -1803,12 +1616,17 @@ window.copyDocumentHtml = function() {
     renderAttachmentPreviews();
     
     try {
-      const reply = await sendToOnline(message, attachments);
+      const reply = await sendToOnline(message, attachments, false);
       
       if (!appState.shouldStopResponse) {
         const botMsgElement = appendChat('bot', '', true);
         try {
-          await simulateTyping(botMsgElement, reply, true);
+          // ✅ Vérifier si continuation nécessaire
+          const needsContinuation = reply.includes('[SUITE DANS LA PROCHAINE RÉPONSE]') || 
+                                     reply.includes('[À suivre...]') || 
+                                     reply.includes('<!-- CONTINUATION NÉCESSAIRE -->');
+          
+          await simulateTyping(botMsgElement, reply, true, needsContinuation, null);
         } catch (interruptError) {
           console.log('⚠️ Typing interrompu');
         }
@@ -1829,6 +1647,9 @@ window.copyDocumentHtml = function() {
     }
   }
   
+  // ========================================
+  // ✅ GESTION VOCALE
+  // ========================================
   async function handleVoiceSubmit(command) {
     if (!command) return;
     if (appState.chatInProgress) {
@@ -1851,12 +1672,14 @@ window.copyDocumentHtml = function() {
     logActivity(`Commande vocale: "${command}"`);
     
     try {
-      const reply = await sendToOnline(command, []);
+      const reply = await sendToOnline(command, [], false);
       
       if (!appState.shouldStopResponse) {
         const botMsgElement = appendChat('bot', '', true);
         try {
-          await simulateTyping(botMsgElement, reply, true);
+          const needsContinuation = reply.includes('[SUITE DANS LA PROCHAINE RÉPONSE]') || 
+                                     reply.includes('[À suivre...]');
+          await simulateTyping(botMsgElement, reply, true, needsContinuation, null);
         } catch (interruptError) {
           console.log('⚠️ Typing interrompu (voix)');
         }
@@ -1877,7 +1700,10 @@ window.copyDocumentHtml = function() {
     }
   }
 
-  async function sendToOnline(message, attachments = []) {
+  // ========================================
+  // ✅ ENVOI API
+  // ========================================
+  async function sendToOnline(message, attachments = [], continuationMode = false) {
     if (!appState.currentUser) {
         alert("Erreur: Utilisateur non connecté. Veuillez rafraîchir.");
         return "Erreur d'authentification.";
@@ -1896,6 +1722,7 @@ window.copyDocumentHtml = function() {
           deviceStates: appState.deviceStates,
           sessionId: appState.currentSessionId,
           userId: appState.currentUser.uid,
+          continuationMode: continuationMode,
           preferences: {
             voiceNotifications: appState.voiceNotifications
           }
@@ -1910,8 +1737,10 @@ window.copyDocumentHtml = function() {
           return "Interrompu.";
       }
       
+      // ✅ Sauvegarder dans Firebase
       await saveMessageToFirebase(message, j.reply, attachments);
       
+      // ✅ Gérer les suggestions, planning, exécution
       if (j.suggestions && j.suggestions.length > 0) displaySuggestions(j.suggestions);
       if (j.planning_commands) handlePlanningCommands(j.planning_commands);
       if (j.execute) handleExecuteCommands(j.execute);
@@ -1921,6 +1750,7 @@ window.copyDocumentHtml = function() {
       el('statusOnline').textContent = "Assistant : disponible";
       logActivity(`Assistant a répondu.`);
       
+      // ✅ RETOURNER LA RÉPONSE (avec needs_continuation si présent)
       return j.reply || "OK";
       
     } catch (e) {
@@ -1937,9 +1767,8 @@ window.copyDocumentHtml = function() {
   }
 
   // ========================================
-// SUITE DU CODE JAVASCRIPT (À AJOUTER APRÈS LA LIGNE 2850 de index.html v9.9)
-// ========================================
-
+  // RESTE DU CODE (INCHANGÉ)
+  // ========================================
   async function handlePlanningCommands(commands) {
     for (const cmd of commands) {
       if (cmd.action === 'add') {
@@ -2075,7 +1904,7 @@ window.copyDocumentHtml = function() {
             <div class="device-name">${device.name}</div>
             <div class="device-status">
               <span class="status-indicator ${isOn ? 'active' : ''}"></span>
-              <span>${isOn ? 'Allumé' : 'Éteint'}${deviceType.hasBrightness ? ` • ${power}%` : ''}</span>
+              <span>${isOn ? 'AllumÉ' : 'Éteint'}${deviceType.hasBrightness ? ` • ${power}%` : ''}</span>
               <small style="display:block;margin-top:4px">${device.room || 'Non spécifié'}</small>
             </div>
           </div>
@@ -2177,7 +2006,7 @@ window.copyDocumentHtml = function() {
     }
 
     const wsUrl = `ws://${ip}/ws`;
-    logActivity(`📡 Tentative de connexion locale à ${wsUrl}...`);
+    logActivity(`🔡 Tentative de connexion locale à ${wsUrl}...`);
 
     if (appState.localWebSocket) {
       appState.localWebSocket.close();
@@ -2909,62 +2738,123 @@ window.copyDocumentHtml = function() {
     el('sidebar-overlay').classList.remove('open');
   });
  
- // ========================================
-// 🔧 CORRECTION CLIENT - À REMPLACER DANS INDEX.HTML
-// Ligne ~1180 (section "Exécution Automatique des Planifications")
-// ========================================
-
-// ✅ SUPPRIMER TOUT LE BLOC setInterval ACTUEL ET LE REMPLACER PAR CECI :
-
-// Système anti-duplication robuste côté client
-let executedTasksClient = new Map();
-let lastCheckedMinuteClient = '';
-
-// Nettoyage des anciennes exécutions (toutes les heures)
-setInterval(() => {
-  const now = Date.now();
-  const oneHourAgo = now - (60 * 60 * 1000);
+  // ======= Exécution Automatique des Planifications =======
   
-  for (const [key, timestamp] of executedTasksClient.entries()) {
-    if (timestamp < oneHourAgo) {
-      executedTasksClient.delete(key);
-    }
-  }
-}, 3600000);
+  let executedTasksClient = new Map();
+  let lastCheckedMinuteClient = '';
 
-// ✅ Vérification des planifications toutes les 30 secondes
-setInterval(async () => {
-  const now = new Date();
-  const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-  
-  // Réinitialiser le cache si on change de minute
-  if (currentTime !== lastCheckedMinuteClient) {
-    console.log(`⏰ Client: Nouvelle minute détectée: ${currentTime}`);
-    lastCheckedMinuteClient = currentTime;
-  }
-  
-  // Si pas de base de données, utiliser les plans locaux
-  if (!db) {
-    const duePlans = appState.plans.filter(p => p.time === currentTime);
+  // Nettoyage des anciennes exécutions (toutes les heures)
+  setInterval(() => {
+    const now = Date.now();
+    const oneHourAgo = now - (60 * 60 * 1000);
     
-    if (duePlans.length > 0) {
-      duePlans.forEach(plan => {
-        const taskKey = `${plan.device}-${plan.time}-${plan.createdAt}`;
+    for (const [key, timestamp] of executedTasksClient.entries()) {
+      if (timestamp < oneHourAgo) {
+        executedTasksClient.delete(key);
+      }
+    }
+  }, 3600000);
+
+  // ✅ Vérification des planifications toutes les 60 secondes
+  setInterval(async () => {
+    const now = new Date();
+    const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+    
+    // Réinitialiser le cache si on change de minute
+    if (currentTime !== lastCheckedMinuteClient) {
+      console.log(`⏰ Client: Nouvelle minute détectée: ${currentTime}`);
+      lastCheckedMinuteClient = currentTime;
+    }
+    
+    // Si pas de base de données, utiliser les plans locaux
+    if (!db) {
+      const duePlans = appState.plans.filter(p => p.time === currentTime);
+      
+      if (duePlans.length > 0) {
+        duePlans.forEach(plan => {
+          const taskKey = `${plan.device}-${plan.time}-${plan.createdAt}`;
+          
+          if (executedTasksClient.has(taskKey)) {
+            const lastExecution = executedTasksClient.get(taskKey);
+            if (Date.now() - lastExecution < 120000) return;
+          }
+          
+          executedTasksClient.set(taskKey, Date.now());
+          
+          const deviceName = appState.devices.find(d => d.id === plan.device)?.name || plan.device;
+          const action = plan.actionType ? (plan.actionType === "allumer" ? "ON" : "OFF") : plan.action;
+          const actionText = action === 'ON' ? 'allumé' : 'éteint';
+          const powerText = plan.power !== null ? ` à ${plan.power}%` : '';
+          
+          logActivity(`⏰ Exécution : ${deviceName} ${actionText}${powerText}`);
+          sendCommand(plan.device, action, plan.power);
+          
+          const chatMessage = `⏰ Tâche planifiée : **${deviceName}** ${actionText}${powerText}`;
+          if (el('chatFullWindow')) appendChat("bot", chatMessage);
+          if (appState.voiceNotifications) speak(`Exécution planifiée. ${deviceName} ${actionText}.`);
+          
+          sendBrowserNotification(
+            '⏰ Tâche Planifiée Exécutée',
+            `${deviceName} a été ${actionText}${powerText}`,
+            { tag: `schedule-${plan.device}-${Date.now()}` }
+          );
+          
+          // Supprimer de la liste locale
+          appState.plans = appState.plans.filter(p => p.createdAt !== plan.createdAt);
+          savePlansToLocalStorage();
+          renderPlanningListUI(appState.plans);
+        });
+      }
+      return;
+    }
+    
+    // ✅ Si Firebase disponible, récupérer les plans directement
+    try {
+      const planningSnapshot = await get(ref(db, planningRefPath));
+      
+      if (!planningSnapshot.exists()) return;
+      
+      const allPlans = planningSnapshot.val();
+      const planEntries = Object.entries(allPlans);
+      
+      const duePlans = planEntries.filter(([id, plan]) => plan.time === currentTime);
+      
+      if (duePlans.length === 0) return;
+      
+      console.log(`⏰ Client: ${duePlans.length} tâche(s) à exécuter à ${currentTime}`);
+      
+      for (const [firebaseId, plan] of duePlans) {
+        const taskKey = `${plan.device}-${plan.time}-${firebaseId}`;
         
+        // Vérifier si déjà exécutée
         if (executedTasksClient.has(taskKey)) {
           const lastExecution = executedTasksClient.get(taskKey);
-          if (Date.now() - lastExecution < 120000) return;
+          const timeSinceExecution = Date.now() - lastExecution;
+          
+          if (timeSinceExecution < 120000) {
+            console.log(`⏭️ Client: Tâche ${taskKey} déjà exécutée`);
+            continue;
+          }
         }
         
+        // Marquer comme exécutée
         executedTasksClient.set(taskKey, Date.now());
         
         const deviceName = appState.devices.find(d => d.id === plan.device)?.name || plan.device;
-        const action = plan.actionType ? (plan.actionType === "allumer" ? "ON" : "OFF") : plan.action;
+        
+        const action = plan.actionType 
+          ? (plan.actionType === "allumer" ? "ON" : "OFF") 
+          : plan.action;
         const actionText = action === 'ON' ? 'allumé' : 'éteint';
-        const powerText = plan.power !== null ? ` à ${plan.power}%` : '';
+        const powerValue = plan.power !== null ? plan.power : 100;
+        const powerText = powerValue !== null ? ` à ${powerValue}%` : '';
+        
+        console.log(`🚀 Client: Exécution ${deviceName} ${actionText}${powerText}`);
+        
+        // Exécuter la commande
+        sendCommand(plan.device, action, powerValue);
         
         logActivity(`⏰ Exécution : ${deviceName} ${actionText}${powerText}`);
-        sendCommand(plan.device, action, plan.power);
         
         const chatMessage = `⏰ Tâche planifiée : **${deviceName}** ${actionText}${powerText}`;
         if (el('chatFullWindow')) appendChat("bot", chatMessage);
@@ -2976,143 +2866,74 @@ setInterval(async () => {
           { tag: `schedule-${plan.device}-${Date.now()}` }
         );
         
-        // Supprimer de la liste locale
-        appState.plans = appState.plans.filter(p => p.createdAt !== plan.createdAt);
-        savePlansToLocalStorage();
-        renderPlanningListUI(appState.plans);
-      });
-    }
-    return;
-  }
-  
-  // ✅ Si Firebase disponible, récupérer les plans directement
-  try {
-    const planningSnapshot = await get(ref(db, planningRefPath));
-    
-    if (!planningSnapshot.exists()) return;
-    
-    const allPlans = planningSnapshot.val();
-    const planEntries = Object.entries(allPlans);
-    
-    const duePlans = planEntries.filter(([id, plan]) => plan.time === currentTime);
-    
-    if (duePlans.length === 0) return;
-    
-    console.log(`⏰ Client: ${duePlans.length} tâche(s) à exécuter à ${currentTime}`);
-    
-    for (const [firebaseId, plan] of duePlans) {
-      const taskKey = `${plan.device}-${plan.time}-${firebaseId}`;
-      
-      // Vérifier si déjà exécutée
-      if (executedTasksClient.has(taskKey)) {
-        const lastExecution = executedTasksClient.get(taskKey);
-        const timeSinceExecution = Date.now() - lastExecution;
-        
-        if (timeSinceExecution < 120000) {
-          console.log(`⏭️ Client: Tâche ${taskKey} déjà exécutée`);
-          continue;
+        // ✅ Supprimer la tâche de Firebase
+        try {
+          await remove(ref(db, `${planningRefPath}/${firebaseId}`));
+          console.log(`🗑️ Client: Tâche supprimée de Firebase: ${firebaseId}`);
+        } catch (deleteError) {
+          console.error(`❌ Client: Erreur suppression tâche:`, deleteError);
         }
       }
       
-      // Marquer comme exécutée
-      executedTasksClient.set(taskKey, Date.now());
-      
-      const deviceName = appState.devices.find(d => d.id === plan.device)?.name || plan.device;
-      
-      const action = plan.actionType 
-        ? (plan.actionType === "allumer" ? "ON" : "OFF") 
-        : plan.action;
-      const actionText = action === 'ON' ? 'allumé' : 'éteint';
-      const powerValue = plan.power !== null ? plan.power : 100;
-      const powerText = powerValue !== null ? ` à ${powerValue}%` : '';
-      
-      console.log(`🚀 Client: Exécution ${deviceName} ${actionText}${powerText}`);
-      
-      // Exécuter la commande
-      sendCommand(plan.device, action, powerValue);
-      
-      logActivity(`⏰ Exécution : ${deviceName} ${actionText}${powerText}`);
-      
-      const chatMessage = `⏰ Tâche planifiée : **${deviceName}** ${actionText}${powerText}`;
-      if (el('chatFullWindow')) appendChat("bot", chatMessage);
-      if (appState.voiceNotifications) speak(`Exécution planifiée. ${deviceName} ${actionText}.`);
-      
-      sendBrowserNotification(
-        '⏰ Tâche Planifiée Exécutée',
-        `${deviceName} a été ${actionText}${powerText}`,
-        { tag: `schedule-${plan.device}-${Date.now()}` }
-      );
-      
-      // ✅ Supprimer la tâche de Firebase (le serveur le fait aussi, double sécurité)
-      try {
-        await remove(ref(db, `${planningRefPath}/${firebaseId}`));
-        console.log(`🗑️ Client: Tâche supprimée de Firebase: ${firebaseId}`);
-      } catch (deleteError) {
-        console.error(`❌ Client: Erreur suppression tâche:`, deleteError);
-      }
+    } catch (error) {
+      console.error('❌ Client: Erreur système de planning:', error);
     }
     
-  } catch (error) {
-    console.error('❌ Client: Erreur système de planning:', error);
-  }
+  }, 60000); // Toutes les 60 secondes
+
+  // ======= Fonction de Nettoyage Client =======
   
-}, 60000); // Toutes les 30 secondes
-
-// ========================================
-// 🔧 FONCTION DE NETTOYAGE CLIENT
-// ========================================
-
-async function cleanExpiredPlansClient() {
-  if (!db) {
-    // Mode local
-    const now = new Date();
-    const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-    
-    const validPlans = appState.plans.filter(plan => plan.time >= currentTime);
-    const deletedCount = appState.plans.length - validPlans.length;
-    
-    if (deletedCount > 0) {
-      appState.plans = validPlans;
-      savePlansToLocalStorage();
-      renderPlanningListUI(appState.plans);
-      logActivity(`🗑️ ${deletedCount} tâche(s) expirée(s) supprimée(s)`);
-    }
-    return;
-  }
-  
-  // Mode Firebase
-  try {
-    const planningSnapshot = await get(ref(db, planningRefPath));
-    
-    if (!planningSnapshot.exists()) return;
-    
-    const allPlans = planningSnapshot.val();
-    const now = new Date();
-    const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-    
-    let deletedCount = 0;
-    
-    for (const [id, plan] of Object.entries(allPlans)) {
-      if (plan.time < currentTime) {
-        await remove(ref(db, `${planningRefPath}/${id}`));
-        deletedCount++;
+  async function cleanExpiredPlansClient() {
+    if (!db) {
+      // Mode local
+      const now = new Date();
+      const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+      
+      const validPlans = appState.plans.filter(plan => plan.time >= currentTime);
+      const deletedCount = appState.plans.length - validPlans.length;
+      
+      if (deletedCount > 0) {
+        appState.plans = validPlans;
+        savePlansToLocalStorage();
+        renderPlanningListUI(appState.plans);
+        logActivity(`🗑️ ${deletedCount} tâche(s) expirée(s) supprimée(s)`);
       }
+      return;
     }
     
-    if (deletedCount > 0) {
-      logActivity(`🗑️ ${deletedCount} tâche(s) expirée(s) supprimée(s)`);
+    // Mode Firebase
+    try {
+      const planningSnapshot = await get(ref(db, planningRefPath));
+      
+      if (!planningSnapshot.exists()) return;
+      
+      const allPlans = planningSnapshot.val();
+      const now = new Date();
+      const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+      
+      let deletedCount = 0;
+      
+      for (const [id, plan] of Object.entries(allPlans)) {
+        if (plan.time < currentTime) {
+          await remove(ref(db, `${planningRefPath}/${id}`));
+          deletedCount++;
+        }
+      }
+      
+      if (deletedCount > 0) {
+        logActivity(`🗑️ ${deletedCount} tâche(s) expirée(s) supprimée(s)`);
+      }
+      
+    } catch (error) {
+      console.error('❌ Erreur nettoyage tâches expirées (client):', error);
     }
-    
-  } catch (error) {
-    console.error('❌ Erreur nettoyage tâches expirées (client):', error);
   }
-}
 
-// Nettoyer toutes les 10 minutes
-setInterval(cleanExpiredPlansClient, 600000);
+  // Nettoyer toutes les 10 minutes
+  setInterval(cleanExpiredPlansClient, 600000);
 
-// Nettoyage au chargement de la page
-setTimeout(cleanExpiredPlansClient, 5000);
+  // Nettoyage au chargement de la page
+  setTimeout(cleanExpiredPlansClient, 5000);
 
   // ======= Auth State Change Listener =======
   if (auth) {
@@ -3224,10 +3045,11 @@ setTimeout(cleanExpiredPlansClient, 5000);
 
   window.appState = appState;
   
-  console.log('✅ SmartHome Intelligence v9.9 COMPLET - Prêt à l\'emploi');
-  console.log('📄 Documents JSON: Fonctionnels');
-  console.log('🖼️ Images: Fonctionnelles');
-  console.log('⬇️ Téléchargements PDF/DOCX: Fonctionnels');
+  console.log('✅ SmartHome Intelligence v10.0 ARTIFACTS - Prêt à l\'emploi');
+  console.log('📄 Documents HTML: Fonctionnels');
+  console.log('🔄 Système de continuation: Actif');
+  console.log('⬛ Blocs de code: Style Gemini (fond noir)');
+  console.log('🗣️ Lecture vocale: Texte uniquement (pas de code)');
   </script>
 </body>
 </html>
