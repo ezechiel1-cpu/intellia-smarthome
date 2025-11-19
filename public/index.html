@@ -980,7 +980,7 @@
   <div id="login-overlay">
     <div class="login-box">
       <div class="app-icon"><i class="fas fa-home-user"></i></div>
-      <h2>SmartHome Intelligence v10.0</h2>
+      <h2>SmartHome Intelligence </h2>
       <p>Veuillez vous connecter pour accéder à votre assistant domotique.</p>
       <button class="btn primary" id="googleSignInOverlayBtn" style="width:100%; justify-content:center;">
           <svg style="width:20px; height:20px; margin-right:8px;" viewBox="0 0 24 24"><path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" style="color:#4285F4"></path><path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" style="color:#34A853"></path><path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" style="color:#FBBC05"></path><path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" style="color:#EA4335"></path><path fill="none" d="M1 1h22v22H1z"></path></svg>
@@ -1348,7 +1348,333 @@
     const text = tempDiv.innerText || tempDiv.textContent || '';
     return text.substring(0, 500).trim();
   }
+// ========================================
+// ✅ FONCTIONS POUR DOCUMENTS HTML
+// ========================================
 
+// Fonction pour imprimer le document
+window.printDocument = function() {
+  try {
+    console.log('🖨️ Impression du document...');
+    
+    // Créer une fenêtre d'impression avec uniquement le document
+    const docElement = document.querySelector('.doc-cv, .doc-lettre, .doc-rapport, .doc-facture, .doc-contrat');
+    
+    if (!docElement) {
+      alert('❌ Aucun document trouvé à imprimer.');
+      return;
+    }
+    
+    // Cloner le document
+    const printContent = docElement.cloneNode(true);
+    
+    // Créer une nouvelle fenêtre
+    const printWindow = window.open('', '_blank');
+    
+    if (!printWindow) {
+      alert('❌ Impossible d\'ouvrir la fenêtre d\'impression. Vérifiez que les popups ne sont pas bloqués.');
+      return;
+    }
+    
+    // Récupérer le mode nuit actuel
+    const isDarkMode = document.body.classList.contains('night-mode');
+    
+    // Écrire le contenu HTML complet dans la nouvelle fenêtre
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <title>Impression - Document</title>
+        <style>
+          * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+          }
+          
+          body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: white;
+            color: #333;
+            padding: 20px;
+          }
+          
+          /* Styles des documents */
+          .doc-cv, .doc-lettre, .doc-rapport, .doc-facture, .doc-contrat {
+            background: white;
+            padding: 40px;
+            max-width: 800px;
+            margin: 0 auto;
+            color: #333;
+            line-height: 1.8;
+          }
+          
+          h1 {
+            color: #4361ee;
+            font-size: 32px;
+            margin-bottom: 10px;
+          }
+          
+          h2 {
+            color: #4361ee;
+            font-size: 20px;
+            margin-top: 25px;
+            margin-bottom: 15px;
+            border-left: 4px solid #4361ee;
+            padding-left: 15px;
+          }
+          
+          h3 {
+            font-size: 16px;
+            color: #333;
+            margin-bottom: 5px;
+          }
+          
+          p {
+            margin-bottom: 12px;
+          }
+          
+          .subtitle {
+            text-align: center;
+            color: #666;
+            font-size: 18px;
+            margin-bottom: 10px;
+          }
+          
+          .contact {
+            text-align: center;
+            color: #999;
+            font-size: 14px;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #4361ee;
+          }
+          
+          .meta {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 10px;
+          }
+          
+          .skills {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+          }
+          
+          .skill {
+            background: #e9ecef;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            color: #333;
+          }
+          
+          .experience, .formation {
+            margin: 20px 0;
+            padding-left: 20px;
+          }
+          
+          /* Facture */
+          .facture-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            border-bottom: 3px solid #4361ee;
+            padding-bottom: 15px;
+          }
+          
+          .facture-parties {
+            display: flex;
+            justify-content: space-between;
+            margin: 20px 0 30px;
+            gap: 20px;
+          }
+          
+          .emetteur, .client {
+            flex: 1;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+          }
+          
+          .facture-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+          }
+          
+          .facture-table th,
+          .facture-table td {
+            padding: 12px;
+            border-bottom: 1px solid #ddd;
+            text-align: left;
+          }
+          
+          .facture-table thead {
+            background: #4361ee;
+            color: white;
+          }
+          
+          .facture-table tfoot {
+            background: #e9ecef;
+            font-weight: bold;
+            font-size: 18px;
+          }
+          
+          .facture-notes {
+            margin-top: 20px;
+            padding: 15px;
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            border-radius: 4px;
+          }
+          
+          /* Lettre */
+          .expediteur { text-align: right; margin-bottom: 20px; }
+          .destinataire { margin-bottom: 20px; }
+          .lieu-date { text-align: right; margin-bottom: 20px; }
+          .objet { font-weight: bold; margin-bottom: 20px; }
+          .corps p { text-align: justify; margin-bottom: 15px; }
+          .formule { margin-top: 40px; }
+          
+          /* Rapport */
+          .resume {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+          }
+          
+          /* Impression */
+          @media print {
+            body {
+              padding: 0;
+            }
+            
+            .doc-cv, .doc-lettre, .doc-rapport, .doc-facture, .doc-contrat {
+              padding: 20px;
+              box-shadow: none;
+            }
+            
+            @page {
+              margin: 1cm;
+            }
+          }
+        </style>
+      </head>
+      <body>
+        ${printContent.outerHTML}
+      </body>
+      </html>
+    `);
+    
+    printWindow.document.close();
+    
+    // Attendre que le contenu soit chargé avant d'imprimer
+    printWindow.onload = function() {
+      setTimeout(() => {
+        printWindow.focus();
+        printWindow.print();
+        
+        // Fermer la fenêtre après impression (optionnel)
+        // printWindow.close();
+      }, 250);
+    };
+    
+    console.log('✅ Fenêtre d\'impression ouverte');
+    
+  } catch (error) {
+    console.error('❌ Erreur impression:', error);
+    alert('❌ Erreur lors de l\'impression. Veuillez réessayer.');
+  }
+};
+
+// Fonction pour copier le HTML du document
+window.copyDocumentHtml = function() {
+  try {
+    const docElement = document.querySelector('.doc-cv, .doc-lettre, .doc-rapport, .doc-facture, .doc-contrat');
+    
+    if (!docElement) {
+      alert('❌ Aucun document trouvé à copier.');
+      return;
+    }
+    
+    const html = docElement.outerHTML;
+    
+    // Copier dans le presse-papier
+    navigator.clipboard.writeText(html).then(() => {
+      console.log('✅ HTML copié dans le presse-papier');
+      
+      // Feedback visuel
+      const btn = event.target.closest('button');
+      if (btn) {
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-check"></i> Copié !';
+        btn.style.background = '#2ecc71';
+        
+        setTimeout(() => {
+          btn.innerHTML = originalText;
+          btn.style.background = '';
+        }, 2000);
+      }
+      
+      alert('✅ HTML copié dans le presse-papier !');
+      
+    }).catch(err => {
+      console.error('❌ Erreur copie:', err);
+      
+      // Fallback : créer un textarea temporaire
+      const textarea = document.createElement('textarea');
+      textarea.value = html;
+      textarea.style.position = 'fixed';
+      textarea.style.opacity = '0';
+      document.body.appendChild(textarea);
+      textarea.select();
+      
+      try {
+        document.execCommand('copy');
+        alert('✅ HTML copié dans le presse-papier !');
+      } catch (e) {
+        alert('❌ Impossible de copier. Utilisez Ctrl+C manuellement.');
+      }
+      
+      document.body.removeChild(textarea);
+    });
+    
+  } catch (error) {
+    console.error('❌ Erreur copie HTML:', error);
+    alert('❌ Erreur lors de la copie. Veuillez réessayer.');
+  }
+};
+
+// Fonction pour télécharger une image (DÉJÀ EXISTANTE - VÉRIFIER)
+window.downloadImage = function(imageUrl, filename = null) {
+  if (!filename) {
+    filename = `intellia_image_${Date.now()}.png`;
+  }
+  
+  fetch(imageUrl)
+    .then(response => response.blob())
+    .then(blob => {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      console.log(`✅ Image téléchargée: ${filename}`);
+    })
+    .catch(error => {
+      console.error("❌ Erreur téléchargement image:", error);
+      alert("❌ Impossible de télécharger l'image. Faites clic droit > Enregistrer l'image.");
+    });
+};
   // ========================================
   // ✅ FONCTION D'AFFICHAGE DES MESSAGES
   // ========================================
