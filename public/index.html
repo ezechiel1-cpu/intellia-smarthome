@@ -2377,1094 +2377,866 @@ async function handleContinuation(context) {
     }
   };
 
-  // ======= Planning =======
-  function populatePlanDeviceSelect() {
-    const sel = el('plan-device');
-    if (!sel) return;
-    sel.innerHTML = appState.devices.map(d => `<option value="${d.id}">${d.name} (${d.room})</option>`).join('');
-  }
+// ======= Planning =======
+function populatePlanDeviceSelect() {
+  const sel = el('plan-device');
+  if (!sel) return;
+  sel.innerHTML = appState.devices.map(d => `<option value="${d.id}">${d.name} (${d.room})</option>`).join('');
+}
 
-  // ✅ Toggle affichage options planning
-  function togglePlanOptions() {
-    const freq = el('plan-frequency').value;
-    el('opt-date').style.display = (freq === 'once') ? 'block' : 'none';
-    el('opt-days').style.display = (freq === 'weekly') ? 'block' : 'none';
-    
-    // Si "une fois", définir la date du jour par défaut
-    if (freq === 'once' && !el('plan-date').value) {
-      el('plan-date').valueAsDate = new Date();
-    }
-  }
-
-  el('plan-frequency')?.addEventListener('change', togglePlanOptions);
-  setTimeout(togglePlanOptions, 500);
-
-  el('addPlan')?.addEventListener('click', async () => {
-    const device = el('plan-device').value;
-    const time = el('plan-time').value;
-    const action = el('plan-action').value;
-    const freq = el('plan-frequency').value;
-    let power = el('plan-power').value;
-    
-    if (!device || !time) return alert('⚠️ Appareil et heure requis');
-    
-    const hasBrightness = appState.devices.find(d => d.id === device)?.hasBrightness ?? true;
-    power = hasBrightness ? (power || (action === "ON" ? 100 : 0)) : null;
-    
-    const payload = {
-      device, 
-      time, 
-      action, 
-      frequency: freq,
-      power: hasBrightness ? parseInt(power) : null,
-      createdAt: Date.now()
-    };
-    
-    // Gestion date spécifique
-    if (freq === 'once') {
-      const dateValue = el('plan-date').value;
-      if (!dateValue) return alert('⚠️ Veuillez sélectionner une date');
-      payload.targetDate = dateValue;
-    }
-    
-    // Gestion jours hebdomadaires
-    if (freq === 'weekly') {
-      const checkedDays = Array.from(document.querySelectorAll('.day-checkbox:checked')).map(cb => parseInt(cb.value));
-      if (checkedDays.length === 0) return alert('⚠️ Sélectionnez au moins un jour de la semaine');
-      payload.daysOfWeek = checkedDays;
-    }
-    
-    if (db) {
-      await push(ref(db, planningRefPath), payload);
-    } else {
-      appState.plans.push(payload);
-      savePlansToLocalStorage();
-      renderPlanningListUI(appState.plans);
-    }
-    
-    logActivity(`✅ Plan ajouté: ${device} à ${time} (${freq})`);
-    alert('✅ Planification ajoutée avec succès !');
-    
-    // Réinitialiser le formulaire
-    el('plan-time').value = '';
-    el('plan-date').value = '';
-    document.querySelectorAll('.day-checkbox').forEach(cb => cb.checked = false);
-  });
-
-  function renderPlanningListUI(plans) {
-    const out = el('planningTable');
-    if (!out) return;
-    if (!plans || !plans.length) {
-      out.innerHTML = '<p style="text-align:center;color:var(--muted);padding:20px">📭 Aucune tâche programmée</p>';
-      return;
-    }
-    
-    out.innerHTML = `<table style="width:100%;border-collapse:collapse">
-      <thead>
-        <tr style="background:rgba(0,0,0,0.03)">
-          <th style="padding:10px;text-align:left">Appareil</th>
-          <th style="padding:10px;text-align:left">Quand</th>
-          <th style="padding:10px;text-align:left">Action</th>
-          <th style="padding:10px;text-align:center">Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${plans.map(p => {
-          const deviceName = appState.devices.find(d => d.id === p.device)?.name || p.device;
-          
-          // Construire la description "Quand"
-          let whenText = p.time;
-          const freq = p.frequency || 'once';
-          
-          if (freq === 'daily') {
-            whenText += ' <span class="chip">📅 Quotidien</span>';
-          } else if (freq === 'weekly' && p.daysOfWeek) {
-            const dayNames = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
-            const days = p.daysOfWeek.map(d => dayNames[d]).join(', ');
-            whenText += ` <span class="chip">📆 ${days}</span>`;
-          } else if (freq === 'monthly') {
-            whenText += ' <span class="chip">📆 Mensuel</span>';
-          } else if (freq === 'once' && p.targetDate) {
-            const date = new Date(p.targetDate).toLocaleDateString('fr-FR');
-            whenText += ` <span class="chip">📅 ${date}</span>`;
-          }
-          
-          const actionText = p.action === 'ON' ? '🟢 ON' : '🔴 OFF';
-          const powerText = p.power !== null ? ` ${p.power}%` : '';
-          
-          return `<tr style="border-bottom:1px solid rgba(0,0,0,0.05)">
-            <td style="padding:10px"><strong>${deviceName}</strong></td>
-            <td style="padding:10px">${whenText}</td>
-            <td style="padding:10px">${actionText}${powerText}</td>
-            <td style="padding:10px;text-align:center">
-              <button class="btn warn" onclick="deletePlan('${p.firebaseId || p.createdAt}')" style="padding:6px 12px">
-                <i class="fas fa-trash"></i>
-              </button>
-            </td>
-          </tr>`;
-        }).join('')}
-      </tbody>
-    </table>`;
-  }
-
-  window.deletePlan = async (planId) => {
-    if (!confirm('🗑️ Supprimer cette planification ?')) return;
-    if (db) { 
-      await remove(ref(db, `${planningRefPath}/${planId}`)); 
-    } else {
-      appState.plans = appState.plans.filter(p => (p.firebaseId || p.createdAt) != planId);
-      savePlansToLocalStorage(); 
-      renderPlanningListUI(appState.plans);
-    }
-    logActivity(`🗑️ Planification supprimée.`);
-  };
-
-  const deleteAllPlans = async () => {
-    if (!confirm('🗑️ Supprimer TOUTES les planifications ?')) return;
-    if (db) await set(ref(db, planningRefPath), null);
-    else { appState.plans = []; savePlansToLocalStorage(); renderPlanningListUI([]); }
-    logActivity(`🗑️ Toutes les planifications supprimées.`);
-    speak('Toutes les planifications ont été supprimées.');
-  };
-  el('clearAllPlans')?.addEventListener('click', deleteAllPlans);
-
-  function updateCount() {
-    const onCount = Object.values(appState.deviceStates).filter(s => s?.etat === 'ON').length;
-    el('db-count').textContent = `on: ${onCount}`;
-  }
-
-  // ======= Local Persistence =======
-  const saveDevicesToLocalStorage = () => localStorage.setItem('sh_devices', JSON.stringify(appState.devices));
-  const loadDevicesFromLocalStorage = () => { appState.devices = JSON.parse(localStorage.getItem('sh_devices') || '[]'); };
-  const savePlansToLocalStorage = () => localStorage.setItem('sh_plans', JSON.stringify(appState.plans));
-  const loadPlansFromLocalStorage = () => { appState.plans = JSON.parse(localStorage.getItem('sh_plans') || '[]'); };
-
-  // ======= Voice Synthesis & Recognition =======
-  let preferredVoice = null;
-  const choosePreferredVoice = () => {
-    const voices = window.speechSynthesis.getVoices() || [];
-    return voices.find(x => /fr[-_]?FR/i.test(x.lang) && /Google/.test(x.name)) || voices.find(x => /fr[-_]?FR/i.test(x.lang)) || voices[0];
-  };
-  if ('speechSynthesis' in window) window.speechSynthesis.onvoiceschanged = () => { preferredVoice = choosePreferredVoice(); };
-
-  function speak(text, isStreaming = false) {
-    if (!appState.voiceNotifications || !text || !('speechSynthesis' in window)) {
-      VoiceEngine.resumeRecognition();
-      return;
-    }
-    
-    if (appState.shouldStopResponse) {
-      window.speechSynthesis.cancel();
-      VoiceEngine.resumeRecognition();
-      return;
-    }
+// ✅ Toggle affichage options planning
+function togglePlanOptions() {
+  const freq = el('plan-frequency').value;
+  el('opt-date').style.display = (freq === 'once') ? 'block' : 'none';
+  el('opt-days').style.display = (freq === 'weekly') ? 'block' : 'none';
   
-    VoiceEngine.pauseRecognition();
-    window.speechSynthesis.cancel();
-    
-    if (isStreaming) {
-      const sentences = text.match(/[^.!?]+[.!?]+/g) || [text];
-      let currentIndex = 0;
-      
-      function speakNextSentence() {
-        if (appState.shouldStopResponse) {
-          window.speechSynthesis.cancel();
-          VoiceEngine.resumeRecognition();
-          return;
-        }
-            
-        if (currentIndex >= sentences.length) {
-          setTimeout(() => VoiceEngine.resumeRecognition(), 150);
-          return;
-        }
-            
-        const sentence = sentences[currentIndex].trim();
-        if (sentence) {
-          const u = new SpeechSynthesisUtterance(sentence);
-          u.lang = 'fr-FR';
-          if (!preferredVoice) preferredVoice = choosePreferredVoice();
-          if (preferredVoice) u.voice = preferredVoice;
-          u.rate = 1.1; 
-          
-          u.onend = () => {
-            currentIndex++;
-            speakNextSentence();
-          };
-          
-          u.onerror = () => {
-            if (appState.shouldStopResponse) {
-              window.speechSynthesis.cancel();
-            }
-          };
-          
-          window.speechSynthesis.speak(u);
-        } else {
-          currentIndex++;
-          speakNextSentence();
-        }
-      }
-      speakNextSentence();
-    } else {
-      const u = new SpeechSynthesisUtterance(text);
-      u.lang = 'fr-FR';
-      if (!preferredVoice) preferredVoice = choosePreferredVoice();
-      if (preferredVoice) u.voice = preferredVoice;
-      u.onend = () => {
-        setTimeout(() => VoiceEngine.resumeRecognition(), 150);
-      };
-      window.speechSynthesis.speak(u);
-    }
+  // Si "une fois", définir la date du jour par défaut
+  if (freq === 'once' && !el('plan-date').value) {
+    el('plan-date').valueAsDate = new Date();
   }
+}
 
-  // ======= Notification de Bureau =======
-  function sendBrowserNotification(title, body, options = {}) {
-    if (!appState.notificationsEnabled) { logActivity('Notification ignorée (désactivée).'); return; }
-    if (!('Notification' in window)) return;
-    const notificationOptions = {
-      body: body, icon: './favicon.ico', badge: './favicon.ico',
-      tag: options.tag || 'smarthome-notification',
-      requireInteraction: options.requireInteraction || false,
-      vibrate: options.vibrate || [200, 100, 200],
-      timestamp: Date.now(), ...options
-    };
-    if (Notification.permission === 'granted') {
-      const notification = new Notification(title, notificationOptions);
-      setTimeout(() => notification.close(), 5000);
-      notification.onclick = () => { window.focus(); notification.close(); };
-    } else if (Notification.permission !== 'denied') {
-      Notification.requestPermission().then(permission => {
-        if (permission === 'granted') { new Notification(title, notificationOptions); }
-      });
-    }
-  }
+el('plan-frequency')?.addEventListener('change', togglePlanOptions);
+setTimeout(togglePlanOptions, 500);
 
-  // ======= Voice Engine =======
-  const VoiceEngine = {
-    recognition: null, isPushToTalkRecording: false,
-    isContinuousActive: false, isPausedForSpeech: false,
-    
-    init() {
-      if (!("webkitSpeechRecognition" in window || "SpeechRecognition" in window)) {
-        el('voicePushToTalk').disabled = true; el('voiceContinuous').disabled = true;
-        el('quickVoiceToggleBtn').disabled = true; el('quickVoiceToggleBtn').textContent = 'Voix non supportée';
-        el('voiceStatus').textContent = 'Voix: Non supportée';
-        return;
-      }
-      this.requestMicrophonePermission();
-      const pushBtn = el('voicePushToTalk');
-      const continuousBtn = el('voiceContinuous');
-      const quickBtn = el('quickVoiceToggleBtn');
-      pushBtn.addEventListener('touchstart', (e) => { e.preventDefault(); this.togglePushToTalk(); });
-      pushBtn.addEventListener('click', () => this.togglePushToTalk());
-      continuousBtn.addEventListener('touchstart', (e) => { e.preventDefault(); this.toggleContinuousConversation(); });
-      continuousBtn.addEventListener('click', () => this.toggleContinuousConversation());
-      quickBtn.addEventListener('touchstart', (e) => { e.preventDefault(); this.toggleContinuousConversation(); });
-      quickBtn.addEventListener('click', () => this.toggleContinuousConversation());
-    },
-    requestMicrophonePermission() {
-      navigator.mediaDevices.getUserMedia({ audio: true })
-        .then(stream => { stream.getTracks().forEach(track => track.stop()); })
-        .catch(err => { console.error("Permission micro:", err); el('voiceStatus').textContent = 'Voix: Permission requise'; });
-    },
-    createRecognitionInstance(continuous = false) {
-      const Rec = window.SpeechRecognition || window.webkitSpeechRecognition;
-      const rec = new Rec();
-      rec.lang = 'fr-FR'; rec.continuous = continuous; rec.interimResults = false;
-      return rec;
-    },
-    updateContinuousUI() {
-        const btn1 = el('voiceContinuous');
-        const btn2 = el('quickVoiceToggleBtn');
-        const status = el('continuousStatus');
-        const isActive = this.isContinuousActive;
-        if (status) status.textContent = isActive ? 'Activé' : 'Désactivé';
-        if (btn1) {
-          btn1.classList.toggle('active', isActive); btn1.classList.toggle('warn', isActive);
-          const icon1 = btn1.querySelector('i');
-          if (icon1) {
-            icon1.classList.toggle('icon-pulse', isActive);
-            icon1.classList.toggle('fa-waveform', !isActive);
-            icon1.classList.toggle('fa-stop-circle', isActive);
-          }
-        }
-        if (btn2) {
-          btn2.classList.toggle('primary', !isActive); btn2.classList.toggle('warn', isActive);
-          btn2.innerHTML = isActive ? 
-            '<i class="fas fa-stop-circle icon-pulse"></i> Conversation active' : 
-            '<i class="fas fa-waveform"></i> Lancer la conversation';
-        }
-    },
-    togglePushToTalk() {
-      if (this.isContinuousActive) this.toggleContinuousConversation();
-      const btn = el('voicePushToTalk');
-      if (this.isPushToTalkRecording) {
-        this.isPushToTalkRecording = false;
-        if (this.recognition) this.recognition.stop();
-        btn.classList.remove('pulse');
-        el('voiceStatus').textContent = 'Voix: Traitement...';
-      } else {
-        this.isPushToTalkRecording = true;
-        this.recognition = this.createRecognitionInstance(false);
-        btn.classList.add('pulse');
-        el('voiceStatus').textContent = 'Voix: Enregistrement...';
-        this.recognition.onresult = (e) => { handleVoiceSubmit(e.results[0][0].transcript); };
-        this.recognition.onend = () => {
-          this.isPushToTalkRecording = false;
-          btn.classList.remove('pulse');
-          el('voiceStatus').textContent = 'Voix: Inactive';
-          this.recognition = null;
-        };
-        this.recognition.start();
-      }
-    },
-    toggleContinuousConversation() {
-        this.isContinuousActive = !this.isContinuousActive;
-        this.updateContinuousUI();
-        if (this.isContinuousActive) { 
-          if (this.isPushToTalkRecording) this.togglePushToTalk();
-          this.startContinuousLoop(); 
-        } else { 
-          this.stopRecognition(); 
-        }
-    },
-    startContinuousLoop() {
-        if (!this.isContinuousActive || this.isPausedForSpeech) return;
-        this.recognition = this.createRecognitionInstance(false);
-        el('voiceStatus').textContent = 'Voix: Écoute...';
-        this.recognition.onresult = (e) => { handleVoiceSubmit(e.results[0][0].transcript); };
-        this.recognition.onerror = (e) => { if (e.error !== 'no-speech' && e.error !== 'aborted') console.warn('Voice error:', e.error); };
-        this.recognition.onend = () => { 
-          if (this.isContinuousActive && !this.isPausedForSpeech) {
-            setTimeout(() => this.startContinuousLoop(), 100);
-          } else {
-            el('voiceStatus').textContent = 'Voix: Inactive';
-          }
-        };
-        try { this.recognition.start(); } catch(e) {}
-    },
-    stopRecognition() {
-      if (this.recognition) { try { this.recognition.stop(); } catch(e) {} }
-      this.recognition = null; this.isPushToTalkRecording = false; this.isContinuousActive = false;
-      el('voicePushToTalk').classList.remove('pulse');
-      this.updateContinuousUI();
-      el('voiceStatus').textContent = 'Voix: Inactive';
-    },
-    pauseRecognition() {
-      if (this.isContinuousActive && !this.isPausedForSpeech) {
-        this.isPausedForSpeech = true;
-        if (this.recognition) {
-          this.recognition.onend = null;
-          try { this.recognition.stop(); } catch(e){}
-        }
-        el('voiceStatus').textContent = 'Voix: En pause';
-      }
-    },
-    resumeRecognition() {
-      if (this.isContinuousActive && this.isPausedForSpeech) { 
-        this.isPausedForSpeech = false; 
-        this.startContinuousLoop();
-      }
-    }
+el('addPlan')?.addEventListener('click', async () => {
+  const device = el('plan-device').value;
+  const time = el('plan-time').value;
+  const action = el('plan-action').value;
+  const freq = el('plan-frequency').value;
+  let power = el('plan-power').value;
+  
+  if (!device || !time) return alert('⚠️ Appareil et heure requis');
+  
+  const hasBrightness = appState.devices.find(d => d.id === device)?.hasBrightness ?? true;
+  power = hasBrightness ? (power || (action === "ON" ? 100 : 0)) : null;
+  
+  const payload = {
+    device, 
+    time, 
+    action, 
+    frequency: freq,
+    power: hasBrightness ? parseInt(power) : null,
+    createdAt: Date.now()
   };
   
-  // ======= Multi-Session & Historique Firebase =======
-  
-  function getChatHistoryRef(userId, sessionId = null) {
-    let path = `${userChatsRefPath}/${userId}`;
-    if (sessionId) path += `/${sessionId}`;
-    return ref(db, path);
+  // Gestion date spécifique
+  if (freq === 'once') {
+    const dateValue = el('plan-date').value;
+    if (!dateValue) return alert('⚠️ Veuillez sélectionner une date');
+    payload.targetDate = dateValue;
   }
+  
+  // Gestion jours hebdomadaires
+  if (freq === 'weekly') {
+    const checkedDays = Array.from(document.querySelectorAll('.day-checkbox:checked')).map(cb => parseInt(cb.value));
+    if (checkedDays.length === 0) return alert('⚠️ Sélectionnez au moins un jour de la semaine');
+    payload.daysOfWeek = checkedDays;
+  }
+  
+  if (db) {
+    await push(ref(db, planningRefPath), payload);
+  } else {
+    appState.plans.push(payload);
+    savePlansToLocalStorage();
+    renderPlanningListUI(appState.plans);
+  }
+  
+  logActivity(`✅ Plan ajouté: ${device} à ${time} (${freq})`);
+  alert('✅ Planification ajoutée avec succès !');
+  
+  // Réinitialiser le formulaire
+  el('plan-time').value = '';
+  el('plan-date').value = '';
+  document.querySelectorAll('.day-checkbox').forEach(cb => cb.checked = false);
+});
 
-  async function loadChatHistorySidebar() {
-    if (!appState.currentUser || !db) return;
-    const historyList = el('chat-history-list');
-    historyList.innerHTML = '';
-    const sessionsRef = getChatHistoryRef(appState.currentUser.uid);
-    const snapshot = await get(sessionsRef);
-    if (snapshot.exists()) {
-      const sessions = snapshot.val();
-      const sortedSessions = Object.keys(sessions).sort((a, b) => {
-        return (sessions[b].lastUpdated || 0) - (sessions[a].lastUpdated || 0);
-      });
-      
-      sortedSessions.forEach(sessionId => {
-        const session = sessions[sessionId];
-        const title = session.title || `Chat du ${new Date(session.createdAt || Date.now()).toLocaleDateString()}`;
+function renderPlanningListUI(plans) {
+  const out = el('planningTable');
+  if (!out) return;
+  if (!plans || !plans.length) {
+    out.innerHTML = '<p style="text-align:center;color:var(--muted);padding:20px">📭 Aucune tâche programmée</p>';
+    return;
+  }
+  
+  out.innerHTML = `<table style="width:100%;border-collapse:collapse">
+    <thead>
+      <tr style="background:rgba(0,0,0,0.03)">
+        <th style="padding:10px;text-align:left">Appareil</th>
+        <th style="padding:10px;text-align:left">Quand</th>
+        <th style="padding:10px;text-align:left">Action</th>
+        <th style="padding:10px;text-align:center">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${plans.map(p => {
+        const deviceName = appState.devices.find(d => d.id === p.device)?.name || p.device;
         
-        const item = document.createElement('div');
-        item.className = 'chat-history-item';
-        item.dataset.sessionId = sessionId;
-
-        const titleSpan = document.createElement('span');
-        titleSpan.textContent = title;
-        titleSpan.className = 'chat-history-item-title';
-        titleSpan.onclick = () => loadChatSession(sessionId);
-        
-        const deleteBtn = document.createElement('button');
-        deleteBtn.innerHTML = '<i class="fas fa-ellipsis-v"></i>';
-        deleteBtn.className = 'btn chat-history-delete';
-        deleteBtn.title = "Supprimer la discussion";
-        deleteBtn.onclick = (e) => {
-          e.stopPropagation();
-          deleteChatSession(sessionId, item);
-        };
-
-        item.appendChild(titleSpan);
-        item.appendChild(deleteBtn);
-        historyList.appendChild(item);
-      });
-    }
-  }
-  
-  function createNewChatSession() {
-    const newSessionId = `chat_${Date.now()}`;
-    appState.currentSessionId = newSessionId;
-    
-    el('chatFullWindow').innerHTML = '';
-    appendChat('bot', '### 👋 Bienvenue !\n\nJe suis prêt pour notre nouvelle discussion.');
-    
-    setTimeout(() => {
-      document.querySelectorAll('.chat-history-item').forEach(i => i.classList.remove('active'));
-    }, 100);
-  }
-  el('new-chat-btn').addEventListener('click', createNewChatSession);
-
-  async function deleteChatSession(sessionId, itemElement) {
-    if (!appState.currentUser || !db) return;
-    if (!confirm("Voulez-vous vraiment supprimer cette discussion ? L'action est irréversible.")) return;
-
-    try {
-      const sessionRef = getChatHistoryRef(appState.currentUser.uid, sessionId);
-      await set(sessionRef, null);
-      itemElement.remove();
-      if (appState.currentSessionId === sessionId) {
-        createNewChatSession();
-      }
-      logActivity(`Discussion ${sessionId} supprimée.`);
-    } catch (error) {
-      console.error("Erreur lors de la suppression du chat:", error);
-      logActivity("Erreur de suppression du chat.");
-    }
-  }
-  
-  async function loadChatSession(sessionId) {
-    if (!appState.currentUser || !db) return;
-    appState.currentSessionId = sessionId;
-    const chatWindow = el('chatFullWindow');
-    chatWindow.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--muted);"><i class="fas fa-spinner fa-spin"></i> Chargement...</div>';
-    
-    try {
-      const messagesRef = ref(db, `${userChatsRefPath}/${appState.currentUser.uid}/${sessionId}/messages`);
-      const snapshot = await get(messagesRef);
-      
-      chatWindow.innerHTML = '';
-      
-      if (snapshot.exists()) {
-        const messages = snapshot.val();
-        const sortedMessages = Object.values(messages).sort((a, b) => a.timestamp - b.timestamp);
-        
-        sortedMessages.forEach(msg => {
-          const attachmentsMeta = msg.attachments || [];
-          appendChat('user', msg.user, false, attachmentsMeta);
-          appendChat('bot', msg.bot, false);
-        });
-        
-        setTimeout(() => {
-          el('chatFullWindow').scrollTop = el('chatFullWindow').scrollHeight;
-        }, 100);
-        
-      } else {
-        appendChat('bot', 'C\'est le début de notre conversation.');
-      }
-      
-      document.querySelectorAll('.chat-history-item').forEach(i => i.classList.remove('active'));
-      document.querySelector(`.chat-history-item[data-session-id="${sessionId}"]`)?.classList.add('active');
-      
-      el('chat-sidebar').classList.remove('open');
-      el('sidebar-overlay').classList.remove('open');
-      
-    } catch (error) {
-      console.error("Erreur chargement chat:", error);
-      chatWindow.innerHTML = '<div class="card" style="text-align: center; color: var(--danger);"><i class="fas fa-exclamation-triangle"></i> Erreur de chargement</div>';
-    }
-  }
-  
-  async function saveMessageToFirebase(userMsg, botMsg, attachments) {
-    if (!appState.currentUser || !db || !appState.currentSessionId) return;
-  
-    const sessionRef = ref(db, `${userChatsRefPath}/${appState.currentUser.uid}/${appState.currentSessionId}`);
-    const sessionSnapshot = await get(sessionRef);
-    
-    const isNewSession = !sessionSnapshot.exists();
-    
-    if (isNewSession) {
-      let newTitle = userMsg;
-      if (!newTitle && attachments.length > 0) {
-        newTitle = `📎 ${attachments[0].name}`;
-      }
-      if (!newTitle) newTitle = "Nouvelle discussion";
-      newTitle = newTitle.substring(0, 30) + (newTitle.length > 30 ? '...' : '');
-      
-      await set(sessionRef, {
-        title: newTitle,
-        createdAt: serverTimestamp(),
-        lastUpdated: serverTimestamp()
-      });
-    }
-  
-    const messagesRef = ref(db, `${userChatsRefPath}/${appState.currentUser.uid}/${appState.currentSessionId}/messages`);
-    const attachmentsMeta = attachments.map(att => ({
-      name: att.name,
-      type: att.type
-    }));
-  
-    await push(messagesRef, {
-      user: userMsg,
-      bot: botMsg,
-      attachments: attachmentsMeta,
-      timestamp: serverTimestamp()
-    });
-  
-    await set(ref(db, `${userChatsRefPath}/${appState.currentUser.uid}/${appState.currentSessionId}/lastUpdated`), serverTimestamp());
-    
-    if (isNewSession) {
-      loadChatHistorySidebar();
-      setTimeout(() => {
-        document.querySelectorAll('.chat-history-item').forEach(i => i.classList.remove('active'));
-        const item = document.querySelector(`.chat-history-item[data-session-id="${appState.currentSessionId}"]`);
-        if (item) item.classList.add('active');
-      }, 200);
-    }
-  }
-  
-  // ======= Gestion des Pièces Jointes =======
-  
-  el('attach-file-btn').addEventListener('click', () => {
-    el('file-input').click();
-  });
-  
-  el('file-input').addEventListener('change', (event) => {
-    for (const file of event.target.files) {
-      if (appState.attachments.length >= 5) {
-        alert("Vous ne pouvez joindre que 5 fichiers maximum."); break;
-      }
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const dataUrl = e.target.result;
-        appState.attachments.push({
-          name: file.name,
-          type: file.type.startsWith('image/') ? 'image' : 'file',
-          data: dataUrl
-        });
-        renderAttachmentPreviews();
-      };
-      reader.readAsDataURL(file);
-    }
-    event.target.value = null;
-  });
-  
-  function renderAttachmentPreviews() {
-    const container = el('attachment-preview-container');
-    container.innerHTML = '';
-    appState.attachments.forEach((file, index) => {
-      const preview = document.createElement('div');
-      preview.className = 'attachment-preview';
-      let iconHtml = '';
-      if (file.type === 'image') {
-        iconHtml = `<img src="${file.data}" alt="${file.name}">`;
-      } else {
-        let iconClass = 'fa-file';
-        let iconColor = '#6c757d';
-        const fileName = file.name.toLowerCase();
-
-        if (fileName.endsWith('.pdf')) {
-          iconClass = 'fa-file-pdf'; iconColor = '#dc3545';
-        } else if (fileName.endsWith('.docx') || fileName.endsWith('.doc')) {
-          iconClass = 'fa-file-word'; iconColor = '#2b579a';
-        } else if (fileName.endsWith('.xlsx') || fileName.endsWith('.xls')) {
-          iconClass = 'fa-file-excel'; iconColor = '#217346';
-        } else if (fileName.endsWith('.txt') || fileName.endsWith('.log')) {
-          iconClass = 'fa-file-alt'; iconColor = '#6c757d';
-        } else if (fileName.endsWith('.html') || fileName.endsWith('.htm')) {
-          iconClass = 'fa-file-code'; iconColor = '#f06529';
-        } else if (fileName.endsWith('.js')) {
-          iconClass = 'fa-file-code'; iconColor = '#f7df1e';
-        } else if (fileName.endsWith('.json')) {
-          iconClass = 'fa-file-code'; iconColor = '#5a5a5a';
-        } else if (fileName.endsWith('.css')) {
-          iconClass = 'fa-file-code'; iconColor = '#264de4';
-        }
-        iconHtml = `<i class="fas ${iconClass}" style="font-size: 24px; color: ${iconColor};"></i>`;
-      }
-      preview.innerHTML = `
-        ${iconHtml}
-        <span style="flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${file.name}</span>
-        <i class="fas fa-times-circle remove-attachment" data-index="${index}"></i>
-      `;
-      container.appendChild(preview);
-    });
-    container.querySelectorAll('.remove-attachment').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        const indexToRemove = parseInt(e.target.dataset.index, 10);
-        appState.attachments.splice(indexToRemove, 1);
-        renderAttachmentPreviews();
-      });
-    });
-  }
-
-  // ======= Quick Controls =======
-  el('dayModeBtn')?.addEventListener('click', () => { document.body.classList.remove('night-mode'); localStorage.setItem('nightMode', false); });
-  el('nightModeBtn')?.addEventListener('click', () => { document.body.classList.add('night-mode'); localStorage.setItem('nightMode', true); });
-  el('allOnBtn')?.addEventListener('click', () => appState.devices.forEach(d => sendCommand(d.id, 'ON', 100)));
-  el('allOffBtn')?.addEventListener('click', () => appState.devices.forEach(d => sendCommand(d.id, 'OFF', 0)));
-
-  // ======= Settings Management =======
-  
-  function updateToggleVoiceBtnUI() {
-    const btn = el('toggleVoiceBtn');
-    if (!btn) return;
-    const icon = btn.querySelector('i');
-    if (appState.voiceNotifications) {
-      btn.classList.remove('muted');
-      icon.className = 'fas fa-volume-up';
-      btn.title = "Désactiver la synthèse vocale";
-    } else {
-      btn.classList.add('muted');
-      icon.className = 'fas fa-volume-mute';
-      btn.title = "Activer la synthèse vocale";
-    }
-  }
-    
-  function setupSettings() {
-    el('darkModeToggle').checked = appState.isNightMode;
-    el('darkModeToggle').addEventListener('change', (e) => {
-      appState.isNightMode = e.target.checked; localStorage.setItem('nightMode', e.target.checked);
-      document.body.classList.toggle('night-mode', e.target.checked);
-    });
-    el('notificationsToggle').checked = appState.notificationsEnabled;
-    el('notificationsToggle').addEventListener('change', (e) => {
-        appState.notificationsEnabled = e.target.checked;
-        localStorage.setItem('notifications', e.target.checked);
-        if (e.target.checked) requestNotificationPermission();
-    });
-    el('voiceNotificationsToggle').checked = appState.voiceNotifications;
-    el('voiceNotificationsToggle').addEventListener('change', (e) => {
-        appState.voiceNotifications = e.target.checked;
-        localStorage.setItem('voiceNotifications', e.target.checked);
-        updateToggleVoiceBtnUI();
-    });
-    el('testNotificationBtn')?.addEventListener('click', () => {
-      if (!appState.notificationsEnabled) { alert('❌ Activez d\'abord les notifications.'); return; }
-      sendBrowserNotification('🔔 Test de Notification', 'Si vous voyez ce message, tout fonctionne !');
-      logActivity('Test de notification envoyé.');
-    });
-    el('resetBtn').addEventListener('click', () => { if (confirm("Réinitialiser l'application ?")) { localStorage.clear(); location.reload(); } });
-    el('googleSignInOverlayBtn').addEventListener('click', handleGoogleSignIn);
-    el('signOutBtn').addEventListener('click', handleSignOut);
-    
-    el('toggleVoiceBtn').addEventListener('click', () => {
-      appState.voiceNotifications = !appState.voiceNotifications;
-      localStorage.setItem('voiceNotifications', appState.voiceNotifications);
-      el('voiceNotificationsToggle').checked = appState.voiceNotifications;
-      updateToggleVoiceBtnUI();
-      if (!appState.voiceNotifications && window.speechSynthesis) {
-        window.speechSynthesis.cancel();
-      }
-    });
-  }
-
-  // ======= User Profile Functions =======
-  function handleGoogleSignIn() {
-    if (!auth) return;
-    const provider = new GoogleAuthProvider();
-    signInWithPopup(auth, provider).catch((error) => { console.error("Erreur Auth:", error); logActivity(`Erreur: ${error.message}`); });
-  }
-  function handleSignOut() { if (auth) signOut(auth).catch((error) => console.error("Erreur Déco:", error)); }
-  
-  // ======= Navigation =======
-  function navigateTo(targetSection) {
-    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-    const targetEl = el(targetSection);
-    if (targetEl) targetEl.classList.add('active');
-    
-    document.querySelectorAll('.btn-nav').forEach(b => b.classList.remove('active'));
-    document.querySelectorAll(`[data-target="${targetSection}"]`).forEach(b => b.classList.add('active'));
-    
-    const titleMap = {
-      'sec-domotique': 'Domotique',
-      'sec-planning': 'Planning',
-      'sec-params': 'Paramètres',
-      'sec-intelligence': 'Assistant IA'
-    };
-    el('section-header-title').textContent = titleMap[targetSection] || 'Domotique';
-  }
-
-  document.querySelectorAll('.btn-nav').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const target = btn.dataset.target;
-      navigateTo(target);
-    });
-  });
-
-  el('sidebar-toggle-btn').addEventListener('click', () => {
-    el('chat-sidebar').classList.toggle('open');
-    el('sidebar-overlay').classList.toggle('open');
-  });
-  el('sidebar-overlay').addEventListener('click', () => {
-    el('chat-sidebar').classList.remove('open');
-    el('sidebar-overlay').classList.remove('open');
-  });
- 
-  // ======= Exécution Automatique des Planifications =======
-  
-  let executedTasksClient = new Map();
-  let lastCheckedMinuteClient = '';
-
-  // Nettoyage des anciennes exécutions (toutes les heures)
-  setInterval(() => {
-    const now = Date.now();
-    const oneHourAgo = now - (60 * 60 * 1000);
-    
-    for (const [key, timestamp] of executedTasksClient.entries()) {
-      if (timestamp < oneHourAgo) {
-        executedTasksClient.delete(key);
-      }
-    }
-  }, 3600000);
-
-  // ✅ Vérification des planifications toutes les 60 secondes
-  setInterval(async () => {
-    const now = new Date();
-    const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-    const todayDate = now.toISOString().split('T')[0];
-    const currentDay = now.getDay(); // 0=Dimanche, 1=Lundi, ..., 6=Samedi
-    
-    // Réinitialiser le cache si on change de minute
-    if (currentTime !== lastCheckedMinuteClient) {
-      console.log(`⏰ Client: Nouvelle minute détectée: ${currentTime}`);
-      lastCheckedMinuteClient = currentTime;
-    }
-    
-    // Si pas de base de données, utiliser les plans locaux
-    if (!db) {
-      const duePlans = appState.plans.filter(p => {
-        if (p.time !== currentTime) return false;
-        
+        // Construire la description "Quand"
+        let whenText = p.time;
         const freq = p.frequency || 'once';
         
-        if (freq === 'daily') return true;
-        if (freq === 'monthly') return true;
-        if (freq === 'weekly') return p.daysOfWeek && p.daysOfWeek.includes(currentDay);
-        if (freq === 'once') return !p.targetDate || p.targetDate === todayDate;
-        
-        return false;
-      });
-      
-      if (duePlans.length > 0) {
-        duePlans.forEach(plan => {
-          const taskKey = `${plan.device}-${plan.time}-${plan.createdAt}`;
-          
-          if (executedTasksClient.has(taskKey)) {
-            const lastExecution = executedTasksClient.get(taskKey);
-            if (Date.now() - lastExecution < 120000) return;
-          }
-          
-          executedTasksClient.set(taskKey, Date.now());
-          
-          const deviceName = appState.devices.find(d => d.id === plan.device)?.name || plan.device;
-          const action = plan.actionType ? (plan.actionType === "allumer" ? "ON" : "OFF") : plan.action;
-          const actionText = action === 'ON' ? 'allumé' : 'éteint';
-          const powerText = plan.power !== null ? ` à ${plan.power}%` : '';
-          
-          logActivity(`⏰ Exécution : ${deviceName} ${actionText}${powerText}`);
-          sendCommand(plan.device, action, plan.power);
-          
-          const chatMessage = `⏰ Tâche planifiée : **${deviceName}** ${actionText}${powerText}`;
-          if (el('chatFullWindow')) appendChat("bot", chatMessage);
-          if (appState.voiceNotifications) speak(`Exécution planifiée. ${deviceName} ${actionText}.`);
-          
-          sendBrowserNotification(
-            '⏰ Tâche Planifiée Exécutée',
-            `${deviceName} a été ${actionText}${powerText}`,
-            { tag: `schedule-${plan.device}-${Date.now()}` }
-          );
-          
-          // Supprimer si fréquence "une fois"
-          if (plan.frequency === 'once') {
-            appState.plans = appState.plans.filter(p => p.createdAt !== plan.createdAt);
-            savePlansToLocalStorage();
-            renderPlanningListUI(appState.plans);
-          }
-        });
-      }
-      return;
-    }
-    
-    // ✅ Si Firebase disponible, récupérer les plans directement
-    try {
-      const planningSnapshot = await get(ref(db, planningRefPath));
-      
-      if (!planningSnapshot.exists()) return;
-      
-      const allPlans = planningSnapshot.val();
-      const planEntries = Object.entries(allPlans);
-      
-      // Filtrer les plans qui doivent s'exécuter maintenant
-      const duePlans = planEntries.filter(([id, plan]) => {
-        if (plan.time !== currentTime) return false;
-        
-        const freq = plan.frequency || 'once';
-        
-        if (freq === 'daily') return true;
-        if (freq === 'monthly') return true;
-        if (freq === 'weekly') return plan.daysOfWeek && plan.daysOfWeek.includes(currentDay);
-        if (freq === 'once') return !plan.targetDate || plan.targetDate === todayDate;
-        
-        return false;
-      });
-      
-      if (duePlans.length === 0) return;
-      
-      console.log(`⏰ Client: ${duePlans.length} tâche(s) à exécuter à ${currentTime}`);
-      
-      for (const [firebaseId, plan] of duePlans) {
-        const taskKey = `${plan.device}-${plan.time}-${firebaseId}`;
-        
-        // Vérifier si déjà exécutée
-        if (executedTasksClient.has(taskKey)) {
-          const lastExecution = executedTasksClient.get(taskKey);
-          const timeSinceExecution = Date.now() - lastExecution;
-          
-          if (timeSinceExecution < 120000) {
-            console.log(`⏭️ Client: Tâche ${taskKey} déjà exécutée`);
-            continue;
-          }
+        if (freq === 'daily') {
+          whenText += ' <span class="chip">📅 Quotidien</span>';
+        } else if (freq === 'weekly' && p.daysOfWeek) {
+          const dayNames = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
+          const days = p.daysOfWeek.map(d => dayNames[d]).join(', ');
+          whenText += ` <span class="chip">📆 ${days}</span>`;
+        } else if (freq === 'monthly') {
+          whenText += ' <span class="chip">📆 Mensuel</span>';
+        } else if (freq === 'once' && p.targetDate) {
+          const date = new Date(p.targetDate).toLocaleDateString('fr-FR');
+          whenText += ` <span class="chip">📅 ${date}</span>`;
         }
         
-        // Marquer comme exécutée
-        executedTasksClient.set(taskKey, Date.now());
+        const actionText = p.action === 'ON' ? '🟢 ON' : '🔴 OFF';
+        const powerText = p.power !== null ? ` ${p.power}%` : '';
         
-        const deviceName = appState.devices.find(d => d.id === plan.device)?.name || plan.device;
-        
-        const action = plan.actionType 
-          ? (plan.actionType === "allumer" ? "ON" : "OFF") 
-          : plan.action;
-        const actionText = action === 'ON' ? 'allumé' : 'éteint';
-        const powerValue = plan.power !== null ? plan.power : 100;
-        const powerText = powerValue !== null ? ` à ${powerValue}%` : '';
-        
-        console.log(`🚀 Client: Exécution ${deviceName} ${actionText}${powerText}`);
-        
-        // Exécuter la commande
-        sendCommand(plan.device, action, powerValue);
-        
-        logActivity(`⏰ Exécution : ${deviceName} ${actionText}${powerText}`);
-        
-        const chatMessage = `⏰ Tâche planifiée : **${deviceName}** ${actionText}${powerText}`;
-        if (el('chatFullWindow')) appendChat("bot", chatMessage);
-        if (appState.voiceNotifications) speak(`Exécution planifiée. ${deviceName} ${actionText}.`);
-        
-        sendBrowserNotification(
-          '⏰ Tâche Planifiée Exécutée',
-          `${deviceName} a été ${actionText}${powerText}`,
-          { tag: `schedule-${plan.device}-${Date.now()}` }
-        );
-        
-        // ✅ Supprimer la tâche si fréquence "une fois"
-        const freq = plan.frequency || 'once';
-        if (freq === 'once') {
-          try {
-            await remove(ref(db, `${planningRefPath}/${firebaseId}`));
-            console.log(`🗑️ Client: Tâche unique supprimée: ${firebaseId}`);
-          } catch (deleteError) {
-            console.error(`❌ Client: Erreur suppression tâche:`, deleteError);
-          }
-        }
-      }
-      
-    } catch (error) {
-      console.error('❌ Client: Erreur système de planning:', error);
-    }
-    
-  }, 60000); // Toutes les 60 secondes
+        return `<tr style="border-bottom:1px solid rgba(0,0,0,0.05)">
+          <td style="padding:10px"><strong>${deviceName}</strong></td>
+          <td style="padding:10px">${whenText}</td>
+          <td style="padding:10px">${actionText}${powerText}</td>
+          <td style="padding:10px;text-align:center">
+            <button class="btn warn" onclick="deletePlan('${p.firebaseId || p.createdAt}')" style="padding:6px 12px">
+              <i class="fas fa-trash"></i>
+            </button>
+          </td>
+        </tr>`;
+      }).join('')}
+    </tbody>
+  </table>`;
+}
 
-  // ======= Fonction de Nettoyage Client =======
-  
-  async function cleanExpiredPlansClient() {
-    if (!db) {
-      // Mode local
-      const now = new Date();
-      const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-      
-      const validPlans = appState.plans.filter(plan => plan.time >= currentTime);
-      const deletedCount = appState.plans.length - validPlans.length;
-      
-      if (deletedCount > 0) {
-        appState.plans = validPlans;
-        savePlansToLocalStorage();
-        renderPlanningListUI(appState.plans);
-        logActivity(`🗑️ ${deletedCount} tâche(s) expirée(s) supprimée(s)`);
-      }
-      return;
-    }
-    
-    // Mode Firebase
-    try {
-      const planningSnapshot = await get(ref(db, planningRefPath));
-      
-      if (!planningSnapshot.exists()) return;
-      
-      const allPlans = planningSnapshot.val();
-      const now = new Date();
-      const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-      
-      let deletedCount = 0;
-      
-      for (const [id, plan] of Object.entries(allPlans)) {
-        if (plan.time < currentTime) {
-          await remove(ref(db, `${planningRefPath}/${id}`));
-          deletedCount++;
-        }
-      }
-      
-      if (deletedCount > 0) {
-        logActivity(`🗑️ ${deletedCount} tâche(s) expirée(s) supprimée(s)`);
-      }
-      
-    } catch (error) {
-      console.error('❌ Erreur nettoyage tâches expirées (client):', error);
-    }
-  }
-
-  // Nettoyer toutes les 10 minutes
-  setInterval(cleanExpiredPlansClient, 600000);
-
-  // Nettoyage au chargement de la page
-  setTimeout(cleanExpiredPlansClient, 5000);
-
-  // ======= Auth State Change Listener =======
-  if (auth) {
-    onAuthStateChanged(auth, (user) => {
-      if (user) {
-        appState.currentUser = user;
-        document.querySelector('.main-app').style.display = 'block';
-        el('login-overlay').style.display = 'none';
-        const userPhoto = el('user-photo');
-        userPhoto.src = user.photoURL || defaultAvatar;
-        userPhoto.onerror = () => { userPhoto.src = defaultAvatar; }; 
-        el('user-name-display').textContent = user.displayName || 'Utilisateur';
-        el('user-email-display').textContent = user.email;
-        
-        loadChatHistorySidebar();
-        
-        if (appState.esp32Ip) {
-          connectToESP32();
-        }
-        
-        navigateTo('sec-domotique');
-
-      } else {
-        appState.currentUser = null;
-        document.querySelector('.main-app').style.display = 'none';
-        el('login-overlay').style.display = 'flex';
-        
-        if (appState.localWebSocket) {
-          appState.isLocalConnected = false;
-          appState.localWebSocket.close();
-          updateStatusUI('local', false);
-        }
-      }
-    });
+window.deletePlan = async (planId) => {
+  if (!confirm('🗑️ Supprimer cette planification ?')) return;
+  if (db) { 
+    await remove(ref(db, `${planningRefPath}/${planId}`)); 
   } else {
-    el('login-overlay').innerHTML = `
-      <div class="login-box">
-        <h2>Erreur Critique</h2>
-        <p>Impossible de se connecter à la base de données (Firebase). L'application ne peut pas démarrer.</p>
-      </div>`;
-    el('login-overlay').style.display = 'flex';
+    appState.plans = appState.plans.filter(p => (p.firebaseId || p.createdAt) != planId);
+    savePlansToLocalStorage(); 
+    renderPlanningListUI(appState.plans);
+  }
+  logActivity(`🗑️ Planification supprimée.`);
+};
+
+const deleteAllPlans = async () => {
+  if (!confirm('🗑️ Supprimer TOUTES les planifications ?')) return;
+  if (db) await set(ref(db, planningRefPath), null);
+  else { appState.plans = []; savePlansToLocalStorage(); renderPlanningListUI([]); }
+  logActivity(`🗑️ Toutes les planifications supprimées.`);
+  speak('Toutes les planifications ont été supprimées.');
+};
+el('clearAllPlans')?.addEventListener('click', deleteAllPlans);
+
+function updateCount() {
+  const onCount = Object.values(appState.deviceStates).filter(s => s?.etat === 'ON').length;
+  el('db-count').textContent = `on: ${onCount}`;
+}
+
+// ======= Local Persistence =======
+const saveDevicesToLocalStorage = () => localStorage.setItem('sh_devices', JSON.stringify(appState.devices));
+const loadDevicesFromLocalStorage = () => { appState.devices = JSON.parse(localStorage.getItem('sh_devices') || '[]'); };
+const savePlansToLocalStorage = () => localStorage.setItem('sh_plans', JSON.stringify(appState.plans));
+const loadPlansFromLocalStorage = () => { appState.plans = JSON.parse(localStorage.getItem('sh_plans') || '[]'); };
+
+// ======= Voice Synthesis & Recognition =======
+let preferredVoice = null;
+const choosePreferredVoice = () => {
+  const voices = window.speechSynthesis.getVoices() || [];
+  return voices.find(x => /fr[-_]?FR/i.test(x.lang) && /Google/.test(x.name)) || voices.find(x => /fr[-_]?FR/i.test(x.lang)) || voices[0];
+};
+if ('speechSynthesis' in window) window.speechSynthesis.onvoiceschanged = () => { preferredVoice = choosePreferredVoice(); };
+
+function speak(text, isStreaming = false) {
+  if (!appState.voiceNotifications || !text || !('speechSynthesis' in window)) {
+    VoiceEngine.resumeRecognition();
+    return;
   }
   
-  
-  function updateProactiveSuggestion() {
-    const el_sug = document.getElementById('proactive-suggestion');
-    if (!el_sug) return;
-    el_sug.classList.add('fade-out');
-    setTimeout(() => {
-      suggestionIndex = (suggestionIndex + 1) % proactiveSuggestions.length;
-      el_sug.textContent = proactiveSuggestions[suggestionIndex];
-      el_sug.classList.remove('fade-out');
-    }, 500);
+  if (appState.shouldStopResponse) {
+    window.speechSynthesis.cancel();
+    VoiceEngine.resumeRecognition();
+    return;
   }
 
-  // ======= Initialisation =======
-  function initUI() {
-    if (appState.isNightMode) document.body.classList.add('night-mode');
-    setupSettings();
-    VoiceEngine.init();
-    populatePlanDeviceSelect();
-    renderDevices();
-    logActivity("Application initialisée.");
-    requestNotificationPermission();
-    updateProactiveSuggestion();
-    setInterval(updateProactiveSuggestion, 10000);
+  VoiceEngine.pauseRecognition();
+  window.speechSynthesis.cancel();
+  
+  if (isStreaming) {
+    const sentences = text.match(/[^.!?]+[.!?]+/g) || [text];
+    let currentIndex = 0;
     
-    updateToggleVoiceBtnUI();
-    
-    el('toggleAddDeviceForm').addEventListener('click', () => {
-      const form = el('addDeviceFormContainer');
-      const btn = el('toggleAddDeviceForm');
-      const isHidden = form.style.display === 'none' || form.style.display === '';
-      form.style.display = isHidden ? 'block' : 'none';
-      btn.innerHTML = isHidden ? '➖ Masquer le formulaire' : '➕ Ajouter un appareil';
+    function speakNextSentence() {
+      if (appState.shouldStopResponse) {
+        window.speechSynthesis.cancel();
+        VoiceEngine.resumeRecognition();
+        return;
+      }
+          
+      if (currentIndex >= sentences.length) {
+        setTimeout(() => VoiceEngine.resumeRecognition(), 150);
+        return;
+      }
+          
+      const sentence = sentences[currentIndex].trim();
+      if (sentence) {
+        const u = new SpeechSynthesisUtterance(sentence);
+        u.lang = 'fr-FR';
+        if (!preferredVoice) preferredVoice = choosePreferredVoice();
+        if (preferredVoice) u.voice = preferredVoice;
+        u.rate = 1.1; 
+        
+        u.onend = () => {
+          currentIndex++;
+          speakNextSentence();
+        };
+        
+        u.onerror = () => {
+          if (appState.shouldStopResponse) {
+            window.speechSynthesis.cancel();
+          }
+        };
+        
+        window.speechSynthesis.speak(u);
+      } else {
+        currentIndex++;
+        speakNextSentence();
+      }
+    }
+    speakNextSentence();
+  } else {
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = 'fr-FR';
+    if (!preferredVoice) preferredVoice = choosePreferredVoice();
+    if (preferredVoice) u.voice = preferredVoice;
+    u.onend = () => {
+      setTimeout(() => VoiceEngine.resumeRecognition(), 150);
+    };
+    window.speechSynthesis.speak(u);
+  }
+}
+
+// ======= Notification de Bureau =======
+function sendBrowserNotification(title, body, options = {}) {
+  if (!appState.notificationsEnabled) { logActivity('Notification ignorée (désactivée).'); return; }
+  if (!('Notification' in window)) return;
+  const notificationOptions = {
+    body: body, icon: './favicon.ico', badge: './favicon.ico',
+    tag: options.tag || 'smarthome-notification',
+    requireInteraction: options.requireInteraction || false,
+    vibrate: options.vibrate || [200, 100, 200],
+    timestamp: Date.now(), ...options
+  };
+  if (Notification.permission === 'granted') {
+    const notification = new Notification(title, notificationOptions);
+    setTimeout(() => notification.close(), 5000);
+    notification.onclick = () => { window.focus(); notification.close(); };
+  } else if (Notification.permission !== 'denied') {
+    Notification.requestPermission().then(permission => {
+      if (permission === 'granted') { new Notification(title, notificationOptions); }
+    });
+  }
+}
+
+// ======= Voice Engine =======
+const VoiceEngine = {
+  recognition: null, isPushToTalkRecording: false,
+  isContinuousActive: false, isPausedForSpeech: false,
+  
+  init() {
+    if (!("webkitSpeechRecognition" in window || "SpeechRecognition" in window)) {
+      el('voicePushToTalk').disabled = true; el('voiceContinuous').disabled = true;
+      el('quickVoiceToggleBtn').disabled = true; el('quickVoiceToggleBtn').textContent = 'Voix non supportée';
+      el('voiceStatus').textContent = 'Voix: Non supportée';
+      return;
+    }
+    this.requestMicrophonePermission();
+    const pushBtn = el('voicePushToTalk');
+    const continuousBtn = el('voiceContinuous');
+    const quickBtn = el('quickVoiceToggleBtn');
+    pushBtn.addEventListener('touchstart', (e) => { e.preventDefault(); this.togglePushToTalk(); });
+    pushBtn.addEventListener('click', () => this.togglePushToTalk());
+    continuousBtn.addEventListener('touchstart', (e) => { e.preventDefault(); this.toggleContinuousConversation(); });
+    continuousBtn.addEventListener('click', () => this.toggleContinuousConversation());
+    quickBtn.addEventListener('touchstart', (e) => { e.preventDefault(); this.toggleContinuousConversation(); });
+    quickBtn.addEventListener('click', () => this.toggleContinuousConversation());
+  },
+  requestMicrophonePermission() {
+    navigator.mediaDevices.getUserMedia({ audio: true })
+      .then(stream => { stream.getTracks().forEach(track => track.stop()); })
+      .catch(err => { console.error("Permission micro:", err); el('voiceStatus').textContent = 'Voix: Permission requise'; });
+  },
+  createRecognitionInstance(continuous = false) {
+    const Rec = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const rec = new Rec();
+    rec.lang = 'fr-FR'; rec.continuous = continuous; rec.interimResults = false;
+    return rec;
+  },
+  updateContinuousUI() {
+      const btn1 = el('voiceContinuous');
+      const btn2 = el('quickVoiceToggleBtn');
+      const status = el('continuousStatus');
+      const isActive = this.isContinuousActive;
+      if (status) status.textContent = isActive ? 'Activé' : 'Désactivé';
+      if (btn1) {
+        btn1.classList.toggle('active', isActive); btn1.classList.toggle('warn', isActive);
+        const icon1 = btn1.querySelector('i');
+        if (icon1) {
+          icon1.classList.toggle('icon-pulse', isActive);
+          icon1.classList.toggle('fa-waveform', !isActive);
+          icon1.classList.toggle('fa-stop-circle', isActive);
+        }
+      }
+      if (btn2) {
+        btn2.classList.toggle('primary', !isActive); btn2.classList.toggle('warn', isActive);
+        btn2.innerHTML = isActive ? 
+          '<i class="fas fa-stop-circle icon-pulse"></i> Conversation active' : 
+          '<i class="fas fa-waveform"></i> Lancer la conversation';
+      }
+  },
+  togglePushToTalk() {
+    if (this.isContinuousActive) this.toggleContinuousConversation();
+    const btn = el('voicePushToTalk');
+    if (this.isPushToTalkRecording) {
+      this.isPushToTalkRecording = false;
+      if (this.recognition) this.recognition.stop();
+      btn.classList.remove('pulse');
+      el('voiceStatus').textContent = 'Voix: Traitement...';
+    } else {
+      this.isPushToTalkRecording = true;
+      this.recognition = this.createRecognitionInstance(false);
+      btn.classList.add('pulse');
+      el('voiceStatus').textContent = 'Voix: Enregistrement...';
+      this.recognition.onresult = (e) => { handleVoiceSubmit(e.results[0][0].transcript); };
+      this.recognition.onend = () => {
+        this.isPushToTalkRecording = false;
+        btn.classList.remove('pulse');
+        el('voiceStatus').textContent = 'Voix: Inactive';
+        this.recognition = null;
+      };
+      this.recognition.start();
+    }
+  },
+  toggleContinuousConversation() {
+      this.isContinuousActive = !this.isContinuousActive;
+      this.updateContinuousUI();
+      if (this.isContinuousActive) { 
+        if (this.isPushToTalkRecording) this.togglePushToTalk();
+        this.startContinuousLoop(); 
+      } else { 
+        this.stopRecognition(); 
+      }
+  },
+  startContinuousLoop() {
+      if (!this.isContinuousActive || this.isPausedForSpeech) return;
+      this.recognition = this.createRecognitionInstance(false);
+      el('voiceStatus').textContent = 'Voix: Écoute...';
+      this.recognition.onresult = (e) => { handleVoiceSubmit(e.results[0][0].transcript); };
+      this.recognition.onerror = (e) => { if (e.error !== 'no-speech' && e.error !== 'aborted') console.warn('Voice error:', e.error); };
+      this.recognition.onend = () => { 
+        if (this.isContinuousActive && !this.isPausedForSpeech) {
+          setTimeout(() => this.startContinuousLoop(), 100);
+        } else {
+          el('voiceStatus').textContent = 'Voix: Inactive';
+        }
+      };
+      try { this.recognition.start(); } catch(e) {}
+  },
+  stopRecognition() {
+    if (this.recognition) { try { this.recognition.stop(); } catch(e) {} }
+    this.recognition = null; this.isPushToTalkRecording = false; this.isContinuousActive = false;
+    el('voicePushToTalk').classList.remove('pulse');
+    this.updateContinuousUI();
+    el('voiceStatus').textContent = 'Voix: Inactive';
+  },
+  pauseRecognition() {
+    if (this.isContinuousActive && !this.isPausedForSpeech) {
+      this.isPausedForSpeech = true;
+      if (this.recognition) {
+        this.recognition.onend = null;
+        try { this.recognition.stop(); } catch(e){}
+      }
+      el('voiceStatus').textContent = 'Voix: En pause';
+    }
+  },
+  resumeRecognition() {
+    if (this.isContinuousActive && this.isPausedForSpeech) { 
+      this.isPausedForSpeech = false; 
+      this.startContinuousLoop();
+    }
+  }
+};
+
+// ======= Multi-Session & Historique Firebase =======
+
+function getChatHistoryRef(userId, sessionId = null) {
+  let path = `${userChatsRefPath}/${userId}`;
+  if (sessionId) path += `/${sessionId}`;
+  return ref(db, path);
+}
+
+async function loadChatHistorySidebar() {
+  if (!appState.currentUser || !db) return;
+  const historyList = el('chat-history-list');
+  historyList.innerHTML = '';
+  const sessionsRef = getChatHistoryRef(appState.currentUser.uid);
+  const snapshot = await get(sessionsRef);
+  if (snapshot.exists()) {
+    const sessions = snapshot.val();
+    const sortedSessions = Object.keys(sessions).sort((a, b) => {
+      return (sessions[b].lastUpdated || 0) - (sessions[a].lastUpdated || 0);
     });
     
-    el('btnConnectLocal').addEventListener('click', () => {
-      const ip = el('esp32IpInput').value.trim();
-      if (ip) {
-        appState.esp32Ip = ip;
-        localStorage.setItem('esp32Ip', ip);
-        logActivity(`IP locale sauvée: ${ip}. Connexion...`);
+    sortedSessions.forEach(sessionId => {
+      const session = sessions[sessionId];
+      const title = session.title || `Chat du ${new Date(session.createdAt || Date.now()).toLocaleDateString()}`;
+      
+      const item = document.createElement('div');
+      item.className = 'chat-history-item';
+      item.dataset.sessionId = sessionId;
+
+      const titleSpan = document.createElement('span');
+      titleSpan.textContent = title;
+      titleSpan.className = 'chat-history-item-title';
+      titleSpan.onclick = () => loadChatSession(sessionId);
+      
+      const deleteBtn = document.createElement('button');
+      deleteBtn.innerHTML = '<i class="fas fa-ellipsis-v"></i>';
+      deleteBtn.className = 'btn chat-history-delete';
+      deleteBtn.title = "Supprimer la discussion";
+      deleteBtn.onclick = (e) => {
+        e.stopPropagation();
+        deleteChatSession(sessionId, item);
+      };
+
+      item.appendChild(titleSpan);
+      item.appendChild(deleteBtn);
+      historyList.appendChild(item);
+    });
+  }
+}
+
+function createNewChatSession() {
+  const newSessionId = `chat_${Date.now()}`;
+  appState.currentSessionId = newSessionId;
+  
+  el('chatFullWindow').innerHTML = '';
+  appendChat('bot', '### 👋 Bienvenue !\n\nJe suis prêt pour notre nouvelle discussion.');
+  
+  setTimeout(() => {
+    document.querySelectorAll('.chat-history-item').forEach(i => i.classList.remove('active'));
+  }, 100);
+}
+el('new-chat-btn').addEventListener('click', createNewChatSession);
+
+async function deleteChatSession(sessionId, itemElement) {
+  if (!appState.currentUser || !db) return;
+  if (!confirm("Voulez-vous vraiment supprimer cette discussion ? L'action est irréversible.")) return;
+
+  try {
+    const sessionRef = getChatHistoryRef(appState.currentUser.uid, sessionId);
+    await set(sessionRef, null);
+    itemElement.remove();
+    if (appState.currentSessionId === sessionId) {
+      createNewChatSession();
+    }
+    logActivity(`Discussion ${sessionId} supprimée.`);
+  } catch (error) {
+    console.error("Erreur lors de la suppression du chat:", error);
+    logActivity("Erreur de suppression du chat.");
+  }
+}
+
+async function loadChatSession(sessionId) {
+  if (!appState.currentUser || !db) return;
+  appState.currentSessionId = sessionId;
+  const chatWindow = el('chatFullWindow');
+  chatWindow.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--muted);"><i class="fas fa-spinner fa-spin"></i> Chargement...</div>';
+  
+  try {
+    const messagesRef = ref(db, `${userChatsRefPath}/${appState.currentUser.uid}/${sessionId}/messages`);
+    const snapshot = await get(messagesRef);
+    
+    chatWindow.innerHTML = '';
+    
+    if (snapshot.exists()) {
+      const messages = snapshot.val();
+      const sortedMessages = Object.values(messages).sort((a, b) => a.timestamp - b.timestamp);
+      
+      sortedMessages.forEach(msg => {
+        const attachmentsMeta = msg.attachments || [];
+        appendChat('user', msg.user, false, attachmentsMeta);
+        appendChat('bot', msg.bot, false);
+      });
+      
+      setTimeout(() => {
+        el('chatFullWindow').scrollTop = el('chatFullWindow').scrollHeight;
+      }, 100);
+      
+    } else {
+      appendChat('bot', 'C\'est le début de notre conversation.');
+    }
+    
+    document.querySelectorAll('.chat-history-item').forEach(i => i.classList.remove('active'));
+    document.querySelector(`.chat-history-item[data-session-id="${sessionId}"]`)?.classList.add('active');
+    
+    el('chat-sidebar').classList.remove('open');
+    el('sidebar-overlay').classList.remove('open');
+    
+  } catch (error) {
+    console.error("Erreur chargement chat:", error);
+    chatWindow.innerHTML = '<div class="card" style="text-align: center; color: var(--danger);"><i class="fas fa-exclamation-triangle"></i> Erreur de chargement</div>';
+  }
+}
+
+async function saveMessageToFirebase(userMsg, botMsg, attachments) {
+  if (!appState.currentUser || !db || !appState.currentSessionId) return;
+
+  const sessionRef = ref(db, `${userChatsRefPath}/${appState.currentUser.uid}/${appState.currentSessionId}`);
+  const sessionSnapshot = await get(sessionRef);
+  
+  const isNewSession = !sessionSnapshot.exists();
+  
+  if (isNewSession) {
+    let newTitle = userMsg;
+    if (!newTitle && attachments.length > 0) {
+      newTitle = `📎 ${attachments[0].name}`;
+    }
+    if (!newTitle) newTitle = "Nouvelle discussion";
+    newTitle = newTitle.substring(0, 30) + (newTitle.length > 30 ? '...' : '');
+    
+    await set(sessionRef, {
+      title: newTitle,
+      createdAt: serverTimestamp(),
+      lastUpdated: serverTimestamp()
+    });
+  }
+
+  const messagesRef = ref(db, `${userChatsRefPath}/${appState.currentUser.uid}/${appState.currentSessionId}/messages`);
+  const attachmentsMeta = attachments.map(att => ({
+    name: att.name,
+    type: att.type
+  }));
+
+  await push(messagesRef, {
+    user: userMsg,
+    bot: botMsg,
+    attachments: attachmentsMeta,
+    timestamp: serverTimestamp()
+  });
+
+  await set(ref(db, `${userChatsRefPath}/${appState.currentUser.uid}/${appState.currentSessionId}/lastUpdated`), serverTimestamp());
+  
+  if (isNewSession) {
+    loadChatHistorySidebar();
+    setTimeout(() => {
+      document.querySelectorAll('.chat-history-item').forEach(i => i.classList.remove('active'));
+      const item = document.querySelector(`.chat-history-item[data-session-id="${appState.currentSessionId}"]`);
+      if (item) item.classList.add('active');
+    }, 200);
+  }
+}
+
+// ======= Gestion des Pièces Jointes =======
+
+el('attach-file-btn').addEventListener('click', () => {
+  el('file-input').click();
+});
+
+el('file-input').addEventListener('change', (event) => {
+  for (const file of event.target.files) {
+    if (appState.attachments.length >= 5) {
+      alert("Vous ne pouvez joindre que 5 fichiers maximum."); break;
+    }
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const dataUrl = e.target.result;
+      appState.attachments.push({
+        name: file.name,
+        type: file.type.startsWith('image/') ? 'image' : 'file',
+        data: dataUrl
+      });
+      renderAttachmentPreviews();
+    };
+    reader.readAsDataURL(file);
+  }
+  event.target.value = null;
+});
+
+function renderAttachmentPreviews() {
+  const container = el('attachment-preview-container');
+  container.innerHTML = '';
+  appState.attachments.forEach((file, index) => {
+    const preview = document.createElement('div');
+    preview.className = 'attachment-preview';
+    let iconHtml = '';
+    if (file.type === 'image') {
+      iconHtml = `<img src="${file.data}" alt="${file.name}">`;
+    } else {
+      let iconClass = 'fa-file';
+      let iconColor = '#6c757d';
+      const fileName = file.name.toLowerCase();
+
+      if (fileName.endsWith('.pdf')) {
+        iconClass = 'fa-file-pdf'; iconColor = '#dc3545';
+      } else if (fileName.endsWith('.docx') || fileName.endsWith('.doc')) {
+        iconClass = 'fa-file-word'; iconColor = '#2b579a';
+      } else if (fileName.endsWith('.xlsx') || fileName.endsWith('.xls')) {
+        iconClass = 'fa-file-excel'; iconColor = '#217346';
+      } else if (fileName.endsWith('.txt') || fileName.endsWith('.log')) {
+        iconClass = 'fa-file-alt'; iconColor = '#6c757d';
+      } else if (fileName.endsWith('.html') || fileName.endsWith('.htm')) {
+        iconClass = 'fa-file-code'; iconColor = '#f06529';
+      } else if (fileName.endsWith('.js')) {
+        iconClass = 'fa-file-code'; iconColor = '#f7df1e';
+      } else if (fileName.endsWith('.json')) {
+        iconClass = 'fa-file-code'; iconColor = '#5a5a5a';
+      } else if (fileName.endsWith('.css')) {
+        iconClass = 'fa-file-code'; iconColor = '#264de4';
+      }
+      iconHtml = `<i class="fas ${iconClass}" style="font-size: 24px; color: ${iconColor};"></i>`;
+    }
+    preview.innerHTML = `
+      ${iconHtml}
+      <span style="flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${file.name}</span>
+      <i class="fas fa-times-circle remove-attachment" data-index="${index}"></i>
+    `;
+    container.appendChild(preview);
+  });
+  container.querySelectorAll('.remove-attachment').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const indexToRemove = parseInt(e.target.dataset.index, 10);
+      appState.attachments.splice(indexToRemove, 1);
+      renderAttachmentPreviews();
+    });
+  });
+}
+
+// ======= Quick Controls =======
+el('dayModeBtn')?.addEventListener('click', () => { document.body.classList.remove('night-mode'); localStorage.setItem('nightMode', false); });
+el('nightModeBtn')?.addEventListener('click', () => { document.body.classList.add('night-mode'); localStorage.setItem('nightMode', true); });
+el('allOnBtn')?.addEventListener('click', () => appState.devices.forEach(d => sendCommand(d.id, 'ON', 100)));
+el('allOffBtn')?.addEventListener('click', () => appState.devices.forEach(d => sendCommand(d.id, 'OFF', 0)));
+
+// ======= Settings Management =======
+
+function updateToggleVoiceBtnUI() {
+  const btn = el('toggleVoiceBtn');
+  if (!btn) return;
+  const icon = btn.querySelector('i');
+  if (appState.voiceNotifications) {
+    btn.classList.remove('muted');
+    icon.className = 'fas fa-volume-up';
+    btn.title = "Désactiver la synthèse vocale";
+  } else {
+    btn.classList.add('muted');
+    icon.className = 'fas fa-volume-mute';
+    btn.title = "Activer la synthèse vocale";
+  }
+}
+  
+function setupSettings() {
+  el('darkModeToggle').checked = appState.isNightMode;
+  el('darkModeToggle').addEventListener('change', (e) => {
+    appState.isNightMode = e.target.checked; localStorage.setItem('nightMode', e.target.checked);
+    document.body.classList.toggle('night-mode', e.target.checked);
+  });
+  el('notificationsToggle').checked = appState.notificationsEnabled;
+  el('notificationsToggle').addEventListener('change', (e) => {
+      appState.notificationsEnabled = e.target.checked;
+      localStorage.setItem('notifications', e.target.checked);
+      if (e.target.checked) requestNotificationPermission();
+  });
+  el('voiceNotificationsToggle').checked = appState.voiceNotifications;
+  el('voiceNotificationsToggle').addEventListener('change', (e) => {
+      appState.voiceNotifications = e.target.checked;
+      localStorage.setItem('voiceNotifications', e.target.checked);
+      updateToggleVoiceBtnUI();
+  });
+  el('testNotificationBtn')?.addEventListener('click', () => {
+    if (!appState.notificationsEnabled) { alert('❌ Activez d\'abord les notifications.'); return; }
+    sendBrowserNotification('🔔 Test de Notification', 'Si vous voyez ce message, tout fonctionne !');
+    logActivity('Test de notification envoyé.');
+  });
+  el('resetBtn').addEventListener('click', () => { if (confirm("Réinitialiser l'application ?")) { localStorage.clear(); location.reload(); } });
+  el('googleSignInOverlayBtn').addEventListener('click', handleGoogleSignIn);
+  el('signOutBtn').addEventListener('click', handleSignOut);
+  
+  el('toggleVoiceBtn').addEventListener('click', () => {
+    appState.voiceNotifications = !appState.voiceNotifications;
+    localStorage.setItem('voiceNotifications', appState.voiceNotifications);
+    el('voiceNotificationsToggle').checked = appState.voiceNotifications;
+    updateToggleVoiceBtnUI();
+    if (!appState.voiceNotifications && window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+    }
+  });
+}
+
+// ======= User Profile Functions =======
+function handleGoogleSignIn() {
+  if (!auth) return;
+  const provider = new GoogleAuthProvider();
+  signInWithPopup(auth, provider).catch((error) => { console.error("Erreur Auth:", error); logActivity(`Erreur: ${error.message}`); });
+}
+function handleSignOut() { if (auth) signOut(auth).catch((error) => console.error("Erreur Déco:", error)); }
+
+// ======= Navigation =======
+function navigateTo(targetSection) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  const targetEl = el(targetSection);
+  if (targetEl) targetEl.classList.add('active');
+  
+  document.querySelectorAll('.btn-nav').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll(`[data-target="${targetSection}"]`).forEach(b => b.classList.add('active'));
+  
+  const titleMap = {
+    'sec-domotique': 'Domotique',
+    'sec-planning': 'Planning',
+    'sec-params': 'Paramètres',
+    'sec-intelligence': 'Assistant IA'
+  };
+  el('section-header-title').textContent = titleMap[targetSection] || 'Domotique';
+}
+
+document.querySelectorAll('.btn-nav').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const target = btn.dataset.target;
+    navigateTo(target);
+  });
+});
+
+el('sidebar-toggle-btn').addEventListener('click', () => {
+  el('chat-sidebar').classList.toggle('open');
+  el('sidebar-overlay').classList.toggle('open');
+});
+el('sidebar-overlay').addEventListener('click', () => {
+  el('chat-sidebar').classList.remove('open');
+  el('sidebar-overlay').classList.remove('open');
+});
+
+// ======= Auth State Change Listener =======
+if (auth) {
+  onAuthStateChanged(auth, (user) => {
+    if (user) {
+      appState.currentUser = user;
+      document.querySelector('.main-app').style.display = 'block';
+      el('login-overlay').style.display = 'none';
+      const userPhoto = el('user-photo');
+      userPhoto.src = user.photoURL || defaultAvatar;
+      userPhoto.onerror = () => { userPhoto.src = defaultAvatar; }; 
+      el('user-name-display').textContent = user.displayName || 'Utilisateur';
+      el('user-email-display').textContent = user.email;
+      
+      loadChatHistorySidebar();
+      
+      if (appState.esp32Ip) {
         connectToESP32();
       }
-    });
-    el('esp32IpInput').value = appState.esp32Ip;
-    
-    navigateTo('sec-domotique');
-  }
+      
+      navigateTo('sec-domotique');
 
-  function requestNotificationPermission() {
-    if (!('Notification' in window)) return;
-    if (Notification.permission === 'default' && appState.notificationsEnabled) {
-      setTimeout(() => {
-        Notification.requestPermission().then(permission => {
-          if (permission === 'granted') {
-            logActivity('✅ Notifications activées');
-            sendBrowserNotification('🏠 SmartHome Intelligence', 'Notifications activées !', { requireInteraction: false });
-          } else {
-            logActivity('ℹ️ Notifications refusées');
-          }
-        });
-      }, 3000);
+    } else {
+      appState.currentUser = null;
+      document.querySelector('.main-app').style.display = 'none';
+      el('login-overlay').style.display = 'flex';
+      
+      if (appState.localWebSocket) {
+        appState.isLocalConnected = false;
+        appState.localWebSocket.close();
+        updateStatusUI('local', false);
+      }
     }
-  }
+  });
+} else {
+  el('login-overlay').innerHTML = `
+    <div class="login-box">
+      <h2>Erreur Critique</h2>
+      <p>Impossible de se connecter à la base de données (Firebase). L'application ne peut pas démarrer.</p>
+    </div>`;
+  el('login-overlay').style.display = 'flex';
+}
 
-  initUI(); 
+function updateProactiveSuggestion() {
+  const el_sug = document.getElementById('proactive-suggestion');
+  if (!el_sug) return;
+  el_sug.classList.add('fade-out');
+  setTimeout(() => {
+    suggestionIndex = (suggestionIndex + 1) % proactiveSuggestions.length;
+    el_sug.textContent = proactiveSuggestions[suggestionIndex];
+    el_sug.classList.remove('fade-out');
+  }, 500);
+}
 
-  window.appState = appState;
+// ======= Initialisation =======
+function initUI() {
+  if (appState.isNightMode) document.body.classList.add('night-mode');
+  setupSettings();
+  VoiceEngine.init();
+  populatePlanDeviceSelect();
+  renderDevices();
+  logActivity("Application initialisée.");
+  requestNotificationPermission();
+  updateProactiveSuggestion();
+  setInterval(updateProactiveSuggestion, 10000);
   
-  console.log('✅ SmartHome Intelligence v12.0 COMPLET - Prêt à l\'emploi');
-  console.log('📄 Documents HTML: CV, Lettre, Rapport, Facture, Contrat');
-  console.log('🔄 Système de continuation: Actif');
-  console.log('⬛ Blocs de code: Style Gemini (fond noir)');
-  console.log('🗣️ Lecture vocale: Texte uniquement (pas de code)');
-  console.log('📎 Gestion fichiers avancée: Icônes par type');
-  console.log('⏰ Planning: Nettoyage auto + cache Map');
-  console.log('🎤 VoiceEngine: Push-to-talk + Continu');
-  console.log('💬 Chat: Multi-sessions Firebase');
-  console.log('🔔 Notifications: Push + Vocales');
-  console.log('📥 Code: Copier + Télécharger par langage');
-  console.log('📡 WebSocket: ESP32 local');
-  console.log('📊 Total: ~3500 lignes');
+  updateToggleVoiceBtnUI();
+  
+  el('toggleAddDeviceForm').addEventListener('click', () => {
+    const form = el('addDeviceFormContainer');
+    const btn = el('toggleAddDeviceForm');
+    const isHidden = form.style.display === 'none' || form.style.display === '';
+    form.style.display = isHidden ? 'block' : 'none';
+    btn.innerHTML = isHidden ? '➖ Masquer le formulaire' : '➕ Ajouter un appareil';
+  });
+  
+  el('btnConnectLocal').addEventListener('click', () => {
+    const ip = el('esp32IpInput').value.trim();
+    if (ip) {
+      appState.esp32Ip = ip;
+      localStorage.setItem('esp32Ip', ip);
+      logActivity(`IP locale sauvée: ${ip}. Connexion...`);
+      connectToESP32();
+    }
+  });
+  el('esp32IpInput').value = appState.esp32Ip;
+  
+  navigateTo('sec-domotique');
+}
+
+function requestNotificationPermission() {
+  if (!('Notification' in window)) return;
+  if (Notification.permission === 'default' && appState.notificationsEnabled) {
+    setTimeout(() => {
+      Notification.requestPermission().then(permission => {
+        if (permission === 'granted') {
+          logActivity('✅ Notifications activées');
+          sendBrowserNotification('🏠 SmartHome Intelligence', 'Notifications activées !', { requireInteraction: false });
+        } else {
+          logActivity('ℹ️ Notifications refusées');
+        }
+      });
+    }, 3000);
+  }
+}
+
+initUI(); 
+
+window.appState = appState;
+
+console.log('✅ SmartHome Intelligence v12.0 COMPLET - Prêt à l\'emploi');
+console.log('📄 Documents HTML: CV, Lettre, Rapport, Facture, Contrat');
+console.log('🔄 Système de continuation: Actif');
+console.log('⬛ Blocs de code: Style Gemini (fond noir)');
+console.log('🗣️ Lecture vocale: Texte uniquement (pas de code)');
+console.log('📎 Gestion fichiers avancée: Icônes par type');
+console.log('⏰ Planning: Synchronisation FIREBASE (serveur gère tout)');
+console.log('🎤 VoiceEngine: Push-to-talk + Continu');
+console.log('💬 Chat: Multi-sessions Firebase');
+console.log('🔔 Notifications: Push + Vocales');
+console.log('📥 Code: Copier + Télécharger par langage');
+console.log('📡 WebSocket: ESP32 local');
+console.log('📊 Total: ~3500 lignes');
   </script>
 </body>
 </html>
