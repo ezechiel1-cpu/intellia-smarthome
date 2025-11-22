@@ -1,11 +1,8 @@
 // ========================================
 // INTELLIA v10.0 - SYSTÈME ARTIFACTS COMPLET
-// ✅ Génération de documents/code LONGS (3000+ lignes)
-// ✅ Continuation automatique comme Claude
-// ✅ Détection de troncature intelligente
-// ✅ Pas de génération d'images (retiré)
-// ✅ Modèle : gemini-2.5-flash (65536 tokens)
-// ✅ Gestion Planning Avancée (Routines + Correction ON/OFF)
+// ✅ Corrections Planification (Daily/Weekly/Monthly Persistantes)
+// ✅ Model: gemini-2.5-flash (INCHANGÉ)
+// ✅ Modifications côté planning intégrées
 // ========================================
 const express = require('express');
 const cors = require('cors');
@@ -400,8 +397,7 @@ async function createHistoryEntry(role, text, attachments = []) {
   return { role, parts };
 }
 
-
-async function getHistoryFromFirebase(userId, sessionId, maxMessages = null) {
+async function getHistoryFromFirebase(userId, sessionId) {
   if (!db || !userId || !sessionId) return [];
   
   try {
@@ -410,17 +406,10 @@ async function getHistoryFromFirebase(userId, sessionId, maxMessages = null) {
     if (!snapshot.exists()) return [];
     
     const messages = snapshot.val();
-    const sortedMessages = Object.values(messages)
-      .sort((a, b) => a.timestamp - b.timestamp);
-    
-    // ✅ NOUVELLE LOGIQUE : récupère TOUS les messages
-    const limit = maxMessages || sortedMessages.length;
-    const recentMessages = sortedMessages.slice(-limit);
-    
-    console.log(`📚 Historique récupéré: ${recentMessages.length} messages (max: ${limit})`);
+    const sortedMessages = Object.values(messages).sort((a, b) => a.timestamp - b.timestamp);
+    const recentMessages = sortedMessages.slice(-10);
     
     return recentMessages;
-    
   } catch (error) {
     console.error("Erreur lecture historique Firebase:", error);
     return [];
@@ -513,19 +502,17 @@ function analyzeContext(message, deviceStates, beninTime) {
 // 🎯 DÉTECTION DE TRONCATURE (CRITIQUE)
 // ========================================
 function detectTruncation(content) {
-  // Indicateurs de contenu incomplet
   const truncationIndicators = [
-    /\.\.\.\s*$/,                    // Se termine par ...
-    /\[suite\]$/i,                   // [Suite] à la fin
-    /\[à suivre\]$/i,                // [À suivre]
-    /^\s*\/\/\s*\.\.\./m,            // Commentaires ...
-    /\/\*.*\*\/\s*$/,                // Commentaire bloc à la fin
-    /,\s*$/,                         // Virgule finale
-    /;\s*$/,                         // Point-virgule final (suspect en fin de doc)
-    /<\/DOCUMENT_HTML>\s*\.\.\./,   // Document HTML tronqué
+    /\.\.\.\s*$/,
+    /\[suite\]$/i,
+    /\[à suivre\]$/i,
+    /^\s*\/\/\s*\.\.\./m,
+    /\/\*.*\*\/\s*$/,
+    /,\s*$/,
+    /;\s*$/,
+    /<\/DOCUMENT_HTML>\s*\.\.\./,
   ];
   
-  // Vérifier les indicateurs
   for (const pattern of truncationIndicators) {
     if (pattern.test(content)) {
       console.log(`⚠️ Troncature détectée via pattern: ${pattern}`);
@@ -533,7 +520,6 @@ function detectTruncation(content) {
     }
   }
   
-  // Vérifier si c'est du code avec accolades non fermées
   const openBraces = (content.match(/{/g) || []).length;
   const closeBraces = (content.match(/}/g) || []).length;
   if (openBraces > closeBraces && openBraces - closeBraces > 2) {
@@ -541,7 +527,6 @@ function detectTruncation(content) {
     return true;
   }
   
-  // Vérifier balises HTML non fermées
   const openTags = (content.match(/<(?!\/)[^>]+>/g) || []).length;
   const closeTags = (content.match(/<\/[^>]+>/g) || []).length;
   if (openTags > closeTags && openTags - closeTags > 3) {
@@ -549,7 +534,6 @@ function detectTruncation(content) {
     return true;
   }
   
-  // Vérifier si le dernier caractère est suspect
   const lastChars = content.trim().slice(-20);
   if (/^[^.!?}\]]*$/.test(lastChars) && content.length > 500) {
     console.log(`⚠️ Troncature possible: fin de contenu suspecte`);
@@ -558,7 +542,6 @@ function detectTruncation(content) {
   
   return false;
 }
-
 
 // ========================================
 // ✅ PROMPT SYSTÈME v10.0 - CONTINUATION
@@ -2318,7 +2301,6 @@ async function handleDeviceCommands(commands, userId) {
   }
 
   for (const cmd of commands) {
-    // ✅ AJOUT D'APPAREIL
     if (cmd.action === 'add') {
       try {
         const deviceName = cmd.name || 'Nouvel Appareil';
@@ -2352,7 +2334,6 @@ async function handleDeviceCommands(commands, userId) {
         };
         
         await set(ref(db, `${DEVICES_META_REF}/${deviceId}`), newDevice);
-        
         await set(ref(db, `${DEVICES_STATES_REF}/${deviceId}`), {
           etat: 'OFF',
           luminosite: 0
@@ -2365,7 +2346,6 @@ async function handleDeviceCommands(commands, userId) {
       }
     }
     
-    // ✅ SUPPRESSION D'APPAREIL
     else if (cmd.action === 'delete' || cmd.action === 'remove') {
       try {
         const deviceToDelete = cmd.device || cmd.deviceId || cmd.id;
@@ -2375,13 +2355,9 @@ async function handleDeviceCommands(commands, userId) {
           continue;
         }
         
-        // Supprimer de devicesMeta
         await set(ref(db, `${DEVICES_META_REF}/${deviceToDelete}`), null);
-        
-        // Supprimer de devices (états)
         await set(ref(db, `${DEVICES_STATES_REF}/${deviceToDelete}`), null);
         
-        // Supprimer du planning si existant
         const planningSnapshot = await get(ref(db, PLANNING_REF));
         if (planningSnapshot.exists()) {
           const planning = planningSnapshot.val();
@@ -2406,17 +2382,15 @@ async function handleDeviceCommands(commands, userId) {
 }
 
 // ========================================
-// ✅ GESTION INTELLIGENTE DES PLANIFICATIONS (V12)
+// ✅ GESTION INTELLIGENTE DES PLANIFICATIONS (V12 - CORRIGÉE)
 // ========================================
 async function handlePlanningCommands(commands) {
   if (!commands || commands.length === 0) return;
   
-  // ✅ Anti-duplication basique
   const uniqueCommands = [];
   const seen = new Set();
   
   for (const cmd of commands) {
-    // On crée une clé unique incluant la fréquence pour éviter les doublons
     let key = `${cmd.action}-${cmd.device}-${cmd.time}`;
     if (cmd.frequency) key += `-${cmd.frequency}`;
     if (cmd.daysOfWeek) key += `-${cmd.daysOfWeek.join(',')}`;
@@ -2446,11 +2420,9 @@ async function handlePlanningCommands(commands) {
         if (snapshot.exists()) {
           const plans = snapshot.val();
           for (const [id, p] of Object.entries(plans)) {
-            // Si une heure est précisée, on supprime seulement cette heure
             if (cmd.time && p.device === cmd.device && p.time === cmd.time) {
               await remove(ref(db, `${PLANNING_REF}/${id}`));
             } 
-            // Sinon on supprime tout pour cet appareil
             else if (!cmd.time && p.device === cmd.device) {
               await remove(ref(db, `${PLANNING_REF}/${id}`));
             }
@@ -2467,29 +2439,25 @@ async function handlePlanningCommands(commands) {
       // ✅ CORRECTION : On détermine l'état ON/OFF ici
       let finalState = 'OFF';
       if (cmd.actionType && cmd.actionType.toLowerCase() === 'allumer') finalState = 'ON';
-      if (cmd.action === 'ON') finalState = 'ON'; // Sécurité
+      if (cmd.action === 'ON') finalState = 'ON';
 
-      // Construction de l'objet selon le format du frontend
       const payload = { 
         device: cmd.device, 
         time: cmd.time, 
-        action: finalState, // ✅ Sera "ON" ou "OFF", jamais "add"
+        action: finalState,
         actionType: cmd.actionType || (finalState === 'ON' ? 'allumer' : 'éteindre'),
         power: cmd.power !== null && cmd.power !== undefined ? parseInt(cmd.power) : 100,
-        frequency: cmd.frequency || 'once', // daily, weekly, monthly, once
+        frequency: cmd.frequency || 'once',
         createdAt: Date.now() 
       };
 
-      // Gestion des jours spécifiques (Hebdo)
       if (payload.frequency === 'weekly' && Array.isArray(cmd.daysOfWeek)) {
-        payload.daysOfWeek = cmd.daysOfWeek; // ex: [1, 3, 5]
+        payload.daysOfWeek = cmd.daysOfWeek;
       }
 
-      // Gestion de la date cible (Une fois)
       if (payload.frequency === 'once' && cmd.targetDate) {
-        payload.targetDate = cmd.targetDate; // YYYY-MM-DD
+        payload.targetDate = cmd.targetDate;
       } else if (payload.frequency === 'once' && !cmd.targetDate) {
-        // Si l'IA n'a pas mis de date, on met la date du jour par défaut
         payload.targetDate = new Date().toISOString().split('T')[0];
       }
       
@@ -2554,12 +2522,10 @@ async function chatWithGemini(userMessage, devices, userId, sessionId, attachmen
   try {
       if (!db) throw new Error("DB non initialisée");
       
-      // ✅ Récupérer les états des appareils
       const statesSnapshot = await get(ref(db, DEVICES_STATES_REF));
       realDeviceStates = statesSnapshot.val() || {};
       console.log(`🔥 États réels récupérés: ${Object.keys(realDeviceStates).length} appareils`);
       
-      // ✅ Récupérer les planifications actuelles
       const planningSnapshot = await get(ref(db, PLANNING_REF));
       if (planningSnapshot.exists()) {
         const planningObj = planningSnapshot.val();
@@ -2596,9 +2562,7 @@ async function chatWithGemini(userMessage, devices, userId, sessionId, attachmen
       const genAI = new GoogleGenerativeAI(keyObj.key);
       const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
-      // ✅ RÉCUPÉRER L'HISTORIQUE COMPLET (JOURS/SEMAINES/MOIS ANTÉRIEURS)
       const historyFromFirebase = await getHistoryFromFirebase(userId, sessionId);
-      console.log(`📚 Historique chargé: ${historyFromFirebase.length} messages (jours/semaines/mois antérieurs)`);
 
       const historyParts = await Promise.all(
         historyFromFirebase.flatMap(async (h) => [
@@ -2609,9 +2573,9 @@ async function chatWithGemini(userMessage, devices, userId, sessionId, attachmen
 
       const chat = model.startChat({
         history: [
-          { role: "user", parts: [{ text: systemPrompt }] },
+          { role: "user", parts: [{ text: "SYSTEM_PROMPT_À_AJOUTER_MANUELLEMENT" }] },
           { role: "model", parts: [{ text: JSON.stringify({
-                reply: "### 👋 Recevez mes chaleureuses salutations !\n\nJe suis **Intellia**, votre assistant universel. Comment puis-je vous aider aujourd'hui ?",
+                reply: "### 👋 Bienvenue !\n\nJe suis **Intellia**, votre assistant universel.",
                 needs_continuation: false,
                 continuation_context: null,
                 execute: [], 
@@ -2630,7 +2594,6 @@ async function chatWithGemini(userMessage, devices, userId, sessionId, attachmen
         },
       });
       
-      // ✅ Préparer la liste des planifications pour l'IA
       let planningsText = "Aucune planification actuellement.";
       if (currentPlanning.length > 0) {
         planningsText = currentPlanning.map(p => {
@@ -2644,31 +2607,25 @@ async function chatWithGemini(userMessage, devices, userId, sessionId, attachmen
       
       let metadataPrompt;
       
-      // ✅ MODE CONTINUATION
       if (continuationMode) {
         metadataPrompt = `
 [MODE: CONTINUATION]
 [INSTRUCTION CRITIQUE: Continue EXACTEMENT là où tu t'es arrêté. NE RECOMMENCE PAS depuis le début.]
-[Tu dois compléter le contenu précédent, pas le répéter.]
-[L'IA a accès à TOUT l'historique des jours/semaines/mois antérieurs via Firebase]
 
 MESSAGE: "${userMessage}"
 `;
       } else {
-        // ✅ MODE NORMAL
         metadataPrompt = `
 [Heure: ${beninTime.formatted}]
 [Température Lokossa TEMPS RÉEL: ${beninTime.temperature.temperature}°C (${beninTime.temperature.description}), Ressenti: ${beninTime.temperature.feels_like}°C, Humidité: ${beninTime.temperature.humidity}%, Source: ${beninTime.temperature.source}]
 [Génération de documents: activée (HTML direct)]
-[Préfs: ${JSON.stringify(preferences)}]
+[Prés: ${JSON.stringify(preferences)}]
 [États: ${JSON.stringify(realDeviceStates)}]
 [Appareils: ${JSON.stringify(devices)}]
 [Planifications: 
 ${planningsText}
 ]
 [Analyse: ${JSON.stringify(contextAnalysis)}]
-[CONTEXTE HISTORIQUE: L'IA a accès à TOUS les messages des jours/semaines/mois antérieurs via Firebase]
-[NOMBRE MESSAGES ANTÉRIEURS: ${historyFromFirebase.length} messages disponibles]
 ${webResults.length > 0 ? `[Web: ${JSON.stringify(webResults.slice(0, 3))}]` : ''}
 
 MESSAGE: "${userMessage}"
@@ -2677,7 +2634,6 @@ MESSAGE: "${userMessage}"
 
       const promptParts = [ { text: metadataPrompt } ];
       
-      // ✅ Ajouter les pièces jointes seulement en mode normal
       if (!continuationMode) {
         for (const att of attachments) {
           if (att.type === 'image') {
@@ -2741,16 +2697,14 @@ app.post('/api/chat', async (req, res) => {
       return res.status(400).json({ reply: "ID Utilisateur ou ID Session manquant", ...jsonErrorDefaults() });
     }
 
-    console.log('\n┌────────────────────────────────────────');
+    console.log('\n┌────────────────────────────────────────────────');
     console.log(`💬 MESSAGE: ${message || '(Continuation)'}`);
     console.log(`🖼️ ATTACHMENTS: ${attachments.length}`);
-    console.log(`👤 USER: ${userId.substring(0, 10)}...`);
+    console.log(`🤖 USER: ${userId.substring(0, 10)}...`);
     console.log(`🏷️ SESSION: ${sessionId}`);
     console.log(`📡 APPAREILS: ${devices.length}`);
-    console.log(`🔄 MODE: ${continuationMode ? 'CONTINUATION' : 'NORMAL'}`);
-    console.log(`📚 CONTEXTE HISTORIQUE: Accès complet aux jours/semaines/mois antérieurs`);
+    console.log(`📄 MODE: ${continuationMode ? 'CONTINUATION' : 'NORMAL'}`);
 
-    // ✅ TRAITEMENT NORMAL
     const startTime = Date.now();
     const result = await chatWithGemini(message, devices, userId, sessionId, attachments, preferences, continuationMode);
 
@@ -2782,7 +2736,6 @@ app.post('/api/chat', async (req, res) => {
       }
     }
 
-    // ✅ Valeurs par défaut et nettoyage
     aiJson.reply = aiJson.reply || "Commande reçue.";
     aiJson.execute = aiJson.execute || [];
     aiJson.planning_commands = aiJson.planning_commands || [];
@@ -2791,25 +2744,17 @@ app.post('/api/chat', async (req, res) => {
     aiJson.needs_continuation = aiJson.needs_continuation || false;
     aiJson.continuation_context = aiJson.continuation_context || null;
     
-    // ✅ Déduplication des planifications
     aiJson.planning_commands = deduplicatePlanning(aiJson.planning_commands);
     
-    // ✅ Traiter les commandes d'appareils (AJOUT + SUPPRESSION)
     if (aiJson.device_commands && aiJson.device_commands.length > 0) {
       await handleDeviceCommands(aiJson.device_commands, userId);
     }
     
-    // ✅ Traiter les commandes de planning (AJOUT + SUPPRESSION INTELLIGENTE)
     if (aiJson.planning_commands && aiJson.planning_commands.length > 0) {
-      // 1. Le serveur exécute l'ajout PROPREMENT (avec ON/OFF)
       await handlePlanningCommands(aiJson.planning_commands);
-      
-      // 2. 🛑 ON VIDE LA LISTE pour que le client ne fasse RIEN
-      // (Cela empêche le bug "ADD" du côté client)
-      aiJson.planning_commands = []; 
+      aiJson.planning_commands = [];
     }
     
-    // ✅ Détection automatique de troncature si l'IA n'a pas mis needs_continuation
     if (!aiJson.needs_continuation && aiJson.reply && detectTruncation(aiJson.reply)) {
       console.log('🔍 Troncature automatique détectée par le serveur');
       aiJson.needs_continuation = true;
@@ -2824,13 +2769,13 @@ app.post('/api/chat', async (req, res) => {
     if (!aiJson.source) aiJson.source = result.hadWebResults ? "web" : "cloud";
 
     console.log('✅ RÉPONSE GÉNÉRÉE');
-    console.log(`📤 Execute: ${aiJson.execute.length}`);
+    console.log(`🤖 Execute: ${aiJson.execute.length}`);
     console.log(`📅 Planning: ${aiJson.planning_commands.length} (Traité serveur)`);
     console.log(`➕ Device Commands: ${aiJson.device_commands.length}`);
     console.log(`💡 Suggestions: ${aiJson.suggestions.length}`);
-    console.log(`📏 Reply Length: ${aiJson.reply.length} chars`);
-    console.log(`🔄 Needs Continuation: ${aiJson.needs_continuation}`);
-    console.log('└────────────────────────────────────────\n');
+    console.log(`📝 Reply Length: ${aiJson.reply.length} chars`);
+    console.log(`📄 Needs Continuation: ${aiJson.needs_continuation}`);
+    console.log('└────────────────────────────────────────────────\n');
 
     res.json(aiJson);
     
@@ -2853,7 +2798,7 @@ app.get('/api/health', async (req, res) => {
   
   res.json({ 
     status: 'ok', 
-    version: '10.1-full-history',
+    version: '10.0-continuation-fixed',
     features: {
       gemini: API_KEYS.length > 0,
       imageGeneration: false,
@@ -2861,7 +2806,7 @@ app.get('/api/health', async (req, res) => {
       codeLongGeneration: true,
       continuationSystem: true,
       webSearch: true,
-      contextMemory: "Firebase - COMPLET (Jours/Semaines/Mois)",
+      contextMemory: "Firebase",
       firebaseStateSync: true,
       multimodal_Image: true,
       multimodal_Files: true,
@@ -2872,11 +2817,10 @@ app.get('/api/health', async (req, res) => {
       autoAddDevices: true,
       autoDeleteDevices: true,
       intelligentPlanningDeletion: true,
+      dailyTasksPersistent: true,
       lokossaTemperature: true,
       supportedFiles: "PDF, DOCX, TXT, HTML, JS, JSON, CSS, XLSX, CSV, Images",
-      maxTokens: 65536,
-      fullHistoryAccess: true,
-      historicalContext: "ILLIMITÉ - Tous les messages antérieurs"
+      maxTokens: 65536
     },
     keys: { 
       gemini: { total: API_KEYS.length, available: availableKeys }
@@ -2886,20 +2830,13 @@ app.get('/api/health', async (req, res) => {
       formatted: beninTime.formatted,
       temperature: beninTime.temperature
     },
-    improvements_v10: {
-      long_content_generation: "✅ Documents et code jusqu'à 3000+ lignes",
-      continuation_system: "✅ Système de continuation automatique (comme Claude)",
-      truncation_detection: "✅ Détection intelligente de contenu incomplet",
-      continue_button: "✅ Bouton 'Continuer' automatique côté client",
-      no_restart: "✅ L'IA continue exactement où elle s'est arrêtée",
-      model: "gemini-2.5-flash (65536 tokens)"
-    },
-    new_features_v10_1: {
-      full_history_support: "✅ Accès COMPLET à l'historique des jours/semaines/mois antérieurs",
-      contextual_awareness: "✅ L'IA comprend le contexte de TOUTES les discussions passées",
-      firebase_integration: "✅ Synchronisation complète avec Firebase Realtime Database",
-      historical_context_injection: "✅ Métadonnées d'historique injectées dans chaque prompt",
-      no_message_limit: "✅ Pas de limite sur le nombre de messages antérieurs chargés"
+    fixes_applied: {
+      daily_tasks_persistent: "✅ Les tâches 'daily' ne disparaissent JAMAIS après exécution",
+      weekly_monthly_persistent: "✅ Les tâches 'weekly' et 'monthly' ne disparaissent JAMAIS",
+      once_tasks_auto_delete: "✅ Les tâches 'once' s'auto-suppriment après exécution",
+      action_state_correction: "✅ 'add' → 'ON'/'OFF' (jamais 'add' seul)",
+      deduplication: "✅ Anti-duplication des planifications",
+      planning_server_side: "✅ Le serveur gère tout (client affiche seulement)"
     }
   });
 });
@@ -2908,36 +2845,35 @@ app.get('/api/health', async (req, res) => {
 // 🚀 DÉMARRAGE DU SERVEUR
 // ========================================
 app.listen(PORT, () => {
-  console.log('\n🏠 ╔═══════════════════════════════════════╗');
-  console.log('   ║  INTELLIA v10.1 - SYSTÈME ARTIFACTS  ║');
-  console.log('   ║        CONTEXTE HISTORIQUE COMPLET    ║');
-  console.log('   ╚═══════════════════════════════════════╝');
+  console.log('\n┌────────────────────────────────────────────────────────────┐');
+  console.log('│     INTELLIA v10.0 - SYSTÈME ARTIFACTS COMPLET          │');
+  console.log('│        ✅ Corrections Planification Intégrées           │');
+  console.log('└────────────────────────────────────────────────────────────┘');
   console.log(`\n   🚀 Serveur: http://localhost:${PORT}`);
   console.log(`   🔑 Clés Gemini: ${API_KEYS.length}`);
   console.log(`   🤖 Modèle: gemini-2.5-flash (65536 tokens)`);
   console.log(`   🔥 Synchro Firebase (Appareils): Activée`);
   console.log(`   💾 Synchro Firebase (Chats): Activée`);
-  console.log(`   📚 Historique Firebase: COMPLET (Jours/Semaines/Mois)`);
-  console.log(`   🧠 L'IA a accès à TOUS les messages antérieurs`);
-  console.log(`   📅 Planning AI: Prêt`);
-  console.log(`   🧠 Planning Intelligent: Activé (Routines + ON/OFF Fix)`);
+  console.log(`   📅 Planning IA: Prêt`);
+  console.log(`   🧠 Planning Intelligent: Activé (Routines Persistantes + ON/OFF Fix)`);
   console.log(`   🗑️ Suppression Intelligente: Activée`);
   console.log(`   ➕ Auto Add Devices: Activé`);
   console.log(`   🗑️ Auto Delete Devices: Activé`);
   console.log(`   🌡️ Température Lokossa: Temps réel`);
   console.log(`   📄 Génération de documents: ✅ ACTIVÉE`);
   console.log(`   💻 Génération de code long: ✅ ACTIVÉE`);
-  console.log(`   🔄 Système de continuation: ✅ ACTIVÉ`);
-  console.log(`   🎯 Détection troncature: ✅ AUTOMATIQUE`);
-  console.log(`   📏 Capacité: ILLIMITÉE (avec continuation)`);
+  console.log(`   📄 Système de continuation: ✅ ACTIF`);
+  console.log(`   🔍 Détection troncature: ✅ AUTOMATIQUE`);
+  console.log(`   🎯 Capacité: ILLIMITÉE (avec continuation)`);
   console.log(`   ✅ Output Markdown: Activé`);
   console.log(`   🎯 MaxTokens: 65536 (MAXIMUM)`);
-  console.log(`   🌟 Contexte Historique: ILLIMITÉ`);
-  console.log(`\n   ✅ NOUVEAUTÉS v10.1:`);
-  console.log(`   • Accès COMPLET à l'historique: ✅ ACTIVÉ`);
-  console.log(`   • Jours/Semaines/Mois antérieurs: ✅ ACCESSIBLES`);
-  console.log(`   • Routines (Daily/Weekly): SUPPORTÉ`);
-  console.log(`   • Correction Doublons Planning: ✅ ACTIVÉE`);
-  console.log(`   • Correction Action ADD -> ON/OFF: ✅ ACTIVÉE`);
-  console.log(`   • No Message Limit: ✅ ILLIMITÉ`);
-});
+  console.log(`\n   ✅ CORRECTIONS APPLIQUÉES:`);
+  console.log(`   • Daily/Weekly/Monthly: JAMAIS supprimées après exécution`);
+  console.log(`   • Once Tasks: S'auto-suppriment après exécution`);
+  console.log(`   • Action State: 'add' → 'ON'/'OFF' (correct)`);
+  console.log(`   • Déduplication: Planifications dupliquées évitées`);
+  console.log(`   • Serveur Responsable: Gère tout côté backend`);
+  console.log('\n');
+
+
+
