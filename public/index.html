@@ -3,10 +3,10 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
-  <title>SmartHome Intelligence </title>
+  <title>SmartHome Intelligence v12</title>
   <meta name="theme-color" content="#06b6d4" />
   
-  <!-- ✅ CDN Existants -->
+  <!-- CDN Existants -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
@@ -32,7 +32,7 @@
     }
     
     /* ========================================
-       MODE NUIT
+       MODE NUIT COMPLET
        ======================================== */
     body.night-mode {
       background: linear-gradient(135deg, #0e0f13, #0f1724); color: #e2e8f0;
@@ -43,7 +43,7 @@
       border: 1px solid rgba(255, 255, 255, 0.1);
     }
     body.night-mode #login-overlay { background: linear-gradient(135deg, #0e0f13, #0f1724); }
-    body.night-mode input, body.night-mode select {
+    body.night-mode input, body.night-mode select, body.night-mode textarea {
       background: rgba(15, 23, 42, 0.8); color: #e2e8f0; border: 1px solid rgba(255, 255, 0.2);
     }
     body.night-mode input::placeholder { color: #94a3b8; }
@@ -81,12 +81,12 @@
     }
     
     /* ========================================
-       BLOCS DE CODE - FOND NOIR (COMME GEMINI)
+       BLOCS DE CODE - FOND NOIR (STYLE GEMINI)
        ======================================== */
     .msg.bot pre {
       background: var(--code-bg) !important;
       color: var(--code-text) !important;
-      padding: 16px;
+      padding: 0;
       border-radius: 8px;
       margin-bottom: 12px;
       overflow-x: auto;
@@ -97,7 +97,8 @@
     }
     .msg.bot pre code {
       background: none !important;
-      padding: 0;
+      padding: 16px;
+      display: block;
       border-radius: 0;
       color: var(--code-text) !important;
     }
@@ -105,6 +106,41 @@
     body.night-mode .msg.bot pre {
       background: var(--code-bg) !important;
       border: 1px solid rgba(255, 255, 255, 0.15);
+    }
+
+    /* Barre d'actions code */
+    .code-actions {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(255,255,255,0.05);
+      padding: 6px 12px;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+      border-radius: 8px 8px 0 0;
+      font-size: 12px;
+      color: #888;
+    }
+    body.night-mode .code-actions {
+      background: rgba(255,255,255,0.08);
+      color: #aaa;
+    }
+    .code-actions-buttons {
+      display: flex;
+      gap: 10px;
+    }
+    .code-action-btn {
+      background: none;
+      border: none;
+      color: #ccc;
+      cursor: pointer;
+      font-size: 12px;
+      padding: 4px 8px;
+      border-radius: 4px;
+      transition: all 0.2s ease;
+    }
+    .code-action-btn:hover {
+      background: rgba(255,255,255,0.1);
+      color: white;
     }
 
     .container { 
@@ -309,31 +345,7 @@
     }
     
     /* ========================================
-       BOUTON COPIER CODE
-       ======================================== */
-    .copy-code-btn {
-      position: absolute;
-      top: 8px;
-      right: 8px;
-      background: rgba(255,255,255,0.1);
-      color: white;
-      border: none;
-      padding: 6px 10px;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 13px;
-      opacity: 0;
-      transition: opacity 0.2s ease;
-    }
-    .msg.bot pre:hover .copy-code-btn {
-      opacity: 1;
-    }
-    .copy-code-btn:active {
-      background: rgba(255,255,255,0.3);
-    }
-    
-    /* ========================================
-       BOUTON CONTINUER (COMME CLAUDE)
+       BOUTON CONTINUER (STYLE CLAUDE)
        ======================================== */
     .continue-btn {
       display: inline-flex;
@@ -442,6 +454,9 @@
     }
     .btn-nav.active { color: var(--accent-cyan); }
     
+    /* ========================================
+       SWITCH 3D
+       ======================================== */
     .switch-3d { position: relative; display: inline-block; width: 50px; height: 24px; }
     .switch-3d input { opacity: 0; width: 0; height: 0; }
     .slider-3d {
@@ -474,6 +489,299 @@
       50% { transform: scale(1.2); opacity: 0.7; }
       100% { transform: scale(1); opacity: 1; }
     }
+    
+    /* ========================================
+       DOCUMENTS HTML GÉNÉRÉS (COMPLETS)
+       ======================================== */
+    .doc-cv, .doc-lettre, .doc-rapport, .doc-facture, .doc-contrat {
+      background: white;
+      padding: 40px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      max-width: 800px;
+      margin: 20px auto;
+      font-family: 'Segoe UI', Arial, sans-serif;
+      color: #333;
+      line-height: 1.8;
+    }
+
+    body.night-mode .doc-cv,
+    body.night-mode .doc-lettre,
+    body.night-mode .doc-rapport,
+    body.night-mode .doc-facture,
+    body.night-mode .doc-contrat {
+      background: rgba(30, 41, 59, 0.95);
+      color: #e2e8f0;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    /* CV */
+    .doc-cv h1 {
+      color: #4361ee;
+      font-size: 32px;
+      margin-bottom: 5px;
+      text-align: center;
+      border-bottom: none;
+    }
+    body.night-mode .doc-cv h1 { color: var(--accent-cyan); }
+
+    .doc-cv .subtitle {
+      text-align: center;
+      color: #666;
+      font-size: 18px;
+      margin-bottom: 10px;
+    }
+    body.night-mode .doc-cv .subtitle { color: #94a3b8; }
+
+    .doc-cv .contact {
+      text-align: center;
+      color: #999;
+      font-size: 14px;
+      margin-bottom: 30px;
+      padding-bottom: 20px;
+      border-bottom: 2px solid #4361ee;
+    }
+    body.night-mode .doc-cv .contact { 
+      color: #94a3b8; 
+      border-bottom-color: var(--accent-cyan);
+    }
+
+    .doc-cv h2 {
+      color: #4361ee;
+      font-size: 20px;
+      margin-top: 25px;
+      margin-bottom: 15px;
+      border-left: 4px solid #4361ee;
+      padding-left: 15px;
+      border-bottom: none;
+    }
+    body.night-mode .doc-cv h2 { 
+      color: var(--accent-cyan); 
+      border-left-color: var(--accent-cyan);
+    }
+
+    .doc-cv .experience, .doc-cv .formation {
+      margin: 20px 0;
+      padding-left: 20px;
+    }
+
+    .doc-cv .experience h3, .doc-cv .formation h3 {
+      font-size: 16px;
+      color: #333;
+      margin-bottom: 5px;
+    }
+    body.night-mode .doc-cv .experience h3,
+    body.night-mode .doc-cv .formation h3 { color: #e2e8f0; }
+
+    .doc-cv .meta {
+      color: #666;
+      font-size: 14px;
+      margin-bottom: 10px;
+    }
+    body.night-mode .doc-cv .meta { color: #94a3b8; }
+
+    .doc-cv .skills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .doc-cv .skill {
+      background: #e9ecef;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 14px;
+      color: #333;
+    }
+    body.night-mode .doc-cv .skill {
+      background: rgba(51, 65, 85, 0.6);
+      color: #e2e8f0;
+    }
+
+    /* Lettre */
+    .doc-lettre .expediteur,
+    .doc-lettre .destinataire,
+    .doc-lettre .lieu-date,
+    .doc-lettre .objet,
+    .doc-lettre .corps,
+    .doc-lettre .formule {
+      margin-bottom: 20px;
+    }
+
+    .doc-lettre .expediteur { text-align: right; }
+    .doc-lettre .lieu-date { text-align: right; }
+    .doc-lettre .objet { font-weight: bold; }
+    .doc-lettre .corps p { text-align: justify; margin-bottom: 15px; }
+    .doc-lettre .formule { margin-top: 40px; }
+
+    /* Rapport */
+    .doc-rapport h1 {
+      text-align: center;
+      color: #4361ee;
+      font-size: 28px;
+      margin-bottom: 10px;
+      border-bottom: none;
+    }
+    body.night-mode .doc-rapport h1 { color: var(--accent-cyan); }
+
+    .doc-rapport .subtitle {
+      text-align: center;
+      color: #666;
+      margin-bottom: 5px;
+    }
+    body.night-mode .doc-rapport .subtitle { color: #94a3b8; }
+
+    .doc-rapport .meta {
+      text-align: center;
+      color: #999;
+      font-size: 14px;
+      margin-bottom: 30px;
+    }
+    body.night-mode .doc-rapport .meta { color: #94a3b8; }
+
+    .doc-rapport .resume {
+      background: #f8f9fa;
+      padding: 20px;
+      border-radius: 8px;
+      margin: 20px 0;
+    }
+    body.night-mode .doc-rapport .resume {
+      background: rgba(51, 65, 85, 0.3);
+    }
+
+    .doc-rapport h2 {
+      color: #4361ee;
+      border-bottom: 2px solid #4361ee;
+      padding-bottom: 10px;
+      margin-top: 30px;
+      margin-bottom: 15px;
+    }
+    body.night-mode .doc-rapport h2 {
+      color: var(--accent-cyan);
+      border-bottom-color: var(--accent-cyan);
+    }
+
+    /* Facture */
+    .doc-facture .facture-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 30px;
+      border-bottom: 3px solid #4361ee;
+      padding-bottom: 15px;
+    }
+    body.night-mode .doc-facture .facture-header {
+      border-bottom-color: var(--accent-cyan);
+    }
+
+    .doc-facture .facture-header h1 {
+      color: #4361ee;
+      font-size: 32px;
+      margin: 0;
+      border: none;
+    }
+    body.night-mode .doc-facture .facture-header h1 { color: var(--accent-cyan); }
+
+    .doc-facture .facture-parties {
+      display: flex;
+      justify-content: space-between;
+      margin: 20px 0 30px;
+      gap: 20px;
+    }
+
+    .doc-facture .emetteur, .doc-facture .client {
+      flex: 1;
+      padding: 15px;
+      background: #f8f9fa;
+      border-radius: 8px;
+    }
+    body.night-mode .doc-facture .emetteur,
+    body.night-mode .doc-facture .client {
+      background: rgba(51, 65, 85, 0.3);
+    }
+
+    .doc-facture .facture-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 20px 0;
+    }
+
+    .doc-facture .facture-table th,
+    .doc-facture .facture-table td {
+      padding: 12px;
+      border-bottom: 1px solid #ddd;
+      text-align: left;
+    }
+    body.night-mode .doc-facture .facture-table th,
+    body.night-mode .doc-facture .facture-table td {
+      border-bottom-color: rgba(255, 255, 255, 0.1);
+    }
+
+    .doc-facture .facture-table thead {
+      background: #4361ee;
+      color: white;
+    }
+    body.night-mode .doc-facture .facture-table thead {
+      background: var(--accent-cyan);
+    }
+
+    .doc-facture .facture-table tfoot {
+      background: #e9ecef;
+      font-weight: bold;
+      font-size: 18px;
+    }
+    body.night-mode .doc-facture .facture-table tfoot {
+      background: rgba(51, 65, 85, 0.6);
+    }
+
+    .doc-facture .facture-notes {
+      margin-top: 20px;
+      padding: 15px;
+      background: #fff3cd;
+      border-left: 4px solid #ffc107;
+      border-radius: 4px;
+    }
+    body.night-mode .doc-facture .facture-notes {
+      background: rgba(255, 193, 7, 0.2);
+      border-left-color: #ffc107;
+    }
+
+    /* Contrat */
+    .doc-contrat h1 {
+      text-align: center;
+      color: #4361ee;
+      font-size: 28px;
+      margin-bottom: 20px;
+      border-bottom: none;
+    }
+    body.night-mode .doc-contrat h1 { color: var(--accent-cyan); }
+
+    .doc-contrat h2 {
+      color: #4361ee;
+      font-size: 18px;
+      margin-top: 30px;
+      margin-bottom: 15px;
+      border-bottom: 2px solid #4361ee;
+      padding-bottom: 8px;
+    }
+    body.night-mode .doc-contrat h2 {
+      color: var(--accent-cyan);
+      border-bottom-color: var(--accent-cyan);
+    }
+
+    .doc-contrat .partie {
+      margin: 15px 0;
+      padding-left: 20px;
+    }
+
+    .doc-contrat .meta {
+      text-align: center;
+      color: #666;
+      font-size: 14px;
+      margin-bottom: 30px;
+    }
+    body.night-mode .doc-contrat .meta { color: #94a3b8; }
     
     /* ========================================
        RESPONSIVE
@@ -611,6 +919,23 @@
       .chat-history-item .btn.chat-history-delete {
         width: auto;
       }
+      
+      .doc-cv, .doc-lettre, .doc-rapport, .doc-facture, .doc-contrat {
+        padding: 20px;
+      }
+      
+      .doc-facture .facture-parties {
+        flex-direction: column;
+      }
+      
+      .doc-facture .facture-table {
+        font-size: 13px;
+      }
+      
+      .doc-facture .facture-table th,
+      .doc-facture .facture-table td {
+        padding: 8px;
+      }
     }
     
     @media (min-width: 761px) {
@@ -666,313 +991,6 @@
     
     #proactive-suggestion { transition: opacity 0.5s ease-in-out; }
     #proactive-suggestion.fade-out { opacity: 0; }
-    
-    /* ========================================
-       DOCUMENTS GÉNÉRÉS (HTML)
-       ======================================== */
-    .doc-cv, .doc-lettre, .doc-rapport, .doc-facture, .doc-contrat {
-      background: white;
-      padding: 40px;
-      border-radius: 12px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-      max-width: 800px;
-      margin: 20px auto;
-      font-family: 'Segoe UI', Arial, sans-serif;
-      color: #333;
-      line-height: 1.8;
-    }
-
-    body.night-mode .doc-cv,
-    body.night-mode .doc-lettre,
-    body.night-mode .doc-rapport,
-    body.night-mode .doc-facture,
-    body.night-mode .doc-contrat {
-      background: rgba(30, 41, 59, 0.95);
-      color: #e2e8f0;
-      border: 1px solid rgba(255, 255, 255, 0.1);
-    }
-
-    .doc-cv h1 {
-      color: #4361ee;
-      font-size: 32px;
-      margin-bottom: 5px;
-      text-align: center;
-      border-bottom: none;
-    }
-    body.night-mode .doc-cv h1 { color: var(--accent-cyan); }
-
-    .doc-cv .subtitle {
-      text-align: center;
-      color: #666;
-      font-size: 18px;
-      margin-bottom: 10px;
-    }
-    body.night-mode .doc-cv .subtitle { color: #94a3b8; }
-
-    .doc-cv .contact {
-      text-align: center;
-      color: #999;
-      font-size: 14px;
-      margin-bottom: 30px;
-      padding-bottom: 20px;
-      border-bottom: 2px solid #4361ee;
-    }
-    body.night-mode .doc-cv .contact { 
-      color: #94a3b8; 
-      border-bottom-color: var(--accent-cyan);
-    }
-
-    .doc-cv h2 {
-      color: #4361ee;
-      font-size: 20px;
-      margin-top: 25px;
-      margin-bottom: 15px;
-      border-left: 4px solid #4361ee;
-      padding-left: 15px;
-      border-bottom: none;
-    }
-    body.night-mode .doc-cv h2 { 
-      color: var(--accent-cyan); 
-      border-left-color: var(--accent-cyan);
-    }
-
-    .doc-cv .experience, .doc-cv .formation {
-      margin: 20px 0;
-      padding-left: 20px;
-    }
-
-    .doc-cv .experience h3, .doc-cv .formation h3 {
-      font-size: 16px;
-      color: #333;
-      margin-bottom: 5px;
-    }
-    body.night-mode .doc-cv .experience h3,
-    body.night-mode .doc-cv .formation h3 { color: #e2e8f0; }
-
-    .doc-cv .meta {
-      color: #666;
-      font-size: 14px;
-      margin-bottom: 10px;
-    }
-    body.night-mode .doc-cv .meta { color: #94a3b8; }
-
-    .doc-cv .skills {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      margin-top: 10px;
-    }
-
-    .doc-cv .skill {
-      background: #e9ecef;
-      padding: 8px 16px;
-      border-radius: 20px;
-      font-size: 14px;
-      color: #333;
-    }
-    body.night-mode .doc-cv .skill {
-      background: rgba(51, 65, 85, 0.6);
-      color: #e2e8f0;
-    }
-
-    .doc-lettre .expediteur,
-    .doc-lettre .destinataire,
-    .doc-lettre .lieu-date,
-    .doc-lettre .objet,
-    .doc-lettre .corps,
-    .doc-lettre .formule {
-      margin-bottom: 20px;
-    }
-
-    .doc-lettre .expediteur { text-align: right; }
-    .doc-lettre .lieu-date { text-align: right; }
-    .doc-lettre .objet { font-weight: bold; }
-    .doc-lettre .corps p { text-align: justify; margin-bottom: 15px; }
-    .doc-lettre .formule { margin-top: 40px; }
-
-    .doc-rapport h1 {
-      text-align: center;
-      color: #4361ee;
-      font-size: 28px;
-      margin-bottom: 10px;
-      border-bottom: none;
-    }
-    body.night-mode .doc-rapport h1 { color: var(--accent-cyan); }
-
-    .doc-rapport .subtitle {
-      text-align: center;
-      color: #666;
-      margin-bottom: 5px;
-    }
-    body.night-mode .doc-rapport .subtitle { color: #94a3b8; }
-
-    .doc-rapport .meta {
-      text-align: center;
-      color: #999;
-      font-size: 14px;
-      margin-bottom: 30px;
-    }
-    body.night-mode .doc-rapport .meta { color: #94a3b8; }
-
-    .doc-rapport .resume {
-      background: #f8f9fa;
-      padding: 20px;
-      border-radius: 8px;
-      margin: 20px 0;
-    }
-    body.night-mode .doc-rapport .resume {
-      background: rgba(51, 65, 85, 0.3);
-    }
-
-    .doc-rapport h2 {
-      color: #4361ee;
-      border-bottom: 2px solid #4361ee;
-      padding-bottom: 10px;
-      margin-top: 30px;
-      margin-bottom: 15px;
-    }
-    body.night-mode .doc-rapport h2 {
-      color: var(--accent-cyan);
-      border-bottom-color: var(--accent-cyan);
-    }
-
-    .doc-facture .facture-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 30px;
-      border-bottom: 3px solid #4361ee;
-      padding-bottom: 15px;
-    }
-    body.night-mode .doc-facture .facture-header {
-      border-bottom-color: var(--accent-cyan);
-    }
-
-    .doc-facture .facture-header h1 {
-      color: #4361ee;
-      font-size: 32px;
-      margin: 0;
-      border: none;
-    }
-    body.night-mode .doc-facture .facture-header h1 { color: var(--accent-cyan); }
-
-    .doc-facture .facture-parties {
-      display: flex;
-      justify-content: space-between;
-      margin: 20px 0 30px;
-      gap: 20px;
-    }
-
-    .doc-facture .emetteur, .doc-facture .client {
-      flex: 1;
-      padding: 15px;
-      background: #f8f9fa;
-      border-radius: 8px;
-    }
-    body.night-mode .doc-facture .emetteur,
-    body.night-mode .doc-facture .client {
-      background: rgba(51, 65, 85, 0.3);
-    }
-
-    .doc-facture .facture-table {
-      width: 100%;
-      border-collapse: collapse;
-      margin: 20px 0;
-    }
-
-    .doc-facture .facture-table th,
-    .doc-facture .facture-table td {
-      padding: 12px;
-      border-bottom: 1px solid #ddd;
-      text-align: left;
-    }
-    body.night-mode .doc-facture .facture-table th,
-    body.night-mode .doc-facture .facture-table td {
-      border-bottom-color: rgba(255, 255, 255, 0.1);
-    }
-
-    .doc-facture .facture-table thead {
-      background: #4361ee;
-      color: white;
-    }
-    body.night-mode .doc-facture .facture-table thead {
-      background: var(--accent-cyan);
-    }
-
-    .doc-facture .facture-table tfoot {
-      background: #e9ecef;
-      font-weight: bold;
-      font-size: 18px;
-    }
-    body.night-mode .doc-facture .facture-table tfoot {
-      background: rgba(51, 65, 85, 0.6);
-    }
-
-    .doc-facture .facture-notes {
-      margin-top: 20px;
-      padding: 15px;
-      background: #fff3cd;
-      border-left: 4px solid #ffc107;
-      border-radius: 4px;
-    }
-    body.night-mode .doc-facture .facture-notes {
-      background: rgba(255, 193, 7, 0.2);
-      border-left-color: #ffc107;
-    }
-
-    .doc-contrat h1 {
-      text-align: center;
-      color: #4361ee;
-      font-size: 28px;
-      margin-bottom: 20px;
-      border-bottom: none;
-    }
-    body.night-mode .doc-contrat h1 { color: var(--accent-cyan); }
-
-    .doc-contrat h2 {
-      color: #4361ee;
-      font-size: 18px;
-      margin-top: 30px;
-      margin-bottom: 15px;
-      border-bottom: 2px solid #4361ee;
-      padding-bottom: 8px;
-    }
-    body.night-mode .doc-contrat h2 {
-      color: var(--accent-cyan);
-      border-bottom-color: var(--accent-cyan);
-    }
-
-    .doc-contrat .partie {
-      margin: 15px 0;
-      padding-left: 20px;
-    }
-
-    .doc-contrat .meta {
-      text-align: center;
-      color: #666;
-      font-size: 14px;
-      margin-bottom: 30px;
-    }
-    body.night-mode .doc-contrat .meta { color: #94a3b8; }
-
-    @media (max-width: 760px) {
-      .doc-cv, .doc-lettre, .doc-rapport, .doc-facture, .doc-contrat {
-        padding: 20px;
-      }
-      
-      .doc-facture .facture-parties {
-        flex-direction: column;
-      }
-      
-      .doc-facture .facture-table {
-        font-size: 13px;
-      }
-      
-      .doc-facture .facture-table th,
-      .doc-facture .facture-table td {
-        padding: 8px;
-      }
-    }
   </style>
 </head>
 <body>
@@ -980,7 +998,7 @@
   <div id="login-overlay">
     <div class="login-box">
       <div class="app-icon"><i class="fas fa-home-user"></i></div>
-      <h2>SmartHome Intelligence </h2>
+      <h2>SmartHome Intelligence v12</h2>
       <p>Veuillez vous connecter pour accéder à votre assistant domotique.</p>
       <button class="btn primary" id="googleSignInOverlayBtn" style="width:100%; justify-content:center;">
           <svg style="width:20px; height:20px; margin-right:8px;" viewBox="0 0 24 24"><path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" style="color:#4285F4"></path><path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" style="color:#34A853"></path><path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" style="color:#FBBC05"></path><path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" style="color:#EA4335"></path><path fill="none" d="M1 1h22v22H1z"></path></svg>
@@ -1231,11 +1249,16 @@
   
   <script type="module">
   /*************************************************
-   * SmartHome Intelligence - Version 10.0 ARTIFACTS
-   * ✅ Système de continuation (comme Claude)
-   * ✅ Blocs de code fond noir (comme Gemini)
-   * ✅ Lecture vocale UNIQUEMENT texte (pas HTML/CSS)
-   * ✅ Interface Artifacts complète
+   * SmartHome Intelligence - Version 12.0 COMPLET
+   * 🎯 ~3500 lignes - Toutes fonctionnalités incluses
+   * ✅ Documents HTML complets (CV, Lettre, Rapport, Facture, Contrat)
+   * ✅ Gestion fichiers avancée (icônes par type)
+   * ✅ Planification avec nettoyage auto
+   * ✅ VoiceEngine complet (push-to-talk + continu)
+   * ✅ Chat multi-sessions Firebase
+   * ✅ Notifications complètes
+   * ✅ Code highlighting avec download
+   * ✅ WebSocket local ESP32
    *************************************************/
 
   // ======= CONFIG =======
@@ -1319,8 +1342,8 @@
       // Extraire uniquement le texte
       const text = tempDiv.innerText || tempDiv.textContent || '';
       
-      // Limiter à 500 caractères pour ne pas avoir une lecture trop longue
-      return text.substring(0, 500).trim();
+      // Limiter à 100000 caractères pour ne pas avoir une lecture trop longue
+      return text.substring(0, 100000).trim();
     }
     
     // Si c'est du Markdown avec code
@@ -1348,333 +1371,335 @@
     const text = tempDiv.innerText || tempDiv.textContent || '';
     return text.substring(0, 500).trim();
   }
-// ========================================
-// ✅ FONCTIONS POUR DOCUMENTS HTML
-// ========================================
 
-// Fonction pour imprimer le document
-window.printDocument = function() {
-  try {
-    console.log('🖨️ Impression du document...');
-    
-    // Créer une fenêtre d'impression avec uniquement le document
-    const docElement = document.querySelector('.doc-cv, .doc-lettre, .doc-rapport, .doc-facture, .doc-contrat');
-    
-    if (!docElement) {
-      alert('❌ Aucun document trouvé à imprimer.');
-      return;
-    }
-    
-    // Cloner le document
-    const printContent = docElement.cloneNode(true);
-    
-    // Créer une nouvelle fenêtre
-    const printWindow = window.open('', '_blank');
-    
-    if (!printWindow) {
-      alert('❌ Impossible d\'ouvrir la fenêtre d\'impression. Vérifiez que les popups ne sont pas bloqués.');
-      return;
-    }
-    
-    // Récupérer le mode nuit actuel
-    const isDarkMode = document.body.classList.contains('night-mode');
-    
-    // Écrire le contenu HTML complet dans la nouvelle fenêtre
-    printWindow.document.write(`
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="utf-8">
-        <title>Impression - Document</title>
-        <style>
-          * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-          }
-          
-          body {
-            font-family: 'Segoe UI', Arial, sans-serif;
-            background: white;
-            color: #333;
-            padding: 20px;
-          }
-          
-          /* Styles des documents */
-          .doc-cv, .doc-lettre, .doc-rapport, .doc-facture, .doc-contrat {
-            background: white;
-            padding: 40px;
-            max-width: 800px;
-            margin: 0 auto;
-            color: #333;
-            line-height: 1.8;
-          }
-          
-          h1 {
-            color: #4361ee;
-            font-size: 32px;
-            margin-bottom: 10px;
-          }
-          
-          h2 {
-            color: #4361ee;
-            font-size: 20px;
-            margin-top: 25px;
-            margin-bottom: 15px;
-            border-left: 4px solid #4361ee;
-            padding-left: 15px;
-          }
-          
-          h3 {
-            font-size: 16px;
-            color: #333;
-            margin-bottom: 5px;
-          }
-          
-          p {
-            margin-bottom: 12px;
-          }
-          
-          .subtitle {
-            text-align: center;
-            color: #666;
-            font-size: 18px;
-            margin-bottom: 10px;
-          }
-          
-          .contact {
-            text-align: center;
-            color: #999;
-            font-size: 14px;
-            margin-bottom: 30px;
-            padding-bottom: 20px;
-            border-bottom: 2px solid #4361ee;
-          }
-          
-          .meta {
-            color: #666;
-            font-size: 14px;
-            margin-bottom: 10px;
-          }
-          
-          .skills {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            margin-top: 10px;
-          }
-          
-          .skill {
-            background: #e9ecef;
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-size: 14px;
-            color: #333;
-          }
-          
-          .experience, .formation {
-            margin: 20px 0;
-            padding-left: 20px;
-          }
-          
-          /* Facture */
-          .facture-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 30px;
-            border-bottom: 3px solid #4361ee;
-            padding-bottom: 15px;
-          }
-          
-          .facture-parties {
-            display: flex;
-            justify-content: space-between;
-            margin: 20px 0 30px;
-            gap: 20px;
-          }
-          
-          .emetteur, .client {
-            flex: 1;
-            padding: 15px;
-            background: #f8f9fa;
-            border-radius: 8px;
-          }
-          
-          .facture-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 20px 0;
-          }
-          
-          .facture-table th,
-          .facture-table td {
-            padding: 12px;
-            border-bottom: 1px solid #ddd;
-            text-align: left;
-          }
-          
-          .facture-table thead {
-            background: #4361ee;
-            color: white;
-          }
-          
-          .facture-table tfoot {
-            background: #e9ecef;
-            font-weight: bold;
-            font-size: 18px;
-          }
-          
-          .facture-notes {
-            margin-top: 20px;
-            padding: 15px;
-            background: #fff3cd;
-            border-left: 4px solid #ffc107;
-            border-radius: 4px;
-          }
-          
-          /* Lettre */
-          .expediteur { text-align: right; margin-bottom: 20px; }
-          .destinataire { margin-bottom: 20px; }
-          .lieu-date { text-align: right; margin-bottom: 20px; }
-          .objet { font-weight: bold; margin-bottom: 20px; }
-          .corps p { text-align: justify; margin-bottom: 15px; }
-          .formule { margin-top: 40px; }
-          
-          /* Rapport */
-          .resume {
-            background: #f8f9fa;
-            padding: 20px;
-            border-radius: 8px;
-            margin: 20px 0;
-          }
-          
-          /* Impression */
-          @media print {
-            body {
+  // ========================================
+  // ✅ FONCTIONS POUR DOCUMENTS HTML
+  // ========================================
+
+  // Fonction pour imprimer le document
+  window.printDocument = function() {
+    try {
+      console.log('🖨️ Impression du document...');
+      
+      // Créer une fenêtre d'impression avec uniquement le document
+      const docElement = document.querySelector('.doc-cv, .doc-lettre, .doc-rapport, .doc-facture, .doc-contrat');
+      
+      if (!docElement) {
+        alert('❌ Aucun document trouvé à imprimer.');
+        return;
+      }
+      
+      // Cloner le document
+      const printContent = docElement.cloneNode(true);
+      
+      // Créer une nouvelle fenêtre
+      const printWindow = window.open('', '_blank');
+      
+      if (!printWindow) {
+        alert('❌ Impossible d\'ouvrir la fenêtre d\'impression. Vérifiez que les popups ne sont pas bloqués.');
+        return;
+      }
+      
+      // Récupérer le mode nuit actuel
+      const isDarkMode = document.body.classList.contains('night-mode');
+      
+      // Écrire le contenu HTML complet dans la nouvelle fenêtre
+      printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <title>Impression - Document</title>
+          <style>
+            * {
+              margin: 0;
               padding: 0;
+              box-sizing: border-box;
             }
             
-            .doc-cv, .doc-lettre, .doc-rapport, .doc-facture, .doc-contrat {
+            body {
+              font-family: 'Segoe UI', Arial, sans-serif;
+              background: white;
+              color: #333;
               padding: 20px;
-              box-shadow: none;
             }
             
-            @page {
-              margin: 1cm;
+            /* Styles des documents */
+            .doc-cv, .doc-lettre, .doc-rapport, .doc-facture, .doc-contrat {
+              background: white;
+              padding: 40px;
+              max-width: 800px;
+              margin: 0 auto;
+              color: #333;
+              line-height: 1.8;
             }
-          }
-        </style>
-      </head>
-      <body>
-        ${printContent.outerHTML}
-      </body>
-      </html>
-    `);
-    
-    printWindow.document.close();
-    
-    // Attendre que le contenu soit chargé avant d'imprimer
-    printWindow.onload = function() {
-      setTimeout(() => {
-        printWindow.focus();
-        printWindow.print();
-        
-        // Fermer la fenêtre après impression (optionnel)
-        // printWindow.close();
-      }, 250);
-    };
-    
-    console.log('✅ Fenêtre d\'impression ouverte');
-    
-  } catch (error) {
-    console.error('❌ Erreur impression:', error);
-    alert('❌ Erreur lors de l\'impression. Veuillez réessayer.');
-  }
-};
+            
+            h1 {
+              color: #4361ee;
+              font-size: 32px;
+              margin-bottom: 10px;
+            }
+            
+            h2 {
+              color: #4361ee;
+              font-size: 20px;
+              margin-top: 25px;
+              margin-bottom: 15px;
+              border-left: 4px solid #4361ee;
+              padding-left: 15px;
+            }
+            
+            h3 {
+              font-size: 16px;
+              color: #333;
+              margin-bottom: 5px;
+            }
+            
+            p {
+              margin-bottom: 12px;
+            }
+            
+            .subtitle {
+              text-align: center;
+              color: #666;
+              font-size: 18px;
+              margin-bottom: 10px;
+            }
+            
+            .contact {
+              text-align: center;
+              color: #999;
+              font-size: 14px;
+              margin-bottom: 30px;
+              padding-bottom: 20px;
+              border-bottom: 2px solid #4361ee;
+            }
+            
+            .meta {
+              color: #666;
+              font-size: 14px;
+              margin-bottom: 10px;
+            }
+            
+            .skills {
+              display: flex;
+              flex-wrap: wrap;
+              gap: 10px;
+              margin-top: 10px;
+            }
+            
+            .skill {
+              background: #e9ecef;
+              padding: 8px 16px;
+              border-radius: 20px;
+              font-size: 14px;
+              color: #333;
+            }
+            
+            .experience, .formation {
+              margin: 20px 0;
+              padding-left: 20px;
+            }
+            
+            /* Facture */
+            .facture-header {
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              margin-bottom: 30px;
+              border-bottom: 3px solid #4361ee;
+              padding-bottom: 15px;
+            }
+            
+            .facture-parties {
+              display: flex;
+              justify-content: space-between;
+              margin: 20px 0 30px;
+              gap: 20px;
+            }
+            
+            .emetteur, .client {
+              flex: 1;
+              padding: 15px;
+              background: #f8f9fa;
+              border-radius: 8px;
+            }
+            
+            .facture-table {
+              width: 100%;
+              border-collapse: collapse;
+              margin: 20px 0;
+            }
+            
+            .facture-table th,
+            .facture-table td {
+              padding: 12px;
+              border-bottom: 1px solid #ddd;
+              text-align: left;
+            }
+            
+            .facture-table thead {
+              background: #4361ee;
+              color: white;
+            }
+            
+            .facture-table tfoot {
+              background: #e9ecef;
+              font-weight: bold;
+              font-size: 18px;
+            }
+            
+            .facture-notes {
+              margin-top: 20px;
+              padding: 15px;
+              background: #fff3cd;
+              border-left: 4px solid #ffc107;
+              border-radius: 4px;
+            }
+            
+            /* Lettre */
+            .expediteur { text-align: right; margin-bottom: 20px; }
+            .destinataire { margin-bottom: 20px; }
+            .lieu-date { text-align: right; margin-bottom: 20px; }
+            .objet { font-weight: bold; margin-bottom: 20px; }
+            .corps p { text-align: justify; margin-bottom: 15px; }
+            .formule { margin-top: 40px; }
+            
+            /* Rapport */
+            .resume {
+              background: #f8f9fa;
+              padding: 20px;
+              border-radius: 8px;
+              margin: 20px 0;
+            }
+            
+            /* Impression */
+            @media print {
+              body {
+                padding: 0;
+              }
+              
+              .doc-cv, .doc-lettre, .doc-rapport, .doc-facture, .doc-contrat {
+                padding: 20px;
+                box-shadow: none;
+              }
+              
+              @page {
+                margin: 1cm;
+              }
+            }
+          </style>
+        </head>
+        <body>
+          ${printContent.outerHTML}
+        </body>
+        </html>
+      `);
+      
+      printWindow.document.close();
+      
+      // Attendre que le contenu soit chargé avant d'imprimer
+      printWindow.onload = function() {
+        setTimeout(() => {
+          printWindow.focus();
+          printWindow.print();
+          
+          // Fermer la fenêtre après impression (optionnel)
+          // printWindow.close();
+        }, 250);
+      };
+      
+      console.log('✅ Fenêtre d\'impression ouverte');
+      
+    } catch (error) {
+      console.error('❌ Erreur impression:', error);
+      alert('❌ Erreur lors de l\'impression. Veuillez réessayer.');
+    }
+  };
 
-// Fonction pour copier le HTML du document
-window.copyDocumentHtml = function() {
-  try {
-    const docElement = document.querySelector('.doc-cv, .doc-lettre, .doc-rapport, .doc-facture, .doc-contrat');
-    
-    if (!docElement) {
-      alert('❌ Aucun document trouvé à copier.');
-      return;
+  // Fonction pour copier le HTML du document
+  window.copyDocumentHtml = function() {
+    try {
+      const docElement = document.querySelector('.doc-cv, .doc-lettre, .doc-rapport, .doc-facture, .doc-contrat');
+      
+      if (!docElement) {
+        alert('❌ Aucun document trouvé à copier.');
+        return;
+      }
+      
+      const html = docElement.outerHTML;
+      
+      // Copier dans le presse-papier
+      navigator.clipboard.writeText(html).then(() => {
+        console.log('✅ HTML copié dans le presse-papier');
+        
+        // Feedback visuel
+        const btn = event.target.closest('button');
+        if (btn) {
+          const originalText = btn.innerHTML;
+          btn.innerHTML = '<i class="fas fa-check"></i> Copié !';
+          btn.style.background = '#2ecc71';
+          
+          setTimeout(() => {
+            btn.innerHTML = originalText;
+            btn.style.background = '';
+          }, 2000);
+        }
+        
+        alert('✅ HTML copié dans le presse-papier !');
+        
+      }).catch(err => {
+        console.error('❌ Erreur copie:', err);
+        
+        // Fallback : créer un textarea temporaire
+        const textarea = document.createElement('textarea');
+        textarea.value = html;
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+        document.body.appendChild(textarea);
+        textarea.select();
+        
+        try {
+          document.execCommand('copy');
+          alert('✅ HTML copié dans le presse-papier !');
+        } catch (e) {
+          alert('❌ Impossible de copier. Utilisez Ctrl+C manuellement.');
+        }
+        
+        document.body.removeChild(textarea);
+      });
+      
+    } catch (error) {
+      console.error('❌ Erreur copie HTML:', error);
+      alert('❌ Erreur lors de la copie. Veuillez réessayer.');
+    }
+  };
+
+  // Fonction pour télécharger une image
+  window.downloadImage = function(imageUrl, filename = null) {
+    if (!filename) {
+      filename = `intellia_image_${Date.now()}.png`;
     }
     
-    const html = docElement.outerHTML;
-    
-    // Copier dans le presse-papier
-    navigator.clipboard.writeText(html).then(() => {
-      console.log('✅ HTML copié dans le presse-papier');
-      
-      // Feedback visuel
-      const btn = event.target.closest('button');
-      if (btn) {
-        const originalText = btn.innerHTML;
-        btn.innerHTML = '<i class="fas fa-check"></i> Copié !';
-        btn.style.background = '#2ecc71';
-        
-        setTimeout(() => {
-          btn.innerHTML = originalText;
-          btn.style.background = '';
-        }, 2000);
-      }
-      
-      alert('✅ HTML copié dans le presse-papier !');
-      
-    }).catch(err => {
-      console.error('❌ Erreur copie:', err);
-      
-      // Fallback : créer un textarea temporaire
-      const textarea = document.createElement('textarea');
-      textarea.value = html;
-      textarea.style.position = 'fixed';
-      textarea.style.opacity = '0';
-      document.body.appendChild(textarea);
-      textarea.select();
-      
-      try {
-        document.execCommand('copy');
-        alert('✅ HTML copié dans le presse-papier !');
-      } catch (e) {
-        alert('❌ Impossible de copier. Utilisez Ctrl+C manuellement.');
-      }
-      
-      document.body.removeChild(textarea);
-    });
-    
-  } catch (error) {
-    console.error('❌ Erreur copie HTML:', error);
-    alert('❌ Erreur lors de la copie. Veuillez réessayer.');
-  }
-};
+    fetch(imageUrl)
+      .then(response => response.blob())
+      .then(blob => {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        console.log(`✅ Image téléchargée: ${filename}`);
+      })
+      .catch(error => {
+        console.error("❌ Erreur téléchargement image:", error);
+        alert("❌ Impossible de télécharger l'image. Faites clic droit > Enregistrer l'image.");
+      });
+  };
 
-// Fonction pour télécharger une image (DÉJÀ EXISTANTE - VÉRIFIER)
-window.downloadImage = function(imageUrl, filename = null) {
-  if (!filename) {
-    filename = `intellia_image_${Date.now()}.png`;
-  }
-  
-  fetch(imageUrl)
-    .then(response => response.blob())
-    .then(blob => {
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      console.log(`✅ Image téléchargée: ${filename}`);
-    })
-    .catch(error => {
-      console.error("❌ Erreur téléchargement image:", error);
-      alert("❌ Impossible de télécharger l'image. Faites clic droit > Enregistrer l'image.");
-    });
-};
   // ========================================
   // ✅ FONCTION D'AFFICHAGE DES MESSAGES
   // ========================================
@@ -1746,9 +1771,35 @@ window.downloadImage = function(imageUrl, filename = null) {
           const fileDiv = document.createElement('div');
           fileDiv.style.cssText = 'padding: 8px 12px; background: rgba(0,0,0,0.1); border-radius: 6px; font-size: 13px;';
           let iconClass = 'fa-file';
-          if (att.name.endsWith('.pdf')) iconClass = 'fa-file-pdf';
-          else if (att.name.endsWith('.docx')) iconClass = 'fa-file-word';
-          fileDiv.innerHTML = `<i class="fas ${iconClass}"></i> ${att.name}`;
+          let iconColor = '#6c757d';
+          
+          const fileName = att.name.toLowerCase();
+          if (fileName.endsWith('.pdf')) {
+            iconClass = 'fa-file-pdf';
+            iconColor = '#dc3545';
+          } else if (fileName.endsWith('.docx') || fileName.endsWith('.doc')) {
+            iconClass = 'fa-file-word';
+            iconColor = '#2b579a';
+          } else if (fileName.endsWith('.xlsx') || fileName.endsWith('.xls')) {
+            iconClass = 'fa-file-excel';
+            iconColor = '#217346';
+          } else if (fileName.endsWith('.txt')) {
+            iconClass = 'fa-file-alt';
+          } else if (fileName.endsWith('.html') || fileName.endsWith('.htm')) {
+            iconClass = 'fa-file-code';
+            iconColor = '#f06529';
+          } else if (fileName.endsWith('.js')) {
+            iconClass = 'fa-file-code';
+            iconColor = '#f7df1e';
+          } else if (fileName.endsWith('.json')) {
+            iconClass = 'fa-file-code';
+            iconColor = '#5a5a5a';
+          } else if (fileName.endsWith('.css')) {
+            iconClass = 'fa-file-code';
+            iconColor = '#264de4';
+          }
+          
+          fileDiv.innerHTML = `<i class="fas ${iconClass}" style="color: ${iconColor}; margin-right: 6px;"></i> ${att.name}`;
           attachmentsDiv.appendChild(fileDiv);
         }
       });
@@ -1773,19 +1824,53 @@ window.downloadImage = function(imageUrl, filename = null) {
       const code = block.querySelector('code');
       if (!code) return;
       
-      const btn = document.createElement('button');
-      btn.className = 'copy-code-btn';
-      btn.innerHTML = '<i class="fas fa-copy"></i> Copier';
+      // Déterminer le langage
+      let language = 'TEXT';
+      let extension = 'txt';
+      const classes = code.className.split(' ');
+      const langClass = classes.find(c => c.startsWith('language-'));
       
-      btn.addEventListener('click', () => {
-        navigator.clipboard.writeText(code.innerText);
-        btn.innerHTML = '<i class="fas fa-check"></i> Copié !';
-        setTimeout(() => {
-          btn.innerHTML = '<i class="fas fa-copy"></i> Copier';
-        }, 2000);
-      });
+      if (langClass) {
+        language = langClass.replace('language-', '').toUpperCase();
+        const langMap = {
+          'JAVASCRIPT': 'js', 'PYTHON': 'py', 'HTML': 'html', 
+          'CSS': 'css', 'JSON': 'json', 'JAVA': 'java',
+          'CPP': 'cpp', 'C': 'c', 'PHP': 'php', 'RUBY': 'rb',
+          'GO': 'go', 'RUST': 'rs', 'TYPESCRIPT': 'ts',
+          'BASH': 'sh', 'SQL': 'sql', 'XML': 'xml'
+        };
+        extension = langMap[language] || language.toLowerCase();
+      }
       
-      block.appendChild(btn);
+      const actions = document.createElement('div');
+      actions.className = 'code-actions';
+      actions.innerHTML = `
+        <span>${language}</span>
+        <div class="code-actions-buttons">
+          <button class="code-action-btn" onclick="
+            navigator.clipboard.writeText(this.closest('pre').querySelector('code').innerText)
+              .then(() => { this.innerHTML = '<i class=\\'fas fa-check\\'></i> Copié'; setTimeout(() => { this.innerHTML = '<i class=\\'fas fa-copy\\'></i> Copier'; }, 2000); });
+          ">
+            <i class="fas fa-copy"></i> Copier
+          </button>
+          <button class="code-action-btn" onclick="
+            const code = this.closest('pre').querySelector('code').innerText;
+            const blob = new Blob([code], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'code.${extension}';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+          ">
+            <i class="fas fa-download"></i> Télécharger
+          </button>
+        </div>
+      `;
+      
+      block.insertBefore(actions, block.firstChild);
     });
   }
   
@@ -2093,7 +2178,7 @@ window.downloadImage = function(imageUrl, filename = null) {
   }
 
   // ========================================
-  // RESTE DU CODE (INCHANGÉ)
+  // GESTION COMMANDES EXECUTION & PLANNING
   // ========================================
   async function handlePlanningCommands(commands) {
     for (const cmd of commands) {
@@ -2230,7 +2315,7 @@ window.downloadImage = function(imageUrl, filename = null) {
             <div class="device-name">${device.name}</div>
             <div class="device-status">
               <span class="status-indicator ${isOn ? 'active' : ''}"></span>
-              <span>${isOn ? 'AllumÉ' : 'Éteint'}${deviceType.hasBrightness ? ` • ${power}%` : ''}</span>
+              <span>${isOn ? 'Allumé' : 'Éteint'}${deviceType.hasBrightness ? ` • ${power}%` : ''}</span>
               <small style="display:block;margin-top:4px">${device.room || 'Non spécifié'}</small>
             </div>
           </div>
@@ -2332,7 +2417,7 @@ window.downloadImage = function(imageUrl, filename = null) {
     }
 
     const wsUrl = `ws://${ip}/ws`;
-    logActivity(`🔡 Tentative de connexion locale à ${wsUrl}...`);
+    logActivity(`📡 Tentative de connexion locale à ${wsUrl}...`);
 
     if (appState.localWebSocket) {
       appState.localWebSocket.close();
@@ -3305,13 +3390,13 @@ window.downloadImage = function(imageUrl, filename = null) {
   
   
   function updateProactiveSuggestion() {
-    const el = document.getElementById('proactive-suggestion');
-    if (!el) return;
-    el.classList.add('fade-out');
+    const el_sug = document.getElementById('proactive-suggestion');
+    if (!el_sug) return;
+    el_sug.classList.add('fade-out');
     setTimeout(() => {
       suggestionIndex = (suggestionIndex + 1) % proactiveSuggestions.length;
-      el.textContent = proactiveSuggestions[suggestionIndex];
-      el.classList.remove('fade-out');
+      el_sug.textContent = proactiveSuggestions[suggestionIndex];
+      el_sug.classList.remove('fade-out');
     }, 500);
   }
 
@@ -3371,11 +3456,19 @@ window.downloadImage = function(imageUrl, filename = null) {
 
   window.appState = appState;
   
-  console.log('✅ SmartHome Intelligence v10.0 ARTIFACTS - Prêt à l\'emploi');
-  console.log('📄 Documents HTML: Fonctionnels');
+  console.log('✅ SmartHome Intelligence v12.0 COMPLET - Prêt à l\'emploi');
+  console.log('📄 Documents HTML: CV, Lettre, Rapport, Facture, Contrat');
   console.log('🔄 Système de continuation: Actif');
   console.log('⬛ Blocs de code: Style Gemini (fond noir)');
   console.log('🗣️ Lecture vocale: Texte uniquement (pas de code)');
+  console.log('📎 Gestion fichiers avancée: Icônes par type');
+  console.log('⏰ Planning: Nettoyage auto + cache Map');
+  console.log('🎤 VoiceEngine: Push-to-talk + Continu');
+  console.log('💬 Chat: Multi-sessions Firebase');
+  console.log('🔔 Notifications: Push + Vocales');
+  console.log('📥 Code: Copier + Télécharger par langage');
+  console.log('📡 WebSocket: ESP32 local');
+  console.log('📊 Total: ~3500 lignes');
   </script>
 </body>
 </html>
