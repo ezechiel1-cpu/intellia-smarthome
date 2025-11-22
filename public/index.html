@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
-  <title>SmartHome Intelligence v12</title>
+  <title>SmartHome Intelligence </title>
   <meta name="theme-color" content="#06b6d4" />
   
   <!-- CDN Existants -->
@@ -998,7 +998,7 @@
   <div id="login-overlay">
     <div class="login-box">
       <div class="app-icon"><i class="fas fa-home-user"></i></div>
-      <h2>SmartHome Intelligence v12</h2>
+      <h2>SmartHome Intelligence </h2>
       <p>Veuillez vous connecter pour accéder à votre assistant domotique.</p>
       <button class="btn primary" id="googleSignInOverlayBtn" style="width:100%; justify-content:center;">
           <svg style="width:20px; height:20px; margin-right:8px;" viewBox="0 0 24 24"><path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" style="color:#4285F4"></path><path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" style="color:#34A853"></path><path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" style="color:#FBBC05"></path><path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" style="color:#EA4335"></path><path fill="none" d="M1 1h22v22H1z"></path></svg>
@@ -1149,27 +1149,58 @@
       <section id="sec-planning" class="section">
         <div class="two-column">
           <div class="card">
-            <strong>Ajouter une planification</strong>
-            <div style="margin-top:8px">
+            <strong>⏰ Ajouter une planification</strong>
+            <div style="margin-top:12px">
               <label>Appareil</label>
-              <select id="plan-device" style="width:100%;padding:8px;border-radius:8px;border:1px solid #ddd"></select>
-              <label>Heure</label>
-              <input type="time" id="plan-time" style="width:100%;padding:8px;border-radius:8px;border:1px solid #ddd" />
-              <label>Action</label>
-              <select id="plan-action" style="width:100%;padding:8px;border-radius:8px;border:1px solid #ddd">
-                <option value="ON">Allumer</option> <option value="OFF">Éteindre</option>
+              <select id="plan-device" style="width:100%;padding:8px;border-radius:8px;border:1px solid #ddd;margin-bottom:10px"></select>
+              
+              <label>Fréquence</label>
+              <select id="plan-frequency" style="width:100%;padding:8px;border-radius:8px;border:1px solid #ddd;margin-bottom:10px">
+                <option value="once">Une fois (date spécifique)</option>
+                <option value="daily">Tous les jours</option>
+                <option value="weekly">Hebdomadaire (certains jours)</option>
+                <option value="monthly">Mensuel</option>
               </select>
+
+              <div id="opt-date" style="margin-bottom:10px">
+                <label>Date</label>
+                <input type="date" id="plan-date" style="width:100%;padding:8px;border-radius:8px;border:1px solid #ddd" />
+              </div>
+
+              <div id="opt-days" style="display:none;margin-bottom:10px">
+                <label>Jours actifs</label>
+                <div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:8px">
+                  <label class="chip" style="cursor:pointer;user-select:none"><input type="checkbox" class="day-checkbox" value="1" style="margin-right:4px"> Lundi</label>
+                  <label class="chip" style="cursor:pointer;user-select:none"><input type="checkbox" class="day-checkbox" value="2" style="margin-right:4px"> Mardi</label>
+                  <label class="chip" style="cursor:pointer;user-select:none"><input type="checkbox" class="day-checkbox" value="3" style="margin-right:4px"> Mercredi</label>
+                  <label class="chip" style="cursor:pointer;user-select:none"><input type="checkbox" class="day-checkbox" value="4" style="margin-right:4px"> Jeudi</label>
+                  <label class="chip" style="cursor:pointer;user-select:none"><input type="checkbox" class="day-checkbox" value="5" style="margin-right:4px"> Vendredi</label>
+                  <label class="chip" style="cursor:pointer;user-select:none"><input type="checkbox" class="day-checkbox" value="6" style="margin-right:4px"> Samedi</label>
+                  <label class="chip" style="cursor:pointer;user-select:none"><input type="checkbox" class="day-checkbox" value="0" style="margin-right:4px"> Dimanche</label>
+                </div>
+              </div>
+
+              <label>Heure</label>
+              <input type="time" id="plan-time" style="width:100%;padding:8px;border-radius:8px;border:1px solid #ddd;margin-bottom:10px" />
+              
+              <label>Action</label>
+              <select id="plan-action" style="width:100%;padding:8px;border-radius:8px;border:1px solid #ddd;margin-bottom:10px">
+                <option value="ON">Allumer</option><option value="OFF">Éteindre</option>
+              </select>
+
               <label>Puissance (%)</label>
-              <input id="plan-power" type="number" min="0" max="100" value="100" style="width:100%;padding:8px;border-radius:8px;border:1px solid #ddd" />
-              <div style="margin-top:8px;display:flex;gap:8px">
-                <button class="btn primary" id="addPlan">Ajouter</button>
-                <button class="btn warning" id="clearAllPlans"> <i class="fas fa-trash"></i> Tout supprimer </button>
+              <input id="plan-power" type="number" min="0" max="100" value="100" style="width:100%;padding:8px;border-radius:8px;border:1px solid #ddd;margin-bottom:10px" />
+              
+              <div style="display:flex;gap:8px">
+                <button class="btn primary" id="addPlan" style="flex:1"><i class="fas fa-plus"></i> Planifier</button>
+                <button class="btn warning" id="clearAllPlans" style="flex:1"><i class="fas fa-trash"></i> Effacer tout</button>
               </div>
             </div>
           </div>
+
           <div class="card">
-            <strong>Planifications enregistrées</strong>
-            <div id="planningTable" style="margin-top:8px"></div>
+            <strong>📋 Tâches Programmées</strong>
+            <div id="planningTable" style="margin-top:12px;font-size:13px"></div>
           </div>
         </div>
       </section>
@@ -1330,305 +1361,125 @@
   // ✅ FONCTION POUR EXTRAIRE TEXTE LISIBLE
   // (Ignore HTML/CSS/Code pour la lecture vocale)
   // ========================================
-  function extractReadableText(content) {
-    // Si c'est du HTML de document (CV, lettre, etc.)
-    if (content.includes('<DOCUMENT_HTML>') || content.includes('doc-cv') || content.includes('doc-lettre')) {
+function extractReadableText(content) {
+    // 1. Si c'est un document généré (CV, Facture, etc.)
+    if (content.includes('<DOCUMENT_HTML>') || 
+        content.includes('class="doc-cv"') || 
+        content.includes('class="doc-facture"') ||
+        content.includes('class="doc-lettre"')) {
+      
       const tempDiv = document.createElement('div');
-      tempDiv.innerHTML = content.replace(/<DOCUMENT_HTML>/g, '').replace(/<\/DOCUMENT_HTML>/g, '');
+      // On nettoie les balises spéciales pour ne garder que le HTML interne
+      let htmlContent = content.replace(/<DOCUMENT_HTML>/g, '').replace(/<\/DOCUMENT_HTML>/g, '');
       
-      // Retirer les balises style et script
-      tempDiv.querySelectorAll('style, script').forEach(el => el.remove());
+      tempDiv.innerHTML = htmlContent;
       
-      // Extraire uniquement le texte
-      const text = tempDiv.innerText || tempDiv.textContent || '';
+      // On supprime tout ce qui ne doit pas être lu (styles, scripts, boutons)
+      tempDiv.querySelectorAll('style, script, button, .no-print').forEach(el => el.remove());
       
-      // Limiter à 100000 caractères pour ne pas avoir une lecture trop longue
-      return text.substring(0, 100000).trim();
+      // On récupère le texte brut (innerText ignore les balises <div class...>)
+      let text = tempDiv.innerText || tempDiv.textContent || '';
+      
+      // Nettoyage des espaces multiples et des sauts de ligne excessifs
+      text = text.replace(/\s+/g, ' ').trim();
+      
+      return text.substring(0, 100000); // Votre limite augmentée
     }
-    
-    // Si c'est du Markdown avec code
+
+    // 2. Si c'est un bloc de code (```)
     if (content.includes('```')) {
-      // Retirer tous les blocs de code
-      const withoutCode = content.replace(/```[\s\S]*?```/g, '');
-      
-      // Convertir le Markdown restant en HTML puis extraire le texte
-      const html = marked.parse(withoutCode);
-      const tempDiv = document.createElement('div');
-      tempDiv.innerHTML = html;
-      
-      const text = tempDiv.innerText || tempDiv.textContent || '';
-      return text.substring(0, 500).trim();
+      // On ne lit PAS le code, juste le texte autour
+      const withoutCode = content.replace(/```[\s\S]*?```/g, ' [Code ignoré] ');
+      return extractReadableText(withoutCode); // Récursion pour nettoyer le reste
     }
-    
-    // Sinon, convertir le Markdown en texte
+
+    // 3. Contenu Markdown standard
     const html = marked.parse(content);
     const tempDiv = document.createElement('div');
     tempDiv.innerHTML = html;
+    tempDiv.querySelectorAll('pre, code, style, script').forEach(el => el.remove());
     
-    // Retirer les blocs pre/code
-    tempDiv.querySelectorAll('pre, code').forEach(el => el.remove());
-    
-    const text = tempDiv.innerText || tempDiv.textContent || '';
-    return text.substring(0, 500).trim();
+    return (tempDiv.innerText || tempDiv.textContent || '').substring(0, 100000);
   }
-
   // ========================================
   // ✅ FONCTIONS POUR DOCUMENTS HTML
   // ========================================
 
   // Fonction pour imprimer le document
-  window.printDocument = function() {
+// ========================================
+  // ✅ 2. CORRECTION IMPRESSION (CIBLAGE PRÉCIS)
+  // ========================================
+  window.printDocument = function(btnElement) {
     try {
-      console.log('🖨️ Impression du document...');
-      
-      // Créer une fenêtre d'impression avec uniquement le document
-      const docElement = document.querySelector('.doc-cv, .doc-lettre, .doc-rapport, .doc-facture, .doc-contrat');
-      
+      console.log('🖨️ Impression lancée...');
+      let docElement = null;
+
+      // MÉTHODE 1 : Recherche relative (Le document est proche du bouton)
+      // btnElement est le bouton sur lequel on a cliqué (this)
+      if (btnElement && btnElement.closest) {
+        // On remonte au conteneur du message (la bulle de chat)
+        const messageContainer = btnElement.closest('.msg.bot');
+        if (messageContainer) {
+           // On cherche le document UNIQUEMENT dans ce message
+           docElement = messageContainer.querySelector('.doc-cv, .doc-lettre, .doc-rapport, .doc-facture, .doc-contrat');
+           
+           // Si on ne trouve pas la classe spécifique, on prend tout le contenu du message
+           if (!docElement) {
+             const clone = messageContainer.cloneNode(true);
+             // On enlève les boutons pour ne pas les imprimer
+             clone.querySelectorAll('button, .copy-code-btn, .continue-btn, .flex-btns').forEach(b => b.remove());
+             docElement = clone;
+           }
+        }
+      }
+
+      // MÉTHODE 2 : Secours (Si la méthode 1 échoue)
       if (!docElement) {
-        alert('❌ Aucun document trouvé à imprimer.');
+        // On prend le dernier document affiché dans la page
+        const allDocs = document.querySelectorAll('.doc-cv, .doc-lettre, .doc-rapport, .doc-facture, .doc-contrat');
+        if (allDocs.length > 0) {
+          docElement = allDocs[allDocs.length - 1];
+        }
+      }
+
+      if (!docElement) {
+        alert('❌ Erreur : Impossible de localiser le document à imprimer.');
         return;
       }
-      
-      // Cloner le document
-      const printContent = docElement.cloneNode(true);
-      
-      // Créer une nouvelle fenêtre
+
+      // Ouverture fenêtre d'impression
       const printWindow = window.open('', '_blank');
-      
       if (!printWindow) {
-        alert('❌ Impossible d\'ouvrir la fenêtre d\'impression. Vérifiez que les popups ne sont pas bloqués.');
+        alert('❌ Pop-up bloqué. Veuillez autoriser les pop-ups pour imprimer.');
         return;
       }
-      
-      // Récupérer le mode nuit actuel
-      const isDarkMode = document.body.classList.contains('night-mode');
-      
-      // Écrire le contenu HTML complet dans la nouvelle fenêtre
-      printWindow.document.write(`
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <meta charset="utf-8">
-          <title>Impression - Document</title>
-          <style>
-            * {
-              margin: 0;
-              padding: 0;
-              box-sizing: border-box;
-            }
-            
-            body {
-              font-family: 'Segoe UI', Arial, sans-serif;
-              background: white;
-              color: #333;
-              padding: 20px;
-            }
-            
-            /* Styles des documents */
-            .doc-cv, .doc-lettre, .doc-rapport, .doc-facture, .doc-contrat {
-              background: white;
-              padding: 40px;
-              max-width: 800px;
-              margin: 0 auto;
-              color: #333;
-              line-height: 1.8;
-            }
-            
-            h1 {
-              color: #4361ee;
-              font-size: 32px;
-              margin-bottom: 10px;
-            }
-            
-            h2 {
-              color: #4361ee;
-              font-size: 20px;
-              margin-top: 25px;
-              margin-bottom: 15px;
-              border-left: 4px solid #4361ee;
-              padding-left: 15px;
-            }
-            
-            h3 {
-              font-size: 16px;
-              color: #333;
-              margin-bottom: 5px;
-            }
-            
-            p {
-              margin-bottom: 12px;
-            }
-            
-            .subtitle {
-              text-align: center;
-              color: #666;
-              font-size: 18px;
-              margin-bottom: 10px;
-            }
-            
-            .contact {
-              text-align: center;
-              color: #999;
-              font-size: 14px;
-              margin-bottom: 30px;
-              padding-bottom: 20px;
-              border-bottom: 2px solid #4361ee;
-            }
-            
-            .meta {
-              color: #666;
-              font-size: 14px;
-              margin-bottom: 10px;
-            }
-            
-            .skills {
-              display: flex;
-              flex-wrap: wrap;
-              gap: 10px;
-              margin-top: 10px;
-            }
-            
-            .skill {
-              background: #e9ecef;
-              padding: 8px 16px;
-              border-radius: 20px;
-              font-size: 14px;
-              color: #333;
-            }
-            
-            .experience, .formation {
-              margin: 20px 0;
-              padding-left: 20px;
-            }
-            
-            /* Facture */
-            .facture-header {
-              display: flex;
-              justify-content: space-between;
-              align-items: center;
-              margin-bottom: 30px;
-              border-bottom: 3px solid #4361ee;
-              padding-bottom: 15px;
-            }
-            
-            .facture-parties {
-              display: flex;
-              justify-content: space-between;
-              margin: 20px 0 30px;
-              gap: 20px;
-            }
-            
-            .emetteur, .client {
-              flex: 1;
-              padding: 15px;
-              background: #f8f9fa;
-              border-radius: 8px;
-            }
-            
-            .facture-table {
-              width: 100%;
-              border-collapse: collapse;
-              margin: 20px 0;
-            }
-            
-            .facture-table th,
-            .facture-table td {
-              padding: 12px;
-              border-bottom: 1px solid #ddd;
-              text-align: left;
-            }
-            
-            .facture-table thead {
-              background: #4361ee;
-              color: white;
-            }
-            
-            .facture-table tfoot {
-              background: #e9ecef;
-              font-weight: bold;
-              font-size: 18px;
-            }
-            
-            .facture-notes {
-              margin-top: 20px;
-              padding: 15px;
-              background: #fff3cd;
-              border-left: 4px solid #ffc107;
-              border-radius: 4px;
-            }
-            
-            /* Lettre */
-            .expediteur { text-align: right; margin-bottom: 20px; }
-            .destinataire { margin-bottom: 20px; }
-            .lieu-date { text-align: right; margin-bottom: 20px; }
-            .objet { font-weight: bold; margin-bottom: 20px; }
-            .corps p { text-align: justify; margin-bottom: 15px; }
-            .formule { margin-top: 40px; }
-            
-            /* Rapport */
-            .resume {
-              background: #f8f9fa;
-              padding: 20px;
-              border-radius: 8px;
-              margin: 20px 0;
-            }
-            
-            /* Impression */
-            @media print {
-              body {
-                padding: 0;
-              }
-              
-              .doc-cv, .doc-lettre, .doc-rapport, .doc-facture, .doc-contrat {
-                padding: 20px;
-                box-shadow: none;
-              }
-              
-              @page {
-                margin: 1cm;
-              }
-            }
-          </style>
-        </head>
-        <body>
-          ${printContent.outerHTML}
-        </body>
-        </html>
-      `);
-      
+
+      // CSS pour l'impression (A4 propre)
+      const css = `
+        <style>
+          body { font-family: 'Segoe UI', Arial, sans-serif; margin: 0; padding: 0; -webkit-print-color-adjust: exact; }
+          .doc-cv, .doc-facture, .doc-lettre { width: 100%; max-width: 100%; margin: 0; padding: 20px; border: none; }
+          /* Forcer les couleurs de fond */
+          .facture-header, thead { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+          @page { margin: 1cm; size: auto; }
+        </style>
+      `;
+
+      printWindow.document.write(`<!DOCTYPE html><html><head><title>Impression</title>${css}</head><body>${docElement.outerHTML || docElement.innerHTML}</body></html>`);
       printWindow.document.close();
       
-      // Attendre que le contenu soit chargé avant d'imprimer
       printWindow.onload = function() {
         setTimeout(() => {
           printWindow.focus();
           printWindow.print();
-          
-          // Fermer la fenêtre après impression (optionnel)
-          // printWindow.close();
-        }, 250);
+        }, 500);
       };
-      
-      console.log('✅ Fenêtre d\'impression ouverte');
-      
+
     } catch (error) {
       console.error('❌ Erreur impression:', error);
-      alert('❌ Erreur lors de l\'impression. Veuillez réessayer.');
+      alert('Erreur technique lors de l\'impression.');
     }
   };
-
-  // Fonction pour copier le HTML du document
-  window.copyDocumentHtml = function() {
-    try {
-      const docElement = document.querySelector('.doc-cv, .doc-lettre, .doc-rapport, .doc-facture, .doc-contrat');
-      
-      if (!docElement) {
-        alert('❌ Aucun document trouvé à copier.');
-        return;
-      }
-      
-      const html = docElement.outerHTML;
-      
       // Copier dans le presse-papier
       navigator.clipboard.writeText(html).then(() => {
         console.log('✅ HTML copié dans le presse-papier');
@@ -1891,16 +1742,17 @@
       if (documentHtmlMatch) {
         const documentHtml = documentHtmlMatch[1].trim();
         
-        element.innerHTML = `
-          ${documentHtml}
-          <div style="margin-top: 30px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
-            <button class="btn primary" onclick="printDocument()">
-              <i class="fas fa-print"></i> Imprimer
-            </button>
-            <button class="btn success" onclick="copyDocumentHtml()">
-              <i class="fas fa-copy"></i> Copier le HTML
-            </button>
-          </div>
+    element.innerHTML = `
+  ${documentHtml}
+  <div style="margin-top: 30px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+    <button class="btn primary" onclick="printDocument(this)">
+      <i class="fas fa-print"></i> Imprimer
+    </button>
+    
+    <button class="btn success" onclick="copyDocumentHtml()">
+      <i class="fas fa-copy"></i> Copier le HTML
+    </button>
+  </div>
         `;
         
         element.classList.remove('loading');
@@ -2513,51 +2365,146 @@
     sel.innerHTML = appState.devices.map(d => `<option value="${d.id}">${d.name} (${d.room})</option>`).join('');
   }
 
+  // ✅ Toggle affichage options planning
+  function togglePlanOptions() {
+    const freq = el('plan-frequency').value;
+    el('opt-date').style.display = (freq === 'once') ? 'block' : 'none';
+    el('opt-days').style.display = (freq === 'weekly') ? 'block' : 'none';
+    
+    // Si "une fois", définir la date du jour par défaut
+    if (freq === 'once' && !el('plan-date').value) {
+      el('plan-date').valueAsDate = new Date();
+    }
+  }
+
+  el('plan-frequency')?.addEventListener('change', togglePlanOptions);
+  setTimeout(togglePlanOptions, 500);
+
   el('addPlan')?.addEventListener('click', async () => {
     const device = el('plan-device').value;
     const time = el('plan-time').value;
     const action = el('plan-action').value;
+    const freq = el('plan-frequency').value;
     let power = el('plan-power').value;
-    if (!device || !time) return alert('Appareil et heure requis');
+    
+    if (!device || !time) return alert('⚠️ Appareil et heure requis');
+    
     const hasBrightness = appState.devices.find(d => d.id === device)?.hasBrightness ?? true;
     power = hasBrightness ? (power || (action === "ON" ? 100 : 0)) : null;
-    const payload = { device, time, action, power: hasBrightness ? parseInt(power) : null, createdAt: Date.now() };
-    if (db) await push(ref(db, planningRefPath), payload);
-    else { appState.plans.push(payload); savePlansToLocalStorage(); renderPlanningListUI(appState.plans); }
-    logActivity(`Plan ajouté: ${device} à ${time}`);
+    
+    const payload = {
+      device, 
+      time, 
+      action, 
+      frequency: freq,
+      power: hasBrightness ? parseInt(power) : null,
+      createdAt: Date.now()
+    };
+    
+    // Gestion date spécifique
+    if (freq === 'once') {
+      const dateValue = el('plan-date').value;
+      if (!dateValue) return alert('⚠️ Veuillez sélectionner une date');
+      payload.targetDate = dateValue;
+    }
+    
+    // Gestion jours hebdomadaires
+    if (freq === 'weekly') {
+      const checkedDays = Array.from(document.querySelectorAll('.day-checkbox:checked')).map(cb => parseInt(cb.value));
+      if (checkedDays.length === 0) return alert('⚠️ Sélectionnez au moins un jour de la semaine');
+      payload.daysOfWeek = checkedDays;
+    }
+    
+    if (db) {
+      await push(ref(db, planningRefPath), payload);
+    } else {
+      appState.plans.push(payload);
+      savePlansToLocalStorage();
+      renderPlanningListUI(appState.plans);
+    }
+    
+    logActivity(`✅ Plan ajouté: ${device} à ${time} (${freq})`);
+    alert('✅ Planification ajoutée avec succès !');
+    
+    // Réinitialiser le formulaire
+    el('plan-time').value = '';
+    el('plan-date').value = '';
+    document.querySelectorAll('.day-checkbox').forEach(cb => cb.checked = false);
   });
 
   function renderPlanningListUI(plans) {
     const out = el('planningTable');
     if (!out) return;
-    if (!plans || !plans.length) { out.innerHTML = '<p>Aucun plan enregistré.</p>'; return; }
-    out.innerHTML = `<table><thead><tr><th>Appareil</th><th>Heure</th><th>Action</th><th>Puissance</th><th>Actions</th></tr></thead><tbody>
-      ${plans.map(p => {
-        const deviceName = appState.devices.find(d => d.id === p.device)?.name || p.device;
-        return `<tr>
-          <td>${deviceName}</td><td>${p.time}</td><td>${p.action}</td>
-          <td>${p.power !== null && p.power !== undefined ? p.power + '%' : '-'}</td>
-          <td><button class="btn warn" onclick="deletePlan('${p.firebaseId || p.createdAt}')"><i class="fas fa-trash"></i></button></td>
-        </tr>`;
-      }).join('')}
-    </tbody></table>`;
+    if (!plans || !plans.length) {
+      out.innerHTML = '<p style="text-align:center;color:var(--muted);padding:20px">📭 Aucune tâche programmée</p>';
+      return;
+    }
+    
+    out.innerHTML = `<table style="width:100%;border-collapse:collapse">
+      <thead>
+        <tr style="background:rgba(0,0,0,0.03)">
+          <th style="padding:10px;text-align:left">Appareil</th>
+          <th style="padding:10px;text-align:left">Quand</th>
+          <th style="padding:10px;text-align:left">Action</th>
+          <th style="padding:10px;text-align:center">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${plans.map(p => {
+          const deviceName = appState.devices.find(d => d.id === p.device)?.name || p.device;
+          
+          // Construire la description "Quand"
+          let whenText = p.time;
+          const freq = p.frequency || 'once';
+          
+          if (freq === 'daily') {
+            whenText += ' <span class="chip">📅 Quotidien</span>';
+          } else if (freq === 'weekly' && p.daysOfWeek) {
+            const dayNames = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
+            const days = p.daysOfWeek.map(d => dayNames[d]).join(', ');
+            whenText += ` <span class="chip">📆 ${days}</span>`;
+          } else if (freq === 'monthly') {
+            whenText += ' <span class="chip">📆 Mensuel</span>';
+          } else if (freq === 'once' && p.targetDate) {
+            const date = new Date(p.targetDate).toLocaleDateString('fr-FR');
+            whenText += ` <span class="chip">📅 ${date}</span>`;
+          }
+          
+          const actionText = p.action === 'ON' ? '🟢 ON' : '🔴 OFF';
+          const powerText = p.power !== null ? ` ${p.power}%` : '';
+          
+          return `<tr style="border-bottom:1px solid rgba(0,0,0,0.05)">
+            <td style="padding:10px"><strong>${deviceName}</strong></td>
+            <td style="padding:10px">${whenText}</td>
+            <td style="padding:10px">${actionText}${powerText}</td>
+            <td style="padding:10px;text-align:center">
+              <button class="btn warn" onclick="deletePlan('${p.firebaseId || p.createdAt}')" style="padding:6px 12px">
+                <i class="fas fa-trash"></i>
+              </button>
+            </td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>`;
   }
 
   window.deletePlan = async (planId) => {
-    if (!confirm('Supprimer cette planification ?')) return;
-    if (db) { await remove(ref(db, `${planningRefPath}/${planId}`)); } 
-    else {
+    if (!confirm('🗑️ Supprimer cette planification ?')) return;
+    if (db) { 
+      await remove(ref(db, `${planningRefPath}/${planId}`)); 
+    } else {
       appState.plans = appState.plans.filter(p => (p.firebaseId || p.createdAt) != planId);
-      savePlansToLocalStorage(); renderPlanningListUI(appState.plans);
+      savePlansToLocalStorage(); 
+      renderPlanningListUI(appState.plans);
     }
-    logActivity(`Planification supprimée.`);
+    logActivity(`🗑️ Planification supprimée.`);
   };
 
   const deleteAllPlans = async () => {
-    if (!confirm('Supprimer TOUTES les planifications ?')) return;
+    if (!confirm('🗑️ Supprimer TOUTES les planifications ?')) return;
     if (db) await set(ref(db, planningRefPath), null);
     else { appState.plans = []; savePlansToLocalStorage(); renderPlanningListUI([]); }
-    logActivity(`Toutes les planifications supprimées.`);
+    logActivity(`🗑️ Toutes les planifications supprimées.`);
     speak('Toutes les planifications ont été supprimées.');
   };
   el('clearAllPlans')?.addEventListener('click', deleteAllPlans);
@@ -3170,6 +3117,8 @@
   setInterval(async () => {
     const now = new Date();
     const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+    const todayDate = now.toISOString().split('T')[0];
+    const currentDay = now.getDay(); // 0=Dimanche, 1=Lundi, ..., 6=Samedi
     
     // Réinitialiser le cache si on change de minute
     if (currentTime !== lastCheckedMinuteClient) {
@@ -3179,7 +3128,18 @@
     
     // Si pas de base de données, utiliser les plans locaux
     if (!db) {
-      const duePlans = appState.plans.filter(p => p.time === currentTime);
+      const duePlans = appState.plans.filter(p => {
+        if (p.time !== currentTime) return false;
+        
+        const freq = p.frequency || 'once';
+        
+        if (freq === 'daily') return true;
+        if (freq === 'monthly') return true;
+        if (freq === 'weekly') return p.daysOfWeek && p.daysOfWeek.includes(currentDay);
+        if (freq === 'once') return !p.targetDate || p.targetDate === todayDate;
+        
+        return false;
+      });
       
       if (duePlans.length > 0) {
         duePlans.forEach(plan => {
@@ -3210,10 +3170,12 @@
             { tag: `schedule-${plan.device}-${Date.now()}` }
           );
           
-          // Supprimer de la liste locale
-          appState.plans = appState.plans.filter(p => p.createdAt !== plan.createdAt);
-          savePlansToLocalStorage();
-          renderPlanningListUI(appState.plans);
+          // Supprimer si fréquence "une fois"
+          if (plan.frequency === 'once') {
+            appState.plans = appState.plans.filter(p => p.createdAt !== plan.createdAt);
+            savePlansToLocalStorage();
+            renderPlanningListUI(appState.plans);
+          }
         });
       }
       return;
@@ -3228,7 +3190,19 @@
       const allPlans = planningSnapshot.val();
       const planEntries = Object.entries(allPlans);
       
-      const duePlans = planEntries.filter(([id, plan]) => plan.time === currentTime);
+      // Filtrer les plans qui doivent s'exécuter maintenant
+      const duePlans = planEntries.filter(([id, plan]) => {
+        if (plan.time !== currentTime) return false;
+        
+        const freq = plan.frequency || 'once';
+        
+        if (freq === 'daily') return true;
+        if (freq === 'monthly') return true;
+        if (freq === 'weekly') return plan.daysOfWeek && plan.daysOfWeek.includes(currentDay);
+        if (freq === 'once') return !plan.targetDate || plan.targetDate === todayDate;
+        
+        return false;
+      });
       
       if (duePlans.length === 0) return;
       
@@ -3277,12 +3251,15 @@
           { tag: `schedule-${plan.device}-${Date.now()}` }
         );
         
-        // ✅ Supprimer la tâche de Firebase
-        try {
-          await remove(ref(db, `${planningRefPath}/${firebaseId}`));
-          console.log(`🗑️ Client: Tâche supprimée de Firebase: ${firebaseId}`);
-        } catch (deleteError) {
-          console.error(`❌ Client: Erreur suppression tâche:`, deleteError);
+        // ✅ Supprimer la tâche si fréquence "une fois"
+        const freq = plan.frequency || 'once';
+        if (freq === 'once') {
+          try {
+            await remove(ref(db, `${planningRefPath}/${firebaseId}`));
+            console.log(`🗑️ Client: Tâche unique supprimée: ${firebaseId}`);
+          } catch (deleteError) {
+            console.error(`❌ Client: Erreur suppression tâche:`, deleteError);
+          }
         }
       }
       
