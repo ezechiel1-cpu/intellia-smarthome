@@ -400,7 +400,8 @@ async function createHistoryEntry(role, text, attachments = []) {
   return { role, parts };
 }
 
-async function getHistoryFromFirebase(userId, sessionId) {
+
+async function getHistoryFromFirebase(userId, sessionId, maxMessages = null) {
   if (!db || !userId || !sessionId) return [];
   
   try {
@@ -409,10 +410,17 @@ async function getHistoryFromFirebase(userId, sessionId) {
     if (!snapshot.exists()) return [];
     
     const messages = snapshot.val();
-    const sortedMessages = Object.values(messages).sort((a, b) => a.timestamp - b.timestamp);
-    const recentMessages = sortedMessages.slice(-10);
+    const sortedMessages = Object.values(messages)
+      .sort((a, b) => a.timestamp - b.timestamp);
+    
+    // ✅ NOUVELLE LOGIQUE : récupère TOUS les messages
+    const limit = maxMessages || sortedMessages.length;
+    const recentMessages = sortedMessages.slice(-limit);
+    
+    console.log(`📚 Historique récupéré: ${recentMessages.length} messages (max: ${limit})`);
     
     return recentMessages;
+    
   } catch (error) {
     console.error("Erreur lecture historique Firebase:", error);
     return [];
@@ -2588,7 +2596,9 @@ async function chatWithGemini(userMessage, devices, userId, sessionId, attachmen
       const genAI = new GoogleGenerativeAI(keyObj.key);
       const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
+      // ✅ RÉCUPÉRER L'HISTORIQUE COMPLET (JOURS/SEMAINES/MOIS ANTÉRIEURS)
       const historyFromFirebase = await getHistoryFromFirebase(userId, sessionId);
+      console.log(`📚 Historique chargé: ${historyFromFirebase.length} messages (jours/semaines/mois antérieurs)`);
 
       const historyParts = await Promise.all(
         historyFromFirebase.flatMap(async (h) => [
@@ -2640,6 +2650,7 @@ async function chatWithGemini(userMessage, devices, userId, sessionId, attachmen
 [MODE: CONTINUATION]
 [INSTRUCTION CRITIQUE: Continue EXACTEMENT là où tu t'es arrêté. NE RECOMMENCE PAS depuis le début.]
 [Tu dois compléter le contenu précédent, pas le répéter.]
+[L'IA a accès à TOUT l'historique des jours/semaines/mois antérieurs via Firebase]
 
 MESSAGE: "${userMessage}"
 `;
@@ -2656,6 +2667,8 @@ MESSAGE: "${userMessage}"
 ${planningsText}
 ]
 [Analyse: ${JSON.stringify(contextAnalysis)}]
+[CONTEXTE HISTORIQUE: L'IA a accès à TOUS les messages des jours/semaines/mois antérieurs via Firebase]
+[NOMBRE MESSAGES ANTÉRIEURS: ${historyFromFirebase.length} messages disponibles]
 ${webResults.length > 0 ? `[Web: ${JSON.stringify(webResults.slice(0, 3))}]` : ''}
 
 MESSAGE: "${userMessage}"
@@ -2735,6 +2748,7 @@ app.post('/api/chat', async (req, res) => {
     console.log(`🏷️ SESSION: ${sessionId}`);
     console.log(`📡 APPAREILS: ${devices.length}`);
     console.log(`🔄 MODE: ${continuationMode ? 'CONTINUATION' : 'NORMAL'}`);
+    console.log(`📚 CONTEXTE HISTORIQUE: Accès complet aux jours/semaines/mois antérieurs`);
 
     // ✅ TRAITEMENT NORMAL
     const startTime = Date.now();
@@ -2839,7 +2853,7 @@ app.get('/api/health', async (req, res) => {
   
   res.json({ 
     status: 'ok', 
-    version: '10.0-continuation',
+    version: '10.1-full-history',
     features: {
       gemini: API_KEYS.length > 0,
       imageGeneration: false,
@@ -2847,7 +2861,7 @@ app.get('/api/health', async (req, res) => {
       codeLongGeneration: true,
       continuationSystem: true,
       webSearch: true,
-      contextMemory: "Firebase",
+      contextMemory: "Firebase - COMPLET (Jours/Semaines/Mois)",
       firebaseStateSync: true,
       multimodal_Image: true,
       multimodal_Files: true,
@@ -2860,7 +2874,9 @@ app.get('/api/health', async (req, res) => {
       intelligentPlanningDeletion: true,
       lokossaTemperature: true,
       supportedFiles: "PDF, DOCX, TXT, HTML, JS, JSON, CSS, XLSX, CSV, Images",
-      maxTokens: 65536
+      maxTokens: 65536,
+      fullHistoryAccess: true,
+      historicalContext: "ILLIMITÉ - Tous les messages antérieurs"
     },
     keys: { 
       gemini: { total: API_KEYS.length, available: availableKeys }
@@ -2876,7 +2892,14 @@ app.get('/api/health', async (req, res) => {
       truncation_detection: "✅ Détection intelligente de contenu incomplet",
       continue_button: "✅ Bouton 'Continuer' automatique côté client",
       no_restart: "✅ L'IA continue exactement où elle s'est arrêtée",
-      model: "gemini-2.0-flash-exp (experimental, 65536 tokens)"
+      model: "gemini-2.5-flash (65536 tokens)"
+    },
+    new_features_v10_1: {
+      full_history_support: "✅ Accès COMPLET à l'historique des jours/semaines/mois antérieurs",
+      contextual_awareness: "✅ L'IA comprend le contexte de TOUTES les discussions passées",
+      firebase_integration: "✅ Synchronisation complète avec Firebase Realtime Database",
+      historical_context_injection: "✅ Métadonnées d'historique injectées dans chaque prompt",
+      no_message_limit: "✅ Pas de limite sur le nombre de messages antérieurs chargés"
     }
   });
 });
@@ -2886,13 +2909,16 @@ app.get('/api/health', async (req, res) => {
 // ========================================
 app.listen(PORT, () => {
   console.log('\n🏠 ╔═══════════════════════════════════════╗');
-  console.log('   ║  INTELLIA v10.0 - SYSTÈME ARTIFACTS  ║');
+  console.log('   ║  INTELLIA v10.1 - SYSTÈME ARTIFACTS  ║');
+  console.log('   ║        CONTEXTE HISTORIQUE COMPLET    ║');
   console.log('   ╚═══════════════════════════════════════╝');
   console.log(`\n   🚀 Serveur: http://localhost:${PORT}`);
   console.log(`   🔑 Clés Gemini: ${API_KEYS.length}`);
   console.log(`   🤖 Modèle: gemini-2.5-flash (65536 tokens)`);
   console.log(`   🔥 Synchro Firebase (Appareils): Activée`);
   console.log(`   💾 Synchro Firebase (Chats): Activée`);
+  console.log(`   📚 Historique Firebase: COMPLET (Jours/Semaines/Mois)`);
+  console.log(`   🧠 L'IA a accès à TOUS les messages antérieurs`);
   console.log(`   📅 Planning AI: Prêt`);
   console.log(`   🧠 Planning Intelligent: Activé (Routines + ON/OFF Fix)`);
   console.log(`   🗑️ Suppression Intelligente: Activée`);
@@ -2906,10 +2932,12 @@ app.listen(PORT, () => {
   console.log(`   📏 Capacité: ILLIMITÉE (avec continuation)`);
   console.log(`   ✅ Output Markdown: Activé`);
   console.log(`   🎯 MaxTokens: 65536 (MAXIMUM)`);
-  console.log(`\n   ✅ NOUVEAUTÉS v10.0:`);
+  console.log(`   🌟 Contexte Historique: ILLIMITÉ`);
+  console.log(`\n   ✅ NOUVEAUTÉS v10.1:`);
+  console.log(`   • Accès COMPLET à l'historique: ✅ ACTIVÉ`);
+  console.log(`   • Jours/Semaines/Mois antérieurs: ✅ ACCESSIBLES`);
   console.log(`   • Routines (Daily/Weekly): SUPPORTÉ`);
   console.log(`   • Correction Doublons Planning: ✅ ACTIVÉE`);
   console.log(`   • Correction Action ADD -> ON/OFF: ✅ ACTIVÉE`);
+  console.log(`   • No Message Limit: ✅ ILLIMITÉ`);
 });
-
-
