@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+il<!DOCTYPE html>
 <html lang="fr">
 <head>
   <meta charset="utf-8" />
@@ -2560,22 +2560,287 @@
       }
     }
 
-    // =============================================
-    // 📎 GESTION PIÈCES JOINTES
-    // =============================================
-    el('attach-file-btn').addEventListener('click', () => {
-      el('file-input').click();
-    });
+    
+// ======= Gestion des Pièces Jointes =======
 
-    el('file-input').addEventListener('change', (event) => {
-      for (const file of event.target.files) {
-        if (appState.attachments.length >= 5) {
-          alert("Maximum 5 fichiers."); break;
+el('attach-file-btn').addEventListener('click', () => {
+  el('file-input').click();
+});
+
+el('file-input').addEventListener('change', (event) => {
+  for (const file of event.target.files) {
+    if (appState.attachments.length >= 12) {
+      alert("Vous ne pouvez joindre que 12 fichiers maximum."); break;
+    }
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const dataUrl = e.target.result;
+      appState.attachments.push({
+        name: file.name,
+        type: file.type.startsWith('image/') ? 'image' : 'file',
+        data: dataUrl
+      });
+      renderAttachmentPreviews();
+    };
+    reader.readAsDataURL(file);
+  }
+  event.target.value = null;
+});
+
+function renderAttachmentPreviews() {
+  const container = el('attachment-preview-container');
+  container.innerHTML = '';
+  appState.attachments.forEach((file, index) => {
+    const preview = document.createElement('div');
+    preview.className = 'attachment-preview';
+    let iconHtml = '';
+    if (file.type === 'image') {
+      iconHtml = `<img src="${file.data}" alt="${file.name}">`;
+    } else {
+      let iconClass = 'fa-file';
+      let iconColor = '#6c757d';
+      const fileName = file.name.toLowerCase();
+
+      if (fileName.endsWith('.pdf')) {
+        iconClass = 'fa-file-pdf'; iconColor = '#dc3545';
+      } else if (fileName.endsWith('.docx') || fileName.endsWith('.doc')) {
+        iconClass = 'fa-file-word'; iconColor = '#2b579a';
+      } else if (fileName.endsWith('.xlsx') || fileName.endsWith('.xls')) {
+        iconClass = 'fa-file-excel'; iconColor = '#217346';
+      } else if (fileName.endsWith('.txt') || fileName.endsWith('.log')) {
+        iconClass = 'fa-file-alt'; iconColor = '#6c757d';
+      } else if (fileName.endsWith('.html') || fileName.endsWith('.htm')) {
+        iconClass = 'fa-file-code'; iconColor = '#f06529';
+      } else if (fileName.endsWith('.js')) {
+        iconClass = 'fa-file-code'; iconColor = '#f7df1e';
+      } else if (fileName.endsWith('.json')) {
+        iconClass = 'fa-file-code'; iconColor = '#5a5a5a';
+      } else if (fileName.endsWith('.css')) {
+        iconClass = 'fa-file-code'; iconColor = '#264de4';
+      }
+      iconHtml = `<i class="fas ${iconClass}" style="font-size: 24px; color: ${iconColor};"></i>`;
+    }
+    preview.innerHTML = `
+      ${iconHtml}
+      <span style="flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${file.name}</span>
+      <i class="fas fa-times-circle remove-attachment" data-index="${index}"></i>
+    `;
+    container.appendChild(preview);
+  });
+  container.querySelectorAll('.remove-attachment').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const indexToRemove = parseInt(e.target.dataset.index, 10);
+      appState.attachments.splice(indexToRemove, 1);
+      renderAttachmentPreviews();
+    });
+  });
+}
+
+// ======= Quick Controls =======
+el('dayModeBtn')?.addEventListener('click', () => { document.body.classList.remove('night-mode'); localStorage.setItem('nightMode', false); });
+el('nightModeBtn')?.addEventListener('click', () => { document.body.classList.add('night-mode'); localStorage.setItem('nightMode', true); });
+el('allOnBtn')?.addEventListener('click', () => appState.devices.forEach(d => sendCommand(d.id, 'ON', 100)));
+el('allOffBtn')?.addEventListener('click', () => appState.devices.forEach(d => sendCommand(d.id, 'OFF', 0)));
+// ======= Settings Management =======
+
+function updateToggleVoiceBtnUI() {
+  const btn = el('toggleVoiceBtn');
+  if (!btn) return;
+  const icon = btn.querySelector('i');
+  if (appState.voiceNotifications) {
+    btn.classList.remove('muted');
+    icon.className = 'fas fa-volume-up';
+    btn.title = "Désactiver la synthèse vocale";
+  } else {
+    btn.classList.add('muted');
+    icon.className = 'fas fa-volume-mute';
+    btn.title = "Activer la synthèse vocale";
+  }
+}
+  
+function setupSettings() {
+  el('darkModeToggle').checked = appState.isNightMode;
+  el('darkModeToggle').addEventListener('change', (e) => {
+    appState.isNightMode = e.target.checked; localStorage.setItem('nightMode', e.target.checked);
+    document.body.classList.toggle('night-mode', e.target.checked);
+  });
+  el('notificationsToggle').checked = appState.notificationsEnabled;
+  el('notificationsToggle').addEventListener('change', (e) => {
+      appState.notificationsEnabled = e.target.checked;
+      localStorage.setItem('notifications', e.target.checked);
+      if (e.target.checked) requestNotificationPermission();
+  });
+  el('voiceNotificationsToggle').checked = appState.voiceNotifications;
+  el('voiceNotificationsToggle').addEventListener('change', (e) => {
+      appState.voiceNotifications = e.target.checked;
+      localStorage.setItem('voiceNotifications', e.target.checked);
+      updateToggleVoiceBtnUI();
+  });
+  el('testNotificationBtn')?.addEventListener('click', () => {
+    if (!appState.notificationsEnabled) { alert('❌ Activez d\'abord les notifications.'); return; }
+    sendBrowserNotification('🔔 Test de Notification', 'Si vous voyez ce message, tout fonctionne !');
+    logActivity('Test de notification envoyé.');
+  });
+  el('resetBtn').addEventListener('click', () => { if (confirm("Réinitialiser l'application ?")) { localStorage.clear(); location.reload(); } });
+  el('googleSignInOverlayBtn').addEventListener('click', handleGoogleSignIn);
+  el('signOutBtn').addEventListener('click', handleSignOut);
+  
+  el('toggleVoiceBtn').addEventListener('click', () => {
+    appState.voiceNotifications = !appState.voiceNotifications;
+    localStorage.setItem('voiceNotifications', appState.voiceNotifications);
+    el('voiceNotificationsToggle').checked = appState.voiceNotifications;
+    updateToggleVoiceBtnUI();
+    if (!appState.voiceNotifications && window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+    }
+  });
+}
+
+// ======= User Profile Functions =======
+function handleGoogleSignIn() {
+  if (!auth) return;
+  const provider = new GoogleAuthProvider();
+  signInWithPopup(auth, provider).catch((error) => { console.error("Erreur Auth:", error); logActivity(`Erreur: ${error.message}`); });
+}
+function handleSignOut() { if (auth) signOut(auth).catch((error) => console.error("Erreur Déco:", error)); }
+  // ======= Navigation =======
+function navigateTo(targetSection) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  const targetEl = el(targetSection);
+  if (targetEl) targetEl.classList.add('active');
+  
+  document.querySelectorAll('.btn-nav').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll(`[data-target="${targetSection}"]`).forEach(b => b.classList.add('active'));
+  
+  const titleMap = {
+    'sec-domotique': 'Domotique',
+    'sec-planning': 'Planning',
+    'sec-params': 'Paramètres',
+    'sec-intelligence': 'Assistant IA'
+  };
+  el('section-header-title').textContent = titleMap[targetSection] || 'Domotique';
+}
+
+document.querySelectorAll('.btn-nav').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const target = btn.dataset.target;
+    navigateTo(target);
+  });
+});
+
+el('sidebar-toggle-btn').addEventListener('click', () => {
+  el('chat-sidebar').classList.toggle('open');
+  el('sidebar-overlay').classList.toggle('open');
+});
+el('sidebar-overlay').addEventListener('click', () => {
+  el('chat-sidebar').classList.remove('open');
+  el('sidebar-overlay').classList.remove('open');
+});
+
+// ======= Auth State Change Listener =======
+if (auth) {
+  onAuthStateChanged(auth, (user) => {
+    if (user) {
+      appState.currentUser = user;
+      document.querySelector('.main-app').style.display = 'block';
+      el('login-overlay').style.display = 'none';
+      const userPhoto = el('user-photo');
+      userPhoto.src = user.photoURL || defaultAvatar;
+      userPhoto.onerror = () => { userPhoto.src = defaultAvatar; }; 
+      el('user-name-display').textContent = user.displayName || 'Utilisateur';
+      el('user-email-display').textContent = user.email;
+      
+      loadChatHistorySidebar();
+      
+      if (appState.esp32Ip) {
+        connectToESP32();
+      }
+      
+      navigateTo('sec-domotique');
+
+    } else {
+      appState.currentUser = null;
+      document.querySelector('.main-app').style.display = 'none';
+      el('login-overlay').style.display = 'flex';
+      
+      if (appState.localWebSocket) {
+        appState.isLocalConnected = false;
+        appState.localWebSocket.close();
+        updateStatusUI('local', false);
+      }
+    }
+  });
+} else {
+  el('login-overlay').innerHTML = `
+    <div class="login-box">
+      <h2>Erreur Critique</h2>
+      <p>Impossible de se connecter à la base de données (Firebase). L'application ne peut pas démarrer.</p>
+    </div>`;
+  el('login-overlay').style.display = 'flex';
+}
+
+function updateProactiveSuggestion() {
+  const el_sug = document.getElementById('proactive-suggestion');
+  if (!el_sug) return;
+  el_sug.classList.add('fade-out');
+  setTimeout(() => {
+    suggestionIndex = (suggestionIndex + 1) % proactiveSuggestions.length;
+    el_sug.textContent = proactiveSuggestions[suggestionIndex];
+    el_sug.classList.remove('fade-out');
+  }, 500);
+}
+
+// ======= Initialisation =======
+function initUI() {
+  if (appState.isNightMode) document.body.classList.add('night-mode');
+  setupSettings();
+  VoiceEngine.init();
+  populatePlanDeviceSelect();
+  renderDevices();
+  logActivity("Application initialisée.");
+  requestNotificationPermission();
+  updateProactiveSuggestion();
+  setInterval(updateProactiveSuggestion, 10000);
+  
+  updateToggleVoiceBtnUI();
+  
+  el('toggleAddDeviceForm').addEventListener('click', () => {
+    const form = el('addDeviceFormContainer');
+    const btn = el('toggleAddDeviceForm');
+    const isHidden = form.style.display === 'none' || form.style.display === '';
+    form.style.display = isHidden ? 'block' : 'none';
+    btn.innerHTML = isHidden ? '➖ Masquer le formulaire' : '➕ Ajouter un appareil';
+  });
+  
+  el('btnConnectLocal').addEventListener('click', () => {
+    const ip = el('esp32IpInput').value.trim();
+    if (ip) {
+      appState.esp32Ip = ip;
+      localStorage.setItem('esp32Ip', ip);
+      logActivity(`IP locale sauvée: ${ip}. Connexion...`);
+      connectToESP32();
+    }
+  });
+  el('esp32IpInput').value = appState.esp32Ip;
+  
+  navigateTo('sec-domotique');
+}
+
+function requestNotificationPermission() {
+  if (!('Notification' in window)) return;
+  if (Notification.permission === 'default' && appState.notificationsEnabled) {
+    setTimeout(() => {
+      Notification.requestPermission().then(permission => {
+        if (permission === 'granted') {
+          logActivity('✅ Notifications activées');
+          sendBrowserNotification('🏠 SmartHome Intelligence', 'Notifications activées !', { requireInteraction: false });
+        } else {
+          logActivity('ℹ️ Notifications refusées');
         }
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          const dataUrl = e.target.result;
-          appState.attachments.push({
-            name: file.name,
-            type: file.type.startsWith('image/') ? 'image' : 'file',
-            
+      });
+    }, 3000);
+  }
+}
+
+initUI(); 
+    
