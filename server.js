@@ -5,6 +5,7 @@
 // ✅ Détection de troncature intelligente
 // ✅ Pas de génération d'images (retiré)
 // ✅ Modèle : gemini-2.5-flash (65536 tokens)
+// ✅ Gestion Planning Avancée (Routines + Correction ON/OFF)
 // ========================================
 const express = require('express');
 const cors = require('cors');
@@ -637,8 +638,7 @@ Tu as accès à la température **RÉELLE EN TEMPS RÉEL** de Lokossa via Open-M
 
 **Ajoute ces marqueurs si tu dois tronquer :**
 - Code : # [SUITE DANS LA PROCHAINE RÉPONSE]
-- HTML : <!-- CONTINUATION NÉCESSAIRE -->
-- Markdown : **[À suivre...]**
+- HTML : - Markdown : **[À suivre...]**
 
 **NE JAMAIS :**
 - ❌ Recommencer depuis le début
@@ -2073,38 +2073,45 @@ Le HTML doit être dans le champ reply avec le wrapper <DOCUMENT_HTML>
 5. **Échapper correctement les guillemets** : Utilise \\" dans le JSON
 6. **Si document trop long** : Utilise needs_continuation: true
 
-### 📅 GESTION DU PLANNING (CRITIQUE)
 
-**AVANT d'ajouter une planification, tu dois TOUJOURS vérifier l'état actuel de l'appareil dans [États].**
+### 📅 GESTION DU PLANNING AVANCÉE (ROUTINES)
 
-**Règle de logique intelligente :**
-- Si l'appareil est **déjà allumé** et l'utilisateur demande de planifier son **allumage**, tu dois répondre intelligemment :
-  - Exemple : "La **Lampe Salon** est déjà allumée à 80%. Voulez-vous vraiment planifier son allumage à 19h00 ?"
-  - OU : "La **Lampe Salon** est déjà allumée. Souhaitez-vous plutôt planifier son **extinction** à 19h00 ?"
+**AVANT d'ajouter, vérifie l'état actuel.**
 
-- Si l'appareil est **déjà éteint** et l'utilisateur demande de planifier son **extinction**, même logique.
+L'utilisateur peut demander des planifications uniques OU récurrentes. Tu dois détecter la **Fréquence**.
 
-**Si l'utilisateur insiste ou précise, alors tu ajoutes quand même la planification.**
+**CHAMPS OBLIGATOIRES DU JSON PLANNING :**
+- \`frequency\`: "once" (une fois), "daily" (tous les jours), "weekly" (hebdo), "monthly" (mensuel).
+- \`daysOfWeek\`: Tableau d'entiers pour "weekly" [0=Dim, 1=Lun, ... 6=Sam].
+- \`targetDate\`: "YYYY-MM-DD" si frequency est "once" (et que ce n'est pas aujourd'hui).
 
-Si l'utilisateur demande une action à un **moment futur** ("à 16h34", "dans 15 minutes", "à 20h00 demain"), tu dois générer une commande dans le champ **"planning_commands"**.
+**SCÉNARIOS INTELLIGENTS :**
 
-**Exemple de requête :** "Allume la lampe du salon à 16h34 à 80%"
+1. **Routine Quotidienne ("Comme d'habitude", "Tous les jours")**
+   - Requête : "Allume le salon tous les jours à 18h"
+   - JSON : \`frequency: "daily"\`
 
-**Vérification de l'état AVANT de répondre :**
-1. Consulte [États] pour voir si lampe_salon a etat: "ON" ou "OFF"
-2. Si déjà ON et demande d'allumage → réponds intelligemment
-3. Sinon, génère la planification normalement
+2. **Routine Hebdomadaire ("Chaque lundi", "Les week-ends")**
+   - Requête : "Allume la ventilation chaque Lundi et Mardi à 08h00"
+   - JSON : \`frequency: "weekly"\`, \`daysOfWeek: [1, 2]\`
+   - Requête : "Le week-end allume tout"
+   - JSON : \`frequency: "weekly"\`, \`daysOfWeek: [0, 6]\`
 
-**Exemple de JSON à générer (si logique) :**
+3. **Routine basée sur les habitudes ("Fais comme la semaine passée")**
+   - Si l'utilisateur demande de répliquer une routine ou dit "active le mode travail", propose une planification **"daily"** (lundi au vendredi) ou **"weekly"** selon le contexte implicite.
+
+**EXEMPLE DE JSON COMPLET :**
 {
-  "reply": "✅ C'est noté ! J'ai ajouté la tâche **Lampe Salon** à votre planning pour 16h34.",
+  "reply": "✅ C'est noté ! J'ai programmé l'allumage récurrent de la **Lampe Salon** chaque Lundi et Mercredi.",
   "planning_commands": [
     {
       "action": "add",
       "device": "lampe_salon",
-      "time": "16:34",
+      "time": "18:30",
       "actionType": "allumer",
-      "power": 80
+      "power": 100,
+      "frequency": "weekly",
+      "daysOfWeek": [1, 3]
     }
   ],
   "needs_continuation": false,
@@ -2112,13 +2119,6 @@ Si l'utilisateur demande une action à un **moment futur** ("à 16h34", "dans 15
   "device_commands": [],
   "source": "cloud"
 }
-
-**Règles de planning :**
-* Le format time est TOUJOURS HH:MM.
-* L'ID de l'appareil (device) doit exister dans [Appareils].
-* L'actionType est **"allumer"** ou **"éteindre"** selon la requête.
-* Pour une lampe, la power est obligatoire (entre 0 et 100). Pour une prise (plug), mets power: 100 pour ON et power: 0 pour OFF.
-* L'action est toujours "add" pour ajouter une tâche.
 
 ### 🗑️ SUPPRESSION DE PLANIFICATIONS (INTELLIGENT)
 
@@ -2171,16 +2171,6 @@ Tu peux supprimer des planifications de 3 façons :
   "source": "cloud"
 }
 
-**Si la planification N'EXISTE PAS :**
-{
-  "reply": "⚠️ Aucune planification trouvée pour **Lampe Salon**. Voulez-vous consulter toutes vos planifications ?",
-  "planning_commands": [],
-  "needs_continuation": false,
-  "execute": [],
-  "device_commands": [],
-  "source": "cloud"
-}
-
 #### 3. SUPPRESSION D'UNE TÂCHE SPÉCIFIQUE PAR HEURE
 
 **Déclencheurs :**
@@ -2199,16 +2189,6 @@ Tu peux supprimer des planifications de 3 façons :
       "time": "16:34"
     }
   ],
-  "needs_continuation": false,
-  "execute": [],
-  "device_commands": [],
-  "source": "cloud"
-}
-
-**Si NON trouvée :**
-{
-  "reply": "⚠️ Aucune planification trouvée pour **Lampe Salon** à **16h34**. Vérifiez l'heure ou consultez toutes vos planifications.",
-  "planning_commands": [],
   "needs_continuation": false,
   "execute": [],
   "device_commands": [],
@@ -2418,133 +2398,101 @@ async function handleDeviceCommands(commands, userId) {
 }
 
 // ========================================
-// ✅ GESTION INTELLIGENTE DES PLANIFICATIONS
+// ✅ GESTION INTELLIGENTE DES PLANIFICATIONS (V12)
 // ========================================
 async function handlePlanningCommands(commands) {
   if (!commands || commands.length === 0) return;
   
-  // ✅ Anti-duplication
+  // ✅ Anti-duplication basique
   const uniqueCommands = [];
   const seen = new Set();
   
   for (const cmd of commands) {
-    let key;
-    if (cmd.action === 'add') {
-      key = `add-${cmd.device}-${cmd.time}-${cmd.actionType}-${cmd.power}`;
-    } else if (cmd.action === 'delete_all') {
-      key = 'delete_all';
-    } else if (cmd.action === 'delete_specific') {
-      key = `delete-${cmd.device}-${cmd.time || 'any'}`;
-    } else {
-      continue;
-    }
+    // On crée une clé unique incluant la fréquence pour éviter les doublons
+    let key = `${cmd.action}-${cmd.device}-${cmd.time}`;
+    if (cmd.frequency) key += `-${cmd.frequency}`;
+    if (cmd.daysOfWeek) key += `-${cmd.daysOfWeek.join(',')}`;
     
     if (!seen.has(key)) {
       seen.add(key);
       uniqueCommands.push(cmd);
-    } else {
-      console.log(`⚠️ Commande dupliquée ignorée : ${key}`);
     }
   }
   
-  // ✅ TRAITER UNIQUEMENT LES COMMANDES UNIQUES
   for (const cmd of uniqueCommands) {
     
     // 1. SUPPRESSION DE TOUTES LES TÂCHES
     if (cmd.action === 'delete_all') {
-      console.log('🗑️ Suppression de TOUTES les planifications demandée');
-      if (!db) continue;
-      try {
-        await set(ref(db, PLANNING_REF), null);
-        console.log('✅ Toutes les planifications supprimées de Firebase');
-      } catch (error) {
-        console.error('❌ Erreur suppression toutes planifications:', error);
-      }
+      console.log('🗑️ Suppression de TOUTES les planifications');
+      if (db) await set(ref(db, PLANNING_REF), null);
       continue;
     }
     
     // 2. SUPPRESSION SPÉCIFIQUE
     if (cmd.action === 'delete_specific') {
-      console.log(`🗑️ Suppression spécifique: device=${cmd.device}, time=${cmd.time}`);
+      console.log(`🗑️ Suppression spécifique: ${cmd.device}`);
       if (!db) continue;
       
       try {
-        const planningSnapshot = await get(ref(db, PLANNING_REF));
-        if (!planningSnapshot.exists()) {
-          console.log('⚠️ Aucune planification dans Firebase');
-          continue;
-        }
-        
-        const allPlans = planningSnapshot.val();
-        let deletedCount = 0;
-        
-        for (const [planId, plan] of Object.entries(allPlans)) {
-          if (cmd.time) {
-            if (plan.device === cmd.device && plan.time === cmd.time) {
-              await remove(ref(db, `${PLANNING_REF}/${planId}`));
-              deletedCount++;
-              console.log(`✅ Planification supprimée: ${cmd.device} à ${cmd.time}`);
-            }
-          } else {
-            if (plan.device === cmd.device) {
-              await remove(ref(db, `${PLANNING_REF}/${planId}`));
-              deletedCount++;
+        const snapshot = await get(ref(db, PLANNING_REF));
+        if (snapshot.exists()) {
+          const plans = snapshot.val();
+          for (const [id, p] of Object.entries(plans)) {
+            // Si une heure est précisée, on supprime seulement cette heure
+            if (cmd.time && p.device === cmd.device && p.time === cmd.time) {
+              await remove(ref(db, `${PLANNING_REF}/${id}`));
+            } 
+            // Sinon on supprime tout pour cet appareil
+            else if (!cmd.time && p.device === cmd.device) {
+              await remove(ref(db, `${PLANNING_REF}/${id}`));
             }
           }
         }
-        
-        if (deletedCount === 0) {
-          console.log(`⚠️ Aucune planification trouvée pour ${cmd.device}`);
-        } else {
-          console.log(`✅ ${deletedCount} planification(s) supprimée(s) pour ${cmd.device}`);
-        }
-        
-      } catch (error) {
-        console.error('❌ Erreur suppression spécifique:', error);
-      }
-      
+      } catch (e) { console.error(e); }
       continue;
     }
     
-    // 3. AJOUT D'UNE TÂCHE
+    // 3. AJOUT D'UNE TÂCHE (ROUTINE OU UNIQUE)
     if (cmd.action === 'add') {
-      console.log(`📅 Ajout planification: ${cmd.device} à ${cmd.time}`);
+      console.log(`📅 Ajout Planification: ${cmd.device} à ${cmd.time} (${cmd.frequency || 'once'})`);
       
-   /*   const payload = { 
+      // ✅ CORRECTION : On détermine l'état ON/OFF ici
+      let finalState = 'OFF';
+      if (cmd.actionType && cmd.actionType.toLowerCase() === 'allumer') finalState = 'ON';
+      if (cmd.action === 'ON') finalState = 'ON'; // Sécurité
+
+      // Construction de l'objet selon le format du frontend
+      const payload = { 
         device: cmd.device, 
         time: cmd.time, 
-        action: cmd.actionType === 'allumer' ? 'ON' : 'OFF',
-        actionType: cmd.actionType,
+        action: finalState, // ✅ Sera "ON" ou "OFF", jamais "add"
+        actionType: cmd.actionType || (finalState === 'ON' ? 'allumer' : 'éteindre'),
         power: cmd.power !== null && cmd.power !== undefined ? parseInt(cmd.power) : 100,
+        frequency: cmd.frequency || 'once', // daily, weekly, monthly, once
         createdAt: Date.now() 
       };
+
+      // Gestion des jours spécifiques (Hebdo)
+      if (payload.frequency === 'weekly' && Array.isArray(cmd.daysOfWeek)) {
+        payload.daysOfWeek = cmd.daysOfWeek; // ex: [1, 3, 5]
+      }
+
+      // Gestion de la date cible (Une fois)
+      if (payload.frequency === 'once' && cmd.targetDate) {
+        payload.targetDate = cmd.targetDate; // YYYY-MM-DD
+      } else if (payload.frequency === 'once' && !cmd.targetDate) {
+        // Si l'IA n'a pas mis de date, on met la date du jour par défaut
+        payload.targetDate = new Date().toISOString().split('T')[0];
+      }
       
       if (db) {
         try {
-          const planningSnapshot = await get(ref(db, PLANNING_REF));
-          let alreadyExists = false;
-          
-          if (planningSnapshot.exists()) {
-            const existingPlans = planningSnapshot.val();
-            alreadyExists = Object.values(existingPlans).some(p => 
-              p.device === payload.device && 
-              p.time === payload.time && 
-              p.action === payload.action
-            );
-          }
-          
-          if (!alreadyExists) {
-            await push(ref(db, PLANNING_REF), payload);
-            console.log('✅ Planification ajoutée à Firebase');
-          } else {
-            console.log('⚠️ Planification identique existe déjà, ajout ignoré');
-          }
+          await push(ref(db, PLANNING_REF), payload);
+          console.log(`✅ Planification sauvegardée : ${finalState}`);
         } catch (error) {
-          console.error('❌ Erreur ajout planification:', error);
+          console.error('❌ Erreur Firebase:', error);
         }
       }
-     */ 
-      continue;
     }
   }
 }
@@ -2679,7 +2627,8 @@ async function chatWithGemini(userMessage, devices, userId, sessionId, attachmen
           const deviceName = devices.find(d => d.id === p.device)?.name || p.device;
           const actionText = p.actionType || (p.action === 'ON' ? 'allumer' : 'éteindre');
           const powerText = p.power !== null && p.power !== undefined ? ` à ${p.power}%` : '';
-          return `- ${deviceName} (${p.device}): ${actionText} à ${p.time}${powerText}`;
+          const freqText = p.frequency ? ` (${p.frequency})` : '';
+          return `- ${deviceName} (${p.device}): ${actionText} à ${p.time}${powerText}${freqText}`;
         }).join('\n');
       }
       
@@ -2838,7 +2787,12 @@ app.post('/api/chat', async (req, res) => {
     
     // ✅ Traiter les commandes de planning (AJOUT + SUPPRESSION INTELLIGENTE)
     if (aiJson.planning_commands && aiJson.planning_commands.length > 0) {
+      // 1. Le serveur exécute l'ajout PROPREMENT (avec ON/OFF)
       await handlePlanningCommands(aiJson.planning_commands);
+      
+      // 2. 🛑 ON VIDE LA LISTE pour que le client ne fasse RIEN
+      // (Cela empêche le bug "ADD" du côté client)
+      aiJson.planning_commands = []; 
     }
     
     // ✅ Détection automatique de troncature si l'IA n'a pas mis needs_continuation
@@ -2857,7 +2811,7 @@ app.post('/api/chat', async (req, res) => {
 
     console.log('✅ RÉPONSE GÉNÉRÉE');
     console.log(`📤 Execute: ${aiJson.execute.length}`);
-    console.log(`📅 Planning: ${aiJson.planning_commands.length}`);
+    console.log(`📅 Planning: ${aiJson.planning_commands.length} (Traité serveur)`);
     console.log(`➕ Device Commands: ${aiJson.device_commands.length}`);
     console.log(`💡 Suggestions: ${aiJson.suggestions.length}`);
     console.log(`📏 Reply Length: ${aiJson.reply.length} chars`);
@@ -2940,7 +2894,7 @@ app.listen(PORT, () => {
   console.log(`   🔥 Synchro Firebase (Appareils): Activée`);
   console.log(`   💾 Synchro Firebase (Chats): Activée`);
   console.log(`   📅 Planning AI: Prêt`);
-  console.log(`   🧠 Planning Intelligent: Activé`);
+  console.log(`   🧠 Planning Intelligent: Activé (Routines + ON/OFF Fix)`);
   console.log(`   🗑️ Suppression Intelligente: Activée`);
   console.log(`   ➕ Auto Add Devices: Activé`);
   console.log(`   🗑️ Auto Delete Devices: Activé`);
@@ -2953,9 +2907,9 @@ app.listen(PORT, () => {
   console.log(`   ✅ Output Markdown: Activé`);
   console.log(`   🎯 MaxTokens: 65536 (MAXIMUM)`);
   console.log(`\n   ✅ NOUVEAUTÉS v10.0:`);
-  console.log(`   • Code/Documents 3000+ lignes: SUPPORTÉ`);
-  console.log(`   • Bouton "Continuer" automatique: OUI`);
-  console.log(`   • Continuation intelligente: OUI`);
-  console.log(`   • Pas de redémarrage: GARANTI`);
-  console.log(`   • Détection auto troncature: ACTIVE\n`);
+  console.log(`   • Routines (Daily/Weekly): SUPPORTÉ`);
+  console.log(`   • Correction Doublons Planning: ✅ ACTIVÉE`);
+  console.log(`   • Correction Action ADD -> ON/OFF: ✅ ACTIVÉE`);
 });
+
+
