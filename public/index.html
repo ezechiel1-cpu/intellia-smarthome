@@ -1356,505 +1356,524 @@
     "Une nouvelle journée commence ! Je suis prêt à vous aider à automatiser vos tâches."
   ];
   let suggestionIndex = 0;
-
-  // ========================================
-  // ✅ FONCTION POUR EXTRAIRE TEXTE LISIBLE
-  // (Ignore HTML/CSS/Code pour la lecture vocale)
-  // ========================================
-function extractReadableText(content) {
-    // 1. Si c'est un document généré (CV, Facture, etc.)
-    if (content.includes('<DOCUMENT_HTML>') || 
-        content.includes('class="doc-cv"') || 
-        content.includes('class="doc-facture"') ||
-        content.includes('class="doc-lettre"')) {
-      
-      const tempDiv = document.createElement('div');
-      // On nettoie les balises spéciales pour ne garder que le HTML interne
-      let htmlContent = content.replace(/<DOCUMENT_HTML>/g, '').replace(/<\/DOCUMENT_HTML>/g, '');
-      
-      tempDiv.innerHTML = htmlContent;
-      
-      // On supprime tout ce qui ne doit pas être lu (styles, scripts, boutons)
-      tempDiv.querySelectorAll('style, script, button, .no-print').forEach(el => el.remove());
-      
-      // On récupère le texte brut (innerText ignore les balises <div class...>)
-      let text = tempDiv.innerText || tempDiv.textContent || '';
-      
-      // Nettoyage des espaces multiples et des sauts de ligne excessifs
-      text = text.replace(/\s+/g, ' ').trim();
-      
-      return text.substring(0, 100000); // Votre limite augmentée
-    }
-
-    // 2. Si c'est un bloc de code (```)
-    if (content.includes('```')) {
-      // On ne lit PAS le code, juste le texte autour
-      const withoutCode = content.replace(/```[\s\S]*?```/g, ' [Code ignoré] ');
-      return extractReadableText(withoutCode); // Récursion pour nettoyer le reste
-    }
-
-    // 3. Contenu Markdown standard
-    const html = marked.parse(content);
-    const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = html;
-    tempDiv.querySelectorAll('pre, code, style, script').forEach(el => el.remove());
-    
-    return (tempDiv.innerText || tempDiv.textContent || '').substring(0, 100000);
-  }
-  // ========================================
-  // ✅ FONCTIONS POUR DOCUMENTS HTML
-  // ========================================
-
-  // Fonction pour imprimer le document
 // ========================================
-  // ✅ 2. CORRECTION IMPRESSION (CIBLAGE PRÉCIS)
-  // ========================================
-  window.printDocument = function(btnElement) {
-    try {
-      console.log('🖨️ Impression lancée...');
-      let docElement = null;
+// ✅ FONCTION POUR EXTRAIRE TEXTE LISIBLE
+// (Ignore HTML/CSS/Code pour la lecture vocale)
+// ========================================
+function extractReadableText(content) {
+  // 1. Si c'est un document généré (CV, Facture, etc.)
+  if (content.includes('class="doc-cv"') || 
+      content.includes('class="doc-facture"') ||
+      content.includes('class="doc-lettre"') ||
+      content.includes('class="doc-rapport"') ||
+      content.includes('class="doc-contrat"')) {
+    
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = content;
+    
+    // ✅ ÉTAPE 1 : Supprimer les éléments non lisibles
+    tempDiv.querySelectorAll('style, script, button, .no-print, .code-actions, pre, code, .code-action-btn').forEach(el => el.remove());
+    
+    // ✅ ÉTAPE 2 : Récupérer le texte brut
+    let text = tempDiv.innerText || tempDiv.textContent || '';
+    
+    // ✅ ÉTAPE 3 : Nettoyage
+    text = text
+      .replace(/\s+/g, ' ')           // Espaces multiples
+      .replace(/[\n\r]+/g, ' ')       // Sauts de ligne
+      .trim();
+    
+    return text.substring(0, 100000);
+  }
 
-      // MÉTHODE 1 : Recherche relative (Le document est proche du bouton)
-      // btnElement est le bouton sur lequel on a cliqué (this)
-      if (btnElement && btnElement.closest) {
-        // On remonte au conteneur du message (la bulle de chat)
-        const messageContainer = btnElement.closest('.msg.bot');
-        if (messageContainer) {
-           // On cherche le document UNIQUEMENT dans ce message
-           docElement = messageContainer.querySelector('.doc-cv, .doc-lettre, .doc-rapport, .doc-facture, .doc-contrat');
-           
-           // Si on ne trouve pas la classe spécifique, on prend tout le contenu du message
-           if (!docElement) {
-             const clone = messageContainer.cloneNode(true);
-             // On enlève les boutons pour ne pas les imprimer
-             clone.querySelectorAll('button, .copy-code-btn, .continue-btn, .flex-btns').forEach(b => b.remove());
-             docElement = clone;
-           }
-        }
-      }
+  // 2. Si c'est du Markdown avec blocs de code (```)
+  if (content.includes('```')) {
+    const withoutCode = content.replace(/```[\s\S]*?```/g, ' ');
+    return extractReadableText(withoutCode);
+  }
 
-      // MÉTHODE 2 : Secours (Si la méthode 1 échoue)
-      if (!docElement) {
-        // On prend le dernier document affiché dans la page
-        const allDocs = document.querySelectorAll('.doc-cv, .doc-lettre, .doc-rapport, .doc-facture, .doc-contrat');
-        if (allDocs.length > 0) {
-          docElement = allDocs[allDocs.length - 1];
-        }
-      }
+  // 3. Contenu Markdown standard
+  const html = marked.parse(content);
+  const tempDiv = document.createElement('div');
+  tempDiv.innerHTML = html;
+  
+  tempDiv.querySelectorAll('pre, code, style, script, button').forEach(el => el.remove());
+  
+  let text = (tempDiv.innerText || tempDiv.textContent || '')
+    .replace(/\s+/g, ' ')
+    .trim();
+  
+  return text.substring(0, 100000);
+}
 
-      if (!docElement) {
-        alert('❌ Erreur : Impossible de localiser le document à imprimer.');
-        return;
-      }
+// ========================================
+// ✅ FONCTION IMPRESSION (CIBLAGE PRÉCIS)
+// ========================================
+window.printDocument = function(btnElement) {
+  try {
+    console.log('🖨️ Impression lancée...');
+    let docElement = null;
 
-      // Ouverture fenêtre d'impression
-      const printWindow = window.open('', '_blank');
-      if (!printWindow) {
-        alert('❌ Pop-up bloqué. Veuillez autoriser les pop-ups pour imprimer.');
-        return;
-      }
-
-      // CSS pour l'impression (A4 propre)
-      const css = `
-        <style>
-          body { font-family: 'Segoe UI', Arial, sans-serif; margin: 0; padding: 0; -webkit-print-color-adjust: exact; }
-          .doc-cv, .doc-facture, .doc-lettre { width: 100%; max-width: 100%; margin: 0; padding: 20px; border: none; }
-          /* Forcer les couleurs de fond */
-          .facture-header, thead { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-          @page { margin: 1cm; size: auto; }
-        </style>
-      `;
-
-      printWindow.document.write(`<!DOCTYPE html><html><head><title>Impression</title>${css}</head><body>${docElement.outerHTML || docElement.innerHTML}</body></html>`);
-      printWindow.document.close();
+    // ✅ MÉTHODE 1 : Recherche relative (Le document est proche du bouton)
+    if (btnElement && btnElement.closest) {
+      const messageContainer = btnElement.closest('.msg.bot');
       
-      printWindow.onload = function() {
-        setTimeout(() => {
-          printWindow.focus();
-          printWindow.print();
-        }, 500);
-      };
-
-    } catch (error) {
-      console.error('❌ Erreur impression:', error);
-      alert('Erreur technique lors de l\'impression.');
-    }
-  };
-      // Copier dans le presse-papier
-      navigator.clipboard.writeText(html).then(() => {
-        console.log('✅ HTML copié dans le presse-papier');
+      if (messageContainer) {
+        docElement = messageContainer.querySelector(
+          '.doc-cv, .doc-lettre, .doc-rapport, .doc-facture, .doc-contrat'
+        );
         
-        // Feedback visuel
-        const btn = event.target.closest('button');
-        if (btn) {
-          const originalText = btn.innerHTML;
-          btn.innerHTML = '<i class="fas fa-check"></i> Copié !';
-          btn.style.background = '#2ecc71';
-          
-          setTimeout(() => {
-            btn.innerHTML = originalText;
-            btn.style.background = '';
-          }, 2000);
+        if (!docElement) {
+          const clone = messageContainer.cloneNode(true);
+          clone.querySelectorAll('button, .copy-code-btn, .continue-btn, .flex-btns, .code-actions').forEach(b => b.remove());
+          docElement = clone;
+        }
+      }
+    }
+
+    // ✅ MÉTHODE 2 : Secours
+    if (!docElement) {
+      const allDocs = document.querySelectorAll('.doc-cv, .doc-lettre, .doc-rapport, .doc-facture, .doc-contrat');
+      if (allDocs.length > 0) {
+        docElement = allDocs[allDocs.length - 1];
+        console.log('✅ Document trouvé via méthode 2');
+      }
+    }
+
+    if (!docElement) {
+      alert('❌ Erreur : Impossible de localiser le document à imprimer.');
+      return;
+    }
+
+    // Ouverture fenêtre d'impression
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      alert('❌ Pop-up bloqué. Veuillez autoriser les pop-ups pour imprimer.');
+      return;
+    }
+
+    // CSS pour l'impression
+    const css = `
+      <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+          font-family: 'Segoe UI', Arial, sans-serif; 
+          margin: 0; 
+          padding: 20px;
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
         }
         
+        .doc-cv, .doc-facture, .doc-lettre, .doc-rapport, .doc-contrat { 
+          width: 100%; 
+          max-width: 100%; 
+          margin: 0; 
+          padding: 0;
+          border: none;
+          background: white !important;
+          color: #333 !important;
+        }
+        
+        .facture-header, thead { 
+          -webkit-print-color-adjust: exact; 
+          print-color-adjust: exact;
+        }
+        
+        button, .copy-code-btn, .continue-btn, .code-actions {
+          display: none !important;
+        }
+        
+        @page { 
+          margin: 1cm; 
+          size: A4;
+        }
+        
+        h1, h2, h3 { color: #333 !important; }
+        table { border-collapse: collapse; width: 100%; }
+        th, td { border: 1px solid #ddd; padding: 8px; }
+        th { background: #f0f0f0 !important; }
+      </style>
+    `;
+
+    const htmlContent = docElement.outerHTML || docElement.innerHTML;
+    printWindow.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Impression</title>${css}</head><body>${htmlContent}</body></html>`);
+    printWindow.document.close();
+    
+    printWindow.onload = function() {
+      setTimeout(() => {
+        printWindow.focus();
+        printWindow.print();
+        setTimeout(() => { printWindow.close(); }, 500);
+      }, 500);
+    };
+
+  } catch (error) {
+    console.error('❌ Erreur impression:', error);
+    alert('Erreur technique lors de l\'impression : ' + error.message);
+  }
+};
+
+// ========================================
+// ✅ FONCTION COPIE HTML DOCUMENT
+// ========================================
+window.copyDocumentHtml = function() {
+  try {
+    let docElement = null;
+
+    const messageContainer = document.querySelector('.msg.bot:last-of-type');
+    if (messageContainer) {
+      docElement = messageContainer.querySelector(
+        '.doc-cv, .doc-lettre, .doc-rapport, .doc-facture, .doc-contrat'
+      );
+    }
+
+    if (!docElement) {
+      const allDocs = document.querySelectorAll('.doc-cv, .doc-lettre, .doc-rapport, .doc-facture, .doc-contrat');
+      if (allDocs.length > 0) docElement = allDocs[allDocs.length - 1];
+    }
+
+    if (!docElement) {
+      alert('❌ Aucun document trouvé');
+      return;
+    }
+
+    const html = docElement.outerHTML || docElement.innerHTML;
+
+    navigator.clipboard.writeText(html).then(() => {
+      console.log('✅ HTML copié dans le presse-papier');
+      alert('✅ HTML copié dans le presse-papier !');
+        
+    }).catch(err => {
+      console.error('❌ Erreur copie:', err);
+      
+      // Fallback
+      const textarea = document.createElement('textarea');
+      textarea.value = html;
+      textarea.style.position = 'fixed';
+      textarea.style.opacity = '0';
+      document.body.appendChild(textarea);
+      textarea.select();
+      
+      try {
+        document.execCommand('copy');
         alert('✅ HTML copié dans le presse-papier !');
-        
-      }).catch(err => {
-        console.error('❌ Erreur copie:', err);
-        
-        // Fallback : créer un textarea temporaire
-        const textarea = document.createElement('textarea');
-        textarea.value = html;
-        textarea.style.position = 'fixed';
-        textarea.style.opacity = '0';
-        document.body.appendChild(textarea);
-        textarea.select();
-        
-        try {
-          document.execCommand('copy');
-          alert('✅ HTML copié dans le presse-papier !');
-        } catch (e) {
-          alert('❌ Impossible de copier. Utilisez Ctrl+C manuellement.');
-        }
-        
-        document.body.removeChild(textarea);
-      });
-      
-     catch (error) {
-      console.error('❌ Erreur copie HTML:', error);
-      alert('❌ Erreur lors de la copie. Veuillez réessayer.');
-    }
-  };
-
-  // Fonction pour télécharger une image
-  window.downloadImage = function(imageUrl, filename = null) {
-    if (!filename) {
-      filename = `intellia_image_${Date.now()}.png`;
-    }
-    
-    fetch(imageUrl)
-      .then(response => response.blob())
-      .then(blob => {
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-        console.log(`✅ Image téléchargée: ${filename}`);
-      })
-      .catch(error => {
-        console.error("❌ Erreur téléchargement image:", error);
-        alert("❌ Impossible de télécharger l'image. Faites clic droit > Enregistrer l'image.");
-      });
-  };
-
-  // ========================================
-  // ✅ FONCTION D'AFFICHAGE DES MESSAGES
-  // ========================================
-  function appendChat(role, text, returnElement = false, attachments = []) {
-    const target = document.getElementById('chatFullWindow');
-    if (!target) return;
-    
-    const node = document.createElement('div');
-    node.className = 'msg ' + (role === 'user' ? 'user' : 'bot');
-
-    if (role === 'user') {
-      if (text) {
-        node.textContent = text;
-      }
-    } else {
-      // ✅ CAS : Document HTML Direct
-      const documentHtmlMatch = text.match(/<DOCUMENT_HTML>([\s\S]*?)<\/DOCUMENT_HTML>/);
-      if (documentHtmlMatch) {
-        const documentHtml = documentHtmlMatch[1].trim();
-        
-        node.innerHTML = `
-          ${documentHtml}
-          <div style="margin-top: 30px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
-            <button class="btn primary" onclick="printDocument()">
-              <i class="fas fa-print"></i> Imprimer
-            </button>
-            <button class="btn success" onclick="copyDocumentHtml()">
-              <i class="fas fa-copy"></i> Copier le HTML
-            </button>
-          </div>
-        `;
-        
-        target.appendChild(node);
-        scrollToBottom();
-        return node;
+      } catch (e) {
+        alert('❌ Impossible de copier. Utilisez Ctrl+C manuellement.');
       }
       
-      // ✅ CAS : Markdown normal
-      if (text) {
-        const renderedHtml = marked.parse(text, { sanitize: false, gfm: true });
-        node.innerHTML = renderedHtml;
-        
-        // Coloration syntaxique
-        node.querySelectorAll('pre code').forEach(block => {
-          hljs.highlightElement(block);
-        });
-        
-        // Boutons copier sur les blocs de code
-        addCopyButtons(node);
-        
-      } else if (returnElement) {
-        node.classList.add('loading');
-      }
-    }
-    
-    // Gestion des pièces jointes
-    if (attachments && attachments.length > 0) {
-      const attachmentsDiv = document.createElement('div');
-      attachmentsDiv.style.cssText = 'margin-top: 8px; display: flex; flex-wrap: wrap; gap: 8px;';
+      document.body.removeChild(textarea);
+    });
       
-      attachments.forEach(att => {
-        if (att.type === 'image' && att.data) {
-          const img = document.createElement('img');
-          img.src = att.data;
-          img.style.cssText = 'max-width: 150px; max-height: 150px; border-radius: 8px; object-fit: cover; cursor: pointer;';
-          img.onclick = () => window.open(att.data, '_blank');
-          attachmentsDiv.appendChild(img);
-        } else if (att.type === 'file') {
-          const fileDiv = document.createElement('div');
-          fileDiv.style.cssText = 'padding: 8px 12px; background: rgba(0,0,0,0.1); border-radius: 6px; font-size: 13px;';
-          let iconClass = 'fa-file';
-          let iconColor = '#6c757d';
-          
-          const fileName = att.name.toLowerCase();
-          if (fileName.endsWith('.pdf')) {
-            iconClass = 'fa-file-pdf';
-            iconColor = '#dc3545';
-          } else if (fileName.endsWith('.docx') || fileName.endsWith('.doc')) {
-            iconClass = 'fa-file-word';
-            iconColor = '#2b579a';
-          } else if (fileName.endsWith('.xlsx') || fileName.endsWith('.xls')) {
-            iconClass = 'fa-file-excel';
-            iconColor = '#217346';
-          } else if (fileName.endsWith('.txt')) {
-            iconClass = 'fa-file-alt';
-          } else if (fileName.endsWith('.html') || fileName.endsWith('.htm')) {
-            iconClass = 'fa-file-code';
-            iconColor = '#f06529';
-          } else if (fileName.endsWith('.js')) {
-            iconClass = 'fa-file-code';
-            iconColor = '#f7df1e';
-          } else if (fileName.endsWith('.json')) {
-            iconClass = 'fa-file-code';
-            iconColor = '#5a5a5a';
-          } else if (fileName.endsWith('.css')) {
-            iconClass = 'fa-file-code';
-            iconColor = '#264de4';
-          }
-          
-          fileDiv.innerHTML = `<i class="fas ${iconClass}" style="color: ${iconColor}; margin-right: 6px;"></i> ${att.name}`;
-          attachmentsDiv.appendChild(fileDiv);
-        }
-      });
-      node.appendChild(attachmentsDiv);
-    }
+  } catch (error) {
+    console.error('❌ Erreur copie HTML:', error);
+    alert('❌ Erreur lors de la copie. Veuillez réessayer.');
+  }
+};
 
-    target.appendChild(node);
-    scrollToBottom();
-    if (returnElement) return node;
+// ========================================
+// ✅ FONCTION TÉLÉCHARGEMENT IMAGE
+// ========================================
+window.downloadImage = function(imageUrl, filename = null) {
+  if (!filename) {
+    filename = `intellia_image_${Date.now()}.png`;
   }
   
-  function scrollToBottom() {
-    const container = document.getElementById('chatFullWindow');
-    if (container) {
-      container.scrollTop = container.scrollHeight;
+  fetch(imageUrl)
+    .then(response => response.blob())
+    .then(blob => {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      console.log(`✅ Image téléchargée: ${filename}`);
+    })
+    .catch(error => {
+      console.error("❌ Erreur téléchargement image:", error);
+      alert("❌ Impossible de télécharger l'image. Faites clic droit > Enregistrer l'image.");
+    });
+};
+
+// ========================================
+// ✅ AJOUT BOUTONS COPIER SUR CODE
+// ========================================
+function addCopyButtons(element) {
+  const codeBlocks = element.querySelectorAll('pre');
+  codeBlocks.forEach(block => {
+    const code = block.querySelector('code');
+    if (!code) return;
+    
+    let language = 'TEXT';
+    let extension = 'txt';
+    const classes = code.className.split(' ');
+    const langClass = classes.find(c => c.startsWith('language-'));
+    
+    if (langClass) {
+      language = langClass.replace('language-', '').toUpperCase();
+      const langMap = {
+        'JAVASCRIPT': 'js', 'PYTHON': 'py', 'HTML': 'html', 
+        'CSS': 'css', 'JSON': 'json', 'JAVA': 'java',
+        'CPP': 'cpp', 'C': 'c', 'PHP': 'php', 'RUBY': 'rb',
+        'GO': 'go', 'RUST': 'rs', 'TYPESCRIPT': 'ts',
+        'BASH': 'sh', 'SQL': 'sql', 'XML': 'xml'
+      };
+      extension = langMap[language] || language.toLowerCase();
     }
-  }
+    
+    const actions = document.createElement('div');
+    actions.className = 'code-actions';
+    actions.innerHTML = `
+      <span>${language}</span>
+      <div class="code-actions-buttons">
+        <button class="code-action-btn" onclick="
+          navigator.clipboard.writeText(this.closest('pre').querySelector('code').innerText)
+            .then(() => { this.innerHTML = '<i class=\\'fas fa-check\\'></i> Copié'; setTimeout(() => { this.innerHTML = '<i class=\\'fas fa-copy\\'></i> Copier'; }, 2000); });
+        ">
+          <i class="fas fa-copy"></i> Copier
+        </button>
+        <button class="code-action-btn" onclick="
+          const code = this.closest('pre').querySelector('code').innerText;
+          const blob = new Blob([code], { type: 'text/plain' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = 'code.${extension}';
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+        ">
+          <i class="fas fa-download"></i> Télécharger
+        </button>
+      </div>
+    `;
+    
+    block.insertBefore(actions, block.firstChild);
+  });
+}
+
+// ========================================
+// ✅ AFFICHAGE DES MESSAGES
+// ========================================
+function appendChat(role, text, returnElement = false, attachments = []) {
+  const target = document.getElementById('chatFullWindow');
+  if (!target) return;
   
-  function addCopyButtons(element) {
-    const codeBlocks = element.querySelectorAll('pre');
-    codeBlocks.forEach(block => {
-      const code = block.querySelector('code');
-      if (!code) return;
+  const node = document.createElement('div');
+  node.className = 'msg ' + (role === 'user' ? 'user' : 'bot');
+
+  if (role === 'user') {
+    if (text) node.textContent = text;
+  } else {
+    // ✅ CAS : Document HTML Direct
+    const documentHtmlMatch = text.match(/<DOCUMENT_HTML>([\s\S]*?)<\/DOCUMENT_HTML>/);
+    if (documentHtmlMatch) {
+      const documentHtml = documentHtmlMatch[1].trim();
       
-      // Déterminer le langage
-      let language = 'TEXT';
-      let extension = 'txt';
-      const classes = code.className.split(' ');
-      const langClass = classes.find(c => c.startsWith('language-'));
-      
-      if (langClass) {
-        language = langClass.replace('language-', '').toUpperCase();
-        const langMap = {
-          'JAVASCRIPT': 'js', 'PYTHON': 'py', 'HTML': 'html', 
-          'CSS': 'css', 'JSON': 'json', 'JAVA': 'java',
-          'CPP': 'cpp', 'C': 'c', 'PHP': 'php', 'RUBY': 'rb',
-          'GO': 'go', 'RUST': 'rs', 'TYPESCRIPT': 'ts',
-          'BASH': 'sh', 'SQL': 'sql', 'XML': 'xml'
-        };
-        extension = langMap[language] || language.toLowerCase();
-      }
-      
-      const actions = document.createElement('div');
-      actions.className = 'code-actions';
-      actions.innerHTML = `
-        <span>${language}</span>
-        <div class="code-actions-buttons">
-          <button class="code-action-btn" onclick="
-            navigator.clipboard.writeText(this.closest('pre').querySelector('code').innerText)
-              .then(() => { this.innerHTML = '<i class=\\'fas fa-check\\'></i> Copié'; setTimeout(() => { this.innerHTML = '<i class=\\'fas fa-copy\\'></i> Copier'; }, 2000); });
-          ">
-            <i class="fas fa-copy"></i> Copier
+      node.innerHTML = `
+        ${documentHtml}
+        <div style="margin-top: 30px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+          <button class="btn primary" onclick="printDocument(this)">
+            <i class="fas fa-print"></i> Imprimer
           </button>
-          <button class="code-action-btn" onclick="
-            const code = this.closest('pre').querySelector('code').innerText;
-            const blob = new Blob([code], { type: 'text/plain' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'code.${extension}';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-          ">
-            <i class="fas fa-download"></i> Télécharger
+          <button class="btn success" onclick="copyDocumentHtml()">
+            <i class="fas fa-copy"></i> Copier le HTML
           </button>
         </div>
       `;
       
-      block.insertBefore(actions, block.firstChild);
-    });
-  }
-  
-  // ========================================
-  // ✅ SIMULATION TYPING AVEC CONTINUATION
-  // ========================================
-  function simulateTyping(element, text, enableVoice = true, needsContinuation = false, continuationContext = null) {
-    return new Promise((resolve, reject) => {
-      
-      if (appState.shouldStopResponse) {
-        element.innerHTML = '<br><br><em style="color: #e74c3c;">⚠️ Réponse interrompue</em>';
-        reject(new Error('Interrupted'));
-        return;
-      }
-      
-      // ✅ CAS : Document HTML Direct
-      const documentHtmlMatch = text.match(/<DOCUMENT_HTML>([\s\S]*?)<\/DOCUMENT_HTML>/);
-      if (documentHtmlMatch) {
-        const documentHtml = documentHtmlMatch[1].trim();
-        
-    element.innerHTML = `
-  ${documentHtml}
-  <div style="margin-top: 30px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
-    <button class="btn primary" onclick="printDocument(this)">
-      <i class="fas fa-print"></i> Imprimer
-    </button>
+      target.appendChild(node);
+      scrollToBottom();
+      return node;
+    }
     
-    <button class="btn success" onclick="copyDocumentHtml()">
-      <i class="fas fa-copy"></i> Copier le HTML
-    </button>
-  </div>
-        `;
-        
-        element.classList.remove('loading');
-        scrollToBottom();
-        
-        // ✅ Synthèse vocale pour documents (texte seulement)
-        if (enableVoice && appState.voiceNotifications) {
-          const readableText = extractReadableText(documentHtml);
-          if (readableText) {
-            speak(`Document généré avec succès. ${readableText}`);
-          }
-        }
-        
-        resolve();
-        return;
-      }
-      
-      // ✅ CAS : Markdown normal (code, texte, etc.)
-      if (enableVoice && appState.voiceNotifications) {
-        const readableText = extractReadableText(text);
-        if (readableText) {
-          speak(readableText, true);
-        }
-      }
-      
+    // ✅ CAS : Markdown normal
+    if (text) {
       const renderedHtml = marked.parse(text, { sanitize: false, gfm: true });
-      element.innerHTML = renderedHtml;
+      node.innerHTML = renderedHtml;
       
-      // Coloration syntaxique
-      element.querySelectorAll('pre code').forEach(block => {
+      node.querySelectorAll('pre code').forEach(block => {
         hljs.highlightElement(block);
       });
       
-      // Boutons copier
-      addCopyButtons(element);
+      addCopyButtons(node);
       
-      // ✅ BOUTON CONTINUER (si nécessaire)
-      if (needsContinuation) {
-        const continueBtn = document.createElement('button');
-        continueBtn.className = 'continue-btn';
-        continueBtn.innerHTML = '<i class="fas fa-chevron-down"></i> Continuer';
-        continueBtn.onclick = () => handleContinuation(continuationContext);
-        element.appendChild(continueBtn);
+    } else if (returnElement) {
+      node.classList.add('loading');
+    }
+  }
+  
+  // Gestion des pièces jointes
+  if (attachments && attachments.length > 0) {
+    const attachmentsDiv = document.createElement('div');
+    attachmentsDiv.style.cssText = 'margin-top: 8px; display: flex; flex-wrap: wrap; gap: 8px;';
+    
+    attachments.forEach(att => {
+      if (att.type === 'image' && att.data) {
+        const img = document.createElement('img');
+        img.src = att.data;
+        img.style.cssText = 'max-width: 150px; max-height: 150px; border-radius: 8px; object-fit: cover; cursor: pointer;';
+        img.onclick = () => window.open(att.data, '_blank');
+        attachmentsDiv.appendChild(img);
+      } else if (att.type === 'file') {
+        const fileDiv = document.createElement('div');
+        fileDiv.style.cssText = 'padding: 8px 12px; background: rgba(0,0,0,0.1); border-radius: 6px; font-size: 13px;';
+        let iconClass = 'fa-file';
+        let iconColor = '#6c757d';
+        
+        const fileName = att.name.toLowerCase();
+        if (fileName.endsWith('.pdf')) { iconClass = 'fa-file-pdf'; iconColor = '#dc3545'; }
+        else if (fileName.endsWith('.docx') || fileName.endsWith('.doc')) { iconClass = 'fa-file-word'; iconColor = '#2b579a'; }
+        else if (fileName.endsWith('.xlsx') || fileName.endsWith('.xls')) { iconClass = 'fa-file-excel'; iconColor = '#217346'; }
+        else if (fileName.endsWith('.txt')) { iconClass = 'fa-file-alt'; }
+        else if (fileName.endsWith('.html') || fileName.endsWith('.htm')) { iconClass = 'fa-file-code'; iconColor = '#f06529'; }
+        else if (fileName.endsWith('.js')) { iconClass = 'fa-file-code'; iconColor = '#f7df1e'; }
+        else if (fileName.endsWith('.json')) { iconClass = 'fa-file-code'; iconColor = '#5a5a5a'; }
+        else if (fileName.endsWith('.css')) { iconClass = 'fa-file-code'; iconColor = '#264de4'; }
+        
+        fileDiv.innerHTML = `<i class="fas ${iconClass}" style="color: ${iconColor}; margin-right: 6px;"></i> ${att.name}`;
+        attachmentsDiv.appendChild(fileDiv);
       }
+    });
+    node.appendChild(attachmentsDiv);
+  }
+
+  target.appendChild(node);
+  scrollToBottom();
+  if (returnElement) return node;
+}
+
+function scrollToBottom() {
+  const container = document.getElementById('chatFullWindow');
+  if (container) {
+    container.scrollTop = container.scrollHeight;
+  }
+}
+
+// ========================================
+// ✅ SIMULATION TYPING AVEC DOCUMENTS
+// ========================================
+function simulateTyping(element, text, enableVoice = true, needsContinuation = false, continuationContext = null) {
+  return new Promise((resolve, reject) => {
+    
+    if (appState.shouldStopResponse) {
+      element.innerHTML = '<br><br><em style="color: #e74c3c;">⚠️ Réponse interrompue</em>';
+      reject(new Error('Interrupted'));
+      return;
+    }
+    
+    // ✅ CAS : Document HTML Direct
+    const documentHtmlMatch = text.match(/<DOCUMENT_HTML>([\s\S]*?)<\/DOCUMENT_HTML>/);
+    if (documentHtmlMatch) {
+      const documentHtml = documentHtmlMatch[1].trim();
+      
+      element.innerHTML = `
+        ${documentHtml}
+        <div style="margin-top: 30px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+          <button class="btn primary" onclick="printDocument(this)">
+            <i class="fas fa-print"></i> Imprimer
+          </button>
+          <button class="btn success" onclick="copyDocumentHtml()">
+            <i class="fas fa-copy"></i> Copier le HTML
+          </button>
+        </div>
+      `;
       
       element.classList.remove('loading');
       scrollToBottom();
-      resolve();
-    });
-  }
-  
-  // ========================================
-  // ✅ GESTION DE LA CONTINUATION
-  // ========================================
-  async function handleContinuation(context) {
-    console.log('🔄 Continuation demandée', context);
-    
-    // Désactiver le bouton
-    const continueBtn = event.target;
-    continueBtn.disabled = true;
-    continueBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Chargement...';
-    
-    appState.chatInProgress = true;
-    appState.shouldStopResponse = false;
-    el('intelliaStatus').textContent = "Assistant: En cours...";
-    el('chat-loading').style.display = 'block';
-    el('chatFullSend').style.display = 'none';
-    el('stopAIBtn').style.display = 'flex';
-    
-    try {
-      // Envoyer une requête de continuation
-      const reply = await sendToOnline("Continue", [], true); // true = continuationMode
       
-      if (!appState.shouldStopResponse) {
-        const botMsgElement = appendChat('bot', '', true);
-        try {
-          await simulateTyping(
-            botMsgElement, 
-            reply, 
-            true, 
-            false // On vérifie si une nouvelle continuation est nécessaire dans la réponse
-          );
-        } catch (interruptError) {
-          console.log('⚠️ Typing interrompu');
+      // ✅ Synthèse vocale pour documents (texte UNIQUEMENT)
+      if (enableVoice && appState.voiceNotifications) {
+        const readableText = extractReadableText(documentHtml);
+        if (readableText) {
+          console.log('📢 Lecture vocale (document) :', readableText.substring(0, 100) + '...');
+          speak(readableText);
         }
-      } else {
-        appendChat('bot', '<em style="color: #e74c3c;">⚠️ Réponse interrompue</em>');
       }
-    } catch (error) {
-      if (!appState.shouldStopResponse) {
-        console.error("Erreur continuation:", error);
-        appendChat('bot', "Désolé, une erreur s'est produite lors de la continuation.");
-      }
-    } finally {
-      appState.chatInProgress = false;
-      appState.shouldStopResponse = false;
-      el('chat-loading').style.display = 'none';
-      el('chatFullSend').style.display = 'flex';
-      el('stopAIBtn').style.display = 'none';
+      
+      resolve();
+      return;
     }
-  }
+    
+    // ✅ CAS : Markdown normal (code, texte, etc.)
+    if (enableVoice && appState.voiceNotifications) {
+      const readableText = extractReadableText(text);
+      if (readableText) {
+        console.log('📢 Lecture vocale (markdown) :', readableText.substring(0, 100) + '...');
+        speak(readableText, true);
+      }
+    }
+    
+    const renderedHtml = marked.parse(text, { sanitize: false, gfm: true });
+    element.innerHTML = renderedHtml;
+    
+    element.querySelectorAll('pre code').forEach(block => {
+      hljs.highlightElement(block);
+    });
+    
+    addCopyButtons(element);
+    
+    // ✅ BOUTON CONTINUER (si nécessaire)
+    if (needsContinuation) {
+      const continueBtn = document.createElement('button');
+      continueBtn.className = 'continue-btn';
+      continueBtn.innerHTML = '<i class="fas fa-chevron-down"></i> Continuer';
+      continueBtn.onclick = () => handleContinuation(continuationContext);
+      element.appendChild(continueBtn);
+    }
+    
+    element.classList.remove('loading');
+    scrollToBottom();
+    resolve();
+  });
+}
 
+// ========================================
+// ✅ GESTION DE LA CONTINUATION
+// ========================================
+async function handleContinuation(context) {
+  console.log('🔄 Continuation demandée', context);
+  
+  const continueBtn = event.target;
+  continueBtn.disabled = true;
+  continueBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Chargement...';
+  
+  appState.chatInProgress = true;
+  appState.shouldStopResponse = false;
+  el('intelliaStatus').textContent = "Assistant: En cours...";
+  el('chat-loading').style.display = 'block';
+  el('chatFullSend').style.display = 'none';
+  el('stopAIBtn').style.display = 'flex';
+  
+  try {
+    const reply = await sendToOnline("Continue", [], true);
+    
+    if (!appState.shouldStopResponse) {
+      const botMsgElement = appendChat('bot', '', true);
+      try {
+        await simulateTyping(botMsgElement, reply, true, false);
+      } catch (interruptError) {
+        console.log('⚠️ Typing interrompu');
+      }
+    } else {
+      appendChat('bot', '<em style="color: #e74c3c;">⚠️ Réponse interrompue</em>');
+    }
+  } catch (error) {
+    if (!appState.shouldStopResponse) {
+      console.error("Erreur continuation:", error);
+      appendChat('bot', "Désolé, une erreur s'est produite lors de la continuation.");
+    }
+  } finally {
+    appState.chatInProgress = false;
+    appState.shouldStopResponse = false;
+    el('chat-loading').style.display = 'none';
+    el('chatFullSend').style.display = 'flex';
+    el('stopAIBtn').style.display = 'none';
+  }
+}
   // ========================================
   // ✅ FONCTION PRINCIPALE CHAT
   // ========================================
