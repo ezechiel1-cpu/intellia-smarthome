@@ -2874,6 +2874,6 @@ app.listen(PORT, () => {
   console.log(`   • Déduplication: Planifications dupliquées évitées`);
   console.log(`   • Serveur Responsable: Gère tout côté backend`);
   console.log('\n');
-
+}); // <--- AJOUTEZ ); ICI
 
 
