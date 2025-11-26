@@ -18,7 +18,8 @@
     "deploy:full": "npm run deploy:rules && npm run deploy",
     "serve": "firebase serve --only hosting",
     "emulators": "firebase emulators:start --import=./emulator-data --export-on-exit",
-    "postinstall": "echo '✅ Installation terminée - Pensez à configurer vos variables d\\'environnement'",
+     "postinstall": "echo 'Installation terminée' && echo 'Pensez a configurer vos variables denvironnement'",
+    
     "lint": "eslint . --ext .js",
     "clean": "rm -rf node_modules package-lock.json && npm install",
     "security:audit": "npm audit --audit-level=moderate",
