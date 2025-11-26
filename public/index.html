@@ -2505,7 +2505,8 @@ window.adjustBrightness = (deviceId, value) => {
   sendCommand(deviceId, v > 0 ? "ON" : "OFF", v);
 };
 
-window.sendCommand = (deviceId, action, value = null) {
+// La fonction fléchée nécessite '=>' après la liste des arguments
+window.sendCommand = (deviceId, action, value = null) => {
   const val = (value !== null) ? parseInt(value) : (action === "ON" ? 100 : 0);
   
   if (appState.isLocalConnected && appState.localWebSocket && appState.localWebSocket.readyState === 1) {
@@ -2516,6 +2517,9 @@ window.sendCommand = (deviceId, action, value = null) {
       action: action,
       value: val
     }));
+  } 
+  // N'oubliez pas de fermer la fonction avec '}' si le corps est incomplet ici
+};
     
     appState.deviceStates[deviceId] = { etat: action, luminosite: val };
     renderDevices();
