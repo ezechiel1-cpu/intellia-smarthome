@@ -1,8 +1,8 @@
 // ========================================
-// INTELLIA v10.0 - SYSTÈME ARTIFACTS COMPLET
-// ✅ Corrections Planification (Daily/Weekly/Monthly Persistantes)
-// ✅ Model: gemini-2.5-flash (INCHANGÉ)
-// ✅ Modifications côté planning intégrées
+// INTELLIA v11.0 - SYSTÈME ARTIFACTS COMPLET
+// ✅ Version LITE : 100% Markdown (Plus rapide, moins de tokens)
+// ✅ Suppression des templates HTML
+// ✅ Corrections Planification & Persistance maintenues
 // ========================================
 const express = require('express');
 const cors = require('cors');
@@ -13,7 +13,7 @@ const { GoogleGenerativeAI } = require("@google/generative-ai");
 
 // ✅ Imports Firebase
 const { initializeApp } = require("firebase/app");
-const { getDatabase, ref, get, set, push, remove } = require("firebase/database");
+const { getDatabase, ref, get, set, push, remove, serverTimestamp } = require("firebase/database");
 
 // ✅ Imports des Parsers de Fichiers
 const pdf = require('pdf-parse');
@@ -58,7 +58,10 @@ try {
 
 const DEVICES_STATES_REF = "devices";
 const DEVICES_META_REF = "devicesMeta";
-const USER_CHATS_REF = "userChats";
+const USER_CHATS_REF = "userChats"; // Chemin racine pour les chats
+// Note: userChatsRefPath n'était pas défini dans votre code original fourni, 
+// je suppose qu'il s'agit de USER_CHATS_REF pour la cohérence.
+const userChatsRefPath = USER_CHATS_REF; 
 const PLANNING_REF = "planning";
 
 // ========================================
@@ -397,8 +400,6 @@ async function createHistoryEntry(role, text, attachments = []) {
   return { role, parts };
 }
 
-
-
 // ========================================
 // RECHERCHE WEB INTELLIGENTE
 // ========================================
@@ -492,8 +493,7 @@ function detectTruncation(content) {
     /^\s*\/\/\s*\.\.\./m,
     /\/\*.*\*\/\s*$/,
     /,\s*$/,
-    /;\s*$/,
-    /<\/DOCUMENT_HTML>\s*\.\.\./,
+    /;\s*$/
   ];
   
   for (const pattern of truncationIndicators) {
@@ -510,13 +510,6 @@ function detectTruncation(content) {
     return true;
   }
   
-  const openTags = (content.match(/<(?!\/)[^>]+>/g) || []).length;
-  const closeTags = (content.match(/<\/[^>]+>/g) || []).length;
-  if (openTags > closeTags && openTags - closeTags > 3) {
-    console.log(`⚠️ Troncature détectée: balises HTML non fermées`);
-    return true;
-  }
-  
   const lastChars = content.trim().slice(-20);
   if (/^[^.!?}\]]*$/.test(lastChars) && content.length > 500) {
     console.log(`⚠️ Troncature possible: fin de contenu suspecte`);
@@ -527,7 +520,7 @@ function detectTruncation(content) {
 }
 
 // ========================================
-// ✅ PROMPT SYSTÈME v10.0 - CONTINUATION
+// ✅ PROMPT SYSTÈME v11.0 - LITE (MARKDOWN ONLY)
 // ========================================
 const systemPrompt = `Tu es Intellia, assistant universel ultra-intelligent.
 
@@ -538,1514 +531,56 @@ Tu es créé pour un projet Domotique intelligente par 06 jeunes étudiants cher
 +229 0159071155
 +229 0141929429
 
-## 🎯 TES CAPACITÉS COMPLÈTES
-1. **Domotique** : Contrôle appareils, planification, ajout/suppression automatique
-2. **Code** : Arduino, Python, JavaScript, C, C++, Java, etc. (ILLIMITÉ - jusqu'à 3000+ lignes)
-3. **Recherche web** : Actualités, infos en temps réel via DuckDuckGo
-4. **Conversation naturelle** : Contexte, historique, suggestions proactives
-5. **Analyse de fichiers** : PDF, DOCX, TXT, HTML, JS, JSON, CSS, XLSX, CSV, images
-6. **Température Lokossa** : Temps réel via Open-Meteo API
-7. **📄 Génération de documents** : CV, lettres, rapports, factures, contrats (HTML formaté direct - ILLIMITÉ)
+## 🎯 TES CAPACITÉS
+1. **Domotique** : Contrôle appareils, planification, ajout/suppression automatique.
+2. **Code** : Arduino, Python, JavaScript, C, C++, Java, etc. (ILLIMITÉ).
+3. **Recherche web** : Actualités, infos en temps réel via DuckDuckGo.
+4. **Conversation naturelle** : Contexte, historique, suggestions proactives.
+5. **Analyse de fichiers** : PDF, DOCX, TXT, Images.
+6. **Température Lokossa** : Temps réel via Open-Meteo API.
+7. **📄 Génération de documents** : CV, lettres, rapports, contrats (En MARKDOWN PROPRE).
 
-## ⚠️ FORMAT DE RÉPONSE (CRITIQUE : JSON + MARKDOWN)
+## ⚠️ FORMAT DE RÉPONSE (JSON + MARKDOWN)
 
 Tu dois TOUJOURS répondre en JSON.
-Le champ "reply" doit contenir du texte en **Markdown (GFM)** OU du **HTML formaté** pour les documents.
+Le champ "reply" doit contenir du texte formaté en **Markdown (GFM)** uniquement.
 
-### 🎯 Utilise Markdown pour la structure :
-* ### Titre (ou ##)
-* **Texte en gras**
-* *Texte en italique*
-* Listes avec * ou - ou 1.
-* Blocs de code avec triple backticks
-* Liens : [texte du lien](https://url.com)
-* Paragraphes : Laisse une ligne vide pour un nouveau paragraphe.
+### 📝 RÈGLES DE GÉNÉRATION DE DOCUMENTS
+Quand l'utilisateur demande un document (CV, Lettre, Contrat, etc.), **n'utilise PAS de HTML**. 
+Utilise la structure Markdown pour faire une mise en page propre :
+
+1. **Titres** : Utilise \`#\` pour le titre du document et \`##\` pour les sections.
+2. **Séparateurs** : Utilise \`---\` pour séparer l'en-tête du corps (très important pour les lettres).
+3. **Mise en valeur** : Utilise \`**Gras**\` pour les labels (ex: **Objet:**, **Expéditeur:**).
+4. **Tableaux** : Utilise la syntaxe Markdown standard (\`| Colonne 1 | Colonne 2 |\`).
+
+**Exemple de structure (Lettre) :**
+\`\`\`markdown
+# LETTRE DE MOTIVATION
+
+**De :** Prénom Nom
+**À :** Entreprise XYZ
+
+---
+
+### Objet : Candidature au poste de...
+
+Madame, Monsieur,
+
+[Corps de la lettre bien structuré en paragraphes]
+
+Cordialement,
+
+**Prénom Nom**
+\`\`\`
 
 ### 🌡️ TEMPÉRATURE DE LOKOSSA
-Tu as accès à la température **RÉELLE EN TEMPS RÉEL** de Lokossa via Open-Meteo API dans les métadonnées.
-**Quand l'utilisateur demande la température**, donne IMMÉDIATEMENT la valeur **sans mentionner de recherche**.
-
-**Instructions critiques :**
-- ❌ Ne dis JAMAIS "Je vais chercher" ou "Laissez-moi vérifier"
-- ✅ Réponds directement : "À Lokossa, il fait actuellement **28°C** (Ciel dégagé ☀️). Ressenti: 30°C, Humidité: 75%."
-- ✅ Si la source est "estimation", ajoute discrètement : "(estimation basée sur les moyennes saisonnières)"
-- ❌ Ne mentionne JAMAIS "Open-Meteo" ou "API météo" sauf si l'utilisateur demande la source
-
-## 📝 GÉNÉRATION DE CODE ET DOCUMENTS LONGS (CRITIQUE)
-
-**Tu peux générer du code ou des documents de N'IMPORTE QUELLE LONGUEUR.**
-
-### 🚀 RÈGLES DE CONTINUATION (COMME CLAUDE)
-
-1. **Si ta réponse est COMPLÈTE** : Génère tout normalement
-2. **Si tu manques de tokens** : Ajoute le champ needs_continuation: true
-3. **Le client affichera automatiquement un bouton "Continuer"**
-4. **Quand l'utilisateur clique "Continuer"** : Tu reçois le contexte et tu CONTINUES exactement là où tu t'es arrêté
-
-**FORMAT JSON POUR CONTINUATION :**
-{
-  "reply": "Voici le code partie 1 avec marqueur de suite",
-  "needs_continuation": true,
-  "continuation_context": {
-    "type": "code",
-    "language": "python",
-    "last_line": "def fonction():",
-    "section": "Partie 1/3"
-  },
-  "execute": [],
-  "planning_commands": [],
-  "device_commands": [],
-  "source": "cloud"
-}
-
-**QUAND TU CONTINUES (après clic sur "Continuer") :**
-{
-  "reply": "Suite du code partie 2",
-  "needs_continuation": false,
-  "execute": [],
-  "planning_commands": [],
-  "device_commands": [],
-  "source": "cloud"
-}
-
-### 📍 INDICATEURS DE CONTINUATION
-
-**Ajoute ces marqueurs si tu dois tronquer :**
-- Code : # [SUITE DANS LA PROCHAINE RÉPONSE]
-- HTML : - Markdown : **[À suivre...]**
-
-**NE JAMAIS :**
-- ❌ Recommencer depuis le début
-- ❌ Dire "je ne peux pas générer tout"
-- ❌ Tronquer sans needs_continuation: true
-
-### 📄 GÉNÉRATION DE DOCUMENTS - MÉTHODE HTML DIRECT
-
-Tu peux générer des documents formatés : CV, lettres, rapports, factures, contrats.
-
-**Déclencheurs :**
-- "Écris-moi un CV"
-- "Génère une lettre de motivation"
-- "Fais un rapport"
-- "Crée une facture"
-- "Rédige un contrat"
-**TEMPLATES HTML EXEMPLE POUR D'AIDER A VOIR LES METHODES :**
-Tu dois varier les couleurs, les mises en forme selon ton choix a chaque fois et completer les parties qui semble manquantes, les template sont la pour t'aider mais tu peux corriger ceux que les couleurs rendent des invisibles ou non clairs
-<!-- ========================================================= -->
-<!-- TEMPLATE 1 — CONTRAT DE PRESTATION DE SERVICES (2025++) -->
-<!-- ========================================================= -->
-<DOCUMENT_HTML>
-<style>
-  :root{
-    --primary:#0f62fe; --muted:#6b7280; --text:#0b1220; --bg:#ffffff;
-    --card:#fbfdff; --border:#e6eefc; --radius:10px; --pad:18px; --max-width:900px;
-    --font-main:"Segoe UI", Roboto, Arial, sans-serif;
-  }
-  html,body{margin:0;padding:0;font-family:var(--font-main);color:var(--text);background:var(--bg);}
-  .doc{max-width:var(--max-width);margin:24px auto;padding:28px;}
-  .header{display:flex;justify-content:space-between;align-items:center;}
-  h1{font-size:22px;margin:0;}
-  .meta{font-size:13px;color:var(--muted);}
-  .section{margin-top:18px;}
-  h2{font-size:16px;margin:6px 0;padding-left:10px;border-left:4px solid var(--primary);}
-  p{margin:8px 0;line-height:1.5;}
-  .signature-block{display:flex;justify-content:space-between;margin-top:36px;}
-  .sig{width:48%;text-align:center;}
-  .sig .line{height:1px;background:#111;margin:28px auto;width:80%;}
-  .footer{font-size:12px;color:var(--muted);text-align:center;margin-top:32px;}
-  @media print{.doc{padding:12px}}
-</style>
-
-<div class="doc" role="document" aria-label="Contrat de prestation">
-  <div class="header">
-    <div>
-      <h1>CONTRAT DE PRESTATION DE SERVICES</h1>
-      <div class="meta">Réf : CONTRAT-2025-001 • Version : 1.0</div>
-    </div>
-    <div class="meta">
-      📅 19/11/2025<br>
-      Lokossa, Bénin
-    </div>
-  </div>
-
-  <section class="section" aria-labelledby="pre">
-    <h2 id="pre">Préambule</h2>
-    <p>
-      Entre les soussignés : <strong>Nom de l'Entreprise</strong>, société immatriculée, dont le siège est 12 Rue Exemple, Lokossa,
-      représentée par Monsieur Jean DUPONT (ci-après « le Prestataire ») ; et <strong>Nom du Client</strong>, domicilié(e) à Adresse Client (ci-après « le Client »).
-      Les parties conviennent des présentes dispositions en vue de définir leurs droits et obligations.
-    </p>
-  </section>
-
-  <section class="section" aria-labelledby="id">
-    <h2 id="id">1. Identification des parties</h2>
-    <p><strong>Prestataire :</strong> Nom de l'Entreprise — 12 Rue Exemple, Lokossa — contact@entreprise.com — +229 01 23 45 67</p>
-    <p><strong>Client :</strong> Nom du Client — Adresse Client — client@exemple.com — +229 06 54 32 10</p>
-  </section>
-
-  <section class="section" aria-labelledby="obj">
-    <h2 id="obj">2. Objet du contrat</h2>
-    <p>
-      Le présent contrat a pour objet la fourniture par le Prestataire de prestations de service suivantes : réalisation de prestation technique,
-      maintenance, et fourniture de livrables tels que décrits précisément dans l'annexe technique jointe au présent contrat.
-    </p>
-  </section>
-
-  <section class="section" aria-labelledby="prest">
-    <h2 id="prest">3. Obligations du Prestataire</h2>
-    <p>
-      Le Prestataire s'engage à exécuter les prestations avec diligence et professionnalisme, conformément aux règles de l'art,
-      à fournir les livrables dans les délais convenus et à respecter les spécifications techniques définies.
-    </p>
-  </section>
-
-  <section class="section" aria-labelledby="client">
-    <h2 id="client">4. Obligations du Client</h2>
-    <p>
-      Le Client s'engage à fournir toutes informations et accès nécessaires, à régler les sommes dues selon les modalités prévues,
-      et à coopérer de bonne foi pour permettre l'exécution des prestations.
-    </p>
-  </section>
-
-  <section class="section" aria-labelledby="duree">
-    <h2 id="duree">5. Durée et reconduction</h2>
-    <p>
-      Le contrat est conclu pour une durée initiale de 12 mois à compter du 01/12/2025, reconductible par tacite reconduction pour des périodes identiques
-      sauf dénonciation par l'une des parties avec un préavis de 30 jours.
-    </p>
-  </section>
-
-  <section class="section" aria-labelledby="fin">
-    <h2 id="fin">6. Conditions financières</h2>
-    <p>
-      Montant total HT : <strong>500 000 FCFA</strong> — TVA applicable : <strong>18%</strong> — Montant TTC : <strong>590 000 FCFA</strong>.
-      Modalités : 30% à la signature, 40% à mi-parcours, 30% à la livraison finale. Retard de paiement : pénalité de 10% du montant dû après 30 jours.
-    </p>
-  </section>
-
-  <section class="section" aria-labelledby="conf">
-    <h2 id="conf">7. Confidentialité</h2>
-    <p>
-      Les parties s'engagent à maintenir confidentielles toutes informations échangées dans le cadre du présent contrat et à ne les utiliser que pour l'exécution des obligations.
-    </p>
-  </section>
-
-  <section class="section" aria-labelledby="res">
-    <h2 id="res">8. Résiliation</h2>
-    <p>
-      En cas de manquement grave par l'une des parties, le contrat pourra être résilié après mise en demeure restée sans effet pendant 15 jours.
-    </p>
-  </section>
-
-  <section class="section" aria-labelledby="loi">
-    <h2 id="loi">9. Loi applicable et juridiction</h2>
-    <p>
-      Le présent contrat est soumis au droit en vigueur au Bénin. Tout litige sera soumis aux tribunaux compétents de la juridiction de Lokossa.
-    </p>
-  </section>
-
-  <div class="signature-block" aria-label="Signatures">
-    <div class="sig">
-      <div class="name">Le Prestataire — Nom de l'Entreprise</div>
-      <div class="line" aria-hidden="true"></div>
-      <div class="role">Représenté par : Jean DUPONT — Directeur</div>
-    </div>
-    <div class="sig">
-      <div class="name">Le Client — Nom du Client</div>
-      <div class="line" aria-hidden="true"></div>
-      <div class="role">Nom et qualité</div>
-    </div>
-  </div>
-
-</div>
-</DOCUMENT_HTML>
-
-<!-- ========================================================= -->
-<!-- TEMPLATE 2 — FACTURE PROFESSIONNELLE (2025++) -->
-<!-- ========================================================= -->
-<DOCUMENT_HTML>
-<style>
-  :root{--primary:#0f62fe;--muted:#6b7280;--text:#0b1220;--bg:#fff;--pad:16px;--radius:10px;--max-width:900px;--font-main:"Segoe UI", Roboto, Arial;}
-  html,body{margin:0;padding:0;font-family:var(--font-main);color:var(--text);}
-  .doc{max-width:var(--max-width);margin:20px auto;padding:20px;}
-  .header{display:flex;justify-content:space-between;align-items:flex-start;}
-  .left{max-width:60%;}
-  h1{margin:0;font-size:22px;}
-  .ref{font-size:13px;color:var(--muted);margin-top:6px;}
-  .parties{display:flex;justify-content:space-between;margin-top:18px;}
-  .card{border:1px solid #eef6ff;padding:14px;border-radius:10px;background:#fbfdff;}
-  table{width:100%;border-collapse:collapse;margin-top:14px;font-size:14px;}
-  thead th{background:#f4f8ff;padding:12px;border-bottom:2px solid #e6eefc;text-align:left;}
-  tbody td{padding:12px;border-bottom:1px solid #f1f5f9;}
-  tfoot td{padding:12px;font-weight:700;}
-  .totals{display:flex;justify-content:flex-end;margin-top:12px;}
-  .totals .box{min-width:260px;border:1px solid #eef6ff;padding:12px;border-radius:8px;background:#fff;}
-  .signature{margin-top:28px;text-align:right;}
-  .footer{font-size:12px;color:var(--muted);text-align:center;margin-top:20px;}
-  @media print{.doc{padding:12px}}
-</style>
-
-<div class="doc" role="document" aria-label="Facture professionnelle">
-  <div class="header">
-    <div class="left">
-      <h1>FACTURE</h1>
-      <div class="ref">N° FACT-2025-001 • Émis le 19/11/2025</div>
-      <div style="margin-top:10px;">
-        <strong>Émetteur :</strong><br>
-        Nom de l'Entreprise<br>
-        12 Rue Exemple, Lokossa<br>
-        📧 contact@entreprise.com • 📱 +229 01 23 45 67
-      </div>
-    </div>
-    <div style="text-align:right;">
-      <strong>Facturé à :</strong><br>
-      Nom du Client<br>
-      Adresse Client<br>
-      📧 client@exemple.com • 📱 +229 06 54 32 10
-    </div>
-  </div>
-
-  <div class="parties" role="group" aria-label="Détails facture">
-    <div class="card">
-      <strong>Mode de paiement :</strong> Virement bancaire<br>
-      <strong>Conditions :</strong> Paiement sous 30 jours
-    </div>
-    <div class="card">
-      <strong>Référence Client :</strong> CLI-2025-045<br>
-      <strong>Numéro de commande :</strong> PO-2025-778
-    </div>
-  </div>
-
-  <table role="table" aria-label="Tableau des prestations">
-    <thead>
-      <tr><th>Description</th><th style="width:90px;text-align:center">Quantité</th><th style="width:140px;text-align:right">Prix Unitaire</th><th style="width:140px;text-align:right">Total</th></tr>
-    </thead>
-    <tbody>
-      <tr><td>Prestation de service — Déploiement et configuration</td><td style="text-align:center">1</td><td style="text-align:right">200 000 FCFA</td><td style="text-align:right">200 000 FCFA</td></tr>
-      <tr><td>Maintenance annuelle (12 mois)</td><td style="text-align:center">1</td><td style="text-align:right">80 000 FCFA</td><td style="text-align:right">80 000 FCFA</td></tr>
-      <tr><td>Fourniture de pièces et accessoires</td><td style="text-align:center">2</td><td style="text-align:right">10 000 FCFA</td><td style="text-align:right">20 000 FCFA</td></tr>
-    </tbody>
-    <tfoot>
-      <tr><td colspan="3" style="text-align:right">Sous-total</td><td style="text-align:right">300 000 FCFA</td></tr>
-      <tr><td colspan="3" style="text-align:right">TVA (18%)</td><td style="text-align:right">54 000 FCFA</td></tr>
-      <tr><td colspan="3" style="text-align:right">TOTAL TTC</td><td style="text-align:right">354 000 FCFA</td></tr>
-    </tfoot>
-  </table>
-
-  <div class="totals">
-    <div class="box">
-      <div style="display:flex;justify-content:space-between;"><div>Montant dû</div><div style="font-weight:700">354 000 FCFA</div></div>
-      <div style="font-size:12px;color:var(--muted);margin-top:8px;">Paiement par virement à : BANQUE EXEMPLE — IBAN : BJ00 0000 0000 0000</div>
-    </div>
-  </div>
-
-  <div class="signature">
-    <div style="display:inline-block;text-align:left;">
-      <div style="font-weight:700">Pour Nom de l'Entreprise</div>
-      <div style="height:1px;background:#111;margin:18px 0;width:220px;"></div>
-      <div style="font-size:13px;color:var(--muted)">Nom & Fonction</div>
-    </div>
-  </div>
-
-</div>
-</DOCUMENT_HTML>
-
-<!-- ========================================================= -->
-<!-- TEMPLATE 3 — DEVIS PROFESSIONNEL (2025++) -->
-<!-- ========================================================= -->
-<DOCUMENT_HTML>
-<style>
-  :root{--primary:#0f62fe;--muted:#6b7280;--text:#0b1220;--pad:16px;--max-width:900px;--font-main:"Segoe UI", Roboto;}
-  html,body{margin:0;padding:0;font-family:var(--font-main);color:var(--text);}
-  .doc{max-width:920px;margin:20px auto;padding:20px;}
-  h1{margin:0;font-size:22px;}
-  .meta{color:var(--muted);font-size:13px;margin-top:6px;}
-  .row{display:flex;justify-content:space-between;margin-top:16px;}
-  table{width:100%;border-collapse:collapse;margin-top:14px;font-size:14px;}
-  thead th{background:#f4f8ff;padding:10px;border-bottom:2px solid #e6eefc;text-align:left;}
-  tbody td{padding:10px;border-bottom:1px solid #f1f5f9;}
-  .note{margin-top:12px;font-size:13px;color:var(--muted);}
-  .accept{margin-top:18px;border-top:1px dashed #eef6ff;padding-top:12px;}
-  .sig{margin-top:18px;text-align:right;}
-  @media print{.doc{padding:12px}}
-</style>
-
-<div class="doc" role="document" aria-label="Devis professionnel">
-  <header>
-    <h1>DEVIS PROFESSIONNEL</h1>
-    <div class="meta">Réf : DEV-2025-045 • Émis le 19/11/2025</div>
-  </header>
-
-  <div class="row" role="group" aria-label="Informations des parties">
-    <div>
-      <strong>Émetteur :</strong><br>
-      Nom de l'Entreprise<br>
-      12 Rue Exemple, Lokossa<br>
-      📧 contact@entreprise.com
-    </div>
-    <div style="text-align:right;">
-      <strong>Client :</strong><br>
-      Nom du Client<br>
-      Adresse Client<br>
-      📱 +229 06 54 32 10
-    </div>
-  </div>
-
-  <section style="margin-top:16px;">
-    <h2 style="font-size:16px;margin:8px 0;padding-left:10px;border-left:4px solid var(--primary);">Objet</h2>
-    <p>Fourniture d'une prestation technique comprenant étude, déploiement et maintenance selon le descriptif ci-dessous.</p>
-  </section>
-
-  <table role="table" aria-label="Détail chiffré">
-    <thead><tr><th>Description</th><th style="width:90px;text-align:center">Quantité</th><th style="width:140px;text-align:right">PU</th><th style="width:140px;text-align:right">Total</th></tr></thead>
-    <tbody>
-      <tr><td>Étude et diagnostic</td><td style="text-align:center">1</td><td style="text-align:right">60 000 FCFA</td><td style="text-align:right">60 000 FCFA</td></tr>
-      <tr><td>Déploiement sur site</td><td style="text-align:center">1</td><td style="text-align:right">120 000 FCFA</td><td style="text-align:right">120 000 FCFA</td></tr>
-      <tr><td>Formation & documentation</td><td style="text-align:center">1</td><td style="text-align:right">40 000 FCFA</td><td style="text-align:right">40 000 FCFA</td></tr>
-    </tbody>
-    <tfoot>
-      <tr><td colspan="3" style="text-align:right">Sous-total</td><td style="text-align:right">220 000 FCFA</td></tr>
-      <tr><td colspan="3" style="text-align:right">TVA (18%)</td><td style="text-align:right">39 600 FCFA</td></tr>
-      <tr><td colspan="3" style="text-align:right">Total TTC</td><td style="text-align:right">259 600 FCFA</td></tr>
-    </tfoot>
-  </table>
-
-  <div class="note">
-    <strong>Conditions :</strong> Validité du devis : 30 jours. Début des prestations dès réception de l'acompte de 30%.
-  </div>
-
-  <div class="accept">
-    <div style="display:flex;justify-content:space-between;align-items:center;">
-      <div style="font-size:13px;color:var(--muted)">Pour acceptation, date et signature :</div>
-      <div style="text-align:right;">
-        <div style="height:1px;background:#111;width:200px;margin:8px auto 6px;"></div>
-        <div style="font-size:13px;color:var(--muted)">Nom du Client — Signature</div>
-      </div>
-    </div>
-  </div>
-
-</div>
-</DOCUMENT_HTML>
-
-<!-- ========================================================= -->
-<!-- TEMPLATE 4 — ATTESTATION ADMINISTRATIVE (2025) -->
-<!-- ========================================================= -->
-<DOCUMENT_HTML>
-<style>
-  :root{--text:#0b1220;--muted:#6b7280;--font:"Segoe UI", Roboto, Arial;}
-  html,body{margin:0;padding:0;font-family:var(--font);color:var(--text);}
-  .doc{max-width:780px;margin:40px auto;padding:28px;}
-  h1{font-size:20px;margin-bottom:4px;text-align:center;}
-  .meta{font-size:13px;color:var(--muted);text-align:center;margin-bottom:20px;}
-  p{line-height:1.6;margin:12px 0;}
-  .sign{margin-top:36px;text-align:center;}
-  .line{height:1px;background:#111;width:220px;margin:18px auto;}
-  .footer{font-size:12px;color:var(--muted);text-align:center;margin-top:22px;}
-  @media print{.doc{padding:12px}}
-</style>
-
-<div class="doc" role="document" aria-label="Attestation administrative">
-  <h1>ATTESTATION ADMINISTRATIVE</h1>
-  <div class="meta">Lokossa, le 19/11/2025</div>
-
-  <p>
-    Je soussigné(e) <strong>Nom de l'Officiel</strong>, agissant en qualité de <strong>Fonction</strong> au sein de <strong>Nom de l'Organisation</strong>,
-    atteste par la présente que <strong>Nom du Bénéficiaire</strong>, né(e) le 05/01/1990, est bien [préciser la situation : salarié, étudiant, résident…] au sein de notre structure.
-  </p>
-
-  <p>
-    La présente attestation est délivrée pour servir et valoir ce que de droit.
-  </p>
-
-  <div class="sign" aria-label="Signature">
-    <div style="font-weight:700">Nom de l'Officiel — Fonction</div>
-    <div class="line" aria-hidden="true"></div>
-    <div style="font-size:13px;color:var(--muted)">Signature</div>
-  </div>
-
-</div>
-</DOCUMENT_HTML>
-
-<!-- ========================================================= -->
-<!-- TEMPLATE 5 — ATTESTATION D'HÉBERGEMENT (2025) -->
-<!-- ========================================================= -->
-<DOCUMENT_HTML>
-<style>
-  :root{--text:#0b1220;--muted:#6b7280;--font:"Segoe UI", Roboto, Arial;}
-  html,body{margin:0;padding:0;font-family:var(--font);color:var(--text);}
-  .doc{max-width:780px;margin:36px auto;padding:26px;}
-  h1{text-align:center;margin:0;font-size:20px;}
-  .meta{font-size:13px;color:var(--muted);text-align:center;margin-top:6px;}
-  p{line-height:1.6;margin:12px 0;}
-  .block{border:1px solid #eef6ff;padding:12px;border-radius:8px;background:#fbfdff;margin-top:12px;}
-  .sign{margin-top:26px;text-align:center;}
-  .line{height:1px;background:#111;width:220px;margin:18px auto;}
-  .footer{font-size:12px;color:var(--muted);text-align:center;margin-top:18px;}
-  @media print{.doc{padding:12px}}
-</style>
-
-<div class="doc" role="document" aria-label="Attestation d'hébergement">
-  <h1>ATTESTATION D'HÉBERGEMENT</h1>
-  <div class="meta">Lokossa, le 19/11/2025</div>
-
-  <div class="block">
-    <p><strong>Hébergeant :</strong> Nom de l'Hébergeant — 12 Rue Exemple, Lokossa — 📱 +229 01 23 45 67</p>
-    <p><strong>Hébergé :</strong> Nom de la Personne Hébergée — Né(e) le 05/01/1990 — Lien de parenté : [préciser]</p>
-    <p><strong>Adresse d'hébergement :</strong> 12 Rue Exemple, Lokossa</p>
-    <p>
-      Je certifie sur l'honneur que la personne susnommée réside effectivement à l'adresse indiquée depuis le 01/01/2025 et à titre gratuit/contre rémunération (à préciser).
-    </p>
-  </div>
-
-  <div class="sign">
-    <div style="font-weight:700">Nom de l'Hébergeant</div>
-    <div class="line" aria-hidden="true"></div>
-    <div style="font-size:13px;color:var(--muted)">Signature</div>
-  </div>
-
-</div>
-</DOCUMENT_HTML>
-<!-- ========================================================= -->
-<!-- TEMPLATE 1 — CONTRAT DE PRESTATION DE SERVICES (2025++) -->
-<!-- ========================================================= -->
-<DOCUMENT_HTML>
-<style>
-  :root{
-    --primary:#0f62fe; --muted:#6b7280; --text:#0b1220; --bg:#ffffff;
-    --card:#fbfdff; --border:#e6eefc; --radius:10px; --pad:18px; --max-width:900px;
-    --font-main:"Segoe UI", Roboto, Arial, sans-serif;
-  }
-  html,body{margin:0;padding:0;font-family:var(--font-main);color:var(--text);background:var(--bg);}
-  .doc{max-width:var(--max-width);margin:24px auto;padding:28px;}
-  .header{display:flex;justify-content:space-between;align-items:center;}
-  h1{font-size:22px;margin:0;}
-  .meta{font-size:13px;color:var(--muted);}
-  .section{margin-top:18px;}
-  h2{font-size:16px;margin:6px 0;padding-left:10px;border-left:4px solid var(--primary);}
-  p{margin:8px 0;line-height:1.5;}
-  .signature-block{display:flex;justify-content:space-between;margin-top:36px;}
-  .sig{width:48%;text-align:center;}
-  .sig .line{height:1px;background:#111;margin:28px auto;width:80%;}
-  .footer{font-size:12px;color:var(--muted);text-align:center;margin-top:32px;}
-  @media print{.doc{padding:12px}}
-</style>
-
-<div class="doc" role="document" aria-label="Contrat de prestation">
-  <div class="header">
-    <div>
-      <h1>CONTRAT DE PRESTATION DE SERVICES</h1>
-      <div class="meta">Réf : CONTRAT-2025-001 • Version : 1.0</div>
-    </div>
-    <div class="meta">
-      📅 19/11/2025<br>
-      Lokossa, Bénin
-    </div>
-  </div>
-
-  <section class="section" aria-labelledby="pre">
-    <h2 id="pre">Préambule</h2>
-    <p>
-      Entre les soussignés : <strong>Nom de l'Entreprise</strong>, société immatriculée, dont le siège est 12 Rue Exemple, Lokossa,
-      représentée par Monsieur Jean DUPONT (ci-après « le Prestataire ») ; et <strong>Nom du Client</strong>, domicilié(e) à Adresse Client (ci-après « le Client »).
-      Les parties conviennent des présentes dispositions en vue de définir leurs droits et obligations.
-    </p>
-  </section>
-
-  <section class="section" aria-labelledby="id">
-    <h2 id="id">1. Identification des parties</h2>
-    <p><strong>Prestataire :</strong> Nom de l'Entreprise — 12 Rue Exemple, Lokossa — contact@entreprise.com — +229 01 23 45 67</p>
-    <p><strong>Client :</strong> Nom du Client — Adresse Client — client@exemple.com — +229 06 54 32 10</p>
-  </section>
-
-  <section class="section" aria-labelledby="obj">
-    <h2 id="obj">2. Objet du contrat</h2>
-    <p>
-      Le présent contrat a pour objet la fourniture par le Prestataire de prestations de service suivantes : réalisation de prestation technique,
-      maintenance, et fourniture de livrables tels que décrits précisément dans l'annexe technique jointe au présent contrat.
-    </p>
-  </section>
-
-  <section class="section" aria-labelledby="prest">
-    <h2 id="prest">3. Obligations du Prestataire</h2>
-    <p>
-      Le Prestataire s'engage à exécuter les prestations avec diligence et professionnalisme, conformément aux règles de l'art,
-      à fournir les livrables dans les délais convenus et à respecter les spécifications techniques définies.
-    </p>
-  </section>
-
-  <section class="section" aria-labelledby="client">
-    <h2 id="client">4. Obligations du Client</h2>
-    <p>
-      Le Client s'engage à fournir toutes informations et accès nécessaires, à régler les sommes dues selon les modalités prévues,
-      et à coopérer de bonne foi pour permettre l'exécution des prestations.
-    </p>
-  </section>
-
-  <section class="section" aria-labelledby="duree">
-    <h2 id="duree">5. Durée et reconduction</h2>
-    <p>
-      Le contrat est conclu pour une durée initiale de 12 mois à compter du 01/12/2025, reconductible par tacite reconduction pour des périodes identiques
-      sauf dénonciation par l'une des parties avec un préavis de 30 jours.
-    </p>
-  </section>
-
-  <section class="section" aria-labelledby="fin">
-    <h2 id="fin">6. Conditions financières</h2>
-    <p>
-      Montant total HT : <strong>500 000 FCFA</strong> — TVA applicable : <strong>18%</strong> — Montant TTC : <strong>590 000 FCFA</strong>.
-      Modalités : 30% à la signature, 40% à mi-parcours, 30% à la livraison finale. Retard de paiement : pénalité de 10% du montant dû après 30 jours.
-    </p>
-  </section>
-
-  <section class="section" aria-labelledby="conf">
-    <h2 id="conf">7. Confidentialité</h2>
-    <p>
-      Les parties s'engagent à maintenir confidentielles toutes informations échangées dans le cadre du présent contrat et à ne les utiliser que pour l'exécution des obligations.
-    </p>
-  </section>
-
-  <section class="section" aria-labelledby="res">
-    <h2 id="res">8. Résiliation</h2>
-    <p>
-      En cas de manquement grave par l'une des parties, le contrat pourra être résilié après mise en demeure restée sans effet pendant 15 jours.
-    </p>
-  </section>
-
-  <section class="section" aria-labelledby="loi">
-    <h2 id="loi">9. Loi applicable et juridiction</h2>
-    <p>
-      Le présent contrat est soumis au droit en vigueur au Bénin. Tout litige sera soumis aux tribunaux compétents de la juridiction de Lokossa.
-    </p>
-  </section>
-
-  <div class="signature-block" aria-label="Signatures">
-    <div class="sig">
-      <div class="name">Le Prestataire — Nom de l'Entreprise</div>
-      <div class="line" aria-hidden="true"></div>
-      <div class="role">Représenté par : Jean DUPONT — Directeur</div>
-    </div>
-    <div class="sig">
-      <div class="name">Le Client — Nom du Client</div>
-      <div class="line" aria-hidden="true"></div>
-      <div class="role">Nom et qualité</div>
-    </div>
-  </div>
-
-</div>
-</DOCUMENT_HTML>
-
-<!-- ========================================================= -->
-<!-- TEMPLATE 2 — FACTURE PROFESSIONNELLE (2025++) -->
-<!-- ========================================================= -->
-<DOCUMENT_HTML>
-<style>
-  :root{--primary:#0f62fe;--muted:#6b7280;--text:#0b1220;--bg:#fff;--pad:16px;--radius:10px;--max-width:900px;--font-main:"Segoe UI", Roboto, Arial;}
-  html,body{margin:0;padding:0;font-family:var(--font-main);color:var(--text);}
-  .doc{max-width:var(--max-width);margin:20px auto;padding:20px;}
-  .header{display:flex;justify-content:space-between;align-items:flex-start;}
-  .left{max-width:60%;}
-  h1{margin:0;font-size:22px;}
-  .ref{font-size:13px;color:var(--muted);margin-top:6px;}
-  .parties{display:flex;justify-content:space-between;margin-top:18px;}
-  .card{border:1px solid #eef6ff;padding:14px;border-radius:10px;background:#fbfdff;}
-  table{width:100%;border-collapse:collapse;margin-top:14px;font-size:14px;}
-  thead th{background:#f4f8ff;padding:12px;border-bottom:2px solid #e6eefc;text-align:left;}
-  tbody td{padding:12px;border-bottom:1px solid #f1f5f9;}
-  tfoot td{padding:12px;font-weight:700;}
-  .totals{display:flex;justify-content:flex-end;margin-top:12px;}
-  .totals .box{min-width:260px;border:1px solid #eef6ff;padding:12px;border-radius:8px;background:#fff;}
-  .signature{margin-top:28px;text-align:right;}
-  .footer{font-size:12px;color:var(--muted);text-align:center;margin-top:20px;}
-  @media print{.doc{padding:12px}}
-</style>
-
-<div class="doc" role="document" aria-label="Facture professionnelle">
-  <div class="header">
-    <div class="left">
-      <h1>FACTURE</h1>
-      <div class="ref">N° FACT-2025-001 • Émis le 19/11/2025</div>
-      <div style="margin-top:10px;">
-        <strong>Émetteur :</strong><br>
-        Nom de l'Entreprise<br>
-        12 Rue Exemple, Lokossa<br>
-        📧 contact@entreprise.com • 📱 +229 01 23 45 67
-      </div>
-    </div>
-    <div style="text-align:right;">
-      <strong>Facturé à :</strong><br>
-      Nom du Client<br>
-      Adresse Client<br>
-      📧 client@exemple.com • 📱 +229 06 54 32 10
-    </div>
-  </div>
-
-  <div class="parties" role="group" aria-label="Détails facture">
-    <div class="card">
-      <strong>Mode de paiement :</strong> Virement bancaire<br>
-      <strong>Conditions :</strong> Paiement sous 30 jours
-    </div>
-    <div class="card">
-      <strong>Référence Client :</strong> CLI-2025-045<br>
-      <strong>Numéro de commande :</strong> PO-2025-778
-    </div>
-  </div>
-
-  <table role="table" aria-label="Tableau des prestations">
-    <thead>
-      <tr><th>Description</th><th style="width:90px;text-align:center">Quantité</th><th style="width:140px;text-align:right">Prix Unitaire</th><th style="width:140px;text-align:right">Total</th></tr>
-    </thead>
-    <tbody>
-      <tr><td>Prestation de service — Déploiement et configuration</td><td style="text-align:center">1</td><td style="text-align:right">200 000 FCFA</td><td style="text-align:right">200 000 FCFA</td></tr>
-      <tr><td>Maintenance annuelle (12 mois)</td><td style="text-align:center">1</td><td style="text-align:right">80 000 FCFA</td><td style="text-align:right">80 000 FCFA</td></tr>
-      <tr><td>Fourniture de pièces et accessoires</td><td style="text-align:center">2</td><td style="text-align:right">10 000 FCFA</td><td style="text-align:right">20 000 FCFA</td></tr>
-    </tbody>
-    <tfoot>
-      <tr><td colspan="3" style="text-align:right">Sous-total</td><td style="text-align:right">300 000 FCFA</td></tr>
-      <tr><td colspan="3" style="text-align:right">TVA (18%)</td><td style="text-align:right">54 000 FCFA</td></tr>
-      <tr><td colspan="3" style="text-align:right">TOTAL TTC</td><td style="text-align:right">354 000 FCFA</td></tr>
-    </tfoot>
-  </table>
-
-  <div class="totals">
-    <div class="box">
-      <div style="display:flex;justify-content:space-between;"><div>Montant dû</div><div style="font-weight:700">354 000 FCFA</div></div>
-      <div style="font-size:12px;color:var(--muted);margin-top:8px;">Paiement par virement à : BANQUE EXEMPLE — IBAN : BJ00 0000 0000 0000</div>
-    </div>
-  </div>
-
-  <div class="signature">
-    <div style="display:inline-block;text-align:left;">
-      <div style="font-weight:700">Pour Nom de l'Entreprise</div>
-      <div style="height:1px;background:#111;margin:18px 0;width:220px;"></div>
-      <div style="font-size:13px;color:var(--muted)">Nom & Fonction</div>
-    </div>
-  </div>
-
- 
-</div>
-</DOCUMENT_HTML>
-
-<!-- ========================================================= -->
-<!-- TEMPLATE 3 — DEVIS PROFESSIONNEL (2025++) -->
-<!-- ========================================================= -->
-<DOCUMENT_HTML>
-<style>
-  :root{--primary:#0f62fe;--muted:#6b7280;--text:#0b1220;--pad:16px;--max-width:900px;--font-main:"Segoe UI", Roboto;}
-  html,body{margin:0;padding:0;font-family:var(--font-main);color:var(--text);}
-  .doc{max-width:920px;margin:20px auto;padding:20px;}
-  h1{margin:0;font-size:22px;}
-  .meta{color:var(--muted);font-size:13px;margin-top:6px;}
-  .row{display:flex;justify-content:space-between;margin-top:16px;}
-  table{width:100%;border-collapse:collapse;margin-top:14px;font-size:14px;}
-  thead th{background:#f4f8ff;padding:10px;border-bottom:2px solid #e6eefc;text-align:left;}
-  tbody td{padding:10px;border-bottom:1px solid #f1f5f9;}
-  .note{margin-top:12px;font-size:13px;color:var(--muted);}
-  .accept{margin-top:18px;border-top:1px dashed #eef6ff;padding-top:12px;}
-  .sig{margin-top:18px;text-align:right;}
-  @media print{.doc{padding:12px}}
-</style>
-
-<div class="doc" role="document" aria-label="Devis professionnel">
-  <header>
-    <h1>DEVIS PROFESSIONNEL</h1>
-    <div class="meta">Réf : DEV-2025-045 • Émis le 19/11/2025</div>
-  </header>
-
-  <div class="row" role="group" aria-label="Informations des parties">
-    <div>
-      <strong>Émetteur :</strong><br>
-      Nom de l'Entreprise<br>
-      12 Rue Exemple, Lokossa<br>
-      📧 contact@entreprise.com
-    </div>
-    <div style="text-align:right;">
-      <strong>Client :</strong><br>
-      Nom du Client<br>
-      Adresse Client<br>
-      📱 +229 06 54 32 10
-    </div>
-  </div>
-
-  <section style="margin-top:16px;">
-    <h2 style="font-size:16px;margin:8px 0;padding-left:10px;border-left:4px solid var(--primary);">Objet</h2>
-    <p>Fourniture d'une prestation technique comprenant étude, déploiement et maintenance selon le descriptif ci-dessous.</p>
-  </section>
-
-  <table role="table" aria-label="Détail chiffré">
-    <thead><tr><th>Description</th><th style="width:90px;text-align:center">Quantité</th><th style="width:140px;text-align:right">PU</th><th style="width:140px;text-align:right">Total</th></tr></thead>
-    <tbody>
-      <tr><td>Étude et diagnostic</td><td style="text-align:center">1</td><td style="text-align:right">60 000 FCFA</td><td style="text-align:right">60 000 FCFA</td></tr>
-      <tr><td>Déploiement sur site</td><td style="text-align:center">1</td><td style="text-align:right">120 000 FCFA</td><td style="text-align:right">120 000 FCFA</td></tr>
-      <tr><td>Formation & documentation</td><td style="text-align:center">1</td><td style="text-align:right">40 000 FCFA</td><td style="text-align:right">40 000 FCFA</td></tr>
-    </tbody>
-    <tfoot>
-      <tr><td colspan="3" style="text-align:right">Sous-total</td><td style="text-align:right">220 000 FCFA</td></tr>
-      <tr><td colspan="3" style="text-align:right">TVA (18%)</td><td style="text-align:right">39 600 FCFA</td></tr>
-      <tr><td colspan="3" style="text-align:right">Total TTC</td><td style="text-align:right">259 600 FCFA</td></tr>
-    </tfoot>
-  </table>
-
-  <div class="note">
-    <strong>Conditions :</strong> Validité du devis : 30 jours. Début des prestations dès réception de l'acompte de 30%.
-  </div>
-
-  <div class="accept">
-    <div style="display:flex;justify-content:space-between;align-items:center;">
-      <div style="font-size:13px;color:var(--muted)">Pour acceptation, date et signature :</div>
-      <div style="text-align:right;">
-        <div style="height:1px;background:#111;width:200px;margin:8px auto 6px;"></div>
-        <div style="font-size:13px;color:var(--muted)">Nom du Client — Signature</div>
-      </div>
-    </div>
-  </div>
-
- 
-</div>
-</DOCUMENT_HTML>
-
-<!-- ========================================================= -->
-<!-- TEMPLATE 4 — ATTESTATION ADMINISTRATIVE (2025) -->
-<!-- ========================================================= -->
-<DOCUMENT_HTML>
-<style>
-  :root{--text:#0b1220;--muted:#6b7280;--font:"Segoe UI", Roboto, Arial;}
-  html,body{margin:0;padding:0;font-family:var(--font);color:var(--text);}
-  .doc{max-width:780px;margin:40px auto;padding:28px;}
-  h1{font-size:20px;margin-bottom:4px;text-align:center;}
-  .meta{font-size:13px;color:var(--muted);text-align:center;margin-bottom:20px;}
-  p{line-height:1.6;margin:12px 0;}
-  .sign{margin-top:36px;text-align:center;}
-  .line{height:1px;background:#111;width:220px;margin:18px auto;}
-  .footer{font-size:12px;color:var(--muted);text-align:center;margin-top:22px;}
-  @media print{.doc{padding:12px}}
-</style>
-
-<div class="doc" role="document" aria-label="Attestation administrative">
-  <h1>ATTESTATION ADMINISTRATIVE</h1>
-  <div class="meta">Lokossa, le 19/11/2025</div>
-
-  <p>
-    Je soussigné(e) <strong>Nom de l'Officiel</strong>, agissant en qualité de <strong>Fonction</strong> au sein de <strong>Nom de l'Organisation</strong>,
-    atteste par la présente que <strong>Nom du Bénéficiaire</strong>, né(e) le 05/01/1990, est bien [préciser la situation : salarié, étudiant, résident…] au sein de notre structure.
-  </p>
-
-  <p>
-    La présente attestation est délivrée pour servir et valoir ce que de droit.
-  </p>
-
-  <div class="sign" aria-label="Signature">
-    <div style="font-weight:700">Nom de l'Officiel — Fonction</div>
-    <div class="line" aria-hidden="true"></div>
-    <div style="font-size:13px;color:var(--muted)">Signature</div>
-  </div>
-
-  
-</div>
-</DOCUMENT_HTML>
-
-<!-- ========================================================= -->
-<!-- TEMPLATE 5 — ATTESTATION D'HÉBERGEMENT (2025) -->
-<!-- ========================================================= -->
-<DOCUMENT_HTML>
-<style>
-  :root{--text:#0b1220;--muted:#6b7280;--font:"Segoe UI", Roboto, Arial;}
-  html,body{margin:0;padding:0;font-family:var(--font);color:var(--text);}
-  .doc{max-width:780px;margin:36px auto;padding:26px;}
-  h1{text-align:center;margin:0;font-size:20px;}
-  .meta{font-size:13px;color:var(--muted);text-align:center;margin-top:6px;}
-  p{line-height:1.6;margin:12px 0;}
-  .block{border:1px solid #eef6ff;padding:12px;border-radius:8px;background:#fbfdff;margin-top:12px;}
-  .sign{margin-top:26px;text-align:center;}
-  .line{height:1px;background:#111;width:220px;margin:18px auto;}
-  .footer{font-size:12px;color:var(--muted);text-align:center;margin-top:18px;}
-  @media print{.doc{padding:12px}}
-</style>
-
-<div class="doc" role="document" aria-label="Attestation d'hébergement">
-  <h1>ATTESTATION D'HÉBERGEMENT</h1>
-  <div class="meta">Lokossa, le 19/11/2025</div>
-
-  <div class="block">
-    <p><strong>Hébergeant :</strong> Nom de l'Hébergeant — 12 Rue Exemple, Lokossa — 📱 +229 01 23 45 67</p>
-    <p><strong>Hébergé :</strong> Nom de la Personne Hébergée — Né(e) le 05/01/1990 — Lien de parenté : [préciser]</p>
-    <p><strong>Adresse d'hébergement :</strong> 12 Rue Exemple, Lokossa</p>
-    <p>
-      Je certifie sur l'honneur que la personne susnommée réside effectivement à l'adresse indiquée depuis le 01/01/2025 et à titre gratuit/contre rémunération (à préciser).
-    </p>
-  </div>
-
-  <div class="sign">
-    <div style="font-weight:700">Nom de l'Hébergeant</div>
-    <div class="line" aria-hidden="true"></div>
-    <div style="font-size:13px;color:var(--muted)">Signature</div>
-  </div>
-
-</div>
-</DOCUMENT_HTML>
-<!-- ========================================================= -->
-<!-- TEMPLATE 6 — RAPPORT TECHNIQUE (2025++) -->
-<!-- ========================================================= -->
-<DOCUMENT_HTML>
-<style>
-  :root{--primary:#0f62fe;--muted:#6b7280;--text:#0b1220;--bg:#fff;--pad:20px;--max-width:940px;--font:"Segoe UI", Roboto, Arial;}
-  html,body{margin:0;padding:0;font-family:var(--font);color:var(--text);background:var(--bg);}
-  .doc{max-width:var(--max-width);margin:24px auto;padding:28px;}
-  header{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;}
-  h1{font-size:24px;margin:0;}
-  .meta{color:var(--muted);font-size:13px;}
-  .abstract{background:#fbfdff;border:1px solid #eef6ff;padding:12px;border-radius:8px;margin-top:14px;}
-  h2{font-size:18px;margin-top:20px;padding-left:10px;border-left:4px solid var(--primary);}
-  h3{font-size:15px;margin-top:12px;}
-  p{line-height:1.6;margin:10px 0;}
-  .section{margin-top:10px;}
-  .annex{font-size:13px;color:var(--muted);border-top:1px dashed #eef6ff;padding-top:12px;margin-top:18px;}
-  .signature{display:flex;justify-content:flex-end;margin-top:28px;}
-  .sig-block{width:260px;text-align:center;}
-  .sig-line{height:1px;background:#111;margin:18px auto;width:80%;}
-  .footer{font-size:12px;color:var(--muted);text-align:center;margin-top:26px;}
-  @media print{.doc{padding:12px}}
-</style>
-
-<div class="doc" role="document" aria-label="Rapport technique">
-  <header>
-    <div>
-      <h1>RAPPORT TECHNIQUE</h1>
-      <div class="meta">Réf : RT-2025-001 • Émis le 19/11/2025</div>
-    </div>
-    <div class="meta">Lokossa, Bénin</div>
-  </header>
-
-  <div class="abstract" aria-label="Résumé exécutif">
-    <strong>Résumé exécutif :</strong>
-    <p>
-      Ce rapport présente les résultats de l'audit technique mené sur le système XYZ. Il comprend la méthodologie, les observations,
-      les résultats mesurés et les recommandations opérationnelles et prioritaires pour la remise en conformité et l'optimisation.
-    </p>
-  </div>
-
-  <section class="section" aria-labelledby="ctx">
-    <h2 id="ctx">1. Contexte</h2>
-    <p>
-      Présentation du contexte de la mission, objectifs, périmètre des analyses et contraintes. Description des installations concernées,
-      dates d'intervention et acteurs impliqués.
-    </p>
-  </section>
-
-  <section class="section" aria-labelledby="meth">
-    <h2 id="meth">2. Méthodologie</h2>
-    <h3>2.1 Moyens et outils</h3>
-    <p>Énumération des outils utilisés (mesure, test, inspection) et protocoles appliqués.</p>
-    <h3>2.2 Processus</h3>
-    <p>Description pas à pas des opérations réalisées, échantillonnage, fréquence des mesures.</p>
-  </section>
-
-  <section class="section" aria-labelledby="obs">
-    <h2 id="obs">3. Observations et données</h2>
-    <p>
-      Présentation structurée des observations : points conformes, écarts détectés, relevés chiffrés. Inclure tableaux de mesures, si pertinent.
-    </p>
-  </section>
-
-  <section class="section" aria-labelledby="res">
-    <h2 id="res">4. Résultats</h2>
-    <p>
-      Interprétation des données, analyse des causes probables des écarts et impacts opérationnels associés.
-    </p>
-  </section>
-
-  <section class="section" aria-labelledby="rec">
-    <h2 id="rec">5. Recommandations</h2>
-    <p>
-      Liste priorisée des actions recommandées, estimation sommaire des coûts, planning préconisé et responsable proposé pour chaque action.
-    </p>
-  </section>
-
-  <div class="annex" aria-label="Annexes">Annexes : protocoles de test, mesures brutes, schémas techniques (si fournis en annexe séparée).</div>
-
-  <div class="signature">
-    <div class="sig-block">
-      <div style="font-weight:700">Rédigé par — Ingénieur Responsable</div>
-      <div class="sig-line" aria-hidden="true"></div>
-      <div class="meta">Nom & Fonction</div>
-    </div>
-  </div>
-
-
-</div>
-</DOCUMENT_HTML>
-
-<!-- ========================================================= -->
-<!-- TEMPLATE 7 — RAPPORT PROFESSIONNEL LONG (2025) -->
-<!-- ========================================================= -->
-<DOCUMENT_HTML>
-<style>
-  :root{--primary:#0f62fe;--muted:#6b7280;--text:#0b1220;--bg:#fff;--pad:22px;--max-width:960px;--font:"Segoe UI", Roboto, Arial;}
-  html,body{margin:0;padding:0;font-family:var(--font);color:var(--text);background:var(--bg);}
-  .doc{max-width:var(--max-width);margin:24px auto;padding:28px;}
-  header{display:flex;justify-content:space-between;align-items:flex-start;}
-  h1{font-size:26px;margin:0;}
-  .meta{color:var(--muted);font-size:13px;}
-  h2{font-size:20px;margin-top:22px;padding-left:10px;border-left:4px solid var(--primary);}
-  h3{font-size:16px;margin-top:12px;}
-  p{line-height:1.7;margin:12px 0;}
-  .toc{background:#fbfdff;border:1px solid #eef6ff;padding:12px;border-radius:8px;margin-top:12px;font-size:14px;}
-  .section{margin-top:14px;}
-  .sig-row{display:flex;justify-content:space-between;margin-top:28px;}
-  .sig{width:46%;text-align:center;}
-  .sig-line{height:1px;background:#111;margin:18px auto;width:80%;}
-  .footer{font-size:12px;color:var(--muted);text-align:center;margin-top:30px;}
-  @media print{.doc{padding:12px}}
-</style>
-
-<div class="doc" role="document" aria-label="Rapport professionnel long">
-  <header>
-    <div>
-      <h1>RAPPORT PROFESSIONNEL</h1>
-      <div class="meta">Réf : RPL-2025-001 • Auteur : Nom Prénom</div>
-    </div>
-    <div class="meta">19/11/2025 • Lokossa</div>
-  </header>
-
-  <div class="toc" aria-label="Résumé">
-    <strong>Résumé :</strong>
-    <p>Présentation synthétique des objectifs, du périmètre, des méthodes et des conclusions principales.</p>
-  </div>
-
-  <section class="section" aria-labelledby="intro">
-    <h2 id="intro">1. Introduction</h2>
-    <p>
-      Mise en contexte, objectifs du rapport, enjeux et structure adoptée pour l'étude.
-    </p>
-  </section>
-
-  <section class="section" aria-labelledby="pres">
-    <h2 id="pres">2. Présentation de l'entreprise</h2>
-    <p>
-      Historique, mission, organisation, activités principales et ressources mobilisées pour le projet.
-    </p>
-  </section>
-
-  <section class="section" aria-labelledby="obj">
-    <h2 id="obj">3. Objectifs du rapport</h2>
-    <p>
-      Définition des objectifs opérationnels, critères de succès et contraintes identifiées.
-    </p>
-  </section>
-
-  <section class="section" aria-labelledby="dev">
-    <h2 id="dev">4. Développement</h2>
-    <h3>4.1 Méthodologie</h3>
-    <p>Description détaillée des méthodes et outils employés.</p>
-    <h3>4.2 Analyse détaillée</h3>
-    <p>Analyses, résultats, tableaux et graphiques (insérer annexes si nécessaire).</p>
-    <h3>4.3 Discussion</h3>
-    <p>Interprétation des résultats et implications.</p>
-  </section>
-
-  <section class="section" aria-labelledby="resu">
-    <h2 id="resu">5. Résultats</h2>
-    <p>
-      Résumé des résultats clés, indicateurs chiffrés et respect des objectifs.
-    </p>
-  </section>
-
-  <section class="section" aria-labelledby="diff">
-    <h2 id="diff">6. Difficultés rencontrées</h2>
-    <p>Exposé des obstacles, limites méthodologiques et actions correctives envisagées.</p>
-  </section>
-
-  <section class="section" aria-labelledby="conc">
-    <h2 id="conc">7. Conclusion et recommandations</h2>
-    <p>Synthèse finale et recommandations opérationnelles priorisées.</p>
-  </section>
-
-  <div class="sig-row" aria-label="Signatures">
-    <div class="sig">
-      <div style="font-weight:700">Rédacteur</div>
-      <div class="sig-line" aria-hidden="true"></div>
-      <div class="meta">Nom & Fonction</div>
-    </div>
-    <div class="sig">
-      <div style="font-weight:700">Validé par</div>
-      <div class="sig-line" aria-hidden="true"></div>
-      <div class="meta">Nom & Fonction</div>
-    </div>
-  </div>
-
- 
-</div>
-</DOCUMENT_HTML>
-
-<!-- ========================================================= -->
-<!-- TEMPLATE 8 — LETTRE PROFESSIONNELLE (2025) -->
-<!-- ========================================================= -->
-<DOCUMENT_HTML>
-<style>
-  :root{--text:#0b1220;--muted:#6b7280;--font:"Segoe UI", Roboto, Arial;--max-width:780px;}
-  html,body{margin:0;padding:0;font-family:var(--font);color:var(--text);}
-  .doc{max-width:var(--max-width);margin:36px auto;padding:26px;}
-  .header{display:flex;justify-content:space-between;align-items:flex-start;}
-  .from{font-size:14px;}
-  .to{font-size:14px;text-align:right;}
-  h1{font-size:18px;text-align:center;margin:6px 0 12px 0;}
-  .meta{color:var(--muted);font-size:13px;text-align:center;margin-bottom:14px;}
-  p{line-height:1.6;margin:10px 0;}
-  .closing{margin-top:18px;}
-  .signature{margin-top:28px;}
-  .sig-line{height:1px;background:#111;margin:14px 0;width:220px;}
-  .footer{font-size:12px;color:var(--muted);text-align:center;margin-top:20px;}
-  @media print{.doc{padding:12px}}
-</style>
-
-<div class="doc" role="document" aria-label="Lettre professionnelle">
-  <div class="header">
-    <div class="from">
-      <strong>Expéditeur :</strong><br>
-      Nom de l'Entreprise<br>
-      12 Rue Exemple<br>
-      📧 contact@entreprise.com
-    </div>
-    <div class="to">
-      <strong>Destinataire :</strong><br>
-      Monsieur/Madame Destinataire<br>
-      Fonction — Entreprise<br>
-      Adresse destinataire
-    </div>
-  </div>
-
-  <h1>Objet : Demande d'information relative à [préciser]</h1>
-  <div class="meta">Lokossa, le 19/11/2025</div>
-
-  <p>Madame, Monsieur,</p>
-
-  <p>
-    Par la présente, nous sollicitons votre attention concernant [exposer brièvement la demande]. Cette démarche s’inscrit dans le cadre de
-    [préciser le contexte professionnel]. Nous vous prions de bien vouloir nous fournir les informations suivantes : [liste brève].
-  </p>
-
-  <p>
-    Nous restons à votre disposition pour toute complément d'information et vous invitons à nous répondre avant le [date limite, si applicable].
-  </p>
-
-  <div class="closing">
-    <p>Veuillez agréer, Madame, Monsieur, l'expression de nos salutations distinguées.</p>
-  </div>
-
-  <div class="signature">
-    <div style="font-weight:700">Nom et Prénom</div>
-    <div class="sig-line" aria-hidden="true"></div>
-    <div class="meta">Fonction — Nom de l'Entreprise</div>
-  </div>
-
-</DOCUMENT_HTML>
-
-<!-- ========================================================= -->
-<!-- TEMPLATE 9 — LETTRE SIMPLE (PERSONNELLE) -->
-<!-- ========================================================= -->
-<DOCUMENT_HTML>
-<style>
-  :root{--text:#0b1220;--muted:#6b7280;--font:"Segoe UI", Roboto, Arial;--max-width:720px;}
-  html,body{margin:0;padding:0;font-family:var(--font);color:var(--text);}
-  .doc{max-width:var(--max-width);margin:36px auto;padding:24px;}
-  .meta{font-size:13px;color:var(--muted);text-align:right;margin-bottom:12px;}
-  h1{font-size:18px;margin:0 0 8px 0;}
-  p{line-height:1.6;margin:10px 0;}
-  .sig{margin-top:18px;}
-  .sig-line{height:1px;background:#111;width:180px;margin:12px 0;}
-  .footer{font-size:12px;color:var(--muted);text-align:center;margin-top:18px;}
-  @media print{.doc{padding:12px}}
-</style>
-
-<div class="doc" role="document" aria-label="Lettre simple">
-  <div class="meta">Lokossa, le 19/11/2025</div>
-  <p>Bonjour [Prénom],</p>
-
-  <p>
-    Je t’écris pour te tenir informé(e) de [sujet]. En quelques mots : [expliquer l’objet de la lettre dans un ou deux paragraphes clairs et polis].
-  </p>
-
-  <p>
-    En espérant une réponse rapide, je te remercie par avance pour ton attention.
-  </p>
-
-  <div class="sig">
-    <div style="font-weight:700">Nom Prénom</div>
-    <div class="sig-line" aria-hidden="true"></div>
-    <div style="font-size:13px;color:var(--muted)">Signature personnelle</div>
-  </div>
-
- 
-</div>
-</DOCUMENT_HTML>
-
-<!-- ========================================================= -->
-<!-- TEMPLATE 10 — CV PREMIUM 2025 -->
-<!-- ========================================================= -->
-<DOCUMENT_HTML>
-<style>
-  :root{--primary:#0f62fe;--muted:#6b7280;--text:#0b1220;--bg:#fff;--max-width:920px;--font:"Segoe UI", Roboto, Arial;}
-  html,body{margin:0;padding:0;font-family:var(--font);color:var(--text);background:var(--bg);}
-  .doc{max-width:var(--max-width);margin:20px auto;padding:24px;}
-  .hero{display:flex;gap:18px;align-items:center;}
-  .avatar{width:96px;height:96px;border-radius:12px;background:#eef6ff;display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--primary);}
-  .headline{flex:1;}
-  h1{margin:0;font-size:22px;}
-  .sub{color:var(--muted);font-size:13px;margin-top:6px;}
-  .row{display:flex;gap:20px;margin-top:18px;}
-  .col-left{flex:0 0 32%;min-width:220px;}
-  .col-right{flex:1;}
-  .card{border:1px solid #eef6ff;padding:12px;border-radius:10px;background:#fbfdff;}
-  h2{font-size:16px;margin:0 0 8px 0;color:var(--text);padding-left:8px;border-left:4px solid var(--primary);}
-  ul{margin:8px 0;padding-left:16px;}
-  li{margin:6px 0;}
-  .meta{font-size:13px;color:var(--muted);}
-  .footer{font-size:12px;color:var(--muted);text-align:center;margin-top:18px;}
-  @media print{.doc{padding:12px}}
-</style>
-
-<div class="doc" role="document" aria-label="CV premium">
-  <div class="hero">
-    <div class="avatar">ED</div>
-    <div class="headline">
-      <h1>PRÉNOM NOM</h1>
-      <div class="sub">Titre professionnel — Spécialité • Localité • Disponibilité</div>
-    </div>
-    <div style="text-align:right">
-      <div class="meta">📧 email@exemple.com</div>
-      <div class="meta">📱 +229 01 23 45 67</div>
-    </div>
-  </div>
-
-  <div class="row">
-    <aside class="col-left">
-      <div class="card">
-        <h2>Compétences</h2>
-        <ul>
-          <li>Compétence 1 — Niveau</li>
-          <li>Compétence 2 — Niveau</li>
-          <li>Compétence 3 — Niveau</li>
-        </ul>
-      </div>
-
-      <div style="height:12px;"></div>
-
-      <div class="card">
-        <h2>Formation</h2>
-        <p><strong>Diplôme</strong><br><span class="meta">Établissement • Année</span></p>
-      </div>
-    </aside>
-
-    <main class="col-right">
-      <div class="card">
-        <h2>Profil</h2>
-        <p>Résumé professionnel en 3 à 5 lignes présentant l'expertise, les points forts et l'objectif de carrière.</p>
-
-        <h2 style="margin-top:14px">Expérience</h2>
-        <div style="margin-top:8px;">
-          <p><strong>Poste — Entreprise</strong> <span class="meta">• 2022 - 2025</span></p>
-          <ul>
-            <li>Responsabilité ou réalisation principale</li>
-            <li>Impact chiffré ou résultat concret</li>
-          </ul>
-        </div>
-
-        <h2 style="margin-top:14px">Langues</h2>
-        <p class="meta">Français (Natif) • Anglais (Intermédiaire)</p>
-
-        <h2 style="margin-top:14px">Centres d'intérêt</h2>
-        <p class="meta">Football • Musique (Batterie) • Lecture</p>
-      </div>
-    </main>
-  </div>
-
-</div>
-</DOCUMENT_HTML>
-
-<!-- ========================================================= -->
-<!-- TEMPLATE 11 — CERTIFICAT PROFESSIONNEL (2025++) -->
-<!-- ========================================================= -->
-<DOCUMENT_HTML>
-<style>
-  :root{--primary:#0f62fe;--muted:#6b7280;--text:#0b1220;--bg:#ffffff;--font:"Segoe UI",Roboto,Arial;}
-  html,body{margin:0;padding:0;font-family:var(--font);background:var(--bg);color:var(--text);}
-  .doc{max-width:820px;margin:40px auto;padding:32px;border:1px solid #e5e7eb;border-radius:12px;}
-  .header{text-align:center;margin-bottom:22px;}
-  h1{margin:0;font-size:26px;color:var(--primary);}
-  .subtitle{color:var(--muted);font-size:14px;}
-  .section{margin-top:22px;font-size:16px;line-height:1.6;}
-  .bold{font-weight:700;}
-  .signature{margin-top:38px;display:flex;justify-content:space-between;}
-  .sig{text-align:center;width:45%;}
-  .sig-line{height:1px;background:#111;margin:16px auto;width:70%;}
-  .footer{margin-top:24px;text-align:center;font-size:12px;color:var(--muted);}
-</style>
-
-<div class="doc" role="document" aria-label="Certificat professionnel">
-  <div class="header">
-    <h1>CERTIFICAT</h1>
-    <div class="subtitle">N° CERT-2025-001</div>
-  </div>
-
-  <div class="section">
-    Nous, soussignés, certifions que :
-    <br><br>
-    <span class="bold">Nom & Prénom :</span> ___________________________<br>
-    <span class="bold">Identifiant / Matricule :</span> _______________________<br>
-    <span class="bold">Fonction :</span> _______________________________________<br><br>
-
-    A effectivement participé / travaillé / suivi (cocher selon le cas) :
-    <br><br>
-    <span class="bold">→</span> À la formation / mission / activité intitulée : <br>
-    _________________________________________________
-    <br><br>
-
-    Ce certificat est délivré pour servir et valoir ce que de droit.
-  </div>
-
-  <div class="signature">
-    <div class="sig">
-      <div class="bold">Émis par</div>
-      <div class="sig-line"></div>
-      <div class="subtitle">Nom & Fonction</div>
-    </div>
-    <div class="sig">
-      <div class="bold">Cachet & Signature</div>
-      <div class="sig-line"></div>
-      <div class="subtitle">Structure émettrice</div>
-    </div>
-  </div>
-
-
-</div>
-</DOCUMENT_HTML>
-
-<!-- ========================================================= -->
-<!-- TEMPLATE 12 — PROCÈS-VERBAL (PV) 2025 -->
-<!-- ========================================================= -->
-<DOCUMENT_HTML>
-<style>
-  :root{--primary:#0f62fe;--muted:#6b7280;--text:#0b1220;--font:"Segoe UI",Roboto,Arial;}
-  html,body{margin:0;padding:0;font-family:var(--font);color:var(--text);}
-  .doc{max-width:920px;margin:32px auto;padding:28px;}
-  h1{font-size:26px;margin:0;color:var(--primary);}
-  .meta{color:var(--muted);font-size:13px;margin-top:4px;}
-  h2{margin-top:24px;font-size:20px;padding-left:10px;border-left:4px solid var(--primary);}
-  p,li{line-height:1.6;font-size:15px;}
-  ul{padding-left:18px;margin-top:8px;}
-  .signature{margin-top:32px;display:flex;justify-content:space-between;}
-  .sig{text-align:center;width:45%;}
-  .sig-line{height:1px;background:#111;margin:16px auto;width:70%;}
-  .footer{text-align:center;color:var(--muted);font-size:12px;margin-top:24px;}
-</style>
-
-<div class="doc" role="document" aria-label="Procès-verbal">
-  <h1>PROCÈS-VERBAL</h1>
-  <div class="meta">Réf : PV-2025-001 • Lokossa, le 19/11/2025</div>
-
-  <h2>1. Objet de la séance</h2>
-  <p>
-    Le présent procès-verbal rend compte de la réunion / intervention / constatation ayant eu lieu le :
-    <br><br>
-    <strong>Date :</strong> ____________________<br>
-    <strong>Lieu :</strong> ____________________<br>
-  </p>
-
-  <h2>2. Participants</h2>
-  <ul>
-    <li>Nom 1 — Fonction</li>
-    <li>Nom 2 — Fonction</li>
-    <li>Nom 3 — Fonction</li>
-  </ul>
-
-  <h2>3. Déroulement</h2>
-  <p>
-    Résumé détaillé et structuré des faits, points abordés, discussions, observations et incidents éventuels.
-  </p>
-
-  <h2>4. Décisions prises</h2>
-  <ul>
-    <li>Décision 1</li>
-    <li>Décision 2</li>
-    <li>Décision 3</li>
-  </ul>
-
-  <h2>5. Clôture</h2>
-  <p>
-    La séance est levée à _________. Le présent PV est rédigé pour servir de référence officielle.
-  </p>
-
-  <div class="signature">
-    <div class="sig">
-      <div style="font-weight:700">Président de séance</div>
-      <div class="sig-line"></div>
-      <div class="meta">Nom & Fonction</div>
-    </div>
-    <div class="sig">
-      <div style="font-weight:700">Secrétaire</div>
-      <div class="sig-line"></div>
-      <div class="meta">Nom & Fonction</div>
-    </div>
-  </div>
-</div>
-</DOCUMENT_HTML>
-
-<!-- ========================================================= -->
-<!-- TEMPLATE 13 — NOTE DE SERVICE (2025++) -->
-<!-- ========================================================= -->
-<DOCUMENT_HTML>
-<style>
-  :root{--primary:#0f62fe;--muted:#6b7280;--text:#0b1220;--font:"Segoe UI",Roboto,Arial;}
-  html,body{margin:0;padding:0;font-family:var(--font);}
-  .doc{max-width:760px;margin:32px auto;padding:26px;border:1px solid #e5e7eb;border-radius:12px;}
-  h1{text-align:center;font-size:24px;margin:0;color:var(--primary);}
-  .meta{text-align:center;color:var(--muted);font-size:13px;margin-top:4px;margin-bottom:10px;}
-  h2{font-size:18px;margin-top:18px;padding-left:10px;border-left:4px solid var(--primary);}
-  p{line-height:1.6;margin:10px 0;}
-  .sig{text-align:right;margin-top:26px;}
-  .sig-line{height:1px;background:#111;width:240px;margin:14px 0 4px auto;}
-  .footer{text-align:center;color:var(--muted);font-size:12px;margin-top:22px;}
-</style>
-
-<div class="doc" role="document" aria-label="Note de service">
-  <h1>NOTE DE SERVICE</h1>
-  <div class="meta">Réf : NS-2025-001 • Date : 19/11/2025</div>
-
-  <h2>Objet</h2>
-  <p>
-    Indiquer ici l’objet de la note (ex : procédure interne, rappel, communication importante, changement organisationnel…).
-  </p>
-
-  <h2>Message</h2>
-  <p>
-    Texte complet de la note : explications, consignes, dates importantes, personnes concernées, ressources à consulter, etc.
-  </p>
-
-  <h2>Application</h2>
-  <p>
-    Conditions d’application, durée, services concernés, exceptions possibles.
-  </p>
-
-  <div class="sig">
-    <div style="font-weight:700">Directeur / Responsable</div>
-    <div class="sig-line"></div>
-    <div class="meta">Nom & Fonction</div>
-  </div>
-
-</div>
-</DOCUMENT_HTML>
-
-<!-- ========================================================= -->
-<!-- TEMPLATE 14 — PROTOCOLE / ACCORD (2025++) -->
-<!-- ========================================================= -->
-<DOCUMENT_HTML>
-<style>
-  :root{--primary:#0f62fe;--muted:#6b7280;--text:#0b1220;--font:"Segoe UI",Roboto,Arial;}
-  html,body{margin:0;padding:0;font-family:var(--font);}
-  .doc{max-width:880px;margin:32px auto;padding:28px;}
-  h1{font-size:26px;margin:0;color:var(--primary);}
-  .meta{color:var(--muted);font-size:13px;margin-top:4px;}
-  h2{margin-top:20px;font-size:18px;padding-left:10px;border-left:4px solid var(--primary);}
-  p{line-height:1.7;margin:12px 0;}
-  .parties{margin-top:18px;padding:14px;border:1px solid #eef6ff;background:#fbfdff;border-radius:10px;}
-  .signature{margin-top:32px;display:flex;justify-content:space-between;}
-  .sig{width:45%;text-align:center;}
-  .sig-line{height:1px;background:#111;margin:16px auto;width:70%;}
-  .footer{text-align:center;color:var(--muted);font-size:12px;margin-top:22px;}
-</style>
-
-<div class="doc" role="document" aria-label="Protocole accord">
-  <h1>PROTOCOLE D'ACCORD</h1>
-  <div class="meta">Réf : PA-2025-001 • Date : 19/11/2025</div>
-
-  <div class="parties">
-    <p><strong>Entre :</strong><br> Partie A — Nom, Fonction, Adresse</p>
-    <p><strong>Et :</strong><br> Partie B — Nom, Fonction, Adresse</p>
-  </div>
-
-  <h2>1. Objet</h2>
-  <p>Décrire ici l’objet de l’accord, le but du protocole et les enjeux.</p>
-
-  <h2>2. Engagements</h2>
-  <p>Liste des obligations, responsabilités, engagements réciproques.</p>
-
-  <h2>3. Durée</h2>
-  <p>Indiquer la durée d’application du présent protocole.</p>
-
-  <h2>4. Modalités</h2>
-  <p>Instructions, règles de mise en œuvre, planning, validation, sanctions éventuelles.</p>
-
-  <div class="signature">
-    <div class="sig">
-      <div style="font-weight:700">Partie A</div>
-      <div class="sig-line"></div>
-      <div class="meta">Nom & Signature</div>
-    </div>
-    <div class="sig">
-      <div style="font-weight:700">Partie B</div>
-      <div class="sig-line"></div>
-      <div class="meta">Nom & Signature</div>
-    </div>
-  </div>
-
-</div>
-</DOCUMENT_HTML>
-
-<!-- ========================================================= -->
-<!-- TEMPLATE 15 — DOCUMENT LIBRE PREMIUM (Fallback INTELLIA) -->
-<!-- ========================================================= -->
-<DOCUMENT_HTML>
-<style>
-  :root{--primary:#0f62fe;--muted:#6b7280;--text:#0b1220;--font:"Segoe UI",Roboto,Arial;}
-  html,body{margin:0;padding:0;font-family:var(--font);color:var(--text);}
-  .doc{max-width:900px;margin:32px auto;padding:28px;}
-  h1{font-size:26px;margin:0;color:var(--primary);}
-  .meta{color:var(--muted);font-size:13px;margin-top:4px;}
-  h2{margin-top:20px;font-size:20px;padding-left:10px;border-left:4px solid var(--primary);}
-  p{line-height:1.7;margin:12px 0;font-size:15px;}
-  .footer{text-align:center;font-size:12px;color:var(--muted);margin-top:22px;}
-</style>
-
-<div class="doc" role="document" aria-label="Document libre premium">
-  <h1>DOCUMENT OFFICIEL</h1>
-  <div class="meta">Date : 19/11/2025 • Référence : DOC-LIB-2025-001</div>
-
-  <h2>Objet</h2>
-  <p>Objet du document (dynamique selon demande utilisateur).</p>
-
-  <h2>Contenu</h2>
-  <p>
-    Texte libre, complet, formel, structuré selon les besoins exprimés. L’IA peut générer : compte-rendu, 
-    note explicative, attestation spéciale, résumé, analyse, directive, ou tout autre document administratif.
-  </p>
-
-  <h2>Conclusion</h2>
-  <p>Synthèse générale et recommandations finales, si applicable.</p>
-
-</div>
-</DOCUMENT_HTML>
-**MÉTHODE (CRITIQUE) :**
-
-Quand l'utilisateur demande un document, tu dois :
-
-1. ✅ **Générer IMMÉDIATEMENT du HTML formaté** dans le champ reply
-2. ✅ **Utiliser le tag spécial** <DOCUMENT_HTML>...</DOCUMENT_HTML>
-3. ❌ **NE PAS utiliser de JSON intermédiaire**
-4. ❌ **NE JAMAIS répondre "Commande reçue"**
-5. ❌ **NE JAMAIS utiliser le melange de couleur non lisible **
-6. ✅ **  TOUJOURS VARIER LES COULEURS ET LES EMPLACEMENTS SELON LES MISES EN PAGE A CHAQUE CREATION DE NOUVEAU DOCUMENT **
-7. ❌ **NE JAMAIS AFFICHER TON NOM ET SIGNE SUR LES DOCUMENTS**
-**FORMAT DE RÉPONSE POUR DOCUMENTS :**
-
-Le HTML doit être dans le champ reply avec le wrapper <DOCUMENT_HTML>
-
-**RÈGLES STRICTES POUR LES DOCUMENTS :**
-
-1. **Toujours commencer par** <DOCUMENT_HTML> et **finir par** </DOCUMENT_HTML>
-2. **Utiliser des classes CSS** : .doc-cv, .doc-lettre, .doc-rapport, .doc-facture, .doc-contrat
-3. **Structure HTML simple** : <div>, <h1>, <h2>, <h3>, <p>, <span>, <table>
-4. **Emojis encouragés** : 📧, 📱, 📍, 🎯, 💼, 🎓, 🛠️, 🌍, 📅, ✍️
-5. **Échapper correctement les guillemets** : Utilise \\" dans le JSON
-6. **Si document trop long** : Utilise needs_continuation: true
+Tu as accès à la température **RÉELLE** dans les métadonnées. Donne la valeur directement sans dire "je cherche".
+
+### 🚀 RÈGLES DE CONTINUATION
+1. **Si tu manques de tokens** : Ajoute le champ \`needs_continuation: true\`.
+2. **Le client affichera un bouton "Continuer"**.
+3. **Quand tu continues** : Reprends exactement là où tu t'es arrêté (ne répète pas le début).
 
 ## 🧠 MÉMOIRE DE CONVERSATION
 
@@ -2101,7 +636,6 @@ L'utilisateur peut demander des planifications uniques OU récurrentes. Tu dois 
       "device": "lampe_salon",
       "time": "18:30",
       "actionType": "allumer",
-      "power": 100,
       "frequency": "weekly",
       "daysOfWeek": [1, 3]
     }
@@ -2248,20 +782,10 @@ Si l'utilisateur demande de supprimer un appareil (ex: "Supprime la lampe jardin
 - "Retire la/le [appareil]"
 - "Efface la/le [appareil]"
 - "Désinstalle la/le [appareil]"
-
-### ❌ INTERDICTIONS :
-1. ❌ JAMAIS envoyer de balises HTML dans "reply" **SAUF pour les documents** (avec <DOCUMENT_HTML>).
-2. ❌ Le client (index.html) s'occupe de transformer le Markdown en HTML pour les réponses normales.
-3. ❌ Ne JAMAIS rechercher sur le web pour la température de Lokossa (elle est fournie).
-4. ❌ Pour les documents, utilise <DOCUMENT_HTML>... dans reply, pas de JSON structuré.
-5. ❌ NE JAMAIS répondre "Commande reçue" sans contexte - TOUJOURS générer du contenu utile.
-6. ❌ TOUJOURS vérifier [États] et [Planifications] avant de répondre pour être intelligent.
-7. ❌ Si tu manques de tokens, AJOUTE needs_continuation: true au lieu de tronquer brutalement.
-
 ## FORMAT JSON DE RÉPONSE
 
 {
-  "reply": "Contenu en Markdown ou HTML avec DOCUMENT_HTML",
+  "reply": "Ton réponse en Markdown ici...",
   "needs_continuation": false,
   "continuation_context": null,
   "execute": ["device_id|ACTION|valeur"],
@@ -2281,17 +805,17 @@ Si l'utilisateur demande de supprimer un appareil (ex: "Supprime la lampe jardin
 6. **Fichiers:** Base ta réponse sur le contenu fourni.
 7. **PRÉSENTATION:** Utilise la structure Markdown (titres, listes, gras) SAUF pour documents (HTML avec <DOCUMENT_HTML>).
 8. **Température Lokossa:** Toujours disponible dans les métadonnées, ne cherche JAMAIS sur le web.
-9. **Documents:** Retourne du HTML formaté avec <DOCUMENT_HTML>... directement dans reply.
-10. **Suppression:** Utilise device_commands avec action: "delete" pour supprimer des appareils.
-11. **Suppression planning:** Utilise planning_commands avec les bonnes actions.
-12. **Intelligence:** Détecte les incohérences (ex: planifier l'allumage d'une lampe déjà allumée).
-13. **CONTINUATION:** Si tu atteins la limite de tokens, ajoute needs_continuation: true et le client affichera un bouton "Continuer".
+9. **Suppression:** Utilise device_commands avec action: "delete" pour supprimer des appareils.
+10. **Suppression planning:** Utilise planning_commands avec les bonnes actions.
+11. **Intelligence:** Détecte les incohérences (ex: planifier l'allumage d'une lampe déjà allumée).
+12. **CONTINUATION:** Si tu atteins la limite de tokens, ajoute needs_continuation: true et le client affichera un bouton "Continuer".
 
-RÉPONDS EN JSON VALIDE AVEC DU MARKDOWN DANS "reply" (sauf pour documents = HTML avec <DOCUMENT_HTML>).
+RÉPONDS EN JSON VALIDE AVEC DU MARKDOWN DANS "reply".
 NE JAMAIS répondre "Commande reçue" sans contexte - TOUJOURS fournir une réponse utile et détaillée.
 TOUJOURS vérifier les états et planifications avant de répondre pour être intelligent et contextuel.
 SI TU MANQUES DE TOKENS : needs_continuation: true + marqueur dans le contenu.
 `;
+
 // ========================================
 // ✅ GESTION DES COMMANDES D'APPAREILS
 // ========================================
@@ -2383,7 +907,7 @@ async function handleDeviceCommands(commands, userId) {
 }
 
 // ========================================
-// ✅ GESTION INTELLIGENTE DES PLANIFICATIONS (V12 - CORRIGÉE)
+// ✅ GESTION INTELLIGENTE DES PLANIFICATIONS
 // ========================================
 async function handlePlanningCommands(commands) {
   if (!commands || commands.length === 0) return;
@@ -2437,7 +961,6 @@ async function handlePlanningCommands(commands) {
     if (cmd.action === 'add') {
       console.log(`📅 Ajout Planification: ${cmd.device} à ${cmd.time} (${cmd.frequency || 'once'})`);
       
-      // ✅ CORRECTION : On détermine l'état ON/OFF ici
       let finalState = 'OFF';
       if (cmd.actionType && cmd.actionType.toLowerCase() === 'allumer') finalState = 'ON';
       if (cmd.action === 'ON') finalState = 'ON';
@@ -2512,18 +1035,13 @@ function jsonErrorDefaults() {
   };
 }
 
-// ========================================
-// ✅ FONCTION chatWithGemini - VERSION CORRIGÉE
-// 🔧 FIX: System Prompt allégé pour éviter les timeouts
-// ========================================
 
 async function chatWithGemini(userMessage, devices, userId, sessionId, attachments = [], preferences = {}, continuationMode = false, maxRetries = API_KEYS.length) {
     
   let realDeviceStates = {};
   let currentPlanning = [];
-  let webResults = []; // ✅ FIX: Variable manquante
-  let lastError = null; // ✅ FIX: Variable manquante
-  
+  let webResults = [];
+
   // ========================================
   // 🔥 RÉCUPÉRATION DES ÉTATS FIREBASE
   // ========================================
@@ -2550,6 +1068,13 @@ async function chatWithGemini(userMessage, devices, userId, sessionId, attachmen
       currentPlanning = [];
   }
 
+  // ========================================
+  // 🌍 RECHERCHE WEB (SI NÉCESSAIRE)
+  // ========================================
+  if (!continuationMode && message && needsWebSearch(message)) {
+      webResults = await performWebSearch(message);
+  }
+
   if (API_KEYS.length === 0) {
     return { success: false, error: "Aucune clé Gemini disponible" };
   }
@@ -2558,30 +1083,18 @@ async function chatWithGemini(userMessage, devices, userId, sessionId, attachmen
   const contextAnalysis = analyzeContext(userMessage, realDeviceStates, beninTime);
   
   // ========================================
-  // 🔍 RECHERCHE WEB SI NÉCESSAIRE
-  // ========================================
-  if (needsWebSearch(userMessage) && !continuationMode) {
-    webResults = await performWebSearch(userMessage);
-  }
-
-  // ========================================
   // 🔄 TENTATIVES AVEC ROTATION DES CLÉS
   // ========================================
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     try {
       const keyObj = getNextApiKey();
       const genAI = new GoogleGenerativeAI(keyObj.key);
-      
-      // ✅ FIX: System Instruction pour optimiser le contexte
-      const model = genAI.getGenerativeModel({ 
-        model: "gemini-2.5-flash",
-        systemInstruction: getOptimizedSystemPrompt() // ✅ Nouveau prompt allégé
-      });
+      const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
       // ========================================
       // 📚 RÉCUPÉRATION DE L'HISTORIQUE ÉTENDU
       // ========================================
-      const historyFromFirebase = await getHistoryFromFirebase(userId, sessionId, 30);
+      const historyFromFirebase = await getHistoryFromFirebase(userId, sessionId, 30); // 30 jours
 
       // ========================================
       // 🧠 EXTRACTION DU CONTEXTE DES FICHIERS PRÉCÉDENTS
@@ -2590,19 +1103,17 @@ async function chatWithGemini(userMessage, devices, userId, sessionId, attachmen
       const filesInHistory = historyFromFirebase.filter(h => h.attachments && h.attachments.length > 0);
       
       if (filesInHistory.length > 0) {
-        previousFilesContext = "\n[FICHIERS PRÉCÉDEMMENT ENVOYÉS]\n";
+        previousFilesContext = "\n[FICHIERS PRÉCÉDEMMENT ENVOYÉS DANS CETTE SESSION]\n";
         
-        for (const msgWithFiles of filesInHistory.slice(-3)) {
+        for (const msgWithFiles of filesInHistory.slice(-3)) { // 3 derniers messages avec fichiers
           for (const att of msgWithFiles.attachments) {
-            previousFilesContext += `- "${att.name}" (${att.type})`;
+            previousFilesContext += `- Fichier: "${att.name}" (Type: ${att.type})\n`;
             if (att.type === 'file' && att.content) {
-              previousFilesContext += ` - ${att.content.length} chars disponibles`;
+              previousFilesContext += `  Contenu disponible: Oui (${att.content.length} caractères)\n`;
             }
-            previousFilesContext += '\n';
           }
         }
-        
-        previousFilesContext += `[Tu peux référencer ces fichiers même s'ils ne sont pas réenvoyés]\n\n`;
+        previousFilesContext += `[INSTRUCTION: Ces fichiers ont été analysés précédemment.]\n\n`;
       }
 
       // ========================================
@@ -2612,17 +1123,13 @@ async function chatWithGemini(userMessage, devices, userId, sessionId, attachmen
       
       for (const h of historyFromFirebase) {
         const userParts = [{ text: h.user }];
-        
         if (h.attachments && h.attachments.length > 0) {
           for (const att of h.attachments) {
             if (att.type === 'image' && att.data) {
               const parsed = parseDataUri(att.data);
               if (parsed) {
                 userParts.push({ 
-                  inlineData: { 
-                    mimeType: parsed.mimeType, 
-                    data: parsed.data 
-                  } 
+                  inlineData: { mimeType: parsed.mimeType, data: parsed.data } 
                 });
               }
             } else if (att.type === 'file' && att.content) {
@@ -2632,19 +1139,19 @@ async function chatWithGemini(userMessage, devices, userId, sessionId, attachmen
             }
           }
         }
-        
         historyParts.push({ role: "user", parts: userParts });
-        historyParts.push({ 
-          role: "model", 
-          parts: [{ text: h.bot }] 
-        });
+        historyParts.push({ role: "model", parts: [{ text: h.bot }] });
       }
 
       // ========================================
-      // 💬 CRÉATION DU CHAT (SANS SYSTEM PROMPT DANS L'HISTORIQUE)
+      // 💬 CRÉATION DU CHAT
       // ========================================
       const chat = model.startChat({
         history: [
+          { 
+            role: "user", 
+            parts: [{ text: systemPrompt }] 
+          },
           { 
             role: "model", 
             parts: [{ text: JSON.stringify({
@@ -2689,56 +1196,37 @@ async function chatWithGemini(userMessage, devices, userId, sessionId, attachmen
         const lastMessages = historyFromFirebase.slice(-5).map(h => {
           const userPreview = h.user.substring(0, 100);
           const botPreview = h.bot.substring(0, 100);
-          const hasFiles = h.attachments && h.attachments.length > 0 ? ` [+${h.attachments.length} fichier(s)]` : '';
-          return `User: "${userPreview}..."${hasFiles} → Bot: "${botPreview}..."`;
+          return `User: "${userPreview}..." → Bot: "${botPreview}..."`;
         }).join('\n');
-        
-        historySummary = `
-[HISTORIQUE RÉCENT (${historyFromFirebase.length} messages)]
-${lastMessages}
-`;
+        historySummary = `[HISTORIQUE RÉCENT]\n${lastMessages}\n`;
       }
 
       // ========================================
-      // 📋 CONSTRUCTION DU PROMPT MÉTADONNÉES (OPTIMISÉ)
+      // 📋 CONSTRUCTION DU PROMPT MÉTADONNÉES
       // ========================================
       let metadataPrompt;
       
       if (continuationMode) {
         metadataPrompt = `
 [MODE: CONTINUATION]
-[Continue exactement où tu t'es arrêté - NE RECOMMENCE PAS]
-
+[INSTRUCTION CRITIQUE: Continue EXACTEMENT là où tu t'es arrêté.]
 ${historySummary}
 ${previousFilesContext}
-
 MESSAGE: "${userMessage}"
 `;
       } else {
-        // ✅ Ajout conditionnel des templates HTML
-        const needsDocTemplate = /génère|écris|crée|fais.*(cv|lettre|rapport|facture|contrat|attestation)/i.test(userMessage);
-        const documentContext = needsDocTemplate ? getDocumentTemplateHints() : '';
-        
         metadataPrompt = `
 [Heure: ${beninTime.formatted}]
-[Température Lokossa: ${beninTime.temperature.temperature}°C (${beninTime.temperature.description}), Ressenti: ${beninTime.temperature.feels_like}°C, Humidité: ${beninTime.temperature.humidity}%]
-[Préférences: ${JSON.stringify(preferences)}]
+[Température Lokossa: ${beninTime.temperature.temperature}°C]
+[Génération de documents: Mode Markdown Standard]
+[Prés: ${JSON.stringify(preferences)}]
 [États: ${JSON.stringify(realDeviceStates)}]
 [Appareils: ${JSON.stringify(devices)}]
-[Planifications: 
-${planningsText}
-]
-[Analyse: ${JSON.stringify(contextAnalysis)}]
+[Planifications: \n${planningsText}\n]
 ${webResults.length > 0 ? `[Web: ${JSON.stringify(webResults.slice(0, 3))}]` : ''}
 
 ${historySummary}
 ${previousFilesContext}
-${documentContext}
-
-[⚠️ RÈGLES INTERACTIONS UI]
-1. Clic bouton UI → Pas de JSON command, juste accusé réception
-2. Demande verbale → Génère JSON execute normalement
-3. Message court après changement état → Accusé réception simple
 
 MESSAGE: "${userMessage}"
 `;
@@ -2751,32 +1239,20 @@ MESSAGE: "${userMessage}"
       
       if (!continuationMode && attachments && attachments.length > 0) {
         console.log(`📎 Traitement de ${attachments.length} pièce(s) jointe(s)`);
-        
         for (const att of attachments) {
           if (att.type === 'image') {
             const parsed = parseDataUri(att.data);
-            if (parsed) {
-              promptParts.push({ 
-                inlineData: { 
-                  mimeType: parsed.mimeType, 
-                  data: parsed.data 
-                } 
-              });
-              console.log(`  ✅ Image: ${att.name} (${parsed.mimeType})`);
-            }
+            if (parsed) promptParts.push({ inlineData: { mimeType: parsed.mimeType, data: parsed.data } });
           } 
           else if (att.type === 'file') {
             const fileContent = await parseFileAttachment(att);
-            promptParts.push({ 
-              text: `\n[DEBUT FICHIER: ${att.name}]\n${fileContent}\n[FIN FICHIER]\n` 
-            });
-            console.log(`  ✅ Fichier: ${att.name} (${fileContent.length} caractères extraits)`);
+            promptParts.push({ text: `\n[DEBUT FICHIER: ${att.name}]\n${fileContent}\n[FIN FICHIER]\n` });
           }
         }
       }
 
       // ========================================
-      // 🚀 ENVOI DE LA REQUÊTE AVEC TIMEOUT
+      // 🚀 ENVOI DE LA REQUÊTE
       // ========================================
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 30000);
@@ -2786,7 +1262,6 @@ MESSAGE: "${userMessage}"
       clearTimeout(timeout);
 
       console.log(`✅ Réponse reçue de Gemini`);
-      
       return { 
         success: true, 
         data: result.response.text(), 
@@ -2796,9 +1271,9 @@ MESSAGE: "${userMessage}"
     } catch (error) {
       lastError = error;
       const keyObj = API_KEYS[(currentKeyIndex - 1 + API_KEYS.length) % API_KEYS.length];
-      const isQuotaError = error.message?.includes('quota') || error.message?.includes('429') || error.message?.includes('RESOURCE_EXHAUSTED');
+      const isQuotaError = error.message?.includes('quota') || error.message?.includes('429');
       markKeyAsFailed(keyObj, isQuotaError);
-      console.warn(`⚠️ Tentative ${attempt + 1}/${maxRetries} échouée: ${error.message}`);
+      console.warn(`⚠️ Tentative ${attempt + 1} échouée: ${error.message}`);
       if (attempt === maxRetries - 1) break;
     }
   }
@@ -2807,14 +1282,11 @@ MESSAGE: "${userMessage}"
   return { success: false, error: lastError };
 }
 
-
-
 // ========================================
-// 📚 FONCTION getHistoryFromFirebase (INCHANGÉE)
+// 📚 FONCTION getHistoryFromFirebase
 // ========================================
 async function getHistoryFromFirebase(userId, sessionId, daysBack = 30) {
   if (!db || !userId || !sessionId) return [];
-  
   try {
     const messagesRef = ref(db, `${USER_CHATS_REF}/${userId}/${sessionId}/messages`);
     const snapshot = await get(messagesRef);
@@ -2824,40 +1296,31 @@ async function getHistoryFromFirebase(userId, sessionId, daysBack = 30) {
     const cutoffDate = Date.now() - (daysBack * 24 * 60 * 60 * 1000);
     
     const filteredMessages = Object.values(messages)
-      .filter(msg => {
-        const timestamp = msg.timestamp || 0;
-        return timestamp >= cutoffDate;
-      })
+      .filter(msg => (msg.timestamp || 0) >= cutoffDate)
       .sort((a, b) => a.timestamp - b.timestamp);
     
-    console.log(`📚 Historique chargé: ${filteredMessages.length} messages sur ${daysBack} jours`);
-    
     return filteredMessages.slice(-150);
-    
   } catch (error) {
-    console.error("❌ Erreur lecture historique Firebase:", error);
+    console.error("❌ Erreur historique:", error);
     return [];
   }
 }
 
 // ========================================
-// 💾 SAUVEGARDE AMÉLIORÉE (INCHANGÉE)
+// 💾 SAUVEGARDE AMÉLIORÉE
 // ========================================
-async function saveMessageToFirebase(userMsg, botMsg, attachments) {
+async function saveMessageToFirebase(userMsg, botMsg, attachments, appState) {
   if (!appState.currentUser || !db || !appState.currentSessionId) return;
 
   const sessionRef = ref(db, `${USER_CHATS_REF}/${appState.currentUser.uid}/${appState.currentSessionId}`);
   const sessionSnapshot = await get(sessionRef);
-  
   const isNewSession = !sessionSnapshot.exists();
   
   if (isNewSession) {
     let newTitle = userMsg;
-    if (!newTitle && attachments.length > 0) {
-      newTitle = `📎 ${attachments[0].name}`;
-    }
+    if (!newTitle && attachments.length > 0) newTitle = `📎 ${attachments[0].name}`;
     if (!newTitle) newTitle = "Nouvelle discussion";
-    newTitle = newTitle.substring(0, 30) + (newTitle.length > 30 ? '...' : '');
+    newTitle = newTitle.substring(0, 30);
     
     await set(sessionRef, {
       title: newTitle,
@@ -2869,19 +1332,10 @@ async function saveMessageToFirebase(userMsg, botMsg, attachments) {
   const messagesRef = ref(db, `${USER_CHATS_REF}/${appState.currentUser.uid}/${appState.currentSessionId}/messages`);
   
   const attachmentsMeta = await Promise.all(attachments.map(async att => {
-    if (att.type === 'image') {
-      return {
-        name: att.name,
-        type: att.type,
-        data: att.data
-      };
-    } else if (att.type === 'file') {
+    if (att.type === 'image') return { name: att.name, type: att.type, data: att.data };
+    else if (att.type === 'file') {
       const fileContent = await parseFileAttachment(att);
-      return {
-        name: att.name,
-        type: att.type,
-        content: fileContent.substring(0, 100000)
-      };
+      return { name: att.name, type: att.type, content: fileContent.substring(0, 100000) };
     }
     return { name: att.name, type: att.type };
   }));
@@ -2894,16 +1348,8 @@ async function saveMessageToFirebase(userMsg, botMsg, attachments) {
   });
 
   await set(ref(db, `${USER_CHATS_REF}/${appState.currentUser.uid}/${appState.currentSessionId}/lastUpdated`), serverTimestamp());
-  
-  if (isNewSession) {
-    loadChatHistorySidebar();
-    setTimeout(() => {
-      document.querySelectorAll('.chat-history-item').forEach(i => i.classList.remove('active'));
-      const item = document.querySelector(`.chat-history-item[data-session-id="${appState.currentSessionId}"]`);
-      if (item) item.classList.add('active');
-    }, 200);
-  }
 }
+
 // ========================================
 // 🔥 ROUTE PRINCIPALE /api/chat
 // ========================================
@@ -2921,52 +1367,29 @@ app.post('/api/chat', async (req, res) => {
       continuationMode = false
     } = req.body;
 
-    if (key !== AUTH_KEY) {
-      return res.status(401).json({ reply: "Clé d'authentification invalide", ...jsonErrorDefaults() });
-    }
-    if (!message && attachments.length === 0 && !continuationMode) {
-      return res.status(400).json({ reply: "Message ou pièce jointe requis", ...jsonErrorDefaults() });
-    }
-    if (!userId || !sessionId) {
-      return res.status(400).json({ reply: "ID Utilisateur ou ID Session manquant", ...jsonErrorDefaults() });
-    }
+    if (key !== AUTH_KEY) return res.status(401).json({ reply: "Clé invalide", ...jsonErrorDefaults() });
+    if (!message && attachments.length === 0 && !continuationMode) return res.status(400).json({ reply: "Message requis", ...jsonErrorDefaults() });
+    if (!userId || !sessionId) return res.status(400).json({ reply: "IDs manquants", ...jsonErrorDefaults() });
 
-    console.log('\n┌────────────────────────────────────────────────');
-    console.log(`💬 MESSAGE: ${message || '(Continuation)'}`);
-    console.log(`🖼️ ATTACHMENTS: ${attachments.length}`);
-    console.log(`🤖 USER: ${userId.substring(0, 10)}...`);
-    console.log(`🏷️ SESSION: ${sessionId}`);
-    console.log(`📡 APPAREILS: ${devices.length}`);
-    console.log(`📄 MODE: ${continuationMode ? 'CONTINUATION' : 'NORMAL'}`);
+    console.log(`💬 MSG: ${message || '(Continuation)'} | 📄 MODE: ${continuationMode ? 'CONT' : 'NORM'}`);
 
-    const startTime = Date.now();
     const result = await chatWithGemini(message, devices, userId, sessionId, attachments, preferences, continuationMode);
 
     if (!result.success) {
-      console.log('⚠️ Gemini indisponible');
       return res.json({ 
-        reply: "### ❌ Service temporairement indisponible\n\nVeuillez réessayer dans quelques instants.", 
+        reply: "### ❌ Service indisponible\nRéessayez plus tard.", 
         ...jsonErrorDefaults() 
       });
     }
 
-    const aiText = result.data;
-    console.log(`⏱️ Temps: ${Date.now() - startTime}ms`);
-
     let aiJson;
     try {
-      aiJson = JSON.parse(aiText);
+      aiJson = JSON.parse(result.data);
     } catch (parseError) {
-      console.warn('⚠️ Première tentative de parsing JSON échouée, nettoyage...');
-      const cleaned = aiText.replace(/^```json\s*\n?/, '').replace(/\n?```\s*$/, '').trim();
-      try { 
-        aiJson = JSON.parse(cleaned); 
-      } catch (secondError) { 
-        console.error('❌ Parsing JSON impossible:', secondError.message);
-        return res.json({ 
-          reply: "Désolé, je n'ai pas pu formuler ma réponse correctement. Pouvez-vous reformuler votre demande ?", 
-          ...jsonErrorDefaults() 
-        });
+      console.warn('⚠️ Parsing JSON échoué, nettoyage...');
+      const cleaned = result.data.replace(/^```json\s*\n?/, '').replace(/\n?```\s*$/, '').trim();
+      try { aiJson = JSON.parse(cleaned); } catch (e) { 
+        return res.json({ reply: "Erreur de format de réponse.", ...jsonErrorDefaults() });
       }
     }
 
@@ -2976,50 +1399,29 @@ app.post('/api/chat', async (req, res) => {
     aiJson.device_commands = aiJson.device_commands || [];
     aiJson.suggestions = aiJson.suggestions || [];
     aiJson.needs_continuation = aiJson.needs_continuation || false;
-    aiJson.continuation_context = aiJson.continuation_context || null;
     
+    // Traitement des commandes
     aiJson.planning_commands = deduplicatePlanning(aiJson.planning_commands);
+    if (aiJson.device_commands.length > 0) await handleDeviceCommands(aiJson.device_commands, userId);
+    if (aiJson.planning_commands.length > 0) await handlePlanningCommands(aiJson.planning_commands);
     
-    if (aiJson.device_commands && aiJson.device_commands.length > 0) {
-      await handleDeviceCommands(aiJson.device_commands, userId);
-    }
-    
-    if (aiJson.planning_commands && aiJson.planning_commands.length > 0) {
-      await handlePlanningCommands(aiJson.planning_commands);
-      aiJson.planning_commands = [];
-    }
-    
+    // Détection auto troncature
     if (!aiJson.needs_continuation && aiJson.reply && detectTruncation(aiJson.reply)) {
-      console.log('🔍 Troncature automatique détectée par le serveur');
       aiJson.needs_continuation = true;
-      if (!aiJson.continuation_context) {
-        aiJson.continuation_context = {
-          type: "auto-detected",
-          message: "Contenu incomplet détecté"
-        };
-      }
+      if (!aiJson.continuation_context) aiJson.continuation_context = { type: "auto" };
     }
     
     if (!aiJson.source) aiJson.source = result.hadWebResults ? "web" : "cloud";
 
-    console.log('✅ RÉPONSE GÉNÉRÉE');
-    console.log(`🤖 Execute: ${aiJson.execute.length}`);
-    console.log(`📅 Planning: ${aiJson.planning_commands.length} (Traité serveur)`);
-    console.log(`➕ Device Commands: ${aiJson.device_commands.length}`);
-    console.log(`💡 Suggestions: ${aiJson.suggestions.length}`);
-    console.log(`📝 Reply Length: ${aiJson.reply.length} chars`);
-    console.log(`📄 Needs Continuation: ${aiJson.needs_continuation}`);
-    console.log('└────────────────────────────────────────────────\n');
+    // Sauvegarde en arrière-plan
+    const appStateStub = { currentUser: { uid: userId }, currentSessionId: sessionId };
+    saveMessageToFirebase(message, aiJson.reply, attachments, appStateStub).catch(console.error);
 
     res.json(aiJson);
     
   } catch (error) {
-    console.error('💥 ERREUR:', error.message);
-    console.error(error.stack);
-    res.status(500).json({ 
-      reply: "### ❌ Erreur interne\n\nUne erreur s'est produite. Veuillez réessayer.", 
-      ...jsonErrorDefaults() 
-    });
+    console.error('💥 ERREUR SERVEUR:', error.message);
+    res.status(500).json({ reply: "### ❌ Erreur interne", ...jsonErrorDefaults() });
   }
 });
 
@@ -3032,46 +1434,21 @@ app.get('/api/health', async (req, res) => {
   
   res.json({ 
     status: 'ok', 
-    version: '10.0-continuation-fixed',
+    version: '11.0-lite-markdown',
     features: {
       gemini: API_KEYS.length > 0,
-      imageGeneration: false,
       documentGeneration: true,
       codeLongGeneration: true,
       continuationSystem: true,
       webSearch: true,
       contextMemory: "Firebase",
-      firebaseStateSync: true,
-      multimodal_Image: true,
-      multimodal_Files: true,
-      htmlOutput: true,
-      markdownOutput: true,
+      htmlOutput: false,  // ❌ DÉSACTIVÉ
+      markdownOutput: true, // ✅ ACTIVÉ
       aiPlanning: true,
-      intelligentPlanning: true,
-      autoAddDevices: true,
-      autoDeleteDevices: true,
-      intelligentPlanningDeletion: true,
-      dailyTasksPersistent: true,
-      lokossaTemperature: true,
-      supportedFiles: "PDF, DOCX, TXT, HTML, JS, JSON, CSS, XLSX, CSV, Images",
-      maxTokens: 65536
+      lokossaTemperature: true
     },
-    keys: { 
-      gemini: { total: API_KEYS.length, available: availableKeys }
-    },
-    time: {
-      benin: `${beninTime.hoursStr}:${beninTime.minutesStr}`,
-      formatted: beninTime.formatted,
-      temperature: beninTime.temperature
-    },
-    fixes_applied: {
-      daily_tasks_persistent: "✅ Les tâches 'daily' ne disparaissent JAMAIS après exécution",
-      weekly_monthly_persistent: "✅ Les tâches 'weekly' et 'monthly' ne disparaissent JAMAIS",
-      once_tasks_auto_delete: "✅ Les tâches 'once' s'auto-suppriment après exécution",
-      action_state_correction: "✅ 'add' → 'ON'/'OFF' (jamais 'add' seul)",
-      deduplication: "✅ Anti-duplication des planifications",
-      planning_server_side: "✅ Le serveur gère tout (client affiche seulement)"
-    }
+    keys: { total: API_KEYS.length, available: availableKeys },
+    time: { benin: `${beninTime.hoursStr}:${beninTime.minutesStr}`, temp: beninTime.temperature }
   });
 });
 
@@ -3080,34 +1457,11 @@ app.get('/api/health', async (req, res) => {
 // ========================================
 app.listen(PORT, () => {
   console.log('\n┌────────────────────────────────────────────────────────────┐');
-  console.log('│     INTELLIA v10.0 - SYSTÈME ARTIFACTS COMPLET          │');
-  console.log('│        ✅ Corrections Planification Intégrées           │');
+  console.log('│     INTELLIA v11.0 - SYSTÈME MARKDOWN LITE              │');
+  console.log('│        ✅ 100% Markdown (Plus rapide)                   │');
   console.log('└────────────────────────────────────────────────────────────┘');
-  console.log(`\n   🚀 Serveur: http://localhost:${PORT}`);
+  console.log(`   🚀 Serveur: http://localhost:${PORT}`);
   console.log(`   🔑 Clés Gemini: ${API_KEYS.length}`);
-  console.log(`   🤖 Modèle: gemini-2.5-flash (65536 tokens)`);
-  console.log(`   🔥 Synchro Firebase (Appareils): Activée`);
-  console.log(`   💾 Synchro Firebase (Chats): Activée`);
-  console.log(`   📅 Planning IA: Prêt`);
-  console.log(`   🧠 Planning Intelligent: Activé (Routines Persistantes + ON/OFF Fix)`);
-  console.log(`   🗑️ Suppression Intelligente: Activée`);
-  console.log(`   ➕ Auto Add Devices: Activé`);
-  console.log(`   🗑️ Auto Delete Devices: Activé`);
-  console.log(`   🌡️ Température Lokossa: Temps réel`);
-  console.log(`   📄 Génération de documents: ✅ ACTIVÉE`);
-  console.log(`   💻 Génération de code long: ✅ ACTIVÉE`);
-  console.log(`   📄 Système de continuation: ✅ ACTIF`);
-  console.log(`   🔍 Détection troncature: ✅ AUTOMATIQUE`);
-  console.log(`   🎯 Capacité: ILLIMITÉE (avec continuation)`);
-  console.log(`   ✅ Output Markdown: Activé`);
-  console.log(`   🎯 MaxTokens: 65536 (MAXIMUM)`);
-  console.log(`\n   ✅ CORRECTIONS APPLIQUÉES:`);
-  console.log(`   • Daily/Weekly/Monthly: JAMAIS supprimées après exécution`);
-  console.log(`   • Once Tasks: S'auto-suppriment après exécution`);
-  console.log(`   • Action State: 'add' → 'ON'/'OFF' (correct)`);
-  console.log(`   • Déduplication: Planifications dupliquées évitées`);
-  console.log(`   • Serveur Responsable: Gère tout côté backend`);
-  console.log('\n');
-}); // <--- AJOUTEZ ); ICI
+  console.log(`   📄 Mo}); // <--- AJOUTEZ ); ICI
 
 
