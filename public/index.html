@@ -17,9 +17,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/13.0.0/marked.min.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.1.0/firebase-database.js"></script>
+  
   <style>
     :root {
       --primary: #4361ee;
@@ -915,6 +913,7 @@
      ✅ PWA complète
      ==================================================== */
 
+
   // =============================================
   // 📋 CONFIGURATION GLOBALE
   // =============================================
@@ -929,7 +928,8 @@
   }
 
   const AUTH_KEY = "cle-secrete-intellia";
- 
+  const defaultAvatar = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iI2FlYWVhZSI+PHBhdGggZD0iTTEyIDJDNi44OCAyIDIgNi44OCAyIDEyczQuNDggMTQgMTAgMTBjNS41MiAwIDEwLTQuNDggMTAtMTBTMjcuNTIgMiAxMiAyem0wIDJjMS42NiAwIDMgMS4zNCAzIDNzLTEuMzQgMy0zIDMtMy0xLjM0LTMtM1MwLjM0IDQgMTIgNHptMCAxNmMtMi42NyAwLTUuNDMtMS4yOS03LTIuODguNTYtMS42NSAzLjU1LTIuNjIgNy0yLjYyczYuNDQgLjk3IDcgMi42MmMtMS41NyAxLjU5LTQuMzMgMi44OC03IDIuODh6Ii8+PC9zdmc+";
+
   const firebaseConfig = {
     apiKey: "AIzaSyA5oYEu4-nOUtjOe2JJ4C9VwNniNSBdjqI",
     authDomain: "mamaisonintelligente-14485.firebaseapp.com",
@@ -939,14 +939,7 @@
     messagingSenderId: "197281963087",
     appId: "1:197281963087:web:da680779479391d91f1e3a"
   };
-// ======= IMPORT FIREBASE =======
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-  import { getDatabase, ref, set, push, onValue, remove, get, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
-  import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
-  const el = id => document.getElementById(id);
-
- 
   // =============================================
   // 🎯 TYPES D'APPAREILS AVEC VARIABLE/FIXE
   // =============================================
@@ -997,6 +990,149 @@
   // 🔧 UTILITAIRE: Sélectionner éléments DOM
   // =============================================
   const el = id => document.getElementById(id);
+
+  // =============================================
+  // 📧 FIREBASE - INITIALISATION STABLE (CORRIGÉE)
+  // =============================================
+  
+  // 1. Imports Standards
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getDatabase, ref, set, push, onValue, remove, get, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+  import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+  // 2. Initialisation immédiate
+  let db = null;
+  let auth = null;
+
+  try {
+    const app = initializeApp(firebaseConfig);
+    db = getDatabase(app);
+    auth = getAuth(app);
+    
+    // Indicateur visuel de succès
+    const statusFb = document.getElementById('statusFirebase');
+    if(statusFb) {
+        statusFb.textContent = 'Firebase : OK';
+        statusFb.style.background = 'rgba(46, 213, 115, 0.3)';
+    }
+    console.log("✅ Firebase initialisé avec succès");
+  } catch (e) {
+    console.error("❌ Erreur critique Firebase:", e);
+    const statusFb = document.getElementById('statusFirebase');
+    if(statusFb) {
+        statusFb.textContent = 'Firebase : Erreur';
+        statusFb.style.background = 'rgba(231, 76, 60, 0.3)';
+    }
+    alert("Erreur de connexion à la base de données. Vérifiez votre connexion internet.");
+  }
+
+  // 3. Références Base de données
+  const metaRefPath = "devicesMeta";
+  const devicesRefPath = "devices";
+  const planningRefPath = "planning";
+  const userChatsRefPath = "userChats";
+
+  // 4. Écouteurs de données (Si DB connectée)
+  if (db) {
+    onValue(ref(db, metaRefPath), snap => { 
+      const devicesData = snap.val() || {};
+      appState.devices = Object.values(devicesData); 
+      renderDevices(); 
+    });
+    onValue(ref(db, devicesRefPath), snap => { 
+      appState.deviceStates = snap.val() || {}; 
+      renderDevices(); 
+    });
+    onValue(ref(db, planningRefPath), snap => { 
+      const plansObj = snap.val() || {};
+      appState.plans = Object.entries(plansObj).map(([id, p]) => ({ ...p, firebaseId: id }));
+      renderPlanningListUI(appState.plans);
+    });
+  } else {
+    // Mode hors ligne / Fallback
+    loadDevicesFromLocalStorage();
+    loadPlansFromLocalStorage();
+    renderDevices();
+    renderPlanningListUI(appState.plans);
+  }
+
+  // ============================================
+  // 🔐 AUTHENTIFICATION - LOGIQUE DE CONNEXION
+  // ============================================
+
+  // Gestionnaire de connexion Google
+  window.handleGoogleSignIn = function() {
+    if (!auth) return;
+    const provider = new GoogleAuthProvider();
+    signInWithPopup(auth, provider).catch((error) => { 
+        console.error("Erreur Auth:", error); 
+        alert("Erreur de connexion : " + error.message);
+    });
+  };
+
+  // Gestionnaire de déconnexion
+  window.handleSignOut = function() { 
+    if (auth) signOut(auth).catch((error) => console.error("Erreur Déco:", error)); 
+  };
+
+  // Attacher les événements aux boutons
+  document.addEventListener('DOMContentLoaded', function() {
+    const loginBtn = document.getElementById('googleSignInOverlayBtn');
+    if(loginBtn) loginBtn.addEventListener('click', window.handleGoogleSignIn);
+    
+    const logoutBtn = document.getElementById('signOutBtn');
+    if(logoutBtn) logoutBtn.addEventListener('click', window.handleSignOut);
+  });
+
+  // Surveillance de l'état de connexion
+  if (auth) {
+    onAuthStateChanged(auth, (user) => {
+      const loginOverlay = document.getElementById('login-overlay');
+      const mainApp = document.querySelector('.main-app');
+      
+      if (user) {
+        // ✅ UTILISATEUR CONNECTÉ
+        console.log("👤 Utilisateur connecté:", user.email);
+        appState.currentUser = user;
+        
+        if(loginOverlay) loginOverlay.style.display = 'none';
+        if(mainApp) mainApp.style.display = 'block';
+        
+        // Mise à jour UI Profil
+        const userPhoto = document.getElementById('user-photo');
+        if(userPhoto) {
+            userPhoto.src = user.photoURL || defaultAvatar;
+            userPhoto.onerror = () => { userPhoto.src = defaultAvatar; }; 
+        }
+        const userName = document.getElementById('user-name-display');
+        if(userName) userName.textContent = user.displayName || 'Utilisateur';
+        
+        const userEmail = document.getElementById('user-email-display');
+        if(userEmail) userEmail.textContent = user.email;
+        
+        // Charger l'historique de chat
+        loadChatHistorySidebar();
+        
+        // Connexion ESP32 si IP sauvegardée
+        if (appState.esp32Ip) {
+          connectWebSocket();
+        }
+
+      } else {
+        // ❌ UTILISATEUR DÉCONNECTÉ
+        console.log("👤 Utilisateur déconnecté");
+        appState.currentUser = null;
+        
+        if(mainApp) mainApp.style.display = 'none';
+        if(loginOverlay) loginOverlay.style.display = 'flex';
+        
+        // Déconnecter WebSocket si actif
+        if (appState.localWebSocket) {
+          disconnectWebSocket();
+        }
+      }
+    });
+  }
 
   // =============================================
   // 📄 FONCTION: EXTRAIRE TEXTE LISIBLE (pour synthèse vocale)
@@ -1889,61 +2025,62 @@
     updateWebSocketStatus('disconnected', 'Déconnecté manuellement');
     logActivity('🔌 WebSocket déconnecté manuellement');
   }
-// ============================================
-// 📋 FONCTIONS MANQUANTES
-// ============================================
 
-function populatePlanDeviceSelect() {
-  try {
-    const selectElement = document.getElementById('plan-device');
-    if (!selectElement) {
-      console.warn('⚠️ Élément plan-device non trouvé (section planning peut être cachée)');
-      return;
-    }
-    
-    selectElement.innerHTML = '';
-    
-    if (!appState.devices || appState.devices.length === 0) {
-      const option = document.createElement('option');
-      option.value = '';
-      option.textContent = 'Aucun appareil disponible';
-      selectElement.appendChild(option);
-      return;
-    }
-    
-    appState.devices.forEach(device => {
-      const option = document.createElement('option');
-      option.value = device.id;
-      option.textContent = `${device.name} (${device.room || 'Non spécifié'})`;
-      selectElement.appendChild(option);
-    });
-    
-    console.log(`✅ ${appState.devices.length} appareil(s) chargé(s) dans le planning`);
-    
-  } catch (error) {
-    console.error('❌ Erreur populatePlanDeviceSelect:', error);
-  }
-}
+  // ============================================
+  // 📋 FONCTIONS MANQUANTES
+  // ============================================
 
-function updateCount() {
-  try {
-    const countElement = document.getElementById('db-count');
-    if (!countElement) {
-      console.warn('⚠️ Élément db-count non trouvé');
-      return;
+  function populatePlanDeviceSelect() {
+    try {
+      const selectElement = document.getElementById('plan-device');
+      if (!selectElement) {
+        console.warn('⚠️ Élément plan-device non trouvé (section planning peut être cachée)');
+        return;
+      }
+      
+      selectElement.innerHTML = '';
+      
+      if (!appState.devices || appState.devices.length === 0) {
+        const option = document.createElement('option');
+        option.value = '';
+        option.textContent = 'Aucun appareil disponible';
+        selectElement.appendChild(option);
+        return;
+      }
+      
+      appState.devices.forEach(device => {
+        const option = document.createElement('option');
+        option.value = device.id;
+        option.textContent = `${device.name} (${device.room || 'Non spécifié'})`;
+        selectElement.appendChild(option);
+      });
+      
+      console.log(`✅ ${appState.devices.length} appareil(s) chargé(s) dans le planning`);
+      
+    } catch (error) {
+      console.error('❌ Erreur populatePlanDeviceSelect:', error);
     }
-    
-    const onCount = Object.values(appState.deviceStates).filter(state => 
-      state && state.etat === 'ON'
-    ).length;
-    
-    countElement.textContent = `on: ${onCount}`;
-    console.log(`🔢 ${onCount} appareil(s) allumé(s)`);
-    
-  } catch (error) {
-    console.error('❌ Erreur updateCount:', error);
   }
-}
+
+  function updateCount() {
+    try {
+      const countElement = document.getElementById('db-count');
+      if (!countElement) {
+        console.warn('⚠️ Élément db-count non trouvé');
+        return;
+      }
+      
+      const onCount = Object.values(appState.deviceStates).filter(state => 
+        state && state.etat === 'ON'
+      ).length;
+      
+      countElement.textContent = `on: ${onCount}`;
+      console.log(`🔢 ${onCount} appareil(s) allumé(s)`);
+      
+    } catch (error) {
+      console.error('❌ Erreur updateCount:', error);
+    }
+  }
 
   // ============================================
   // 🏠 FONCTION: AFFICHER APPAREILS VARIABLES/FIXES
@@ -2390,478 +2527,245 @@ function updateCount() {
   // ============================================
   // 📧 FIREBASE - CHAT MULTI-SESSIONS
   // ============================================
-  let db = null;
-  let auth = null;
-  
-  try {
-    const { initializeApp } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js");
-    const { getDatabase, ref, set, push, onValue, remove, get, serverTimestamp } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js");
-    const { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js");
 
-    window.firebaseModules = { initializeApp, getDatabase, ref, set, push, onValue, remove, get, serverTimestamp, getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged };
-  } catch (e) {
-    console.error("Import Firebase erreur:", e);
+  function getChatHistoryRef(userId, sessionId = null) {
+    let path = `${userChatsRefPath}/${userId}`;
+    if (sessionId) path += `/${sessionId}`;
+    return ref(db, path);
   }
 
-  if (window.firebaseModules) {
-    const { initializeApp, getDatabase, ref, set, push, onValue, remove, get, serverTimestamp, getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } = window.firebaseModules;
+  async function loadChatHistorySidebar() {
+    if (!appState.currentUser || !db) return;
+    const historyList = el('chat-history-list');
+    historyList.innerHTML = '';
+    const sessionsRef = getChatHistoryRef(appState.currentUser.uid);
+    const snapshot = await get(sessionsRef);
+    if (snapshot.exists()) {
+      const sessions = snapshot.val();
+      const sortedSessions = Object.keys(sessions).sort((a, b) => {
+        return (sessions[b].lastUpdated || 0) - (sessions[a].lastUpdated || 0);
+      });
+      
+      sortedSessions.forEach(sessionId => {
+        const session = sessions[sessionId];
+        const title = session.title || `Chat du ${new Date(session.createdAt || Date.now()).toLocaleDateString()}`;
+        
+        const item = document.createElement('div');
+        item.className = 'chat-history-item';
+        item.dataset.sessionId = sessionId;
+
+        const titleSpan = document.createElement('span');
+        titleSpan.textContent = title;
+        titleSpan.className = 'chat-history-item-title';
+        titleSpan.onclick = () => loadChatSession(sessionId);
+        
+        const deleteBtn = document.createElement('button');
+        deleteBtn.innerHTML = '<i class="fas fa-ellipsis-v"></i>';
+        deleteBtn.className = 'btn chat-history-delete';
+        deleteBtn.title = "Supprimer la discussion";
+        deleteBtn.onclick = (e) => {
+          e.stopPropagation();
+          deleteChatSession(sessionId, item);
+        };
+
+        item.appendChild(titleSpan);
+        item.appendChild(deleteBtn);
+        historyList.appendChild(item);
+      });
+    }
+  }
+
+  function createNewChatSession() {
+    const newSessionId = `chat_${Date.now()}`;
+    appState.currentSessionId = newSessionId;
+    
+    el('chatFullWindow').innerHTML = '';
+    appendChat('bot', '### 👋 Bienvenue !\n\nJe suis prêt pour notre nouvelle discussion.');
+    
+    setTimeout(() => {
+      document.querySelectorAll('.chat-history-item').forEach(i => i.classList.remove('active'));
+    }, 100);
+  }
+
+  el('new-chat-btn').addEventListener('click', createNewChatSession);
+
+  async function deleteChatSession(sessionId, itemElement) {
+    if (!appState.currentUser || !db) return;
+    if (!confirm("Voulez-vous vraiment supprimer cette discussion ?")) return;
 
     try {
-      const app = initializeApp(firebaseConfig);
-      db = getDatabase(app);
-      auth = getAuth(app);
-      el('statusFirebase').textContent = 'Firebase : OK';
-      el('statusFirebase').style.background = 'rgba(46, 213, 115, 0.3)';
-    } catch (e) {
-      db = null;
-      el('statusFirebase').textContent = 'Firebase : Échec';
-      el('statusFirebase').style.background = 'rgba(231, 76, 60, 0.3)';
-      console.error("Erreur Firebase:", e);
-    }
-
-    const metaRefPath = "devicesMeta";
-    const devicesRefPath = "devices";
-    const planningRefPath = "planning";
-    const userChatsRefPath = "userChats";
-
-    if (db) {
-      onValue(ref(db, metaRefPath), snap => { 
-        const devicesData = snap.val() || {};
-        appState.devices = Object.values(devicesData); 
-        renderDevices(); 
-      });
-      onValue(ref(db, devicesRefPath), snap => { 
-        appState.deviceStates = snap.val() || {}; 
-        renderDevices(); 
-        logActivity('☁️ États Firebase synchronisés.');
-      });
-      onValue(ref(db, planningRefPath), snap => { 
-        const plansObj = snap.val() || {};
-        appState.plans = Object.entries(plansObj).map(([id, p]) => ({ ...p, firebaseId: id }));
-        renderPlanningListUI(appState.plans);
-      });
-    } else {
-      loadDevicesFromLocalStorage();
-      loadPlansFromLocalStorage();
-      renderDevices();
-      renderPlanningListUI(appState.plans);
-    }
-
-    // ============================================
-    // 🧩 FONCTION: GESTION PLANNING AVANCÉ
-    // ============================================
-    async function handlePlanningCommands(commands) {
-      for (const cmd of commands) {
-        if (cmd.action === 'add') {
-          const p = { 
-            device: cmd.device, 
-            time: cmd.time, 
-            action: cmd.action, 
-            power: cmd.power, 
-            schedule: cmd.schedule || { type: 'once' },
-            createdAt: Date.now(),
-            executed: false
-          };
-          if (db) await push(ref(db, planningRefPath), p);
-        } else if (cmd.action === 'delete_all') {
-          await deleteAllPlans();
-        }
+      const sessionRef = getChatHistoryRef(appState.currentUser.uid, sessionId);
+      await set(sessionRef, null);
+      itemElement.remove();
+      if (appState.currentSessionId === sessionId) {
+        createNewChatSession();
       }
+      logActivity(`Discussion ${sessionId} supprimée.`);
+    } catch (error) {
+      console.error("Erreur suppression chat:", error);
+      logActivity("Erreur de suppression du chat.");
     }
+  }
+
+  async function loadChatSession(sessionId) {
+    if (!appState.currentUser || !db) return;
+    appState.currentSessionId = sessionId;
+    const chatWindow = el('chatFullWindow');
+    chatWindow.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--muted);"><i class="fas fa-spinner fa-spin"></i> Chargement...</div>';
     
-    function handleExecuteCommands(commands) {
-      for (const exec of (Array.isArray(commands) ? commands : [commands])) {
-        const [devId, action, value] = exec.split('|');
-        if (appState.devices.some(d => d.id === devId)) {
-          sendCommand(devId, action, value ? parseInt(value) : null);
-        }
-      }
-    }
-
-    async function handleDeviceCommands(commands, userId) {
-      if (!db) return;
+    try {
+      const messagesRef = ref(db, `${userChatsRefPath}/${appState.currentUser.uid}/${sessionId}/messages`);
+      const snapshot = await get(messagesRef);
       
-      for (const cmd of commands) {
-        // ✅ AJOUT D'APPAREIL
-        if (cmd.action === 'add') {
-          try {
-            const deviceName = cmd.name || 'Nouvel Appareil';
-            const deviceType = cmd.type || 'lamp';
-            const deviceRoom = cmd.room || 'Non spécifié';
-            
-            const deviceId = deviceName.toLowerCase()
-              .replace(/\s+/g, '_')
-              .replace(/[^\w\-]/g, '')
-              .substring(0, 30) + '_' + Date.now().toString().slice(-4);
-            
-            const typeInfo = deviceTypes[deviceType] || deviceTypes['lamp'];
-            
-            const newDevice = {
-              id: deviceId,
-              name: deviceName,
-              type: deviceType,
-              room: deviceRoom,
-              isVariable: typeInfo.isVariable,
-              hasBrightness: typeInfo.hasBrightness,
-              icon: typeInfo.icon,
-              createdAt: Date.now(),
-              createdBy: userId
-            };
-            
-            await set(ref(db, `${metaRefPath}/${deviceId}`), newDevice);
-            
-            await set(ref(db, `${devicesRefPath}/${deviceId}`), {
-              etat: 'OFF',
-              luminosite: 0
-            });
-            
-            console.log(`✅ Appareil ajouté: ${deviceName} (${deviceId})`);
-            
-          } catch (error) {
-            console.error(`❌ Erreur ajout appareil:`, error.message);
-          }
-        }
-        
-        // ✅ SUPPRESSION D'APPAREIL
-        else if (cmd.action === 'delete' || cmd.action === 'remove') {
-          try {
-            const deviceToDelete = cmd.device || cmd.deviceId || cmd.id;
-            
-            if (!deviceToDelete) {
-              console.warn("⚠️ Aucun appareil spécifié pour la suppression");
-              continue;
-            }
-            
-            // Supprimer de devicesMeta
-            await set(ref(db, `${metaRefPath}/${deviceToDelete}`), null);
-            
-            // Supprimer de devices (états)
-            await set(ref(db, `${devicesRefPath}/${deviceToDelete}`), null);
-            
-            // Supprimer du planning si existant
-            const planningSnapshot = await get(ref(db, planningRefPath));
-            if (planningSnapshot.exists()) {
-              const planning = planningSnapshot.val();
-              const updatedPlanning = {};
-              
-              Object.keys(planning).forEach(key => {
-                if (planning[key].device !== deviceToDelete) {
-                  updatedPlanning[key] = planning[key];
-                }
-              });
-              
-              await set(ref(db, planningRefPath), updatedPlanning);
-            }
-            
-            console.log(`✅ Appareil supprimé: ${deviceToDelete}`);
-            
-          } catch (error) {
-            console.error(`❌ Erreur suppression appareil:`, error.message);
-          }
-        }
-      }
-    }
-    
-    function displaySuggestions(suggestions) {
-      const container = el('proactive-suggestion');
-      if (!container || !suggestions.length > 0) return;
-      container.textContent = suggestions[0].message;
-    }
-
-    // ============================================
-    // 💬 FIREBASE: CHAT MULTI-SESSIONS
-    // ============================================
-    function getChatHistoryRef(userId, sessionId = null) {
-      let path = `${userChatsRefPath}/${userId}`;
-      if (sessionId) path += `/${sessionId}`;
-      return ref(db, path);
-    }
-
-    async function loadChatHistorySidebar() {
-      if (!appState.currentUser || !db) return;
-      const historyList = el('chat-history-list');
-      historyList.innerHTML = '';
-      const sessionsRef = getChatHistoryRef(appState.currentUser.uid);
-      const snapshot = await get(sessionsRef);
+      chatWindow.innerHTML = '';
+      
       if (snapshot.exists()) {
-        const sessions = snapshot.val();
-        const sortedSessions = Object.keys(sessions).sort((a, b) => {
-          return (sessions[b].lastUpdated || 0) - (sessions[a].lastUpdated || 0);
+        const messages = snapshot.val();
+        const sortedMessages = Object.values(messages).sort((a, b) => a.timestamp - b.timestamp);
+        
+        sortedMessages.forEach(msg => {
+          const attachmentsMeta = msg.attachments || [];
+          appendChat('user', msg.user, false, attachmentsMeta);
+          appendChat('bot', msg.bot, false);
         });
         
-        sortedSessions.forEach(sessionId => {
-          const session = sessions[sessionId];
-          const title = session.title || `Chat du ${new Date(session.createdAt || Date.now()).toLocaleDateString()}`;
-          
-          const item = document.createElement('div');
-          item.className = 'chat-history-item';
-          item.dataset.sessionId = sessionId;
-
-          const titleSpan = document.createElement('span');
-          titleSpan.textContent = title;
-          titleSpan.className = 'chat-history-item-title';
-          titleSpan.onclick = () => loadChatSession(sessionId);
-          
-          const deleteBtn = document.createElement('button');
-          deleteBtn.innerHTML = '<i class="fas fa-ellipsis-v"></i>';
-          deleteBtn.className = 'btn chat-history-delete';
-          deleteBtn.title = "Supprimer la discussion";
-          deleteBtn.onclick = (e) => {
-            e.stopPropagation();
-            deleteChatSession(sessionId, item);
-          };
-
-          item.appendChild(titleSpan);
-          item.appendChild(deleteBtn);
-          historyList.appendChild(item);
-        });
+        setTimeout(() => {
+          el('chatFullWindow').scrollTop = el('chatFullWindow').scrollHeight;
+        }, 100);
+        
+      } else {
+        appendChat('bot', 'C\'est le début de notre conversation.');
       }
+      
+      document.querySelectorAll('.chat-history-item').forEach(i => i.classList.remove('active'));
+      document.querySelector(`.chat-history-item[data-session-id="${sessionId}"]`)?.classList.add('active');
+      
+      el('chat-sidebar').classList.remove('open');
+      el('sidebar-overlay').classList.remove('open');
+      
+    } catch (error) {
+      console.error("Erreur chargement chat:", error);
+      chatWindow.innerHTML = '<div class="card" style="text-align: center; color: var(--danger);"><i class="fas fa-exclamation-triangle"></i> Erreur de chargement</div>';
+    }
+  }
+
+  async function saveMessageToFirebase(userMsg, botMsg, attachments) {
+    if (!appState.currentUser || !db || !appState.currentSessionId) return;
+
+    const sessionRef = ref(db, `${userChatsRefPath}/${appState.currentUser.uid}/${appState.currentSessionId}`);
+    const sessionSnapshot = await get(sessionRef);
+    
+    const isNewSession = !sessionSnapshot.exists();
+    
+    if (isNewSession) {
+      let newTitle = userMsg;
+      if (!newTitle && attachments.length > 0) {
+        newTitle = `📎 ${attachments[0].name}`;
+      }
+      if (!newTitle) newTitle = "Nouvelle discussion";
+      newTitle = newTitle.substring(0, 30) + (newTitle.length > 30 ? '...' : '');
+      
+      await set(sessionRef, {
+        title: newTitle,
+        createdAt: serverTimestamp(),
+        lastUpdated: serverTimestamp()
+      });
     }
 
-    function createNewChatSession() {
-      const newSessionId = `chat_${Date.now()}`;
-      appState.currentSessionId = newSessionId;
-      
-      el('chatFullWindow').innerHTML = '';
-      appendChat('bot', '### 👋 Bienvenue !\n\nJe suis prêt pour notre nouvelle discussion.');
-      
+    const messagesRef = ref(db, `${userChatsRefPath}/${appState.currentUser.uid}/${appState.currentSessionId}/messages`);
+    const attachmentsMeta = attachments.map(att => ({
+      name: att.name,
+      type: att.type
+    }));
+
+    await push(messagesRef, {
+      user: userMsg,
+      bot: botMsg,
+      attachments: attachmentsMeta,
+      timestamp: serverTimestamp()
+    });
+
+    await set(ref(db, `${userChatsRefPath}/${appState.currentUser.uid}/${appState.currentSessionId}/lastUpdated`), serverTimestamp());
+    
+    if (isNewSession) {
+      loadChatHistorySidebar();
       setTimeout(() => {
         document.querySelectorAll('.chat-history-item').forEach(i => i.classList.remove('active'));
-      }, 100);
-    }
-
-    el('new-chat-btn').addEventListener('click', createNewChatSession);
-
-    async function deleteChatSession(sessionId, itemElement) {
-      if (!appState.currentUser || !db) return;
-      if (!confirm("Voulez-vous vraiment supprimer cette discussion ?")) return;
-
-      try {
-        const sessionRef = getChatHistoryRef(appState.currentUser.uid, sessionId);
-        await set(sessionRef, null);
-        itemElement.remove();
-        if (appState.currentSessionId === sessionId) {
-          createNewChatSession();
-        }
-        logActivity(`Discussion ${sessionId} supprimée.`);
-      } catch (error) {
-        console.error("Erreur suppression chat:", error);
-        logActivity("Erreur de suppression du chat.");
-      }
-    }
-
-    async function loadChatSession(sessionId) {
-      if (!appState.currentUser || !db) return;
-      appState.currentSessionId = sessionId;
-      const chatWindow = el('chatFullWindow');
-      chatWindow.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--muted);"><i class="fas fa-spinner fa-spin"></i> Chargement...</div>';
-      
-      try {
-        const messagesRef = ref(db, `${userChatsRefPath}/${appState.currentUser.uid}/${sessionId}/messages`);
-        const snapshot = await get(messagesRef);
-        
-        chatWindow.innerHTML = '';
-        
-        if (snapshot.exists()) {
-          const messages = snapshot.val();
-          const sortedMessages = Object.values(messages).sort((a, b) => a.timestamp - b.timestamp);
-          
-          sortedMessages.forEach(msg => {
-            const attachmentsMeta = msg.attachments || [];
-            appendChat('user', msg.user, false, attachmentsMeta);
-            appendChat('bot', msg.bot, false);
-          });
-          
-          setTimeout(() => {
-            el('chatFullWindow').scrollTop = el('chatFullWindow').scrollHeight;
-          }, 100);
-          
-        } else {
-          appendChat('bot', 'C\'est le début de notre conversation.');
-        }
-        
-        document.querySelectorAll('.chat-history-item').forEach(i => i.classList.remove('active'));
-        document.querySelector(`.chat-history-item[data-session-id="${sessionId}"]`)?.classList.add('active');
-        
-        el('chat-sidebar').classList.remove('open');
-        el('sidebar-overlay').classList.remove('open');
-        
-      } catch (error) {
-        console.error("Erreur chargement chat:", error);
-        chatWindow.innerHTML = '<div class="card" style="text-align: center; color: var(--danger);"><i class="fas fa-exclamation-triangle"></i> Erreur de chargement</div>';
-      }
-    }
-
-    async function saveMessageToFirebase(userMsg, botMsg, attachments) {
-      if (!appState.currentUser || !db || !appState.currentSessionId) return;
-
-      const sessionRef = ref(db, `${userChatsRefPath}/${appState.currentUser.uid}/${appState.currentSessionId}`);
-      const sessionSnapshot = await get(sessionRef);
-      
-      const isNewSession = !sessionSnapshot.exists();
-      
-      if (isNewSession) {
-        let newTitle = userMsg;
-        if (!newTitle && attachments.length > 0) {
-          newTitle = `📎 ${attachments[0].name}`;
-        }
-        if (!newTitle) newTitle = "Nouvelle discussion";
-        newTitle = newTitle.substring(0, 30) + (newTitle.length > 30 ? '...' : '');
-        
-        await set(sessionRef, {
-          title: newTitle,
-          createdAt: serverTimestamp(),
-          lastUpdated: serverTimestamp()
-        });
-      }
-
-      const messagesRef = ref(db, `${userChatsRefPath}/${appState.currentUser.uid}/${appState.currentSessionId}/messages`);
-      const attachmentsMeta = attachments.map(att => ({
-        name: att.name,
-        type: att.type
-      }));
-
-      await push(messagesRef, {
-        user: userMsg,
-        bot: botMsg,
-        attachments: attachmentsMeta,
-        timestamp: serverTimestamp()
-      });
-
-      await set(ref(db, `${userChatsRefPath}/${appState.currentUser.uid}/${appState.currentSessionId}/lastUpdated`), serverTimestamp());
-      
-      if (isNewSession) {
-        loadChatHistorySidebar();
-        setTimeout(() => {
-          document.querySelectorAll('.chat-history-item').forEach(i => i.classList.remove('active'));
-          const item = document.querySelector(`.chat-history-item[data-session-id="${appState.currentSessionId}"]`);
-          if (item) item.classList.add('active');
-        }, 200);
-      }
-    }
-
-    // ============================================
-    // 📎 GESTION PIÈCES JOINTES
-    // ============================================
-    function renderAttachmentPreviews() {
-      const container = el('attachment-preview-container');
-      if (!container) return;
-      
-      container.innerHTML = '';
-      
-      appState.attachments.forEach((att, index) => {
-        const preview = document.createElement('div');
-        preview.className = 'attachment-preview';
-        
-        if (att.type === 'image') {
-          preview.innerHTML = `
-            <img src="${att.data}" alt="${att.name}">
-            <span>${att.name}</span>
-            <span class="remove-attachment" onclick="removeAttachment(${index})">
-              <i class="fas fa-times"></i>
-            </span>
-          `;
-        } else {
-          let iconClass = 'fa-file';
-          if (att.name.toLowerCase().endsWith('.pdf')) iconClass = 'fa-file-pdf';
-          else if (att.name.toLowerCase().endsWith('.docx') || att.name.toLowerCase().endsWith('.doc')) iconClass = 'fa-file-word';
-          else if (att.name.toLowerCase().endsWith('.xlsx') || att.name.toLowerCase().endsWith('.xls')) iconClass = 'fa-file-excel';
-          else if (att.name.toLowerCase().endsWith('.txt')) iconClass = 'fa-file-alt';
-          
-          preview.innerHTML = `
-            <i class="fas ${iconClass}"></i>
-            <span>${att.name}</span>
-            <span class="remove-attachment" onclick="removeAttachment(${index})">
-              <i class="fas fa-times"></i>
-            </span>
-          `;
-        }
-        
-        container.appendChild(preview);
-      });
-    }
-
-    window.removeAttachment = function(index) {
-      appState.attachments.splice(index, 1);
-      renderAttachmentPreviews();
-    };
-
-    el('attach-file-btn').addEventListener('click', () => {
-      el('file-input').click();
-    });
-
-    el('file-input').addEventListener('change', (event) => {
-      for (const file of event.target.files) {
-        if (appState.attachments.length >= 5) {
-          alert("Maximum 5 fichiers."); break;
-        }
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          const dataUrl = e.target.result;
-          appState.attachments.push({
-            name: file.name,
-            type: file.type.startsWith('image/') ? 'image' : 'file',
-            data: dataUrl
-          });
-          renderAttachmentPreviews();
-        };
-        reader.readAsDataURL(file);
-      }
-      event.target.value = '';
-    });
-
-// ============================================
-// 🔐 AUTHENTIFICATION - VERSION ULTRA-SÉCURISÉE
-// ============================================
-
-// Attendre que le DOM soit complètement chargé
-document.addEventListener('DOMContentLoaded', function() {
-  
-  // Fonction ultra-sécurisée pour éviter toutes les erreurs
-  function safeAuth() {
-    try {
-      if (!window.firebaseModules) {
-        throw new Error("Firebase non disponible");
-      }
-
-      const { initializeApp, getAuth, onAuthStateChanged } = window.firebaseModules;
-      const app = initializeApp(firebaseConfig);
-      const auth = getAuth(app);
-
-      // Surveiller l'authentification
-      onAuthStateChanged(auth, (user) => {
-        const loginOverlay = document.getElementById('login-overlay');
-        const mainApp = document.getElementById('main-app');
-        
-        if (!loginOverlay || !mainApp) {
-          console.error("❌ Éléments DOM non trouvés");
-          return;
-        }
-
-        if (user) {
-          // ✅ Connecté
-          mainApp.style.display = 'block';
-          loginOverlay.style.display = 'none';
-        } else {
-          // ❌ Déconnecté
-          mainApp.style.display = 'none';
-          loginOverlay.style.display = 'flex';
-        }
-      });
-
-    } catch (error) {
-      console.error("❌ Erreur auth:", error);
-      // En cas d'erreur, forcer l'écran de connexion
-      const loginOverlay = document.getElementById('login-overlay');
-      const mainApp = document.getElementById('main-app');
-      if (mainApp) mainApp.style.display = 'none';
-      if (loginOverlay) loginOverlay.style.display = 'flex';
+        const item = document.querySelector(`.chat-history-item[data-session-id="${appState.currentSessionId}"]`);
+        if (item) item.classList.add('active');
+      }, 200);
     }
   }
 
-  // Démarrer l'authentification
-  safeAuth();
-});
+  // ============================================
+  // 📎 GESTION PIÈCES JOINTES
+  // ============================================
+  function renderAttachmentPreviews() {
+    const container = el('attachment-preview-container');
+    if (!container) return;
+    
+    container.innerHTML = '';
+    
+    appState.attachments.forEach((att, index) => {
+      const preview = document.createElement('div');
+      preview.className = 'attachment-preview';
+      
+      if (att.type === 'image') {
+        preview.innerHTML = `
+          <img src="${att.data}" alt="${att.name}">
+          <span>${att.name}</span>
+          <span class="remove-attachment" onclick="removeAttachment(${index})">
+            <i class="fas fa-times"></i>
+          </span>
+        `;
+      } else {
+        let iconClass = 'fa-file';
+        if (att.name.toLowerCase().endsWith('.pdf')) iconClass = 'fa-file-pdf';
+        else if (att.name.toLowerCase().endsWith('.docx') || att.name.toLowerCase().endsWith('.doc')) iconClass = 'fa-file-word';
+        else if (att.name.toLowerCase().endsWith('.xlsx') || att.name.toLowerCase().endsWith('.xls')) iconClass = 'fa-file-excel';
+        else if (att.name.toLowerCase().endsWith('.txt')) iconClass = 'fa-file-alt';
+        
+        preview.innerHTML = `
+          <i class="fas ${iconClass}"></i>
+          <span>${att.name}</span>
+          <span class="remove-attachment" onclick="removeAttachment(${index})">
+            <i class="fas fa-times"></i>
+          </span>
+        `;
+      }
+      
+      container.appendChild(preview);
+    });
+  }
+
+  window.removeAttachment = function(index) {
+    appState.attachments.splice(index, 1);
+    renderAttachmentPreviews();
+  };
+
+  el('attach-file-btn').addEventListener('click', () => {
+    el('file-input').click();
+  });
+
+  el('file-input').addEventListener('change', (event) => {
+    for (const file of event.target.files) {
+      if (appState.attachments.length >= 10) {
+        alert("Maximum 10 fichiers."); break;
+      }
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const dataUrl = e.target.result;
+        appState.attachments.push({
+          name: file.name,
+          type: file.type.startsWith('image/') ? 'image' : 'file',
+          data: dataUrl
+        });
+        renderAttachmentPreviews();
+      };
+      reader.readAsDataURL(file);
+    }
+    event.target.value = '';
+  });
 
   // ============================================
   // 🎯 ÉVÉNEMENTS PRINCIPAUX
@@ -3145,45 +3049,28 @@ document.addEventListener('DOMContentLoaded', function() {
       renderPlanningListUI(appState.plans);
     }
   }
-   function requestNotificationPermission() {
-    if (!('Notification' in window)) return;
-    if (Notification.permission === 'default' && appState.notificationsEnabled) {
-      setTimeout(() => {
-        Notification.requestPermission().then(permission => {
-          if (permission === 'granted') {
-            logActivity('✅ Notifications activées');
-            sendBrowserNotification('🏠 SmartHome Intelligence', 'Notifications activées !', { requireInteraction: false });
-          } else {
-            logActivity('ℹ️ Notifications refusées');
-          }
-        });
-      }, 3000);
-    }
-  }
 
   // ============================================
   // 🚀 DÉMARRAGE DE L'APPLICATION
   // ============================================
   window.addEventListener('DOMContentLoaded', initApp);
 
+  // ============================================
+  // 📱 PWA - SERVICE WORKER
+  // ============================================
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/service-worker.js')
+        .then(registration => {
+          console.log('✅ Service Worker enregistré:', registration);
+        })
+        .catch(error => {
+          console.log('❌ Échec enregistrement Service Worker:', error);
+        });
+    });
+  }
 
-// ============================================
-// 📱 PWA - SERVICE WORKER
-// ============================================
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/service-worker.js')
-      .then(registration => {
-        console.log('✅ Service Worker enregistré:', registration);
-      })
-      .catch(error => {
-        console.log('❌ Échec enregistrement Service Worker:', error);
-      });
-  });
-}
-
-} // ✅ UNE SEULE FERMETURE - PAS DE PARENTHÈSE
-
-</script>
+  </script>
 </body>
 </html>
+  
