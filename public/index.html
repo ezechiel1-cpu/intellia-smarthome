@@ -8,7 +8,9 @@
   
   <!-- PWA Manifest -->
   <link rel="manifest" href="manifest.json">
+  <!-- ✅ CORRECTION : Les deux meta tags pour compatibilité -->
   <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
@@ -2786,40 +2788,84 @@
     });
 
     // Surveiller l'état d'authentification
-    onAuthStateChanged(auth, (user) => {
-      if (user) {
-        appState.currentUser = user;
-        el('login-overlay').style.display = 'none';
-        el('main-app').style.display = 'block';
-        
-        el('user-photo').src = user.photoURL || defaultAvatar;
-        el('user-name-display').textContent = user.displayName || 'Utilisateur';
-        el('user-email-display').textContent = user.email;
-        
-        loadChatHistorySidebar();
-      } else {
-        appState.currentUser = null;
-        el('main-app').style.display = 'none';
-        el('login-overlay').style.display = 'flex';
-      }
-    });
-
-  } else {
-    // Mode hors ligne sans Firebase
-    console.warn('⚠️ Mode hors ligne - Firebase non disponible');
-    loadDevicesFromLocalStorage();
-    loadPlansFromLocalStorage();
-    renderDevices();
-    renderPlanningListUI(appState.plans);
+onAuthStateChanged(auth, (user) => {
+  if (user) {
+    appState.currentUser = user;
     
-    // Simuler une connexion utilisateur pour le mode démo
-    setTimeout(() => {
-      el('login-overlay').style.display = 'none';
-      el('main-app').style.display = 'block';
-      appState.currentUser = { uid: 'demo-user', displayName: 'Utilisateur Démo', email: 'demo@example.com' };
-      logActivity('🔧 Mode démo activé (Firebase non disponible)');
-    }, 1000);
+    // ✅ CORRECTION : Vérifier l'existence des éléments avant manipulation
+    const loginOverlay = el('login-overlay');
+    const mainApp = el('main-app');
+    const userPhoto = el('user-photo');
+    const userNameDisplay = el('user-name-display');
+    const userEmailDisplay = el('user-email-display');
+    
+    if (loginOverlay) loginOverlay.style.display = 'none';
+    if (mainApp) mainApp.style.display = 'block';
+    
+    if (userPhoto) userPhoto.src = user.photoURL || defaultAvatar;
+    if (userNameDisplay) userNameDisplay.textContent = user.displayName || 'Utilisateur';
+    if (userEmailDisplay) userEmailDisplay.textContent = user.email;
+    
+    loadChatHistorySidebar();
+  } else {
+    appState.currentUser = null;
+    
+    // ✅ CORRECTION : Vérifier l'existence des éléments
+    const mainApp = el('main-app');
+    const loginOverlay = el('login-overlay');
+    
+    if (mainApp) mainApp.style.display = 'none';
+    if (loginOverlay) loginOverlay.style.display = 'flex';
   }
+});
+
+} else {
+  // Mode hors ligne sans Firebase
+  console.warn('⚠️ Mode hors ligne - Firebase non disponible');
+  loadDevicesFromLocalStorage();
+  loadPlansFromLocalStorage();
+  renderDevices();
+  renderPlanningListUI(appState.plans);
+  
+  // Simuler une connexion utilisateur pour le mode démo
+  setTimeout(() => {
+    // ✅ CORRECTION : Vérifier l'existence des éléments
+    const loginOverlay = el('login-overlay');
+    const mainApp = el('main-app');
+    
+    if (loginOverlay) loginOverlay.style.display = 'none';
+    if (mainApp) mainApp.style.display = 'block';
+    
+    appState.currentUser = { 
+      uid: 'demo-user', 
+      displayName: 'Utilisateur Démo', 
+      email: 'demo@example.com' 
+    };
+    logActivity('🔧 Mode démo activé (Firebase non disponible)');
+  }, 1000);
+}===========================================
+// 🛡️ FONCTION UTILITAIRE SÉCURISÉE POUR LE DOM
+// =============================================
+function safeDOM(id, callback) {
+    const element = document.getElementById(id);
+    if (element && callback) {
+        callback(element);
+    }
+    return element;
+}
+
+// Exemples d'utilisation :
+safeDOM('login-overlay', (el) => {
+    el.style.display = 'none';
+});
+
+safeDOM('main-app', (el) => {
+    el.style.display = 'block';
+});
+
+safeDOM('user-photo', (el) => {
+    el.src = user.photoURL || defaultAvatar;
+});
 
   // ============================================
   // 🎯 ÉVÉNEMENTS PRINCIPAUX
