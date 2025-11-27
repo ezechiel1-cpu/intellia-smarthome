@@ -1,19 +1,111 @@
 {
-  "name": "intellia-smarthome-hybrid",
-  "version": "2.0.0",
+  "name": "intellia-smarthome-complete",
+  "version": "12.0.0",
+  "description": "SmartHome Intelligence - Application complète domotique avec IA Gemini, Firebase et PWA",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "nodemon server.js"
+    "dev": "nodemon server.js",
+    "dev:client": "live-server . --port=3000 --entry-file=index.html",
+    "dev:full": "concurrently \"npm run dev\" \"npm run dev:client\"",
+    "test": "node test-connection.js",
+    "test:api": "node tests/api-test.js",
+    "test:firebase": "node tests/firebase-test.js",
+    "build": "echo 'Build completed - PWA Ready'",
+    "deploy": "firebase deploy --only hosting",
+    "deploy:rules": "firebase deploy --only database,firestore",
+    "deploy:full": "npm run deploy:rules && npm run deploy",
+    "serve": "firebase serve --only hosting",
+    "emulators": "firebase emulators:start --import=./emulator-data --export-on-exit",
+     "postinstall": "echo 'Installation terminée' && echo 'Pensez a configurer vos variables denvironnement'",
+    
+    "lint": "eslint . --ext .js",
+    "clean": "rm -rf node_modules package-lock.json && npm install",
+    "security:audit": "npm audit --audit-level=moderate",
+    "backup:data": "node scripts/backup-data.js",
+    "monitor:performance": "node scripts/performance-monitor.js"
+  },
+  "keywords": [
+    "smarthome",
+    "domotique",
+    "iot",
+    "gemini-ai",
+    "firebase",
+    "pwa",
+    "esp32",
+    "websocket",
+    "assistant-ia",
+    "automation"
+  ],
+  "author": "Ezéchiel DODAHO",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/votre-username/smarthome-intelligence.git"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
     "axios": "^1.6.0",
     "cheerio": "^1.0.0-rc.12",
     "cors": "^2.8.5",
-    "express": "^4.18.2"
+    "dotenv": "^16.4.5",
+    "express": "^4.18.2",
+    "firebase": "^10.12.2",
+    "firebase-admin": "^12.0.0",
+    "mammoth": "^1.8.0",
+    "pdf-parse": "^1.1.1",
+    "xlsx": "^0.18.5",
+    "multer": "^1.4.5-lts.1",
+    "body-parser": "^1.20.2",
+    "helmet": "^7.1.0",
+    "compression": "^1.7.4",
+    "morgan": "^1.10.0",
+    "ws": "^8.14.2",
+    "node-cron": "^3.0.3",
+    "uuid": "^9.0.1",
+    "express-rate-limit": "^7.1.5",
+    "express-validator": "^7.0.1",
+    "nodemailer": "^6.9.7",
+    "moment": "^2.29.4",
+    "lru-cache": "^10.2.0"
   },
   "devDependencies": {
-    "nodemon": "^3.0.1"
+    "nodemon": "^3.0.1",
+    "eslint": "^8.56.0",
+    "live-server": "^1.2.2",
+    "concurrently": "^8.2.2",
+    "firebase-tools": "^12.0.0"
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
+  "pwa": {
+    "name": "SmartHome Intelligence",
+    "short_name": "SmartHome",
+    "description": "Application de domotique intelligente avec assistant IA",
+    "start_url": "/",
+    "display": "standalone",
+    "theme_color": "#06b6d4",
+    "background_color": "#4361ee"
+  },
+  "config": {
+    "firebaseProject": "mamaisonintelligente-14485",
+    "apiEndpoint": "https://intellia-smarthome.onrender.com",
+    "supportedDevices": ["lamp", "plug", "ventilateur", "thermostat", "volet"],
+    "maxFileSize": 10485760,
+    "sessionTimeout": 3600000
   }
 }
