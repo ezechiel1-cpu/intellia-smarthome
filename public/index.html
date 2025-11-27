@@ -2747,67 +2747,58 @@
       event.target.value = '';
     });
 
-    // ============================================
-    // 🔑 AUTHENTIFICATION GOOGLE
-    // ============================================
-    el('googleSignInOverlayBtn').addEventListener('click', async () => {
-      try {
-        const provider = new GoogleAuthProvider();
-        const result = await signInWithPopup(auth, provider);
-        appState.currentUser = result.user;
-        
-        el('login-overlay').style.display = 'none';
-        el('main-app').style.display = 'block';
-        
-        // Mettre à jour le profil utilisateur
-        el('user-photo').src = appState.currentUser.photoURL || defaultAvatar;
-        el('user-name-display').textContent = appState.currentUser.displayName || 'Utilisateur';
-        el('user-email-display').textContent = appState.currentUser.email;
-        
-        // Charger l'historique des chats
-        loadChatHistorySidebar();
-        
-        logActivity(`✅ Connexion réussie: ${appState.currentUser.displayName}`);
-        
-      } catch (error) {
-        console.error("Erreur connexion Google:", error);
-        alert("Erreur de connexion: " + error.message);
-      }
-    });
+// ============================================
+// 🔐 AUTHENTIFICATION - VERSION ULTRA-SÉCURISÉE
+// ============================================
 
-    el('signOutBtn').addEventListener('click', async () => {
-      try {
-        await signOut(auth);
-        appState.currentUser = null;
-        el('main-app').style.display = 'none';
-        el('login-overlay').style.display = 'flex';
-        logActivity('🔒 Déconnexion réussie');
-      } catch (error) {
-        console.error("Erreur déconnexion:", error);
+// Attendre que le DOM soit complètement chargé
+document.addEventListener('DOMContentLoaded', function() {
+  
+  // Fonction ultra-sécurisée pour éviter toutes les erreurs
+  function safeAuth() {
+    try {
+      if (!window.firebaseModules) {
+        throw new Error("Firebase non disponible");
       }
-    });
 
-   // Surveiller l'état d'authentification
-onAuthStateChanged(auth, (user) => {
-  if (user) {
-    // ✅ SEULEMENT si utilisateur connecté
-    appState.currentUser = user;
-    document.getElementById('login-overlay').style.display = 'none';
-    document.getElementById('main-app').style.display = 'block';
-  } else {
-    // ❌ Sinon, afficher l'écran de connexion
-    appState.currentUser = null;
-    document.getElementById('main-app').style.display = 'none';
-    document.getElementById('login-overlay').style.display = 'flex';
+      const { initializeApp, getAuth, onAuthStateChanged } = window.firebaseModules;
+      const app = initializeApp(firebaseConfig);
+      const auth = getAuth(app);
+
+      // Surveiller l'authentification
+      onAuthStateChanged(auth, (user) => {
+        const loginOverlay = document.getElementById('login-overlay');
+        const mainApp = document.getElementById('main-app');
+        
+        if (!loginOverlay || !mainApp) {
+          console.error("❌ Éléments DOM non trouvés");
+          return;
+        }
+
+        if (user) {
+          // ✅ Connecté
+          mainApp.style.display = 'block';
+          loginOverlay.style.display = 'none';
+        } else {
+          // ❌ Déconnecté
+          mainApp.style.display = 'none';
+          loginOverlay.style.display = 'flex';
+        }
+      });
+
+    } catch (error) {
+      console.error("❌ Erreur auth:", error);
+      // En cas d'erreur, forcer l'écran de connexion
+      const loginOverlay = document.getElementById('login-overlay');
+      const mainApp = document.getElementById('main-app');
+      if (mainApp) mainApp.style.display = 'none';
+      if (loginOverlay) loginOverlay.style.display = 'flex';
+    }
   }
+
+  // Démarrer l'authentification
+  safeAuth();
 });
-
-} else {
-  // ❌ Firebase indisponible = pas d'accès
-  document.getElementById('main-app').style.display = 'none';
-  document.getElementById('login-overlay').style.display = 'flex';
-}
-
 
   // ============================================
   // 🎯 ÉVÉNEMENTS PRINCIPAUX
