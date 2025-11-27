@@ -397,24 +397,7 @@ async function createHistoryEntry(role, text, attachments = []) {
   return { role, parts };
 }
 
-async function getHistoryFromFirebase(userId, sessionId) {
-  if (!db || !userId || !sessionId) return [];
-  
-  try {
-    const messagesRef = ref(db, `${USER_CHATS_REF}/${userId}/${sessionId}/messages`);
-    const snapshot = await get(messagesRef);
-    if (!snapshot.exists()) return [];
-    
-    const messages = snapshot.val();
-    const sortedMessages = Object.values(messages).sort((a, b) => a.timestamp - b.timestamp);
-    const recentMessages = sortedMessages.slice(-10);
-    
-    return recentMessages;
-  } catch (error) {
-    console.error("Erreur lecture historique Firebase:", error);
-    return [];
-  }
-}
+
 
 // ========================================
 // RECHERCHE WEB INTELLIGENTE
@@ -2064,6 +2047,24 @@ Le HTML doit être dans le champ reply avec le wrapper <DOCUMENT_HTML>
 5. **Échapper correctement les guillemets** : Utilise \\" dans le JSON
 6. **Si document trop long** : Utilise needs_continuation: true
 
+## 🧠 MÉMOIRE DE CONVERSATION
+
+Tu as accès à l'historique complet de la conversation (jusqu'à 150 jours).
+
+**UTILISE CETTE MÉMOIRE POUR :**
+- Te rappeler des préférences de l'utilisateur
+- Faire référence à des discussions passées
+- Maintenir la cohérence sur plusieurs jours
+- Comprendre le contexte des requêtes courtes ("continue", "pareil", "oui")
+
+**EXEMPLES :**
+- User (Lundi) : "Allume la lampe salon à 18h tous les jours"
+- User (Mercredi) : "Et celle de la chambre aussi"
+  → Tu dois comprendre qu'il veut aussi une planification à 18h quotidienne
+
+- User (Semaine 1) : "J'aime que la maison soit lumineuse le matin"
+- User (Semaine 2) : "Programme ça automatiquement"
+  → Tu dois te rappeler de sa préférence et créer des planifications matinales
 
 ### 📅 GESTION DU PLANNING AVANCÉE (ROUTINES)
 
@@ -2511,14 +2512,15 @@ function jsonErrorDefaults() {
   };
 }
 
-// ========================================
-// FONCTION CHAT AVEC GEMINI
-// ========================================
+
 async function chatWithGemini(userMessage, devices, userId, sessionId, attachments = [], preferences = {}, continuationMode = false, maxRetries = API_KEYS.length) {
     
   let realDeviceStates = {};
   let currentPlanning = [];
   
+  // ========================================
+  // 🔥 RÉCUPÉRATION DES ÉTATS FIREBASE
+  // ========================================
   try {
       if (!db) throw new Error("DB non initialisée");
       
@@ -2549,43 +2551,108 @@ async function chatWithGemini(userMessage, devices, userId, sessionId, attachmen
   const beninTime = await getBeninTime();
   const contextAnalysis = analyzeContext(userMessage, realDeviceStates, beninTime);
   
-  let webResults = [];
-  if (needsWebSearch(userMessage) && !continuationMode) {
-    webResults = await performWebSearch(userMessage);
-  }
 
-  let lastError = null;
 
+  // ========================================
+  // 🔄 TENTATIVES AVEC ROTATION DES CLÉS
+  // ========================================
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     try {
       const keyObj = getNextApiKey();
       const genAI = new GoogleGenerativeAI(keyObj.key);
       const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
-      const historyFromFirebase = await getHistoryFromFirebase(userId, sessionId);
+      // ========================================
+      // 📚 RÉCUPÉRATION DE L'HISTORIQUE ÉTENDU
+      // ========================================
+      const historyFromFirebase = await getHistoryFromFirebase(userId, sessionId, 30); // 30 jours
 
-      const historyParts = await Promise.all(
-        historyFromFirebase.flatMap(async (h) => [
-          await createHistoryEntry("user", h.user, h.attachments || []),
-          await createHistoryEntry("model", h.bot)
-        ])
-      );
+      // ========================================
+      // 🧠 EXTRACTION DU CONTEXTE DES FICHIERS PRÉCÉDENTS
+      // ========================================
+      let previousFilesContext = "";
+      const filesInHistory = historyFromFirebase.filter(h => h.attachments && h.attachments.length > 0);
+      
+      if (filesInHistory.length > 0) {
+        previousFilesContext = "\n[FICHIERS PRÉCÉDEMMENT ENVOYÉS DANS CETTE SESSION]\n";
+        
+        for (const msgWithFiles of filesInHistory.slice(-3)) { // 3 derniers messages avec fichiers
+          for (const att of msgWithFiles.attachments) {
+            previousFilesContext += `- Fichier: "${att.name}" (Type: ${att.type})\n`;
+            
+            // Si c'est un fichier texte/document, on peut récupérer son contenu depuis Firebase
+            if (att.type === 'file' && att.content) {
+              previousFilesContext += `  Contenu disponible: Oui (${att.content.length} caractères)\n`;
+            }
+          }
+        }
+        
+        previousFilesContext += `[INSTRUCTION: Ces fichiers ont été analysés précédemment. Si l'utilisateur pose des questions sur leur contenu, tu peux t'y référer même s'ils ne sont pas réenvoyés.]\n\n`;
+      }
 
+      // ========================================
+      // 🔄 CONVERSION DE L'HISTORIQUE EN FORMAT GEMINI
+      // ========================================
+      const historyParts = [];
+      
+      for (const h of historyFromFirebase) {
+        // Message utilisateur
+        const userParts = [{ text: h.user }];
+        
+        // Ajouter les attachments SI PRÉSENTS dans ce message historique
+        if (h.attachments && h.attachments.length > 0) {
+          for (const att of h.attachments) {
+            if (att.type === 'image' && att.data) {
+              const parsed = parseDataUri(att.data);
+              if (parsed) {
+                userParts.push({ 
+                  inlineData: { 
+                    mimeType: parsed.mimeType, 
+                    data: parsed.data 
+                  } 
+                });
+              }
+            } else if (att.type === 'file' && att.content) {
+              // Ajouter le contenu du fichier dans l'historique
+              userParts.push({ 
+                text: `\n[FICHIER: ${att.name}]\n${att.content.substring(0, 10000)}\n[FIN FICHIER]\n` 
+              });
+            }
+          }
+        }
+        
+        historyParts.push({ role: "user", parts: userParts });
+        
+        // Réponse du bot
+        historyParts.push({ 
+          role: "model", 
+          parts: [{ text: h.bot }] 
+        });
+      }
+
+      // ========================================
+      // 💬 CRÉATION DU CHAT
+      // ========================================
       const chat = model.startChat({
         history: [
-          { role: "user", parts: [{ text: "SYSTEM_PROMPT_À_AJOUTER_MANUELLEMENT" }] },
-          { role: "model", parts: [{ text: JSON.stringify({
-                reply: "### 👋 Bienvenue !\n\nJe suis **Intellia**, votre assistant universel.",
-                needs_continuation: false,
-                continuation_context: null,
-                execute: [], 
-                planning_commands: [], 
-                device_commands: [], 
-                suggestions: [], 
-                source: "cloud"
-              })}] 
+          { 
+            role: "user", 
+            parts: [{ text: systemPrompt }] 
           },
-          ...historyParts.flat()
+          { 
+            role: "model", 
+            parts: [{ text: JSON.stringify({
+                  reply: "### 👋 Bienvenue !\n\nJe suis **Intellia**, votre assistant universel.",
+                  needs_continuation: false,
+                  continuation_context: null,
+                  execute: [], 
+                  planning_commands: [], 
+                  device_commands: [], 
+                  suggestions: [], 
+                  source: "cloud"
+                })}] 
+          },
+          ...historyParts
         ],
         generationConfig: {
           responseMimeType: "application/json",
@@ -2594,6 +2661,9 @@ async function chatWithGemini(userMessage, devices, userId, sessionId, attachmen
         },
       });
       
+      // ========================================
+      // 📝 CONSTRUCTION DES PLANIFICATIONS
+      // ========================================
       let planningsText = "Aucune planification actuellement.";
       if (currentPlanning.length > 0) {
         planningsText = currentPlanning.map(p => {
@@ -2605,12 +2675,38 @@ async function chatWithGemini(userMessage, devices, userId, sessionId, attachmen
         }).join('\n');
       }
       
+      // ========================================
+      // 🧠 RÉSUMÉ DE L'HISTORIQUE RÉCENT
+      // ========================================
+      let historySummary = "";
+      if (historyFromFirebase.length > 0) {
+        const lastMessages = historyFromFirebase.slice(-5).map(h => {
+          const userPreview = h.user.substring(0, 100);
+          const botPreview = h.bot.substring(0, 100);
+          const hasFiles = h.attachments && h.attachments.length > 0 ? ` [+${h.attachments.length} fichier(s)]` : '';
+          return `User: "${userPreview}..."${hasFiles} → Bot: "${botPreview}..."`;
+        }).join('\n');
+        
+        historySummary = `
+[HISTORIQUE RÉCENT (${historyFromFirebase.length} messages sur 30 jours)]
+${lastMessages}
+
+[INSTRUCTION: Utilise cet historique pour maintenir la cohérence et te rappeler des préférences de l'utilisateur.]
+`;
+      }
+
+      // ========================================
+      // 📋 CONSTRUCTION DU PROMPT MÉTADONNÉES
+      // ========================================
       let metadataPrompt;
       
       if (continuationMode) {
         metadataPrompt = `
 [MODE: CONTINUATION]
 [INSTRUCTION CRITIQUE: Continue EXACTEMENT là où tu t'es arrêté. NE RECOMMENCE PAS depuis le début.]
+
+${historySummary}
+${previousFilesContext}
 
 MESSAGE: "${userMessage}"
 `;
@@ -2628,30 +2724,70 @@ ${planningsText}
 [Analyse: ${JSON.stringify(contextAnalysis)}]
 ${webResults.length > 0 ? `[Web: ${JSON.stringify(webResults.slice(0, 3))}]` : ''}
 
+${historySummary}
+${previousFilesContext}
+
+[⚠️ RÈGLES CRITIQUES POUR LES INTERACTIONS UI]
+1. Si l'utilisateur CLIQUE sur un bouton (allumer/éteindre) dans l'interface :
+   - Ne génère AUCUN JSON de command
+   - Ne mentionne PAS "luminosité" ou "puissance" (l'interface s'en charge)
+
+2. Si l'utilisateur DEMANDE verbalement (ex: "allume la lampe salon") :
+   - Génère le JSON execute normalement
+   - Inclus la puissance seulement si nécessaire
+
+3. Détection d'interaction UI :
+   - Message court sans contexte ("ok", "c'est bon", "merci") APRÈS un changement d'état
+   - = L'utilisateur a utilisé l'interface directement
+   - = Pas de JSON, juste accusé de réception naturel
+
 MESSAGE: "${userMessage}"
 `;
       }
 
+      // ========================================
+      // 📎 AJOUT DES PIÈCES JOINTES (NOUVEAU MESSAGE SEULEMENT)
+      // ========================================
       const promptParts = [ { text: metadataPrompt } ];
       
-      if (!continuationMode) {
+      if (!continuationMode && attachments && attachments.length > 0) {
+        console.log(`📎 Traitement de ${attachments.length} pièce(s) jointe(s)`);
+        
         for (const att of attachments) {
           if (att.type === 'image') {
             const parsed = parseDataUri(att.data);
-            if (parsed) promptParts.push({ inlineData: { mimeType: parsed.mimeType, data: parsed.data } });
+            if (parsed) {
+              promptParts.push({ 
+                inlineData: { 
+                  mimeType: parsed.mimeType, 
+                  data: parsed.data 
+                } 
+              });
+              console.log(`  ✅ Image: ${att.name} (${parsed.mimeType})`);
+            }
           } 
           else if (att.type === 'file') {
             const fileContent = await parseFileAttachment(att);
-            promptParts.push({ text: `\n[DEBUT FICHIER: ${att.name}]\n${fileContent}\n[FIN FICHIER]\n` });
+            promptParts.push({ 
+              text: `\n[DEBUT FICHIER: ${att.name}]\n${fileContent}\n[FIN FICHIER]\n` 
+            });
+            console.log(`  ✅ Fichier: ${att.name} (${fileContent.length} caractères extraits)`);
           }
         }
       }
 
+      // ========================================
+      // 🚀 ENVOI DE LA REQUÊTE AVEC TIMEOUT
+      // ========================================
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 30000);
+      
+      console.log(`🚀 Envoi requête Gemini (Tentative ${attempt + 1}/${maxRetries})`);
       const result = await chat.sendMessage(promptParts, { signal: controller.signal });
       clearTimeout(timeout);
 
+      console.log(`✅ Réponse reçue de Gemini`);
+      
       return { 
         success: true, 
         data: result.response.text(), 
@@ -2667,9 +2803,112 @@ MESSAGE: "${userMessage}"
       if (attempt === maxRetries - 1) break;
     }
   }
+  
+  console.error('❌ Toutes les tentatives ont échoué');
   return { success: false, error: lastError };
 }
 
+// ========================================
+// 📚 FONCTION getHistoryFromFirebase AMÉLIORÉE
+// ========================================
+
+async function getHistoryFromFirebase(userId, sessionId, daysBack = 30) {
+  if (!db || !userId || !sessionId) return [];
+  
+  try {
+    const messagesRef = ref(db, `${USER_CHATS_REF}/${userId}/${sessionId}/messages`);
+    const snapshot = await get(messagesRef);
+    if (!snapshot.exists()) return [];
+    
+    const messages = snapshot.val();
+    const cutoffDate = Date.now() - (daysBack * 24 * 60 * 60 * 1000);
+    
+    // Filtrer les messages selon la période
+    const filteredMessages = Object.values(messages)
+      .filter(msg => {
+        const timestamp = msg.timestamp || 0;
+        return timestamp >= cutoffDate;
+      })
+      .sort((a, b) => a.timestamp - b.timestamp);
+    
+    console.log(`📚 Historique chargé: ${filteredMessages.length} messages sur ${daysBack} jours`);
+    
+    // Limiter à 150 messages maximum pour éviter les dépassements
+    return filteredMessages.slice(-150);
+    
+  } catch (error) {
+    console.error("❌ Erreur lecture historique Firebase:", error);
+    return [];
+  }
+}
+
+// ========================================
+// 💾 SAUVEGARDE AMÉLIORÉE AVEC CONTENU FICHIERS
+// ========================================
+
+async function saveMessageToFirebase(userMsg, botMsg, attachments) {
+  if (!appState.currentUser || !db || !appState.currentSessionId) return;
+
+  const sessionRef = ref(db, `${userChatsRefPath}/${appState.currentUser.uid}/${appState.currentSessionId}`);
+  const sessionSnapshot = await get(sessionRef);
+  
+  const isNewSession = !sessionSnapshot.exists();
+  
+  if (isNewSession) {
+    let newTitle = userMsg;
+    if (!newTitle && attachments.length > 0) {
+      newTitle = `📎 ${attachments[0].name}`;
+    }
+    if (!newTitle) newTitle = "Nouvelle discussion";
+    newTitle = newTitle.substring(0, 30) + (newTitle.length > 30 ? '...' : '');
+    
+    await set(sessionRef, {
+      title: newTitle,
+      createdAt: serverTimestamp(),
+      lastUpdated: serverTimestamp()
+    });
+  }
+
+  const messagesRef = ref(db, `${userChatsRefPath}/${appState.currentUser.uid}/${appState.currentSessionId}/messages`);
+  
+  // ✅ CONSERVER LE CONTENU DES FICHIERS DANS FIREBASE
+  const attachmentsMeta = await Promise.all(attachments.map(async att => {
+    if (att.type === 'image') {
+      return {
+        name: att.name,
+        type: att.type,
+        data: att.data // Conserver l'image base64 (limité à 5MB par Firebase)
+      };
+    } else if (att.type === 'file') {
+      // Extraire et sauvegarder le contenu du fichier
+      const fileContent = await parseFileAttachment(att);
+      return {
+        name: att.name,
+        type: att.type,
+        content: fileContent.substring(0, 100000) // Limiter à 100KB de texte
+      };
+    }
+    return { name: att.name, type: att.type };
+  }));
+
+  await push(messagesRef, {
+    user: userMsg,
+    bot: botMsg,
+    attachments: attachmentsMeta,
+    timestamp: serverTimestamp()
+  });
+
+  await set(ref(db, `${userChatsRefPath}/${appState.currentUser.uid}/${appState.currentSessionId}/lastUpdated`), serverTimestamp());
+  
+  if (isNewSession) {
+    loadChatHistorySidebar();
+    setTimeout(() => {
+      document.querySelectorAll('.chat-history-item').forEach(i => i.classList.remove('active'));
+      const item = document.querySelector(`.chat-history-item[data-session-id="${appState.currentSessionId}"]`);
+      if (item) item.classList.add('active');
+    }, 200);
+  }
+}
 // ========================================
 // 🔥 ROUTE PRINCIPALE /api/chat
 // ========================================
