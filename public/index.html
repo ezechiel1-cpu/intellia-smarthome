@@ -929,8 +929,7 @@
   }
 
   const AUTH_KEY = "cle-secrete-intellia";
-  const defaultAvatar = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iI2FlYWVhZSI+PHBhdGggZD0iTTEyIDJDNi44OCAyIDIgNi44OCAyIDEyczQuNDggMTQgMTAgMTBjNS41MiAwIDEwLTQuNDggMTAtMTBTMjcuNTIgMiAxMiAyem0wIDJjMS42NiAwIDMgMS4zNCAzIDNzLTEuMzQgMy0zIDMtMy0xLjM0LTMtM1MwLjM0IDQgMTIgNHptMCAxNmMtMi42NyAwLTUuNDMtMS4yOS03LTIuODguNTYtMS42NSAzLjU1LTIuNjIgNy0yLjYyczYuNDQgLjk3IDcgMi42MmMtMS41NyAxLjU5LTQuMzMgMi44OC03IDIuODh6Ii8+PC9zdmc+";
-
+ 
   const firebaseConfig = {
     apiKey: "AIzaSyA5oYEu4-nOUtjOe2JJ4C9VwNniNSBdjqI",
     authDomain: "mamaisonintelligente-14485.firebaseapp.com",
@@ -940,7 +939,14 @@
     messagingSenderId: "197281963087",
     appId: "1:197281963087:web:da680779479391d91f1e3a"
   };
+// ======= IMPORT FIREBASE =======
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getDatabase, ref, set, push, onValue, remove, get, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+  import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
+  const el = id => document.getElementById(id);
+
+ 
   // =============================================
   // 🎯 TYPES D'APPAREILS AVEC VARIABLE/FIXE
   // =============================================
@@ -3137,6 +3143,21 @@ document.addEventListener('DOMContentLoaded', function() {
     if (!db) {
       savePlansToLocalStorage();
       renderPlanningListUI(appState.plans);
+    }
+  }
+   function requestNotificationPermission() {
+    if (!('Notification' in window)) return;
+    if (Notification.permission === 'default' && appState.notificationsEnabled) {
+      setTimeout(() => {
+        Notification.requestPermission().then(permission => {
+          if (permission === 'granted') {
+            logActivity('✅ Notifications activées');
+            sendBrowserNotification('🏠 SmartHome Intelligence', 'Notifications activées !', { requireInteraction: false });
+          } else {
+            logActivity('ℹ️ Notifications refusées');
+          }
+        });
+      }, 3000);
     }
   }
 
