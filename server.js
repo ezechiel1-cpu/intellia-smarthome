@@ -1462,6 +1462,7 @@ app.listen(PORT, () => {
   console.log('└────────────────────────────────────────────────────────────┘');
   console.log(`   🚀 Serveur: http://localhost:${PORT}`);
   console.log(`   🔑 Clés Gemini: ${API_KEYS.length}`);
-  console.log(`   📄 Mo}); // <--- AJOUTEZ ); ICI
-
+  // Ligne de log que vous souhaitiez peut-être :
+  console.log(`   📄 Max Tokens: 65536`); 
+}); // <--- C'EST CETTE FERMETURE QUI MANQUAIT !
 
