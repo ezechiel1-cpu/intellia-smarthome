@@ -1,15 +1,9 @@
 // ========================================
-<<<<<<< HEAD
-// INTELLIA v5.0 - ASSISTANT UNIVERSEL ULTRA-INTELLIGENT
-// ✅ Conscience de l'état des appareils
-// ✅ Suggestions proactives contextuelles
-// ✅ Assistant universel (code, recherche, domotique)
-=======
-// INTELLIA v11.0 - SYSTÈME ARTIFACTS COMPLET
-// ✅ Version LITE : 100% Markdown (Plus rapide, moins de tokens)
-// ✅ Suppression des templates HTML
-// ✅ Corrections Planification & Persistance maintenues
->>>>>>> d43c7adc0819d8e07774e0c463866ce33a8aad69
+// INTELLIA v11.0 - SERVEUR AVEC STREAMING
+// ✅ Appareils variables/fixes
+// ✅ Planning avancé (daily, weekly, monthly, duration, once)
+// ✅ Réponses en Markdown pur
+// ✅ Streaming des réponses (Server-Sent Events)
 // ========================================
 const express = require('express');
 const cors = require('cors');
@@ -20,7 +14,7 @@ const { GoogleGenerativeAI } = require("@google/generative-ai");
 
 // ✅ Imports Firebase
 const { initializeApp } = require("firebase/app");
-const { getDatabase, ref, get, set, push, remove, serverTimestamp } = require("firebase/database");
+const { getDatabase, ref, get, set, push } = require("firebase/database");
 
 // ✅ Imports des Parsers de Fichiers
 const pdf = require('pdf-parse');
@@ -42,8 +36,6 @@ app.get('/', (req, res) => {
 // ========================================
 const AUTH_KEY = process.env.AUTH_KEY || "cle-secrete-intellia";
 
-<<<<<<< HEAD
-=======
 // ✅ CONFIG FIREBASE
 const firebaseConfig = {
     apiKey: "AIzaSyA5oYEu4-nOUtjOe2JJ4C9VwNniNSBdjqI",
@@ -67,16 +59,195 @@ try {
 
 const DEVICES_STATES_REF = "devices";
 const DEVICES_META_REF = "devicesMeta";
-const USER_CHATS_REF = "userChats"; // Chemin racine pour les chats
-// Note: userChatsRefPath n'était pas défini dans votre code original fourni, 
-// je suppose qu'il s'agit de USER_CHATS_REF pour la cohérence.
-const userChatsRefPath = USER_CHATS_REF; 
+const USER_CHATS_REF = "userChats";
 const PLANNING_REF = "planning";
+
+// ========================================
+// 🎨 CONFIGURATION DES CLÉS D'IMAGERIE (STABILITY AI)
+// ========================================
+const IMAGE_API_KEYS = [];
+let currentImageKeyIndex = 0;
+
+for (let i = 1; i <= 3; i++) {
+  const key = process.env[`STABILITY_KEY_${i}`];
+  if (key && key !== "sk-xxxx" && key.startsWith('sk-')) {
+    IMAGE_API_KEYS.push({ 
+      key: key, 
+      failures: 0, 
+      lastUsed: null, 
+      quotaExceeded: false 
+    });
+  }
+}
+
+if (IMAGE_API_KEYS.length === 0) {
+  console.warn('⚠️ AUCUNE CLÉ STABILITY AI DÉTECTÉE - Génération d\'images désactivée');
+} else {
+  console.log(`🎨 ${IMAGE_API_KEYS.length} clé(s) Stability AI chargée(s)`);
+}
+
+function getNextImageApiKey() {
+  if (IMAGE_API_KEYS.length === 0) {
+    throw new Error("Aucune clé d'imagerie disponible");
+  }
+  
+  const maxAttempts = IMAGE_API_KEYS.length;
+  let attempts = 0;
+  
+  while (attempts < maxAttempts) {
+    const keyObj = IMAGE_API_KEYS[currentImageKeyIndex];
+    currentImageKeyIndex = (currentImageKeyIndex + 1) % IMAGE_API_KEYS.length;
+    
+    if (!keyObj.quotaExceeded) {
+      keyObj.lastUsed = Date.now();
+      return keyObj;
+    }
+    attempts++;
+  }
+  
+  throw new Error("Toutes les clés d'imagerie ont atteint leur quota");
+}
+
+function markImageKeyAsFailed(keyObj, isQuotaError = false) {
+  keyObj.failures++;
+  if (isQuotaError) {
+    keyObj.quotaExceeded = true;
+    console.warn(`⚠️ Clé d'imagerie en quota dépassé, réinitialisation dans 1h`);
+    setTimeout(() => { 
+      keyObj.quotaExceeded = false; 
+      keyObj.failures = 0; 
+    }, 3600000);
+  }
+}
+
+// ========================================
+// 🎨 FONCTION DE GÉNÉRATION D'IMAGES
+// ========================================
+async function generateImage(prompt, style = "photorealistic") {
+  if (IMAGE_API_KEYS.length === 0) {
+    return { 
+      success: false, 
+      error: "Service de génération d'images non configuré. Veuillez ajouter des clés Stability AI." 
+    };
+  }
+
+  console.log(`🎨 Génération d'image demandée: "${prompt.substring(0, 50)}..."`);
+
+  const maxRetries = IMAGE_API_KEYS.length;
+  let lastError = null;
+
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      const keyObj = getNextImageApiKey();
+      const STABILITY_API_URL = "https://api.stability.ai/v2beta/stable-image/generate/sd3.5";
+      
+      const response = await axios.post(
+        STABILITY_API_URL,
+        {
+          prompt: prompt,
+          negative_prompt: "blurry, low quality, distorted, deformed, ugly",
+          aspect_ratio: "1:1",
+          output_format: "png"
+        },
+        {
+          headers: {
+            'Authorization': `Bearer ${keyObj.key}`,
+            'Accept': 'application/json'
+          },
+          timeout: 60000
+        }
+      );
+
+      if (response.data.image) {
+        const imageBase64 = response.data.image;
+        const imageDataUrl = `data:image/png;base64,${imageBase64}`;
+        
+        console.log(`✅ Image générée avec succès (${imageBase64.length} bytes) - Modèle: SD3.5 (2 crédits)`);
+        
+        return { 
+          success: true, 
+          imageUrl: imageDataUrl,
+          format: 'png',
+          size: imageBase64.length,
+          model: 'sd3.5',
+          credits_used: 2
+        };
+      } else {
+        throw new Error("Aucune image retournée par l'API");
+      }
+      
+    } catch (error) {
+      lastError = error;
+      const keyObj = IMAGE_API_KEYS[(currentImageKeyIndex - 1 + IMAGE_API_KEYS.length) % IMAGE_API_KEYS.length];
+      
+      const isQuotaError = error.response?.status === 402 || 
+                          error.response?.status === 429 ||
+                          error.message?.includes('quota') ||
+                          error.message?.includes('credits');
+      
+      markImageKeyAsFailed(keyObj, isQuotaError);
+      
+      console.warn(`⚠️ Tentative ${attempt + 1}/${maxRetries} échouée (Image): ${error.message}`);
+      
+      if (attempt === maxRetries - 1) break;
+    }
+  }
+
+  return { 
+    success: false, 
+    error: `Échec de la génération : ${lastError?.response?.data?.message || lastError?.message || 'Erreur inconnue'}` 
+  };
+}
+
+function isImageGenerationRequest(message) {
+  const lowerMsg = message.toLowerCase();
+  
+  const imageKeywords = [
+    'génère une image',
+    'génère un image',
+    'crée une image',
+    'crée un image',
+    'dessine',
+    'fais une image',
+    'fais un dessin',
+    'imagine une image',
+    'fais une affiche',
+    'génère une photo',
+    'crée une illustration',
+    'montre-moi une image de',
+    'peux-tu dessiner',
+    'fais-moi une image'
+  ];
+  
+  return imageKeywords.some(keyword => lowerMsg.includes(keyword));
+}
+
+// ✅ RÉACTIVÉ : Fonction de détection de documents
+function isDocumentGenerationRequest(message) {
+  const lowerMsg = message.toLowerCase();
+  
+  const documentKeywords = [
+    'génère un document',
+    'génère une lettre',
+    'génère un rapport',
+    'génère un cv',
+    'génère une facture',
+    'génère un contrat',
+    'crée un document',
+    'crée une lettre',
+    'crée un rapport',
+    'fais un rapport',
+    'fais une lettre',
+    'rédige un document',
+    'rédige une lettre'
+  ];
+  
+  return documentKeywords.some(keyword => lowerMsg.includes(keyword));
+}
 
 // ========================================
 // GESTION DES CLÉS API GEMINI
 // ========================================
->>>>>>> d43c7adc0819d8e07774e0c463866ce33a8aad69
 const API_KEYS = [];
 let currentKeyIndex = 0;
 
@@ -87,116 +258,11 @@ for (let i = 1; i <= 10; i++) {
   }
 }
 
-<<<<<<< HEAD
-if (API_KEYS.length === 0) {
-  console.warn('⚠️ AUCUNE CLÉ API GEMINI - Mode recherche web uniquement');
-}
-
-console.log(`🔑 ${API_KEYS.length} clé(s) Gemini chargée(s)`);
-
-// ========================================
-// CONTEXTE DE CONVERSATION ENRICHI
-// ========================================
-const conversationContexts = new Map();
-
-function getOrCreateContext(sessionId = 'default') {
-  if (!conversationContexts.has(sessionId)) {
-    conversationContexts.set(sessionId, {
-      history: [],
-      lastSearches: new Map(),
-      userPreferences: {
-        showTime: true,
-        lastLocation: null,
-        lastTopic: null
-      },
-      userBehavior: {
-        frequentCommands: [],
-        activeHours: [],
-        preferredDevices: []
-      },
-      deviceStates: {}, // NOUVEAU : Stockage de l'état des appareils
-      createdAt: Date.now()
-    });
-  }
-  return conversationContexts.get(sessionId);
-}
-
-function addToContext(sessionId, userMsg, aiResponse, webResults = null) {
-  const context = getOrCreateContext(sessionId);
-  
-  context.history.push({
-    user: userMsg,
-    assistant: aiResponse,
-    timestamp: Date.now()
-  });
-  
-  if (webResults && webResults.length > 0) {
-    const searchKey = userMsg.toLowerCase().trim();
-    context.lastSearches.set(searchKey, {
-      results: webResults,
-      timestamp: Date.now()
-    });
-  }
-  
-  // Garder 20 derniers messages
-  if (context.history.length > 20) {
-    context.history.shift();
-  }
-  
-  // Nettoyer vieilles recherches
-  for (const [key, data] of context.lastSearches.entries()) {
-    if (Date.now() - data.timestamp > 600000) { // 10 min
-      context.lastSearches.delete(key);
-    }
-  }
-}
-
-function updateUserPreferences(sessionId, message) {
-  const context = getOrCreateContext(sessionId);
-  const lowerMsg = message.toLowerCase();
-  
-  if (lowerMsg.includes('ne repete plus') && lowerMsg.includes('heure')) {
-    context.userPreferences.showTime = false;
-  }
-  
-  if (lowerMsg.includes('affiche') && lowerMsg.includes('heure')) {
-    context.userPreferences.showTime = true;
-  }
-}
-
-// NOUVEAU : Mise à jour de l'état des appareils
-function updateDeviceStates(sessionId, devices) {
-  const context = getOrCreateContext(sessionId);
-  
-  devices.forEach(device => {
-    if (!context.deviceStates[device.id]) {
-      context.deviceStates[device.id] = {
-        id: device.id,
-        name: device.name,
-        type: device.type,
-        room: device.room,
-        state: 'OFF',
-        power: 0,
-        lastChanged: null
-      };
-    }
-  });
-}
-
-// ========================================
-// GESTION DES CLÉS API
-// ========================================
-function getNextApiKey() {
-  if (API_KEYS.length === 0) {
-    throw new Error("Aucune clé API disponible");
-  }
-=======
 if (API_KEYS.length === 0) console.warn('⚠️ AUCUNE CLÉ API GEMINI');
 console.log(`🔑 ${API_KEYS.length} clé(s) Gemini chargée(s)`);
 
 function getNextApiKey() {
   if (API_KEYS.length === 0) throw new Error("Aucune clé API disponible");
->>>>>>> d43c7adc0819d8e07774e0c463866ce33a8aad69
   const maxAttempts = API_KEYS.length;
   let attempts = 0;
   while (attempts < maxAttempts) {
@@ -215,12 +281,6 @@ function markKeyAsFailed(keyObj, isQuotaError = false) {
   keyObj.failures++;
   if (isQuotaError) {
     keyObj.quotaExceeded = true;
-<<<<<<< HEAD
-    setTimeout(() => {
-      keyObj.quotaExceeded = false;
-      keyObj.failures = 0;
-    }, 3600000);
-=======
     setTimeout(() => { keyObj.quotaExceeded = false; keyObj.failures = 0; }, 3600000);
   }
 }
@@ -324,7 +384,6 @@ async function getRealLoKossaTemperature() {
       ...estimated, 
       success: false 
     };
->>>>>>> d43c7adc0819d8e07774e0c463866ce33a8aad69
   }
 }
 
@@ -362,328 +421,6 @@ async function getBeninTime() {
 }
 
 // ========================================
-<<<<<<< HEAD
-// HEURE PRÉCISE DU BÉNIN
-// ========================================
-function getBeninTime() {
-  const now = new Date();
-  const utcHours = now.getUTCHours();
-  const utcMinutes = now.getUTCMinutes();
-  
-  let beninHours = utcHours + 1;
-  let beninMinutes = utcMinutes;
-  
-  if (beninHours >= 24) {
-    beninHours -= 24;
-  }
-  
-  const formatted = new Date(now);
-  formatted.setUTCHours(beninHours);
-  formatted.setUTCMinutes(beninMinutes);
-  
-  const timeString = formatted.toLocaleString('fr-FR', {
-    timeZone: 'Africa/Porto-Novo',
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-    hour12: false
-  });
-  
-  return {
-    formatted: timeString,
-    hours: beninHours,
-    minutes: beninMinutes,
-    hoursStr: String(beninHours).padStart(2, '0'),
-    minutesStr: String(beninMinutes).padStart(2, '0')
-  };
-}
-
-// ========================================
-// RECHERCHE WEB INTELLIGENTE
-// ========================================
-async function performWebSearch(query, context) {
-  const searchKey = query.toLowerCase().trim();
-  
-  // Cache 10 minutes
-  if (context.lastSearches.has(searchKey)) {
-    const cached = context.lastSearches.get(searchKey);
-    if (Date.now() - cached.timestamp < 600000) {
-      console.log(`💾 Cache: "${query}"`);
-      return cached.results;
-    }
-  }
-  
-  console.log(`🔍 Recherche: "${query}"`);
-  
-  try {
-    const searchUrl = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`;
-    const response = await axios.get(searchUrl, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-      },
-      timeout: 8000
-    });
-
-    const $ = cheerio.load(response.data);
-    const results = [];
-
-    $('.result').slice(0, 5).each((i, elem) => {
-      const title = $(elem).find('.result__title').text().trim();
-      const snippet = $(elem).find('.result__snippet').text().trim();
-      const url = $(elem).find('.result__url').attr('href');
-      
-      if (title && snippet) {
-        results.push({ title, snippet, url });
-      }
-    });
-
-    console.log(`✅ ${results.length} résultats`);
-    return results;
-    
-  } catch (error) {
-    console.error('❌ Erreur recherche:', error.message);
-    return [];
-  }
-}
-
-// ========================================
-// DÉTECTION INTELLIGENTE BESOIN RECHERCHE
-// ========================================
-function needsWebSearch(message, context) {
-  const lowerMsg = message.toLowerCase().trim();
-  
-  // ❌ JAMAIS rechercher pour :
-  const noSearchPatterns = [
-    /^(c'est quoi|quel est) (ton|votre|le) nom/i,
-    /^qui es-tu/i,
-    /^bonjour/i,
-    /^salut/i,
-    /^merci/i,
-    /^ok$/i,
-    /^d'accord$/i,
-    /^allume/i,
-    /^eteins/i,
-    /^règle/i,
-    /^je (sort|sors|pars)/i,
-    /^je (suis|reviens|rentre)/i,
-    /^il fait (nuit|jour|sombre|chaud)/i,
-    /appareil.*état/i,
-    /état.*appareil/i,
-    /code (arduino|python|javascript)/i, // Code = pas de recherche
-    /génère.*code/i,
-    /écris.*code/i
-  ];
-  
-  if (noSearchPatterns.some(pattern => pattern.test(lowerMsg))) {
-    return false;
-  }
-  
-  // ✅ Rechercher pour :
-  const webKeywords = [
-    'météo', 'temps qu\'il fait', 'température', 'pluie', 'soleil',
-    'actualité', 'news', 'nouvelles',
-    'recherche', 'cherche', 'trouve',
-    'où se trouve', 'où est situé',
-    'combien coûte', 'prix de',
-    'qui est', 'c\'est qui'
-  ];
-  
-  // "qui est" uniquement pour personnalités publiques
-  if (lowerMsg.includes('qui est')) {
-    const words = message.split(' ');
-    const hasProperNoun = words.some(w => w.length > 2 && w[0] === w[0].toUpperCase());
-    return hasProperNoun;
-  }
-  
-  return webKeywords.some(kw => lowerMsg.includes(kw));
-}
-
-// ========================================
-// ANALYSE CONTEXTUELLE INTELLIGENTE
-// ========================================
-function analyzeContext(message, context, devices) {
-  const analysis = {
-    isDomoticCommand: false,
-    needsDeviceState: false,
-    isCodeRequest: false,
-    isGeneralQuestion: false,
-    suggestedActions: []
-  };
-  
-  const lowerMsg = message.toLowerCase();
-  
-  // Détection commande domotique
-  if (/allume|éteins|règle|luminosité|appareil/i.test(lowerMsg)) {
-    analysis.isDomoticCommand = true;
-  }
-  
-  // Détection demande d'état
-  if (/état|status|allumé|éteint|quel.*appareil/i.test(lowerMsg)) {
-    analysis.needsDeviceState = true;
-  }
-  
-  // Détection demande de code
-  if (/code|programme|script|arduino|python|javascript/i.test(lowerMsg)) {
-    analysis.isCodeRequest = true;
-  }
-  
-  // Question générale
-  if (/qui est|c'est quoi|comment|pourquoi|qu'est-ce/i.test(lowerMsg)) {
-    analysis.isGeneralQuestion = true;
-  }
-  
-  // Suggestions contextuelles
-  if (lowerMsg.includes('je sors') || lowerMsg.includes('je pars')) {
-    const onDevices = Object.values(context.deviceStates).filter(d => d.state === 'ON');
-    if (onDevices.length > 0) {
-      analysis.suggestedActions.push({
-        type: 'security_check',
-        message: `Vous avez ${onDevices.length} appareil(s) allumé(s). Voulez-vous que je les éteigne ?`,
-        devices: onDevices.map(d => d.id)
-      });
-    }
-  }
-  
-  if (lowerMsg.includes('il fait nuit') || lowerMsg.includes('sombre')) {
-    const offLights = Object.values(context.deviceStates)
-      .filter(d => d.type === 'lamp' && d.state === 'OFF');
-    
-    if (offLights.length > 0) {
-      analysis.suggestedActions.push({
-        type: 'lighting_suggestion',
-        message: `Il fait sombre. Je peux allumer : ${offLights.map(d => d.name).join(', ')}`,
-        devices: offLights.map(d => d.id)
-      });
-    }
-  }
-  
-  return analysis;
-}
-
-// ========================================
-// PROMPT SYSTÈME v5.0 ULTRA-INTELLIGENT
-// ========================================
-const systemPrompt = `
-Tu es "Intellia", un assistant universel ultra-intelligent.
-
-## 🎯 CAPACITÉS
-
-### 1. ASSISTANT UNIVERSEL
-- Domotique : contrôle appareils
-- Code : génère Arduino, Python, JavaScript, etc.
-- Recherche : informations web en temps réel
-- Conversation : questions générales, aide
-
-### 2. CONSCIENCE DES APPAREILS
-- Tu CONNAIS l'état réel de tous les appareils (fourni dans deviceStates)
-- Si appareil déjà allumé : informe l'utilisateur intelligemment
-- Propose des alternatives pertinentes
-
-### 3. SUGGESTIONS PROACTIVES
-- Analyse le contexte (heure, état appareils, historique)
-- Propose des actions AVANT qu'on te les demande
-- Exemples :
-  * "Je sors" → "Voulez-vous que j'éteigne les 3 lampes allumées ?"
-  * "Il fait sombre" → "Je peux allumer les lampes du salon et de la chambre"
-  * "Il fait chaud" → "Le ventilateur du salon est éteint, voulez-vous que je l'allume ?"
-
-### 4. GESTION HEURE
-- Si showTime = true : mentionne l'heure
-- Si showTime = false : NE JAMAIS mentionner l'heure
-
-### 5. RECHERCHE WEB
-- Utilise webResults si fournis
-- Ne recherche PAS pour : code, domotique, identité
-- Recherche pour : météo, actualités, personnalités
-
-## 📋 FORMAT RÉPONSE JSON
-
-{
-  "reply": "Réponse naturelle et intelligente",
-  "execute": ["device_id|ACTION|valeur"],
-  "planning_commands": [],
-  "suggestions": [
-    {
-      "type": "info|action|warning",
-      "message": "Suggestion pertinente",
-      "context": "Raison de la suggestion"
-    }
-  ],
-  "source": "cloud|web|knowledge"
-}
-
-## 💡 EXEMPLES
-
-### Appareil déjà allumé
-USER: "Allume la lampe du salon"
-deviceStates: { "salon_lamp": { state: "ON", power: 80 } }
-{
-  "reply": "La lampe du salon est déjà allumée à 80%. Voulez-vous que je change la luminosité ?",
-  "execute": [],
-  "suggestions": [
-    {
-      "type": "info",
-      "message": "Je peux régler à 100% si vous voulez plus de lumière",
-      "context": "Appareil déjà actif"
-    }
-  ],
-  "source": "cloud"
-}
-
-### Code Arduino
-USER: "Donne moi un code Arduino pour LED"
-{
-  "reply": "Voici un exemple de code Arduino pour contrôler une LED :\n\n\`\`\`cpp\nvoid setup() {\n  pinMode(13, OUTPUT);\n}\n\nvoid loop() {\n  digitalWrite(13, HIGH);\n  delay(1000);\n  digitalWrite(13, LOW);\n  delay(1000);\n}\n\`\`\`\n\nCe code fait clignoter la LED connectée à la broche 13.",
-  "execute": [],
-  "suggestions": [],
-  "source": "knowledge"
-}
-
-### Suggestion proactive
-USER: "Je sors"
-deviceStates: { "salon_lamp": {state:"ON"}, "chambre_lamp": {state:"ON"}, "cuisine_lamp": {state:"OFF"} }
-{
-  "reply": "D'accord. Vous avez 2 lampes allumées (salon et chambre). Voulez-vous que je les éteigne pour économiser l'énergie ?",
-  "execute": [],
-  "suggestions": [
-    {
-      "type": "action",
-      "message": "Éteindre salon_lamp et chambre_lamp",
-      "context": "Sécurité et économie d'énergie"
-    }
-  ],
-  "source": "cloud"
-}
-
-### État des appareils
-USER: "Les appareils sont à quel état ?"
-deviceStates: { "salon_lamp": {state:"ON", power:60}, "chambre_lamp": {state:"OFF"}, "ventilateur": {state:"ON", power:100} }
-{
-  "reply": "Voici l'état actuel :\n• Lampe salon : Allumée (60%)\n• Lampe chambre : Éteinte\n• Ventilateur : Allumé (100%)",
-  "execute": [],
-  "suggestions": [
-    {
-      "type": "info",
-      "message": "2 appareils sur 3 sont actifs",
-      "context": "Vue d'ensemble"
-    }
-  ],
-  "source": "cloud"
-}
-
-## 🚨 RÈGLES CRITIQUES
-
-1. TOUJOURS vérifier deviceStates avant toute action
-2. JAMAIS rechercher pour code/domotique/identité
-3. Suggestions basées sur CONTEXTE RÉEL (heure, état, historique)
-4. Réponses NATURELLES et CONVERSATIONNELLES
-5. Code formaté en Markdown avec backticks
-6. Si plusieurs actions possibles : PROPOSER au lieu d'exécuter
-=======
 // HELPERS MULTIMODAL
 // ========================================
 function parseDataUri(dataUri) {
@@ -844,6 +581,25 @@ async function createHistoryEntry(role, text, attachments = []) {
   return { role, parts };
 }
 
+async function getHistoryFromFirebase(userId, sessionId) {
+  if (!db || !userId || !sessionId) return [];
+  
+  try {
+    const messagesRef = ref(db, `${USER_CHATS_REF}/${userId}/${sessionId}/messages`);
+    const snapshot = await get(messagesRef);
+    if (!snapshot.exists()) return [];
+    
+    const messages = snapshot.val();
+    const sortedMessages = Object.values(messages).sort((a, b) => a.timestamp - b.timestamp);
+    const recentMessages = sortedMessages.slice(-10);
+    
+    return recentMessages;
+  } catch (error) {
+    console.error("Erreur lecture historique Firebase:", error);
+    return [];
+  }
+}
+
 // ========================================
 // RECHERCHE WEB INTELLIGENTE
 // ========================================
@@ -879,6 +635,7 @@ function needsWebSearch(message) {
     /^je (sort|sors|pars)/i, /^je (suis|reviens|rentre)/i, /^il fait (nuit|jour|sombre|chaud)/i,
     /appareil.*état/i, /état.*appareil/i, /code (arduino|python|javascript)/i,
     /génère.*code/i, /écris.*code/i, /explique/i, /température.*lokossa/i,
+    /génère.*image/i, /crée.*image/i, /dessine/i,
     /génère.*pdf/i, /génère.*lettre/i, /crée.*document/i, /fais.*rapport/i, /génère.*cv/i
   ];
   if (noSearchPatterns.some(pattern => pattern.test(lowerMsg))) return false;
@@ -927,44 +684,7 @@ function analyzeContext(message, deviceStates, beninTime) {
 }
 
 // ========================================
-// 🎯 DÉTECTION DE TRONCATURE (CRITIQUE)
-// ========================================
-function detectTruncation(content) {
-  const truncationIndicators = [
-    /\.\.\.\s*$/,
-    /\[suite\]$/i,
-    /\[à suivre\]$/i,
-    /^\s*\/\/\s*\.\.\./m,
-    /\/\*.*\*\/\s*$/,
-    /,\s*$/,
-    /;\s*$/
-  ];
-  
-  for (const pattern of truncationIndicators) {
-    if (pattern.test(content)) {
-      console.log(`⚠️ Troncature détectée via pattern: ${pattern}`);
-      return true;
-    }
-  }
-  
-  const openBraces = (content.match(/{/g) || []).length;
-  const closeBraces = (content.match(/}/g) || []).length;
-  if (openBraces > closeBraces && openBraces - closeBraces > 2) {
-    console.log(`⚠️ Troncature détectée: accolades non fermées (${openBraces} vs ${closeBraces})`);
-    return true;
-  }
-  
-  const lastChars = content.trim().slice(-20);
-  if (/^[^.!?}\]]*$/.test(lastChars) && content.length > 500) {
-    console.log(`⚠️ Troncature possible: fin de contenu suspecte`);
-    return true;
-  }
-  
-  return false;
-}
-
-// ========================================
-// ✅ PROMPT SYSTÈME v11.0 - LITE (MARKDOWN ONLY)
+// ✅ PROMPT SYSTÈME v11.0 (MARKDOWN PUR)
 // ========================================
 const systemPrompt = `Tu es Intellia, assistant universel ultra-intelligent.
 
@@ -975,204 +695,177 @@ Tu es créé pour un projet Domotique intelligente par 06 jeunes étudiants cher
 +229 0159071155
 +229 0141929429
 
-## 🎯 TES CAPACITÉS
-1. **Domotique** : Contrôle appareils, planification, ajout/suppression automatique.
-2. **Code** : Arduino, Python, JavaScript, C, C++, Java, etc. (ILLIMITÉ).
-3. **Recherche web** : Actualités, infos en temps réel via DuckDuckGo.
-4. **Conversation naturelle** : Contexte, historique, suggestions proactives.
-5. **Analyse de fichiers** : PDF, DOCX, TXT, Images.
-6. **Température Lokossa** : Temps réel via Open-Meteo API.
-7. **📄 Génération de documents** : CV, lettres, rapports, contrats (En MARKDOWN PROPRE).
+## 🎯 TES CAPACITÉS COMPLÈTES
+1. **Domotique** : Contrôle appareils, planification, ajout/suppression automatique
+2. **Code** : Arduino, Python, JavaScript, C, C++, Java, etc.
+3. **Recherche web** : Actualités, infos en temps réel via DuckDuckGo
+4. **Conversation naturelle** : Contexte, historique, suggestions proactives
+5. **Analyse de fichiers** : PDF, DOCX, TXT, HTML, JS, JSON, CSS, XLSX, CSV, images
+6. **Température Lokossa** : Temps réel via Open-Meteo API
+7. **🎨 Génération d'images** : Via Stability AI (SD3.5 - 2 crédits/image, 12 images/jour)
+8. **📄 Génération de documents** : Lettres, rapports, CV, factures, contrats (Markdown structuré)
 
-## ⚠️ FORMAT DE RÉPONSE (JSON + MARKDOWN)
+## ⚠️ FORMAT DE RÉPONSE (CRITIQUE : JSON + MARKDOWN PUR)
 
 Tu dois TOUJOURS répondre en JSON.
-Le champ "reply" doit contenir du texte formaté en **Markdown (GFM)** uniquement.
+Le champ "reply" doit contenir du texte en **Markdown pur (GFM)**.
 
-### 📝 RÈGLES DE GÉNÉRATION DE DOCUMENTS
-Quand l'utilisateur demande un document (CV, Lettre, Contrat, etc.), **n'utilise PAS de HTML**. 
-Utilise la structure Markdown pour faire une mise en page propre :
-
-1. **Titres** : Utilise \`#\` pour le titre du document et \`##\` pour les sections.
-2. **Séparateurs** : Utilise \`---\` pour séparer l'en-tête du corps (très important pour les lettres).
-3. **Mise en valeur** : Utilise \`**Gras**\` pour les labels (ex: **Objet:**, **Expéditeur:**).
-4. **Tableaux** : Utilise la syntaxe Markdown standard (\`| Colonne 1 | Colonne 2 |\`).
-
-**Exemple de structure (Lettre) :**
-\`\`\`markdown
-# LETTRE DE MOTIVATION
-
-**De :** Prénom Nom
-**À :** Entreprise XYZ
-
----
-
-### Objet : Candidature au poste de...
-
-Madame, Monsieur,
-
-[Corps de la lettre bien structuré en paragraphes]
-
-Cordialement,
-
-**Prénom Nom**
-\`\`\`
+### 🎯 Utilise Markdown pour la structure :
+* \`### Titre\` (ou \`##\`)
+* \`**Texte en gras**\`
+* \`*Texte en italique*\`
+* Listes avec \`*\` ou \`-\` ou \`1.\`
+* Blocs de code avec \`\`\`javascript ... \`\`\`
+* Liens : \`[texte du lien](https://url.com)\`
+* Paragraphes : Laisse une ligne vide pour un nouveau paragraphe.
 
 ### 🌡️ TEMPÉRATURE DE LOKOSSA
-Tu as accès à la température **RÉELLE** dans les métadonnées. Donne la valeur directement sans dire "je cherche".
+Tu as accès à la température **RÉELLE EN TEMPS RÉEL** de Lokossa via Open-Meteo API dans les métadonnées.
+**Quand l'utilisateur demande la température**, donne IMMÉDIATEMENT la valeur **sans mentionner de recherche**.
 
-### 🚀 RÈGLES DE CONTINUATION
-1. **Si tu manques de tokens** : Ajoute le champ \`needs_continuation: true\`.
-2. **Le client affichera un bouton "Continuer"**.
-3. **Quand tu continues** : Reprends exactement là où tu t'es arrêté (ne répète pas le début).
+**Instructions critiques :**
+- ❌ Ne dis JAMAIS "Je vais chercher" ou "Laissez-moi vérifier"
+- ✅ Réponds directement : "À Lokossa, il fait actuellement **28°C** (Ciel dégagé ☀️). Ressenti: 30°C, Humidité: 75%."
+- ✅ Si la source est "estimation", ajoute discrètement : "(estimation basée sur les moyennes saisonnières)"
+- ❌ Ne mentionne JAMAIS "Open-Meteo" ou "API météo" sauf si l'utilisateur demande la source
 
-## 🧠 MÉMOIRE DE CONVERSATION
+### 🎨 GÉNÉRATION D'IMAGES
+Tu peux générer des images via Stability AI (modèle SD3.5, 2 crédits/image).
 
-Tu as accès à l'historique complet de la conversation (jusqu'à 150 jours).
+**Déclencheurs de génération d'image :**
+- "Génère une image de..."
+- "Crée une image montrant..."
+- "Dessine-moi..."
+- "Fais une affiche de..."
+- "Imagine une photo de..."
 
-**UTILISE CETTE MÉMOIRE POUR :**
-- Te rappeler des préférences de l'utilisateur
-- Faire référence à des discussions passées
-- Maintenir la cohérence sur plusieurs jours
-- Comprendre le contexte des requêtes courtes ("continue", "pareil", "oui")
+**Quand l'utilisateur demande une image, tu dois :**
+1. **Créer un prompt en ANGLAIS optimisé** pour Stability AI (SD3.5)
+2. **Ajouter le champ \`image_generation\`** dans ta réponse JSON
 
-**EXEMPLES :**
-- User (Lundi) : "Allume la lampe salon à 18h tous les jours"
-- User (Mercredi) : "Et celle de la chambre aussi"
-  → Tu dois comprendre qu'il veut aussi une planification à 18h quotidienne
-
-- User (Semaine 1) : "J'aime que la maison soit lumineuse le matin"
-- User (Semaine 2) : "Programme ça automatiquement"
-  → Tu dois te rappeler de sa préférence et créer des planifications matinales
-
-### 📅 GESTION DU PLANNING AVANCÉE (ROUTINES)
-
-**AVANT d'ajouter, vérifie l'état actuel.**
-
-L'utilisateur peut demander des planifications uniques OU récurrentes. Tu dois détecter la **Fréquence**.
-
-**CHAMPS OBLIGATOIRES DU JSON PLANNING :**
-- \`frequency\`: "once" (une fois), "daily" (tous les jours), "weekly" (hebdo), "monthly" (mensuel).
-- \`daysOfWeek\`: Tableau d'entiers pour "weekly" [0=Dim, 1=Lun, ... 6=Sam].
-- \`targetDate\`: "YYYY-MM-DD" si frequency est "once" (et que ce n'est pas aujourd'hui).
-
-**SCÉNARIOS INTELLIGENTS :**
-
-1. **Routine Quotidienne ("Comme d'habitude", "Tous les jours")**
-   - Requête : "Allume le salon tous les jours à 18h"
-   - JSON : \`frequency: "daily"\`
-
-2. **Routine Hebdomadaire ("Chaque lundi", "Les week-ends")**
-   - Requête : "Allume la ventilation chaque Lundi et Mardi à 08h00"
-   - JSON : \`frequency: "weekly"\`, \`daysOfWeek: [1, 2]\`
-   - Requête : "Le week-end allume tout"
-   - JSON : \`frequency: "weekly"\`, \`daysOfWeek: [0, 6]\`
-
-3. **Routine basée sur les habitudes ("Fais comme la semaine passée")**
-   - Si l'utilisateur demande de répliquer une routine ou dit "active le mode travail", propose une planification **"daily"** (lundi au vendredi) ou **"weekly"** selon le contexte implicite.
-
-**EXEMPLE DE JSON COMPLET :**
+**Format JSON pour génération d'image :**
+\`\`\`json
 {
-  "reply": "✅ C'est noté ! J'ai programmé l'allumage récurrent de la **Lampe Salon** chaque Lundi et Mercredi.",
+  "reply": "### 🎨 Génération en cours...\\n\\nJe crée votre image. Cela peut prendre quelques secondes.",
+  "image_generation": {
+    "prompt": "A photorealistic sunset over a tropical beach in Benin, golden hour lighting, palm trees, ocean waves, 4k quality, detailed",
+    "style": "photorealistic"
+  },
+  "execute": [],
+  "planning_commands": [],
+  "device_commands": [],
+  "source": "cloud"
+}
+\`\`\`
+
+**Styles disponibles :**
+- \`photorealistic\` : Pour photos réalistes
+- \`artistic\` : Pour illustrations artistiques
+
+**Règles pour le prompt d'image :**
+- Toujours en ANGLAIS
+- Descriptif et détaillé (20-50 mots)
+- Inclure le style (photorealistic, digital art, painting...)
+- Inclure la qualité (4k, high quality, detailed...)
+- Éviter les termes vagues
+
+### 📄 GÉNÉRATION DE DOCUMENTS (MARKDOWN)
+Tu peux générer des documents structurés : lettres, rapports, CV, factures, contrats.
+
+**Déclencheurs de génération de document :**
+- "Génère une lettre..."
+- "Crée un rapport..."
+- "Fais mon CV..."
+- "Génère une facture..."
+- "Rédige un contrat..."
+
+**Quand l'utilisateur demande un document, tu dois :**
+1. **Créer un document en Markdown** avec une structure appropriée
+2. **Retourner ce Markdown dans le champ \`reply\`**
+
+**EXEMPLE DE CV EN MARKDOWN :**
+\`\`\`markdown
+# Jean Martin
+**Développeur Full Stack**
+
+📧 jean.martin@email.com | 📱 +33 6 12 34 56 78 | 🌐 [portfolio.com](https://portfolio.com)
+
+## 💼 Expérience Professionnelle
+
+### Développeur Senior - TechCorp (2020-2024)
+- Développement d'applications React/Node.js
+- Architecture microservices et cloud AWS
+- Encadrement d'une équipe de 5 développeurs
+
+### Développeur Full Stack - StartupX (2018-2020)
+- Création d'une plateforme e-commerce
+- Intégration de paiements sécurisés
+
+## 🎓 Formation
+
+### Master en Informatique - Université de Paris (2018)
+- Spécialisation en intelligence artificielle
+
+## 🛠️ Compétences Techniques
+
+- **Langages** : JavaScript, Python, Java, SQL
+- **Frameworks** : React, Node.js, Express, Django
+- **Outils** : Git, Docker, AWS, Jenkins
+\`\`\`
+
+**Règles pour les documents :**
+- Utilise des titres (\`#\`, \`##\`) pour structurer
+- Utilise des listes pour les expériences et compétences
+- Inclure des emojis pour une meilleure lisibilité
+- Le client transformera le Markdown en document formaté
+
+### 📅 GESTION DU PLANNING AVANCÉ (CRITIQUE)
+Si l'utilisateur demande une action à un **moment futur** ("à 16h34", "dans 15 minutes", "à 20h00 demain"), tu dois générer une commande dans le champ **"planning_commands"**.
+
+**Types de planification supportés :**
+- \`once\` : Une fois à une date spécifique
+- \`daily\` : Tous les jours à la même heure
+- \`weekly\` : Certains jours de la semaine
+- \`monthly\` : Tous les X du mois
+- \`duration\` : Pendant une période (du X au Y)
+
+**Exemple de requête :** "Allume la lampe du salon à 16h34 tous les jours à 80%"
+**Exemple de JSON à générer :**
+\`\`\`json
+{
+  "reply": "✅ C'est noté ! J'ai ajouté la tâche **Lampe Salon** à votre planning pour 16h34 tous les jours.",
   "planning_commands": [
     {
       "action": "add",
       "device": "lampe_salon",
-      "time": "18:30",
+      "time": "16:34",
       "actionType": "allumer",
-      "frequency": "weekly",
-      "daysOfWeek": [1, 3]
+      "power": 80,
+      "schedule": {
+        "type": "daily"
+      }
     }
   ],
-  "needs_continuation": false,
   "execute": [],
   "device_commands": [],
+  "image_generation": null,
   "source": "cloud"
 }
+\`\`\`
 
-### 🗑️ SUPPRESSION DE PLANIFICATIONS (INTELLIGENT)
-
-Tu peux supprimer des planifications de 3 façons :
-
-#### 1. SUPPRESSION DE TOUTES LES TÂCHES
-
-**Déclencheurs :**
-- "Supprime toutes les tâches planifiées"
-- "Efface tout le planning"
-- "Supprime tous les plannings"
-- "Annule toutes les tâches planifiées"
-- "Vide le planning"
-
-**Exemple de JSON à générer :**
-{
-  "reply": "✅ Toutes les planifications ont été supprimées !",
-  "planning_commands": [
-    {
-      "action": "delete_all"
-    }
-  ],
-  "needs_continuation": false,
-  "execute": [],
-  "device_commands": [],
-  "source": "cloud"
-}
-
-#### 2. SUPPRESSION D'UNE TÂCHE SPÉCIFIQUE PAR NOM D'APPAREIL
-
-**Déclencheurs :**
-- "Supprime la planification de la lampe salon"
-- "Annule la tâche de la lampe intelligente"
-- "Efface le planning du ventilateur"
-
-**Tu dois IDENTIFIER l'appareil dans [Appareils] et chercher les planifications correspondantes dans [Planifications].**
-
-**Si la planification existe :**
-{
-  "reply": "✅ J'ai supprimé la planification de **Lampe Salon** (prévue à 16h34).",
-  "planning_commands": [
-    {
-      "action": "delete_specific",
-      "device": "lampe_salon"
-    }
-  ],
-  "needs_continuation": false,
-  "execute": [],
-  "device_commands": [],
-  "source": "cloud"
-}
->>>>>>> d43c7adc0819d8e07774e0c463866ce33a8aad69
-
-#### 3. SUPPRESSION D'UNE TÂCHE SPÉCIFIQUE PAR HEURE
-
-**Déclencheurs :**
-- "Supprime la planification de la lampe salon à 16h34"
-- "Annule la tâche de la lampe intelligente prévue à 19h00"
-
-**Tu dois vérifier dans [Planifications] si une tâche correspond à l'appareil ET à l'heure.**
-
-**Si trouvée :**
-{
-  "reply": "✅ J'ai supprimé la planification de **Lampe Salon** prévue à **16h34**.",
-  "planning_commands": [
-    {
-      "action": "delete_specific",
-      "device": "lampe_salon",
-      "time": "16:34"
-    }
-  ],
-  "needs_continuation": false,
-  "execute": [],
-  "device_commands": [],
-  "source": "cloud"
-}
-
-**IMPORTANT : Vérifie TOUJOURS [Planifications] avant de confirmer une suppression.**
+**Règles de planning :**
+* Le format \`time\` est TOUJOURS \`HH:MM\`.
+* L'ID de l'appareil (\`device\`) doit exister dans [Appareils].
+* L'\`actionType\` est **"allumer"** ou **"éteindre"** selon la requête.
+* Pour un appareil variable, la \`power\` est obligatoire (entre 0 et 100). Pour un appareil fixe, mets \`power: 100\` pour ON et \`power: 0\` pour OFF.
+* Le \`schedule.type\` doit être l'un des types supportés.
 
 ### ➕ AJOUT AUTOMATIQUE D'APPAREILS
 Si l'utilisateur demande d'ajouter un nouvel appareil (ex: "Ajoute une lampe jardin dans le salon"), génère une commande dans **"device_commands"**.
 
 **Exemple de requête :** "Ajoute une lampe jardin dans le salon"
 **Exemple de JSON à générer :**
+\`\`\`json
 {
   "reply": "✅ J'ai ajouté **Lampe Jardin** dans votre salon !",
   "device_commands": [
@@ -1183,24 +876,26 @@ Si l'utilisateur demande d'ajouter un nouvel appareil (ex: "Ajoute une lampe jar
       "room": "Salon"
     }
   ],
-  "needs_continuation": false,
   "execute": [],
   "planning_commands": [],
+  "image_generation": null,
   "source": "cloud"
 }
+\`\`\`
 
 **Types d'appareils supportés :**
-* lamp : Lampe (avec luminosité)
-* plug : Prise électrique
-* ventilateur : Ventilateur (avec vitesse)
-* thermostat : Thermostat
-* volet : Volet roulant
+* \`lamp\` : Lampe (variable)
+* \`plug\` : Prise électrique (fixe)
+* \`ventilateur\` : Ventilateur (variable)
+* \`thermostat\` : Thermostat (variable)
+* \`volet\` : Volet roulant (fixe)
 
 ### 🗑️ SUPPRESSION D'APPAREILS
 Si l'utilisateur demande de supprimer un appareil (ex: "Supprime la lampe jardin", "Enlève le ventilateur de la chambre"), génère une commande dans **"device_commands"**.
 
 **Exemple de requête :** "Supprime la lampe jardin"
 **Exemple de JSON à générer :**
+\`\`\`json
 {
   "reply": "✅ J'ai supprimé **Lampe Jardin** de votre système !",
   "device_commands": [
@@ -1209,15 +904,16 @@ Si l'utilisateur demande de supprimer un appareil (ex: "Supprime la lampe jardin
       "device": "lampe_jardin_1234"
     }
   ],
-  "needs_continuation": false,
   "execute": [],
   "planning_commands": [],
+  "image_generation": null,
   "source": "cloud"
 }
+\`\`\`
 
 **Règles de suppression :**
-* L'action doit être "delete" ou "remove"
-* Le device doit être l'ID exact de l'appareil (tu le trouveras dans [Appareils])
+* L'\`action\` doit être \`"delete"\` ou \`"remove"\`
+* Le \`device\` doit être l'ID exact de l'appareil (tu le trouveras dans [Appareils])
 * Si l'utilisateur mentionne le nom de l'appareil, trouve l'ID correspondant dans [Appareils]
 * Confirme toujours la suppression dans ta réponse
 
@@ -1227,86 +923,172 @@ Si l'utilisateur demande de supprimer un appareil (ex: "Supprime la lampe jardin
 - "Retire la/le [appareil]"
 - "Efface la/le [appareil]"
 - "Désinstalle la/le [appareil]"
+
+### ❌ INTERDICTIONS :
+1. ❌ JAMAIS envoyer de balises HTML (<p>, <h2>, <strong style=...>) dans "reply". UNIQUEMENT du Markdown.
+2. ❌ Le client (index.html) s'occupe de transformer le Markdown en HTML.
+3. ❌ Ne JAMAIS rechercher sur le web pour la température de Lokossa (elle est fournie).
+4. ❌ Ne JAMAIS générer d'images toi-même, utilise le champ \`image_generation\`.
+5. ❌ Pour les documents, retourne du Markdown structuré dans \`reply\`, pas du HTML.
+
 ## FORMAT JSON DE RÉPONSE
 
 {
-  "reply": "Ton réponse en Markdown ici...",
-  "needs_continuation": false,
-  "continuation_context": null,
+  "reply": "### 💡 État des lampes\\n\\nVoici l'état actuel :\\n\\n* **LED 1 (SALON)** : Allumée à 30%\\n* **LED 2 (CHAMBRE)** : Éteinte\\n",
   "execute": ["device_id|ACTION|valeur"],
   "planning_commands": [],
   "device_commands": [],
+  "image_generation": null,
   "suggestions": [],
   "source": "cloud"
 }
 
 ## 📌 RÈGLES GÉNÉRALES
 
-1. **Vérification:** Vérifie [États] et [Planifications] AVANT toute réponse.
-2. **Recherche:** Ne recherche PAS pour code/domotique/température Lokossa/documents.
+1. **Vérification:** Vérifie [États] AVANT toute action immédiate.
+2. **Recherche:** Ne recherche PAS pour code/domotique/température Lokossa/génération d'images/documents.
 3. **Heure:** Mentionne SEULEMENT si demandé ou pertinent.
 4. **Naturalité:** Réponses NATURELLES et CONVERSATIONNELLES.
 5. **CONTEXTE:** Si message court ("les","tout", "oui"), analyse l'historique.
 6. **Fichiers:** Base ta réponse sur le contenu fourni.
-7. **PRÉSENTATION:** Utilise la structure Markdown (titres, listes, gras) SAUF pour documents (HTML avec <DOCUMENT_HTML>).
+7. **PRÉSENTATION:** Utilise la structure Markdown (titres, listes, gras) pour tous les documents.
 8. **Température Lokossa:** Toujours disponible dans les métadonnées, ne cherche JAMAIS sur le web.
-9. **Suppression:** Utilise device_commands avec action: "delete" pour supprimer des appareils.
-10. **Suppression planning:** Utilise planning_commands avec les bonnes actions.
-11. **Intelligence:** Détecte les incohérences (ex: planifier l'allumage d'une lampe déjà allumée).
-12. **CONTINUATION:** Si tu atteins la limite de tokens, ajoute needs_continuation: true et le client affichera un bouton "Continuer".
+9. **Images:** Utilise le champ \`image_generation\` avec un prompt en ANGLAIS.
+10. **Documents:** Retourne du Markdown structuré selon le type (lettre, rapport, CV, facture, contrat).
+11. **Suppression:** Utilise \`device_commands\` avec \`action: "delete"\` pour supprimer des appareils.
 
-RÉPONDS EN JSON VALIDE AVEC DU MARKDOWN DANS "reply".
-NE JAMAIS répondre "Commande reçue" sans contexte - TOUJOURS fournir une réponse utile et détaillée.
-TOUJOURS vérifier les états et planifications avant de répondre pour être intelligent et contextuel.
-SI TU MANQUES DE TOKENS : needs_continuation: true + marqueur dans le contenu.
+RÉPONDS EN JSON VALIDE AVEC DU MARKDOWN PUR DANS "reply".
 `;
 
 // ========================================
-<<<<<<< HEAD
-// FONCTION CHAT AVEC GEMINI
+// FONCTION CHAT AVEC GEMINI (STREAMING)
 // ========================================
-async function chatWithGemini(userMessage, devices, deviceStates, sessionId, maxRetries = API_KEYS.length) {
-  if (API_KEYS.length === 0) {
-    return { 
-      success: false, 
-      error: "Aucune clé Gemini disponible"
-    };
+async function chatWithGeminiStream(userMessage, devices, userId, sessionId, attachments = [], preferences = {}, maxRetries = API_KEYS.length) {
+    
+  let realDeviceStates = {};
+  try {
+      if (!db) throw new Error("DB non initialisée");
+      const snapshot = await get(ref(db, DEVICES_STATES_REF));
+      realDeviceStates = snapshot.val() || {};
+      console.log(`🔥 États réels récupérés: ${Object.keys(realDeviceStates).length} appareils`);
+  } catch (e) {
+      console.error("❌ ERREUR FIREBASE:", e.message);
+      realDeviceStates = {};
   }
 
-  const context = getOrCreateContext(sessionId);
-  const beninTime = getBeninTime();
-  
-  updateUserPreferences(sessionId, userMessage);
-  updateDeviceStates(sessionId, devices);
-  
-  // Fusionner états UI avec contexte
-  Object.keys(deviceStates).forEach(deviceId => {
-    if (context.deviceStates[deviceId]) {
-      context.deviceStates[deviceId].state = deviceStates[deviceId].etat || 'OFF';
-      context.deviceStates[deviceId].power = deviceStates[deviceId].luminosite || 0;
-      context.deviceStates[deviceId].lastChanged = Date.now();
-    }
-  });
-  
-  const contextAnalysis = analyzeContext(userMessage, context, devices);
+  if (API_KEYS.length === 0) {
+    return { success: false, error: "Aucune clé Gemini disponible" };
+  }
+
+  const beninTime = await getBeninTime();
+  const contextAnalysis = analyzeContext(userMessage, realDeviceStates, beninTime);
   
   let webResults = [];
-  if (needsWebSearch(userMessage, context)) {
-    webResults = await performWebSearch(userMessage, context);
+  if (needsWebSearch(userMessage)) {
+    webResults = await performWebSearch(userMessage);
   }
 
   let lastError = null;
-=======
-// ✅ GESTION DES COMMANDES D'APPAREILS
+
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      const keyObj = getNextApiKey();
+      const genAI = new GoogleGenerativeAI(keyObj.key);
+      const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+
+      const historyFromFirebase = await getHistoryFromFirebase(userId, sessionId);
+
+      const historyParts = await Promise.all(
+        historyFromFirebase.flatMap(async (h) => [
+          await createHistoryEntry("user", h.user, h.attachments || []),
+          await createHistoryEntry("model", h.bot)
+        ])
+      );
+
+      const chat = model.startChat({
+        history: [
+          { role: "user", parts: [{ text: systemPrompt }] },
+          { role: "model", parts: [{ text: JSON.stringify({
+                reply: "### 👋 Recevez mes chaleureuses salutations !\n\nJe suis **Intellia**, votre assistant universel. Comment puis-je vous aider aujourd'hui ?",
+                execute: [], 
+                planning_commands: [], 
+                device_commands: [], 
+                image_generation: null,
+                suggestions: [], 
+                source: "cloud"
+              })}] 
+          },
+          ...historyParts.flat()
+        ],
+        generationConfig: {
+          responseMimeType: "application/json",
+          temperature: 0.7,
+          maxOutputTokens: 65536,
+        },
+      });
+
+      const imageGenStatus = IMAGE_API_KEYS.length > 0 ? "activée (SD3.5, 2 crédits/image, 12 images/jour)" : "désactivée";
+      
+      const metadataPrompt = `
+[Heure: ${beninTime.formatted}]
+[Température Lokossa TEMPS RÉEL: ${beninTime.temperature.temperature}°C (${beninTime.temperature.description}), Ressenti: ${beninTime.temperature.feels_like}°C, Humidité: ${beninTime.temperature.humidity}%, Source: ${beninTime.temperature.source}]
+[Génération d'images: ${imageGenStatus}]
+[Génération de documents: activée (Markdown)]
+[Préfs: ${JSON.stringify(preferences)}]
+[États: ${JSON.stringify(realDeviceStates)}]
+[Appareils: ${JSON.stringify(devices)}] 
+[Analyse: ${JSON.stringify(contextAnalysis)}]
+${webResults.length > 0 ? `[Web: ${JSON.stringify(webResults.slice(0, 3))}]` : ''}
+
+MESSAGE: "${userMessage}"
+`;
+
+      const promptParts = [ { text: metadataPrompt } ];
+      for (const att of attachments) {
+        if (att.type === 'image') {
+          const parsed = parseDataUri(att.data);
+          if (parsed) promptParts.push({ inlineData: { mimeType: parsed.mimeType, data: parsed.data } });
+        } 
+        else if (att.type === 'file') {
+          const fileContent = await parseFileAttachment(att);
+          promptParts.push({ text: `\n[DEBUT FICHIER: ${att.name}]\n${fileContent}\n[FIN FICHIER]\n` });
+        }
+      }
+
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 25000);
+      const result = await chat.sendMessage(promptParts, { signal: controller.signal });
+      clearTimeout(timeout);
+
+      return { 
+        success: true, 
+        data: result.response.text(), 
+        hadWebResults: webResults.length > 0,
+      };
+
+    } catch (error) {
+      lastError = error;
+      const keyObj = API_KEYS[(currentKeyIndex - 1 + API_KEYS.length) % API_KEYS.length];
+      const isQuotaError = error.message?.includes('quota') || error.message?.includes('429') || error.message?.includes('RESOURCE_EXHAUSTED');
+      markKeyAsFailed(keyObj, isQuotaError);
+      console.warn(`⚠️ Tentative ${attempt + 1}/${maxRetries} échouée: ${error.message}`);
+      if (attempt === maxRetries - 1) break;
+    }
+  }
+  return { success: false, error: lastError };
+}
+
+// ========================================
+// ✅ GESTION DES COMMANDES D'APPAREILS (AVEC SUPPRESSION)
 // ========================================
 async function handleDeviceCommands(commands, userId) {
   if (!db) {
     console.warn("⚠️ Firebase non disponible, impossible de gérer les appareils");
     return;
   }
->>>>>>> d43c7adc0819d8e07774e0c463866ce33a8aad69
 
   for (const cmd of commands) {
+    // ✅ AJOUT D'APPAREIL
     if (cmd.action === 'add') {
       try {
         const deviceName = cmd.name || 'Nouvel Appareil';
@@ -1319,11 +1101,11 @@ async function handleDeviceCommands(commands, userId) {
           .substring(0, 30) + '_' + Date.now().toString().slice(-4);
         
         const deviceTypes = {
-          'lamp': { hasBrightness: true, icon: 'lightbulb' },
-          'plug': { hasBrightness: false, icon: 'plug' },
-          'ventilateur': { hasBrightness: true, icon: 'fan' },
-          'thermostat': { hasBrightness: false, icon: 'temperature-low' },
-          'volet': { hasBrightness: false, icon: 'window-maximize' }
+          'lamp': { hasBrightness: true, isVariable: true, icon: 'lightbulb' },
+          'plug': { hasBrightness: false, isVariable: false, icon: 'plug' },
+          'ventilateur': { hasBrightness: true, isVariable: true, icon: 'fan' },
+          'thermostat': { hasBrightness: false, isVariable: true, icon: 'temperature-low' },
+          'volet': { hasBrightness: false, isVariable: false, icon: 'window-maximize' }
         };
         
         const typeInfo = deviceTypes[deviceType] || deviceTypes['lamp'];
@@ -1333,6 +1115,7 @@ async function handleDeviceCommands(commands, userId) {
           name: deviceName,
           type: deviceType,
           room: deviceRoom,
+          isVariable: typeInfo.isVariable,
           hasBrightness: typeInfo.hasBrightness,
           icon: typeInfo.icon,
           createdAt: Date.now(),
@@ -1340,6 +1123,7 @@ async function handleDeviceCommands(commands, userId) {
         };
         
         await set(ref(db, `${DEVICES_META_REF}/${deviceId}`), newDevice);
+        
         await set(ref(db, `${DEVICES_STATES_REF}/${deviceId}`), {
           etat: 'OFF',
           luminosite: 0
@@ -1352,6 +1136,7 @@ async function handleDeviceCommands(commands, userId) {
       }
     }
     
+    // ✅ SUPPRESSION D'APPAREIL
     else if (cmd.action === 'delete' || cmd.action === 'remove') {
       try {
         const deviceToDelete = cmd.device || cmd.deviceId || cmd.id;
@@ -1361,9 +1146,13 @@ async function handleDeviceCommands(commands, userId) {
           continue;
         }
         
+        // Supprimer de devicesMeta
         await set(ref(db, `${DEVICES_META_REF}/${deviceToDelete}`), null);
+        
+        // Supprimer de devices (états)
         await set(ref(db, `${DEVICES_STATES_REF}/${deviceToDelete}`), null);
         
+        // Supprimer du planning si existant
         const planningSnapshot = await get(ref(db, PLANNING_REF));
         if (planningSnapshot.exists()) {
           const planning = planningSnapshot.val();
@@ -1387,97 +1176,6 @@ async function handleDeviceCommands(commands, userId) {
   }
 }
 
-// ========================================
-// ✅ GESTION INTELLIGENTE DES PLANIFICATIONS
-// ========================================
-async function handlePlanningCommands(commands) {
-  if (!commands || commands.length === 0) return;
-  
-  const uniqueCommands = [];
-  const seen = new Set();
-  
-  for (const cmd of commands) {
-    let key = `${cmd.action}-${cmd.device}-${cmd.time}`;
-    if (cmd.frequency) key += `-${cmd.frequency}`;
-    if (cmd.daysOfWeek) key += `-${cmd.daysOfWeek.join(',')}`;
-    
-    if (!seen.has(key)) {
-      seen.add(key);
-      uniqueCommands.push(cmd);
-    }
-  }
-  
-  for (const cmd of uniqueCommands) {
-    
-    // 1. SUPPRESSION DE TOUTES LES TÂCHES
-    if (cmd.action === 'delete_all') {
-      console.log('🗑️ Suppression de TOUTES les planifications');
-      if (db) await set(ref(db, PLANNING_REF), null);
-      continue;
-    }
-    
-    // 2. SUPPRESSION SPÉCIFIQUE
-    if (cmd.action === 'delete_specific') {
-      console.log(`🗑️ Suppression spécifique: ${cmd.device}`);
-      if (!db) continue;
-      
-      try {
-        const snapshot = await get(ref(db, PLANNING_REF));
-        if (snapshot.exists()) {
-          const plans = snapshot.val();
-          for (const [id, p] of Object.entries(plans)) {
-            if (cmd.time && p.device === cmd.device && p.time === cmd.time) {
-              await remove(ref(db, `${PLANNING_REF}/${id}`));
-            } 
-            else if (!cmd.time && p.device === cmd.device) {
-              await remove(ref(db, `${PLANNING_REF}/${id}`));
-            }
-          }
-        }
-      } catch (e) { console.error(e); }
-      continue;
-    }
-    
-    // 3. AJOUT D'UNE TÂCHE (ROUTINE OU UNIQUE)
-    if (cmd.action === 'add') {
-      console.log(`📅 Ajout Planification: ${cmd.device} à ${cmd.time} (${cmd.frequency || 'once'})`);
-      
-      let finalState = 'OFF';
-      if (cmd.actionType && cmd.actionType.toLowerCase() === 'allumer') finalState = 'ON';
-      if (cmd.action === 'ON') finalState = 'ON';
-
-      const payload = { 
-        device: cmd.device, 
-        time: cmd.time, 
-        action: finalState,
-        actionType: cmd.actionType || (finalState === 'ON' ? 'allumer' : 'éteindre'),
-        power: cmd.power !== null && cmd.power !== undefined ? parseInt(cmd.power) : 100,
-        frequency: cmd.frequency || 'once',
-        createdAt: Date.now() 
-      };
-
-      if (payload.frequency === 'weekly' && Array.isArray(cmd.daysOfWeek)) {
-        payload.daysOfWeek = cmd.daysOfWeek;
-      }
-
-      if (payload.frequency === 'once' && cmd.targetDate) {
-        payload.targetDate = cmd.targetDate;
-      } else if (payload.frequency === 'once' && !cmd.targetDate) {
-        payload.targetDate = new Date().toISOString().split('T')[0];
-      }
-      
-      if (db) {
-        try {
-          await push(ref(db, PLANNING_REF), payload);
-          console.log(`✅ Planification sauvegardée : ${finalState}`);
-        } catch (error) {
-          console.error('❌ Erreur Firebase:', error);
-        }
-      }
-    }
-  }
-}
-
 function deduplicatePlanning(plans) {
   const uniquePlannings = [];
   const seen = new Set();
@@ -1487,12 +1185,12 @@ function deduplicatePlanning(plans) {
     switch(plan.action) {
       case 'add':
         if (!plan.device || !plan.time) continue;
-        key = `add_${plan.device}_${plan.time}_${plan.actionType}_${plan.power || 100}`;
+        key = `add_${plan.device}_${plan.time}_${plan.actionType}_${plan.power || 100}_${JSON.stringify(plan.schedule)}`;
         break;
       case 'delete_all': key = 'delete_all'; break;
-      case 'delete_specific':
+      case 'delete':
         if (!plan.device) continue;
-        key = plan.time ? `delete_${plan.device}_${plan.time}` : `delete_${plan.device}`;
+        key = `delete_${plan.device}`;
         break;
       default: continue;
     }
@@ -1509,494 +1207,25 @@ function jsonErrorDefaults() {
     execute: [], 
     planning_commands: [], 
     device_commands: [], 
-    needs_continuation: false,
-    continuation_context: null,
+    image_generation: null,
     suggestions: [], 
     source: "error" 
   };
 }
 
-
-async function chatWithGemini(userMessage, devices, userId, sessionId, attachments = [], preferences = {}, continuationMode = false, maxRetries = API_KEYS.length) {
-    
-  let realDeviceStates = {};
-  let currentPlanning = [];
-  let webResults = [];
-
-  // ========================================
-  // 🔥 RÉCUPÉRATION DES ÉTATS FIREBASE
-  // ========================================
-  try {
-      if (!db) throw new Error("DB non initialisée");
-      
-      const statesSnapshot = await get(ref(db, DEVICES_STATES_REF));
-      realDeviceStates = statesSnapshot.val() || {};
-      console.log(`🔥 États réels récupérés: ${Object.keys(realDeviceStates).length} appareils`);
-      
-      const planningSnapshot = await get(ref(db, PLANNING_REF));
-      if (planningSnapshot.exists()) {
-        const planningObj = planningSnapshot.val();
-        currentPlanning = Object.entries(planningObj).map(([id, plan]) => ({
-          ...plan,
-          firebaseId: id
-        }));
-        console.log(`📅 Planifications actuelles: ${currentPlanning.length}`);
-      }
-      
-  } catch (e) {
-      console.error("❌ ERREUR FIREBASE:", e.message);
-      realDeviceStates = {};
-      currentPlanning = [];
-  }
-
-  // ========================================
-  // 🌍 RECHERCHE WEB (SI NÉCESSAIRE)
-  // ========================================
-  if (!continuationMode && message && needsWebSearch(message)) {
-      webResults = await performWebSearch(message);
-  }
-
-  if (API_KEYS.length === 0) {
-    return { success: false, error: "Aucune clé Gemini disponible" };
-  }
-
-  const beninTime = await getBeninTime();
-  const contextAnalysis = analyzeContext(userMessage, realDeviceStates, beninTime);
-  
-  // ========================================
-  // 🔄 TENTATIVES AVEC ROTATION DES CLÉS
-  // ========================================
-  for (let attempt = 0; attempt < maxRetries; attempt++) {
-    try {
-      const keyObj = getNextApiKey();
-      const genAI = new GoogleGenerativeAI(keyObj.key);
-      const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-
-      // ========================================
-      // 📚 RÉCUPÉRATION DE L'HISTORIQUE ÉTENDU
-      // ========================================
-      const historyFromFirebase = await getHistoryFromFirebase(userId, sessionId, 30); // 30 jours
-
-      // ========================================
-      // 🧠 EXTRACTION DU CONTEXTE DES FICHIERS PRÉCÉDENTS
-      // ========================================
-      let previousFilesContext = "";
-      const filesInHistory = historyFromFirebase.filter(h => h.attachments && h.attachments.length > 0);
-      
-      if (filesInHistory.length > 0) {
-        previousFilesContext = "\n[FICHIERS PRÉCÉDEMMENT ENVOYÉS DANS CETTE SESSION]\n";
-        
-        for (const msgWithFiles of filesInHistory.slice(-3)) { // 3 derniers messages avec fichiers
-          for (const att of msgWithFiles.attachments) {
-            previousFilesContext += `- Fichier: "${att.name}" (Type: ${att.type})\n`;
-            if (att.type === 'file' && att.content) {
-              previousFilesContext += `  Contenu disponible: Oui (${att.content.length} caractères)\n`;
-            }
-          }
-        }
-        previousFilesContext += `[INSTRUCTION: Ces fichiers ont été analysés précédemment.]\n\n`;
-      }
-
-      // ========================================
-      // 🔄 CONVERSION DE L'HISTORIQUE EN FORMAT GEMINI
-      // ========================================
-      const historyParts = [];
-      
-      for (const h of historyFromFirebase) {
-        const userParts = [{ text: h.user }];
-        if (h.attachments && h.attachments.length > 0) {
-          for (const att of h.attachments) {
-            if (att.type === 'image' && att.data) {
-              const parsed = parseDataUri(att.data);
-              if (parsed) {
-                userParts.push({ 
-                  inlineData: { mimeType: parsed.mimeType, data: parsed.data } 
-                });
-              }
-            } else if (att.type === 'file' && att.content) {
-              userParts.push({ 
-                text: `\n[FICHIER: ${att.name}]\n${att.content.substring(0, 10000)}\n[FIN FICHIER]\n` 
-              });
-            }
-          }
-        }
-        historyParts.push({ role: "user", parts: userParts });
-        historyParts.push({ role: "model", parts: [{ text: h.bot }] });
-      }
-
-      // ========================================
-      // 💬 CRÉATION DU CHAT
-      // ========================================
-      const chat = model.startChat({
-        history: [
-          { 
-            role: "user", 
-            parts: [{ text: systemPrompt }] 
-          },
-          { 
-            role: "model", 
-<<<<<<< HEAD
-            parts: [{ 
-              text: JSON.stringify({
-                reply: "Je suis Intellia v5.0, votre assistant universel ultra-intelligent !",
-                execute: [],
-                planning_commands: [],
-                suggestions: [],
-                source: "cloud"
-              })
-            }] 
-          }
-        ],
-        generationConfig: {
-          responseMimeType: "application/json",
-          temperature: 0.8,
-          maxOutputTokens: 8192,
-=======
-            parts: [{ text: JSON.stringify({
-                  reply: "### 👋 Bienvenue !\n\nJe suis **Intellia**, votre assistant universel.",
-                  needs_continuation: false,
-                  continuation_context: null,
-                  execute: [], 
-                  planning_commands: [], 
-                  device_commands: [], 
-                  suggestions: [], 
-                  source: "cloud"
-                })}] 
-          },
-          ...historyParts
-        ],
-        generationConfig: {
-          responseMimeType: "application/json",
-          temperature: 0.7,
-          maxOutputTokens: 65536,
->>>>>>> d43c7adc0819d8e07774e0c463866ce33a8aad69
-        },
-      });
-      
-      // ========================================
-      // 📝 CONSTRUCTION DES PLANIFICATIONS
-      // ========================================
-      let planningsText = "Aucune planification actuellement.";
-      if (currentPlanning.length > 0) {
-        planningsText = currentPlanning.map(p => {
-          const deviceName = devices.find(d => d.id === p.device)?.name || p.device;
-          const actionText = p.actionType || (p.action === 'ON' ? 'allumer' : 'éteindre');
-          const powerText = p.power !== null && p.power !== undefined ? ` à ${p.power}%` : '';
-          const freqText = p.frequency ? ` (${p.frequency})` : '';
-          return `- ${deviceName} (${p.device}): ${actionText} à ${p.time}${powerText}${freqText}`;
-        }).join('\n');
-      }
-      
-      // ========================================
-      // 🧠 RÉSUMÉ DE L'HISTORIQUE RÉCENT
-      // ========================================
-      let historySummary = "";
-      if (historyFromFirebase.length > 0) {
-        const lastMessages = historyFromFirebase.slice(-5).map(h => {
-          const userPreview = h.user.substring(0, 100);
-          const botPreview = h.bot.substring(0, 100);
-          return `User: "${userPreview}..." → Bot: "${botPreview}..."`;
-        }).join('\n');
-        historySummary = `[HISTORIQUE RÉCENT]\n${lastMessages}\n`;
-      }
-
-<<<<<<< HEAD
-      const fullPrompt = `
-╔═══════════════════════════════════════╗
-║      HEURE BÉNIN PRÉCISE              ║
-╚═══════════════════════════════════════╝
-
-${beninTime.formatted}
-Heure exacte: ${beninTime.hoursStr}:${beninTime.minutesStr}
-
-╔═══════════════════════════════════════╗
-║      PRÉFÉRENCES UTILISATEUR          ║
-╚═══════════════════════════════════════╝
-
-${JSON.stringify(context.userPreferences, null, 2)}
-
-╔═══════════════════════════════════════╗
-║   ÉTAT RÉEL DES APPAREILS (TEMPS RÉEL)║
-╚═══════════════════════════════════════╝
-
-${JSON.stringify(context.deviceStates, null, 2)}
-
-IMPORTANT: Ces états sont EN TEMPS RÉEL. Utilise-les pour :
-- Détecter si appareil déjà allumé/éteint
-- Proposer suggestions intelligentes
-- Éviter actions inutiles
-
-╔═══════════════════════════════════════╗
-║      MÉTADONNÉES APPAREILS            ║
-╚═══════════════════════════════════════╝
-
-${JSON.stringify(devices, null, 2)}
-
-╔═══════════════════════════════════════╗
-║      ANALYSE CONTEXTUELLE             ║
-╚═══════════════════════════════════════╝
-
-${JSON.stringify(contextAnalysis, null, 2)}
-
-╔═══════════════════════════════════════╗
-║      HISTORIQUE CONVERSATION          ║
-╚═══════════════════════════════════════╝
-
-${context.history.slice(-10).map(h => 
-  `User: ${h.user}\nAssistant: ${h.assistant}`
-).join('\n---\n')}
-
-${webResults.length > 0 ? `
-╔═══════════════════════════════════════╗
-║      RÉSULTATS WEB                    ║
-╚═══════════════════════════════════════╝
-
-${JSON.stringify(webResults, null, 2)}
-
-UTILISE ces résultats comme source principale.
-` : ''}
-
-╔═══════════════════════════════════════╗
-║      MESSAGE UTILISATEUR              ║
-╚═══════════════════════════════════════╝
-
-"${userMessage}"
-
-────────────────────────────────────────
-
-ANALYSE ET RÉPONDS EN JSON VALIDE.
-
-RAPPELS CRITIQUES:
-${!context.userPreferences.showTime ? '⚠️ NE PAS mentionner l\'heure dans la réponse !' : ''}
-${contextAnalysis.isDomoticCommand ? '⚠️ Vérifier deviceStates avant toute action !' : ''}
-${contextAnalysis.isCodeRequest ? '⚠️ Générer le code demandé sans recherche web !' : ''}
-${contextAnalysis.suggestedActions.length > 0 ? `⚠️ Suggestions détectées: ${JSON.stringify(contextAnalysis.suggestedActions)}` : ''}
-=======
-      // ========================================
-      // 📋 CONSTRUCTION DU PROMPT MÉTADONNÉES
-      // ========================================
-      let metadataPrompt;
-      
-      if (continuationMode) {
-        metadataPrompt = `
-[MODE: CONTINUATION]
-[INSTRUCTION CRITIQUE: Continue EXACTEMENT là où tu t'es arrêté.]
-${historySummary}
-${previousFilesContext}
-MESSAGE: "${userMessage}"
->>>>>>> d43c7adc0819d8e07774e0c463866ce33a8aad69
-`;
-      } else {
-        metadataPrompt = `
-[Heure: ${beninTime.formatted}]
-[Température Lokossa: ${beninTime.temperature.temperature}°C]
-[Génération de documents: Mode Markdown Standard]
-[Prés: ${JSON.stringify(preferences)}]
-[États: ${JSON.stringify(realDeviceStates)}]
-[Appareils: ${JSON.stringify(devices)}]
-[Planifications: \n${planningsText}\n]
-${webResults.length > 0 ? `[Web: ${JSON.stringify(webResults.slice(0, 3))}]` : ''}
-
-${historySummary}
-${previousFilesContext}
-
-MESSAGE: "${userMessage}"
-`;
-      }
-
-      // ========================================
-      // 📎 AJOUT DES PIÈCES JOINTES
-      // ========================================
-      const promptParts = [ { text: metadataPrompt } ];
-      
-      if (!continuationMode && attachments && attachments.length > 0) {
-        console.log(`📎 Traitement de ${attachments.length} pièce(s) jointe(s)`);
-        for (const att of attachments) {
-          if (att.type === 'image') {
-            const parsed = parseDataUri(att.data);
-            if (parsed) promptParts.push({ inlineData: { mimeType: parsed.mimeType, data: parsed.data } });
-          } 
-          else if (att.type === 'file') {
-            const fileContent = await parseFileAttachment(att);
-            promptParts.push({ text: `\n[DEBUT FICHIER: ${att.name}]\n${fileContent}\n[FIN FICHIER]\n` });
-          }
-        }
-      }
-
-      // ========================================
-      // 🚀 ENVOI DE LA REQUÊTE
-      // ========================================
-      const controller = new AbortController();
-<<<<<<< HEAD
-      const timeout = setTimeout(() => controller.abort(), 20000);
-
-      const result = await chat.sendMessage(fullPrompt, { signal: controller.signal });
-      clearTimeout(timeout);
-
-      return { 
-        success: true, 
-        data: result.response.text(), 
-        keyObj,
-        hadWebResults: webResults.length > 0,
-        webResults,
-        contextAnalysis
-=======
-      const timeout = setTimeout(() => controller.abort(), 30000);
-      
-      console.log(`🚀 Envoi requête Gemini (Tentative ${attempt + 1}/${maxRetries})`);
-      const result = await chat.sendMessage(promptParts, { signal: controller.signal });
-      clearTimeout(timeout);
-
-      console.log(`✅ Réponse reçue de Gemini`);
-      return { 
-        success: true, 
-        data: result.response.text(), 
-        hadWebResults: webResults.length > 0,
->>>>>>> d43c7adc0819d8e07774e0c463866ce33a8aad69
-      };
-
-    } catch (error) {
-      lastError = error;
-      const keyObj = API_KEYS[(currentKeyIndex - 1 + API_KEYS.length) % API_KEYS.length];
-<<<<<<< HEAD
-      const isQuotaError = 
-        error.message?.includes('quota') ||
-        error.message?.includes('429') ||
-        error.message?.includes('RESOURCE_EXHAUSTED');
-      markKeyAsFailed(keyObj, isQuotaError);
-      console.warn(`⚠️ Tentative ${attempt + 1}/${maxRetries} échouée`);
-=======
-      const isQuotaError = error.message?.includes('quota') || error.message?.includes('429');
-      markKeyAsFailed(keyObj, isQuotaError);
-      console.warn(`⚠️ Tentative ${attempt + 1} échouée: ${error.message}`);
->>>>>>> d43c7adc0819d8e07774e0c463866ce33a8aad69
-      if (attempt === maxRetries - 1) break;
-    }
-  }
-  
-  console.error('❌ Toutes les tentatives ont échoué');
-  return { success: false, error: lastError };
-}
-
 // ========================================
-// 📚 FONCTION getHistoryFromFirebase
+// 🎯 ROUTE PRINCIPALE /api/chat (STREAMING)
 // ========================================
-async function getHistoryFromFirebase(userId, sessionId, daysBack = 30) {
-  if (!db || !userId || !sessionId) return [];
-  try {
-    const messagesRef = ref(db, `${USER_CHATS_REF}/${userId}/${sessionId}/messages`);
-    const snapshot = await get(messagesRef);
-    if (!snapshot.exists()) return [];
-    
-    const messages = snapshot.val();
-    const cutoffDate = Date.now() - (daysBack * 24 * 60 * 60 * 1000);
-    
-    const filteredMessages = Object.values(messages)
-      .filter(msg => (msg.timestamp || 0) >= cutoffDate)
-      .sort((a, b) => a.timestamp - b.timestamp);
-    
-    return filteredMessages.slice(-150);
-  } catch (error) {
-    console.error("❌ Erreur historique:", error);
-    return [];
-  }
-}
-
-// ========================================
-// 💾 SAUVEGARDE AMÉLIORÉE
-// ========================================
-async function saveMessageToFirebase(userMsg, botMsg, attachments, appState) {
-  if (!appState.currentUser || !db || !appState.currentSessionId) return;
-
-  const sessionRef = ref(db, `${USER_CHATS_REF}/${appState.currentUser.uid}/${appState.currentSessionId}`);
-  const sessionSnapshot = await get(sessionRef);
-  const isNewSession = !sessionSnapshot.exists();
-  
-  if (isNewSession) {
-    let newTitle = userMsg;
-    if (!newTitle && attachments.length > 0) newTitle = `📎 ${attachments[0].name}`;
-    if (!newTitle) newTitle = "Nouvelle discussion";
-    newTitle = newTitle.substring(0, 30);
-    
-    await set(sessionRef, {
-      title: newTitle,
-      createdAt: serverTimestamp(),
-      lastUpdated: serverTimestamp()
-    });
-  }
-
-  const messagesRef = ref(db, `${USER_CHATS_REF}/${appState.currentUser.uid}/${appState.currentSessionId}/messages`);
-  
-  const attachmentsMeta = await Promise.all(attachments.map(async att => {
-    if (att.type === 'image') return { name: att.name, type: att.type, data: att.data };
-    else if (att.type === 'file') {
-      const fileContent = await parseFileAttachment(att);
-      return { name: att.name, type: att.type, content: fileContent.substring(0, 100000) };
-    }
-    return { name: att.name, type: att.type };
-  }));
-
-  await push(messagesRef, {
-    user: userMsg,
-    bot: botMsg,
-    attachments: attachmentsMeta,
-    timestamp: serverTimestamp()
+app.post('/api/chat-stream', async (req, res) => {
+  // Configuration des en-têtes pour Server-Sent Events
+  res.writeHead(200, {
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache',
+    'Connection': 'keep-alive',
+    'Access-Control-Allow-Origin': '*',
   });
 
-  await set(ref(db, `${USER_CHATS_REF}/${appState.currentUser.uid}/${appState.currentSessionId}/lastUpdated`), serverTimestamp());
-}
-
-// ========================================
-// 🔥 ROUTE PRINCIPALE /api/chat
-// ========================================
-app.post('/api/chat', async (req, res) => {
   try {
-<<<<<<< HEAD
-    const { message, key, devices = [], deviceStates = {}, sessionId = 'default' } = req.body;
-
-    if (key !== AUTH_KEY) {
-      return res.status(401).json({ 
-        reply: "Clé d'authentification invalide", 
-        execute: [], 
-        planning_commands: [],
-        suggestions: [],
-        source: "error"
-      });
-    }
-
-    if (!message) {
-      return res.status(400).json({ 
-        reply: "Message requis", 
-        execute: [], 
-        planning_commands: [],
-        suggestions: [],
-        source: "error"
-      });
-    }
-
-    console.log('┌────────────────────────────────────────┐');
-    console.log('💬 MESSAGE:', message);
-    console.log('📊 APPAREILS:', devices.length);
-    console.log('🔌 ÉTATS:', Object.keys(deviceStates).length);
-
-    const startTime = Date.now();
-    const result = await chatWithGemini(message, devices, deviceStates, sessionId);
-
-    if (!result.success) {
-      console.log('⚠️ Gemini indisponible');
-      return res.json({
-        reply: "Service temporairement indisponible. Veuillez réessayer.",
-        execute: [],
-        planning_commands: [],
-        suggestions: [],
-        source: "error"
-      });
-    }
-
-    const aiText = result.data;
-    console.log(`⏱️ Temps: ${Date.now() - startTime}ms`);
-
-=======
     let { 
       message, 
       key, 
@@ -2006,231 +1235,239 @@ app.post('/api/chat', async (req, res) => {
       sessionId, 
       attachments = [], 
       preferences = {},
-      continuationMode = false
+      messageId 
     } = req.body;
 
-    if (key !== AUTH_KEY) return res.status(401).json({ reply: "Clé invalide", ...jsonErrorDefaults() });
-    if (!message && attachments.length === 0 && !continuationMode) return res.status(400).json({ reply: "Message requis", ...jsonErrorDefaults() });
-    if (!userId || !sessionId) return res.status(400).json({ reply: "IDs manquants", ...jsonErrorDefaults() });
-
-    console.log(`💬 MSG: ${message || '(Continuation)'} | 📄 MODE: ${continuationMode ? 'CONT' : 'NORM'}`);
-
-    const result = await chatWithGemini(message, devices, userId, sessionId, attachments, preferences, continuationMode);
-
-    if (!result.success) {
-      return res.json({ 
-        reply: "### ❌ Service indisponible\nRéessayez plus tard.", 
-        ...jsonErrorDefaults() 
-      });
+    if (key !== AUTH_KEY) {
+      res.write(`data: ${JSON.stringify({ type: 'error', content: "Clé d'authentification invalide" })}\n\n`);
+      res.end();
+      return;
+    }
+    if (!message && attachments.length === 0) {
+      res.write(`data: ${JSON.stringify({ type: 'error', content: "Message ou pièce jointe requis" })}\n\n`);
+      res.end();
+      return;
+    }
+    if (!userId || !sessionId) {
+      res.write(`data: ${JSON.stringify({ type: 'error', content: "ID Utilisateur ou ID Session manquant" })}\n\n`);
+      res.end();
+      return;
     }
 
->>>>>>> d43c7adc0819d8e07774e0c463866ce33a8aad69
+    console.log('┌────────────────────────────────────────');
+    console.log(`💬 MESSAGE STREAM: ${message || '(Pas de texte)'}`);
+    console.log(`🖼️ ATTACHMENTS: ${attachments.length}`);
+    console.log(`👤 USER: ${userId.substring(0, 10)}...`);
+    console.log(`🏷️ SESSION: ${sessionId}`);
+    console.log(`📡 APPAREILS: ${devices.length}`);
+
+    // ✅ DÉTECTION DE GÉNÉRATION D'IMAGE (PRIORITAIRE)
+    if (isImageGenerationRequest(message)) {
+      console.log('🎨 REQUÊTE DE GÉNÉRATION D\'IMAGE DÉTECTÉE');
+      
+      const startTime = Date.now();
+      const aiResult = await chatWithGeminiStream(message, devices, userId, sessionId, attachments, preferences);
+      
+      if (!aiResult.success) {
+        res.write(`data: ${JSON.stringify({ type: 'error', content: "Service temporairement indisponible" })}\n\n`);
+        res.end();
+        return;
+      }
+
+      let aiJson;
+      try {
+        aiJson = JSON.parse(aiResult.data);
+      } catch (parseError) {
+        const cleaned = aiResult.data.replace(/^```json\s*\n?/, '').replace(/\n?```\s*$/, '').trim();
+        try { 
+          aiJson = JSON.parse(cleaned); 
+        } catch (secondError) { 
+          res.write(`data: ${JSON.stringify({ type: 'error', content: "Erreur de format de réponse" })}\n\n`);
+          res.end();
+          return;
+        }
+      }
+
+      if (aiJson.image_generation && aiJson.image_generation.prompt) {
+        console.log(`🎨 Prompt d'image: "${aiJson.image_generation.prompt}"`);
+        
+        // Envoyer un message intermédiaire
+        res.write(`data: ${JSON.stringify({ type: 'chunk', content: "### 🎨 Génération d'image en cours...\n\n" })}\n\n`);
+        
+        const imageResult = await generateImage(
+          aiJson.image_generation.prompt, 
+          aiJson.image_generation.style || "photorealistic"
+        );
+        
+        if (imageResult.success) {
+          console.log(`✅ Image générée avec succès (SD3.5 - 2 crédits utilisés)`);
+          console.log(`⏱️ Temps total: ${Date.now() - startTime}ms`);
+          
+          res.write(`data: ${JSON.stringify({ type: 'complete', content: `![Image générée](${imageResult.imageUrl})` })}\n\n`);
+          res.end();
+        } else {
+          console.error(`❌ Échec génération: ${imageResult.error}`);
+          res.write(`data: ${JSON.stringify({ type: 'complete', content: `### ❌ Impossible de générer l'image\n\n${imageResult.error}\n\nVeuillez réessayer ou reformuler votre demande.` })}\n\n`);
+          res.end();
+        }
+        return;
+      }
+      
+      console.log('⚠️ Gemini n\'a pas généré de demande d\'image, réponse normale');
+    }
+
+    // ✅ TRAITEMENT NORMAL AVEC STREAMING
+    const startTime = Date.now();
+    const result = await chatWithGeminiStream(message, devices, userId, sessionId, attachments, preferences);
+
+    if (!result.success) {
+      console.log('⚠️ Gemini indisponible');
+      res.write(`data: ${JSON.stringify({ type: 'error', content: "Service temporairement indisponible" })}\n\n`);
+      res.end();
+      return;
+    }
+
+    const aiText = result.data;
+    console.log(`⏱️ Temps: ${Date.now() - startTime}ms`);
+
     let aiJson;
     try {
-      aiJson = JSON.parse(result.data);
+      aiJson = JSON.parse(aiText);
     } catch (parseError) {
-<<<<<<< HEAD
+      console.warn('⚠️ Première tentative de parsing JSON échouée, nettoyage...');
       const cleaned = aiText.replace(/^```json\s*\n?/, '').replace(/\n?```\s*$/, '').trim();
       try { 
         aiJson = JSON.parse(cleaned); 
       } catch (secondError) { 
-        return res.json({ 
-          reply: "Désolé, reformulez votre demande ?", 
-          execute: [], 
-          planning_commands: [],
-          suggestions: [],
-          source: "error"
-        });
+        console.error('❌ Parsing JSON impossible:', secondError.message);
+        res.write(`data: ${JSON.stringify({ type: 'error', content: "Erreur de format de réponse" })}\n\n`);
+        res.end();
+        return;
       }
     }
 
-    // Validation
-    if (!aiJson.reply) aiJson.reply = "Commande reçue.";
-    if (!Array.isArray(aiJson.execute)) aiJson.execute = [];
-    if (!Array.isArray(aiJson.planning_commands)) aiJson.planning_commands = [];
-    if (!Array.isArray(aiJson.suggestions)) aiJson.suggestions = [];
-    
-    // Supprimer doublons planifications
-    const uniquePlannings = [];
-    const seen = new Set();
-    for (const plan of aiJson.planning_commands) {
-      const key = `${plan.device}_${plan.time}_${plan.schedule_action}`;
-      if (!seen.has(key)) {
-        seen.add(key);
-        uniquePlannings.push(plan);
-      }
-    }
-    aiJson.planning_commands = uniquePlannings;
-    
-    // Nettoyer HTML
-    aiJson.reply = aiJson.reply.replace(/<[^>]*>/g, '').trim();
-
-    if (!aiJson.source) {
-      aiJson.source = result.hadWebResults ? "web" : "cloud";
-    }
-
-    // Sauvegarder contexte
-    addToContext(sessionId, message, aiJson.reply, result.webResults);
-
-    console.log('✅ RÉPONSE GÉNÉRÉE');
-    console.log(`📤 Execute: ${aiJson.execute.length}`);
-    console.log(`📅 Planning: ${aiJson.planning_commands.length}`);
-    console.log(`💡 Suggestions: ${aiJson.suggestions.length}`);
-    console.log('└────────────────────────────────────────┘\n');
-=======
-      console.warn('⚠️ Parsing JSON échoué, nettoyage...');
-      const cleaned = result.data.replace(/^```json\s*\n?/, '').replace(/\n?```\s*$/, '').trim();
-      try { aiJson = JSON.parse(cleaned); } catch (e) { 
-        return res.json({ reply: "Erreur de format de réponse.", ...jsonErrorDefaults() });
-      }
-    }
-
+    // ✅ Valeurs par défaut et nettoyage
     aiJson.reply = aiJson.reply || "Commande reçue.";
     aiJson.execute = aiJson.execute || [];
     aiJson.planning_commands = aiJson.planning_commands || [];
     aiJson.device_commands = aiJson.device_commands || [];
     aiJson.suggestions = aiJson.suggestions || [];
-    aiJson.needs_continuation = aiJson.needs_continuation || false;
+    aiJson.image_generation = null;
     
-    // Traitement des commandes
+    // ✅ Déduplication des planifications
     aiJson.planning_commands = deduplicatePlanning(aiJson.planning_commands);
-    if (aiJson.device_commands.length > 0) await handleDeviceCommands(aiJson.device_commands, userId);
-    if (aiJson.planning_commands.length > 0) await handlePlanningCommands(aiJson.planning_commands);
     
-    // Détection auto troncature
-    if (!aiJson.needs_continuation && aiJson.reply && detectTruncation(aiJson.reply)) {
-      aiJson.needs_continuation = true;
-      if (!aiJson.continuation_context) aiJson.continuation_context = { type: "auto" };
+    // ✅ Traiter les commandes d'appareils (AJOUT + SUPPRESSION)
+    if (aiJson.device_commands && aiJson.device_commands.length > 0) {
+      await handleDeviceCommands(aiJson.device_commands, userId);
     }
     
     if (!aiJson.source) aiJson.source = result.hadWebResults ? "web" : "cloud";
 
-    // Sauvegarde en arrière-plan
-    const appStateStub = { currentUser: { uid: userId }, currentSessionId: sessionId };
-    saveMessageToFirebase(message, aiJson.reply, attachments, appStateStub).catch(console.error);
->>>>>>> d43c7adc0819d8e07774e0c463866ce33a8aad69
+    console.log('✅ RÉPONSE GÉNÉRÉE');
+    console.log(`📤 Execute: ${aiJson.execute.length}`);
+    console.log(`📅 Planning: ${aiJson.planning_commands.length}`);
+    console.log(`➕ Device Commands: ${aiJson.device_commands.length}`);
+    console.log(`💡 Suggestions: ${aiJson.suggestions.length}`);
+    console.log(`📝 Reply Length: ${aiJson.reply.length} chars`);
+    console.log('└────────────────────────────────────────\n');
 
-    res.json(aiJson);
+    // Envoyer la réponse complète en streaming
+    res.write(`data: ${JSON.stringify({ type: 'complete', content: aiJson.reply })}\n\n`);
+    res.end();
     
   } catch (error) {
-<<<<<<< HEAD
     console.error('💥 ERREUR:', error.message);
-    res.status(500).json({ 
-      reply: "Désolé, une erreur s'est produite.", 
-      execute: [], 
-      planning_commands: [],
-      suggestions: [],
-      source: "error"
-    });
-=======
-    console.error('💥 ERREUR SERVEUR:', error.message);
-    res.status(500).json({ reply: "### ❌ Erreur interne", ...jsonErrorDefaults() });
->>>>>>> d43c7adc0819d8e07774e0c463866ce33a8aad69
+    console.error(error.stack);
+    res.write(`data: ${JSON.stringify({ type: 'error', content: "Erreur interne du serveur" })}\n\n`);
+    res.end();
   }
 });
 
 // ========================================
-<<<<<<< HEAD
-// ROUTE SANTÉ
-=======
 // 🌐 ROUTE SANTÉ
->>>>>>> d43c7adc0819d8e07774e0c463866ce33a8aad69
 // ========================================
 app.get('/api/health', async (req, res) => {
   const availableKeys = API_KEYS.filter(k => !k.quotaExceeded).length;
-<<<<<<< HEAD
-  const beninTime = getBeninTime();
-  
-  res.json({ 
-    status: 'ok', 
-    version: '5.0-ultra', 
-    features: {
-      gemini: API_KEYS.length > 0,
-      webSearch: true,
-      contextMemory: true,
-      userPreferences: true,
-      deviceStateAwareness: true,
-      proactiveSuggestions: true,
-      universalAssistant: true,
-      codeGeneration: true
-    },
-    keys: { 
-      total: API_KEYS.length, 
-      available: availableKeys 
-    },
-    time: {
-      benin: `${beninTime.hoursStr}:${beninTime.minutesStr}`,
-      formatted: beninTime.formatted
-    }
-=======
+  const availableImageKeys = IMAGE_API_KEYS.filter(k => !k.quotaExceeded).length;
   const beninTime = await getBeninTime();
   
   res.json({ 
     status: 'ok', 
-    version: '11.0-lite-markdown',
+    version: '11.0-streaming',
     features: {
       gemini: API_KEYS.length > 0,
+      imageGeneration: IMAGE_API_KEYS.length > 0,
+      imageModel: 'SD3.5 (2 crédits/image, 12 images/jour avec 25 crédits)',
       documentGeneration: true,
-      codeLongGeneration: true,
-      continuationSystem: true,
       webSearch: true,
       contextMemory: "Firebase",
-      htmlOutput: false,  // ❌ DÉSACTIVÉ
-      markdownOutput: true, // ✅ ACTIVÉ
+      firebaseStateSync: true,
+      multimodal_Image: true,
+      multimodal_Files: true,
+      htmlOutput: false,
+      markdownOutput: true,
+      streaming: true,
       aiPlanning: true,
-      lokossaTemperature: true
+      autoAddDevices: true,
+      autoDeleteDevices: true,
+      lokossaTemperature: true,
+      supportedFiles: "PDF, DOCX, TXT, HTML, JS, JSON, CSS, XLSX, CSV, Images",
+      maxTokens: 65536
     },
-    keys: { total: API_KEYS.length, available: availableKeys },
-    time: { benin: `${beninTime.hoursStr}:${beninTime.minutesStr}`, temp: beninTime.temperature }
->>>>>>> d43c7adc0819d8e07774e0c463866ce33a8aad69
+    keys: { 
+      gemini: { total: API_KEYS.length, available: availableKeys },
+      stability: { 
+        total: IMAGE_API_KEYS.length, 
+        available: availableImageKeys,
+        model: 'SD3.5',
+        cost_per_image: 2,
+        daily_capacity: '12 images/jour (25 crédits)'
+      }
+    },
+    time: {
+      benin: `${beninTime.hoursStr}:${beninTime.minutesStr}`,
+      formatted: beninTime.formatted,
+      temperature: beninTime.temperature
+    },
+    new_features: {
+      variable_devices: "Support complet (isVariable)",
+      advanced_planning: "daily, weekly, monthly, duration, once",
+      markdown_only: "Réponses 100% Markdown",
+      real_time_streaming: "Server-Sent Events",
+      discreet_tools: "Boutons au survol style ChatGPT",
+      improved_websocket: "Indicateurs de connexion"
+    }
   });
 });
 
 // ========================================
-<<<<<<< HEAD
-// NETTOYAGE CONTEXTES
-// ========================================
-setInterval(() => {
-  const now = Date.now();
-  const maxAge = 7200000; // 2 heures
-  
-  for (const [sessionId, context] of conversationContexts.entries()) {
-    if (now - context.createdAt > maxAge) {
-      conversationContexts.delete(sessionId);
-      console.log(`🧹 Contexte ${sessionId} nettoyé`);
-    }
-  }
-}, 600000); // Toutes les 10 minutes
-
-// ========================================
-// DÉMARRAGE
-// ========================================
-app.listen(PORT, () => {
-  console.log('\n🏠 ╔═══════════════════════════════════════╗');
-  console.log('   ║  INTELLIA v5.0 - ULTRA-INTELLIGENT   ║');
-  console.log('   ╚═══════════════════════════════════════╝');
-  console.log(`\n   🚀 Serveur: http://localhost:${PORT}`);
-  console.log(`   🔑 Clés Gemini: ${API_KEYS.length}`);
-  console.log(`   🔍 Recherche web: Optimisée`);
-  console.log(`   💾 Mémoire contextuelle: Avancée`);
-  console.log(`   ⚙️ Préférences utilisateur: Activées`);
-  console.log(`   🧠 Conscience état appareils: Activée`);
-  console.log(`   💡 Suggestions proactives: Activées`);
-  console.log(`   🌐 Assistant universel: Activé`);
-  console.log(`   💻 Génération code: Activée\n`);
-});
-=======
 // 🚀 DÉMARRAGE DU SERVEUR
 // ========================================
 app.listen(PORT, () => {
-  console.log('\n┌────────────────────────────────────────────────────────────┐');
-  console.log('│     INTELLIA v11.0 - SYSTÈME MARKDOWN LITE              │');
-  console.log('│        ✅ 100% Markdown (Plus rapide)                   │');
-  console.log('└────────────────────────────────────────────────────────────┘');
-  console.log(`   🚀 Serveur: http://localhost:${PORT}`);
+  console.log('\n🏠 ╔═══════════════════════════════════════╗');
+  console.log('   ║  INTELLIA v11.0 - STREAMING MARKDOWN  ║');
+  console.log('   ╚═══════════════════════════════════════╝');
+  console.log(`\n   🚀 Serveur: http://localhost:${PORT}`);
   console.log(`   🔑 Clés Gemini: ${API_KEYS.length}`);
-  // Ligne de log que vous souhaitiez peut-être :
-  console.log(`   📄 Max Tokens: 65536`); 
-}); // <--- C'EST CETTE FERMETURE QUI MANQUAIT !
-
->>>>>>> d43c7adc0819d8e07774e0c463866ce33a8aad69
+  console.log(`   🎨 Clés Stability AI: ${IMAGE_API_KEYS.length}`);
+  console.log(`   🖼️ Modèle Image: SD3.5 (2 crédits/image)`);
+  console.log(`   📊 Capacité: 12 images/jour (25 crédits)`);
+  console.log(`   🔥 Synchro Firebase (Appareils): Activée`);
+  console.log(`   💾 Synchro Firebase (Chats): Activée`);
+  console.log(`   📅 Planning Avancé: Prêt`);
+  console.log(`   ➕ Auto Add Devices: Activé`);
+  console.log(`   🗑️ Auto Delete Devices: Activé`);
+  console.log(`   🌡️ Température Lokossa: Temps réel`);
+  console.log(`   📄 Génération de documents: Markdown`);
+  console.log(`   🔄 Streaming: Server-Sent Events`);
+  console.log(`   ✅ Output: Markdown 100%`);
+  console.log(`   🧠 Modèle: gemini-2.5-flash`);
+  console.log(`   🎯 MaxTokens: 65536 (MAXIMUM)`);
+  console.log(`\n   ✅ NOUVEAUTÉS v11.0:`);
+  console.log(`   • Appareils variables/fixes`);
+  console.log(`   • Planning avancé (5 types)`);
+  console.log(`   • Markdown pur (plus de HTML)`);
+  console.log(`   • Streaming temps réel`);
+  console.log(`   • Outils discrets ChatGPT\n`);
+});
