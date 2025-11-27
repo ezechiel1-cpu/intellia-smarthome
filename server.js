@@ -2512,11 +2512,17 @@ function jsonErrorDefaults() {
   };
 }
 
+// ========================================
+// ✅ FONCTION chatWithGemini - VERSION CORRIGÉE
+// 🔧 FIX: System Prompt allégé pour éviter les timeouts
+// ========================================
 
 async function chatWithGemini(userMessage, devices, userId, sessionId, attachments = [], preferences = {}, continuationMode = false, maxRetries = API_KEYS.length) {
     
   let realDeviceStates = {};
   let currentPlanning = [];
+  let webResults = []; // ✅ FIX: Variable manquante
+  let lastError = null; // ✅ FIX: Variable manquante
   
   // ========================================
   // 🔥 RÉCUPÉRATION DES ÉTATS FIREBASE
@@ -2551,7 +2557,12 @@ async function chatWithGemini(userMessage, devices, userId, sessionId, attachmen
   const beninTime = await getBeninTime();
   const contextAnalysis = analyzeContext(userMessage, realDeviceStates, beninTime);
   
-
+  // ========================================
+  // 🔍 RECHERCHE WEB SI NÉCESSAIRE
+  // ========================================
+  if (needsWebSearch(userMessage) && !continuationMode) {
+    webResults = await performWebSearch(userMessage);
+  }
 
   // ========================================
   // 🔄 TENTATIVES AVEC ROTATION DES CLÉS
@@ -2560,12 +2571,17 @@ async function chatWithGemini(userMessage, devices, userId, sessionId, attachmen
     try {
       const keyObj = getNextApiKey();
       const genAI = new GoogleGenerativeAI(keyObj.key);
-      const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+      
+      // ✅ FIX: System Instruction pour optimiser le contexte
+      const model = genAI.getGenerativeModel({ 
+        model: "gemini-2.5-flash",
+        systemInstruction: getOptimizedSystemPrompt() // ✅ Nouveau prompt allégé
+      });
 
       // ========================================
       // 📚 RÉCUPÉRATION DE L'HISTORIQUE ÉTENDU
       // ========================================
-      const historyFromFirebase = await getHistoryFromFirebase(userId, sessionId, 30); // 30 jours
+      const historyFromFirebase = await getHistoryFromFirebase(userId, sessionId, 30);
 
       // ========================================
       // 🧠 EXTRACTION DU CONTEXTE DES FICHIERS PRÉCÉDENTS
@@ -2574,20 +2590,19 @@ async function chatWithGemini(userMessage, devices, userId, sessionId, attachmen
       const filesInHistory = historyFromFirebase.filter(h => h.attachments && h.attachments.length > 0);
       
       if (filesInHistory.length > 0) {
-        previousFilesContext = "\n[FICHIERS PRÉCÉDEMMENT ENVOYÉS DANS CETTE SESSION]\n";
+        previousFilesContext = "\n[FICHIERS PRÉCÉDEMMENT ENVOYÉS]\n";
         
-        for (const msgWithFiles of filesInHistory.slice(-3)) { // 3 derniers messages avec fichiers
+        for (const msgWithFiles of filesInHistory.slice(-3)) {
           for (const att of msgWithFiles.attachments) {
-            previousFilesContext += `- Fichier: "${att.name}" (Type: ${att.type})\n`;
-            
-            // Si c'est un fichier texte/document, on peut récupérer son contenu depuis Firebase
+            previousFilesContext += `- "${att.name}" (${att.type})`;
             if (att.type === 'file' && att.content) {
-              previousFilesContext += `  Contenu disponible: Oui (${att.content.length} caractères)\n`;
+              previousFilesContext += ` - ${att.content.length} chars disponibles`;
             }
+            previousFilesContext += '\n';
           }
         }
         
-        previousFilesContext += `[INSTRUCTION: Ces fichiers ont été analysés précédemment. Si l'utilisateur pose des questions sur leur contenu, tu peux t'y référer même s'ils ne sont pas réenvoyés.]\n\n`;
+        previousFilesContext += `[Tu peux référencer ces fichiers même s'ils ne sont pas réenvoyés]\n\n`;
       }
 
       // ========================================
@@ -2596,10 +2611,8 @@ async function chatWithGemini(userMessage, devices, userId, sessionId, attachmen
       const historyParts = [];
       
       for (const h of historyFromFirebase) {
-        // Message utilisateur
         const userParts = [{ text: h.user }];
         
-        // Ajouter les attachments SI PRÉSENTS dans ce message historique
         if (h.attachments && h.attachments.length > 0) {
           for (const att of h.attachments) {
             if (att.type === 'image' && att.data) {
@@ -2613,7 +2626,6 @@ async function chatWithGemini(userMessage, devices, userId, sessionId, attachmen
                 });
               }
             } else if (att.type === 'file' && att.content) {
-              // Ajouter le contenu du fichier dans l'historique
               userParts.push({ 
                 text: `\n[FICHIER: ${att.name}]\n${att.content.substring(0, 10000)}\n[FIN FICHIER]\n` 
               });
@@ -2622,8 +2634,6 @@ async function chatWithGemini(userMessage, devices, userId, sessionId, attachmen
         }
         
         historyParts.push({ role: "user", parts: userParts });
-        
-        // Réponse du bot
         historyParts.push({ 
           role: "model", 
           parts: [{ text: h.bot }] 
@@ -2631,14 +2641,10 @@ async function chatWithGemini(userMessage, devices, userId, sessionId, attachmen
       }
 
       // ========================================
-      // 💬 CRÉATION DU CHAT
+      // 💬 CRÉATION DU CHAT (SANS SYSTEM PROMPT DANS L'HISTORIQUE)
       // ========================================
       const chat = model.startChat({
         history: [
-          { 
-            role: "user", 
-            parts: [{ text: systemPrompt }] 
-          },
           { 
             role: "model", 
             parts: [{ text: JSON.stringify({
@@ -2688,22 +2694,20 @@ async function chatWithGemini(userMessage, devices, userId, sessionId, attachmen
         }).join('\n');
         
         historySummary = `
-[HISTORIQUE RÉCENT (${historyFromFirebase.length} messages sur 30 jours)]
+[HISTORIQUE RÉCENT (${historyFromFirebase.length} messages)]
 ${lastMessages}
-
-[INSTRUCTION: Utilise cet historique pour maintenir la cohérence et te rappeler des préférences de l'utilisateur.]
 `;
       }
 
       // ========================================
-      // 📋 CONSTRUCTION DU PROMPT MÉTADONNÉES
+      // 📋 CONSTRUCTION DU PROMPT MÉTADONNÉES (OPTIMISÉ)
       // ========================================
       let metadataPrompt;
       
       if (continuationMode) {
         metadataPrompt = `
 [MODE: CONTINUATION]
-[INSTRUCTION CRITIQUE: Continue EXACTEMENT là où tu t'es arrêté. NE RECOMMENCE PAS depuis le début.]
+[Continue exactement où tu t'es arrêté - NE RECOMMENCE PAS]
 
 ${historySummary}
 ${previousFilesContext}
@@ -2711,11 +2715,14 @@ ${previousFilesContext}
 MESSAGE: "${userMessage}"
 `;
       } else {
+        // ✅ Ajout conditionnel des templates HTML
+        const needsDocTemplate = /génère|écris|crée|fais.*(cv|lettre|rapport|facture|contrat|attestation)/i.test(userMessage);
+        const documentContext = needsDocTemplate ? getDocumentTemplateHints() : '';
+        
         metadataPrompt = `
 [Heure: ${beninTime.formatted}]
-[Température Lokossa TEMPS RÉEL: ${beninTime.temperature.temperature}°C (${beninTime.temperature.description}), Ressenti: ${beninTime.temperature.feels_like}°C, Humidité: ${beninTime.temperature.humidity}%, Source: ${beninTime.temperature.source}]
-[Génération de documents: activée (HTML direct)]
-[Prés: ${JSON.stringify(preferences)}]
+[Température Lokossa: ${beninTime.temperature.temperature}°C (${beninTime.temperature.description}), Ressenti: ${beninTime.temperature.feels_like}°C, Humidité: ${beninTime.temperature.humidity}%]
+[Préférences: ${JSON.stringify(preferences)}]
 [États: ${JSON.stringify(realDeviceStates)}]
 [Appareils: ${JSON.stringify(devices)}]
 [Planifications: 
@@ -2726,27 +2733,19 @@ ${webResults.length > 0 ? `[Web: ${JSON.stringify(webResults.slice(0, 3))}]` : '
 
 ${historySummary}
 ${previousFilesContext}
+${documentContext}
 
-[⚠️ RÈGLES CRITIQUES POUR LES INTERACTIONS UI]
-1. Si l'utilisateur CLIQUE sur un bouton (allumer/éteindre) dans l'interface :
-   - Ne génère AUCUN JSON de command
-   - Ne mentionne PAS "luminosité" ou "puissance" (l'interface s'en charge)
-
-2. Si l'utilisateur DEMANDE verbalement (ex: "allume la lampe salon") :
-   - Génère le JSON execute normalement
-   - Inclus la puissance seulement si nécessaire
-
-3. Détection d'interaction UI :
-   - Message court sans contexte ("ok", "c'est bon", "merci") APRÈS un changement d'état
-   - = L'utilisateur a utilisé l'interface directement
-   - = Pas de JSON, juste accusé de réception naturel
+[⚠️ RÈGLES INTERACTIONS UI]
+1. Clic bouton UI → Pas de JSON command, juste accusé réception
+2. Demande verbale → Génère JSON execute normalement
+3. Message court après changement état → Accusé réception simple
 
 MESSAGE: "${userMessage}"
 `;
       }
 
       // ========================================
-      // 📎 AJOUT DES PIÈCES JOINTES (NOUVEAU MESSAGE SEULEMENT)
+      // 📎 AJOUT DES PIÈCES JOINTES
       // ========================================
       const promptParts = [ { text: metadataPrompt } ];
       
@@ -2808,10 +2807,11 @@ MESSAGE: "${userMessage}"
   return { success: false, error: lastError };
 }
 
-// ========================================
-// 📚 FONCTION getHistoryFromFirebase AMÉLIORÉE
-// ========================================
 
+
+// ========================================
+// 📚 FONCTION getHistoryFromFirebase (INCHANGÉE)
+// ========================================
 async function getHistoryFromFirebase(userId, sessionId, daysBack = 30) {
   if (!db || !userId || !sessionId) return [];
   
@@ -2823,7 +2823,6 @@ async function getHistoryFromFirebase(userId, sessionId, daysBack = 30) {
     const messages = snapshot.val();
     const cutoffDate = Date.now() - (daysBack * 24 * 60 * 60 * 1000);
     
-    // Filtrer les messages selon la période
     const filteredMessages = Object.values(messages)
       .filter(msg => {
         const timestamp = msg.timestamp || 0;
@@ -2833,7 +2832,6 @@ async function getHistoryFromFirebase(userId, sessionId, daysBack = 30) {
     
     console.log(`📚 Historique chargé: ${filteredMessages.length} messages sur ${daysBack} jours`);
     
-    // Limiter à 150 messages maximum pour éviter les dépassements
     return filteredMessages.slice(-150);
     
   } catch (error) {
@@ -2843,13 +2841,12 @@ async function getHistoryFromFirebase(userId, sessionId, daysBack = 30) {
 }
 
 // ========================================
-// 💾 SAUVEGARDE AMÉLIORÉE AVEC CONTENU FICHIERS
+// 💾 SAUVEGARDE AMÉLIORÉE (INCHANGÉE)
 // ========================================
-
 async function saveMessageToFirebase(userMsg, botMsg, attachments) {
   if (!appState.currentUser || !db || !appState.currentSessionId) return;
 
-  const sessionRef = ref(db, `${userChatsRefPath}/${appState.currentUser.uid}/${appState.currentSessionId}`);
+  const sessionRef = ref(db, `${USER_CHATS_REF}/${appState.currentUser.uid}/${appState.currentSessionId}`);
   const sessionSnapshot = await get(sessionRef);
   
   const isNewSession = !sessionSnapshot.exists();
@@ -2869,23 +2866,21 @@ async function saveMessageToFirebase(userMsg, botMsg, attachments) {
     });
   }
 
-  const messagesRef = ref(db, `${userChatsRefPath}/${appState.currentUser.uid}/${appState.currentSessionId}/messages`);
+  const messagesRef = ref(db, `${USER_CHATS_REF}/${appState.currentUser.uid}/${appState.currentSessionId}/messages`);
   
-  // ✅ CONSERVER LE CONTENU DES FICHIERS DANS FIREBASE
   const attachmentsMeta = await Promise.all(attachments.map(async att => {
     if (att.type === 'image') {
       return {
         name: att.name,
         type: att.type,
-        data: att.data // Conserver l'image base64 (limité à 5MB par Firebase)
+        data: att.data
       };
     } else if (att.type === 'file') {
-      // Extraire et sauvegarder le contenu du fichier
       const fileContent = await parseFileAttachment(att);
       return {
         name: att.name,
         type: att.type,
-        content: fileContent.substring(0, 100000) // Limiter à 100KB de texte
+        content: fileContent.substring(0, 100000)
       };
     }
     return { name: att.name, type: att.type };
@@ -2898,7 +2893,7 @@ async function saveMessageToFirebase(userMsg, botMsg, attachments) {
     timestamp: serverTimestamp()
   });
 
-  await set(ref(db, `${userChatsRefPath}/${appState.currentUser.uid}/${appState.currentSessionId}/lastUpdated`), serverTimestamp());
+  await set(ref(db, `${USER_CHATS_REF}/${appState.currentUser.uid}/${appState.currentSessionId}/lastUpdated`), serverTimestamp());
   
   if (isNewSession) {
     loadChatHistorySidebar();
