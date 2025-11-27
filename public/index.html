@@ -2787,86 +2787,27 @@
       }
     });
 
-    // Surveiller l'état d'authentification
+   // Surveiller l'état d'authentification
 onAuthStateChanged(auth, (user) => {
   if (user) {
+    // ✅ SEULEMENT si utilisateur connecté
     appState.currentUser = user;
-    
-    // ✅ CORRECTION : Vérifier l'existence des éléments avant manipulation
-    const loginOverlay = el('login-overlay');
-    const mainApp = el('main-app');
-    const userPhoto = el('user-photo');
-    const userNameDisplay = el('user-name-display');
-    const userEmailDisplay = el('user-email-display');
-    
-    if (loginOverlay) loginOverlay.style.display = 'none';
-    if (mainApp) mainApp.style.display = 'block';
-    
-    if (userPhoto) userPhoto.src = user.photoURL || defaultAvatar;
-    if (userNameDisplay) userNameDisplay.textContent = user.displayName || 'Utilisateur';
-    if (userEmailDisplay) userEmailDisplay.textContent = user.email;
-    
-    loadChatHistorySidebar();
+    document.getElementById('login-overlay').style.display = 'none';
+    document.getElementById('main-app').style.display = 'block';
   } else {
+    // ❌ Sinon, afficher l'écran de connexion
     appState.currentUser = null;
-    
-    // ✅ CORRECTION : Vérifier l'existence des éléments
-    const mainApp = el('main-app');
-    const loginOverlay = el('login-overlay');
-    
-    if (mainApp) mainApp.style.display = 'none';
-    if (loginOverlay) loginOverlay.style.display = 'flex';
+    document.getElementById('main-app').style.display = 'none';
+    document.getElementById('login-overlay').style.display = 'flex';
   }
 });
 
 } else {
-  // Mode hors ligne sans Firebase
-  console.warn('⚠️ Mode hors ligne - Firebase non disponible');
-  loadDevicesFromLocalStorage();
-  loadPlansFromLocalStorage();
-  renderDevices();
-  renderPlanningListUI(appState.plans);
-  
-  // Simuler une connexion utilisateur pour le mode démo
-  setTimeout(() => {
-    // ✅ CORRECTION : Vérifier l'existence des éléments
-    const loginOverlay = el('login-overlay');
-    const mainApp = el('main-app');
-    
-    if (loginOverlay) loginOverlay.style.display = 'none';
-    if (mainApp) mainApp.style.display = 'block';
-    
-    appState.currentUser = { 
-      uid: 'demo-user', 
-      displayName: 'Utilisateur Démo', 
-      email: 'demo@example.com' 
-    };
-    logActivity('🔧 Mode démo activé (Firebase non disponible)');
-  }, 1000);
-}
-//===========================================
-// 🛡️ FONCTION UTILITAIRE SÉCURISÉE POUR LE DOM
-// =============================================
-function safeDOM(id, callback) {
-    const element = document.getElementById(id);
-    if (element && callback) {
-        callback(element);
-    }
-    return element;
+  // ❌ Firebase indisponible = pas d'accès
+  document.getElementById('main-app').style.display = 'none';
+  document.getElementById('login-overlay').style.display = 'flex';
 }
 
-// Exemples d'utilisation :
-safeDOM('login-overlay', (el) => {
-    el.style.display = 'none';
-});
-
-safeDOM('main-app', (el) => {
-    el.style.display = 'block';
-});
-
-safeDOM('user-photo', (el) => {
-    el.src = user.photoURL || defaultAvatar;
-});
 
   // ============================================
   // 🎯 ÉVÉNEMENTS PRINCIPAUX
