@@ -1,0 +1,3129 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
+  <title>SmartHome Intelligence </title>
+  <meta name="theme-color" content="#06b6d4" />
+  
+  <!-- PWA Manifest -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/13.0.0/marked.min.js"></script>
+  
+  <style>
+    :root {
+      --primary: #4361ee;
+      --accent-cyan: #06b6d4;
+      --muted: #9aa3b2;
+      --dark: #212529;
+      --light: #f8f9fa;
+      --shadow: 0 10px 20px rgba(0, 0, 0, 0.08);
+      --danger: #e74c3c;
+      --success: #2ecc71;
+      --warning: #f39c12;
+      --code-bg: #0d1117;
+      --code-text: #c9d1d9;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; overflow: hidden; }
+    body {
+      font-family: "Segoe UI", Tahoma, Helvetica, Arial, sans-serif;
+      background: linear-gradient(135deg, #f5f7fa, #c3cfe2);
+      color: var(--dark);
+      line-height: 1.5;
+      transition: background 0.3s ease, color 0.3s ease;
+    }
+
+    body.night-mode {
+      background: linear-gradient(135deg, #0e0f13, #0f1724);
+      color: #e2e8f0;
+    }
+
+    body.night-mode .card, body.night-mode .device-card, body.night-mode #login-overlay .login-box {
+      background: rgba(30, 41, 59, 0.95);
+      color: #e2e8f0;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    body.night-mode input, body.night-mode select, body.night-mode textarea {
+      background: rgba(15, 23, 42, 0.8);
+      color: #e2e8f0;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    body.night-mode input::placeholder { color: #94a3b8; }
+    body.night-mode .btn { background: rgba(51, 65, 85, 0.8); color: #e2e8f0; border: 1px solid rgba(255, 255, 255, 0.1); }
+    body.night-mode .btn.primary { background: var(--primary); color: white; }
+    body.night-mode .msg.bot { background: rgba(30, 41, 59, 0.95); color: #e2e8f0; border: 1px solid rgba(255, 255, 255, 0.1); }
+    body.night-mode .msg.bot h1, body.night-mode .msg.bot h2, body.night-mode .msg.bot h3 { color: var(--accent-cyan); }
+    body.night-mode .msg.bot strong { color: var(--accent-cyan); }
+    body.night-mode .msg.bot code:not(pre code) { background: rgba(255, 255, 255, 0.1); }
+    body.night-mode .msg-action-btn { background: rgba(255, 255, 255, 0.05); color: #cbd5e1; }
+
+    /* ============================================
+       STREAMING MARKDOWN - AFFICHAGE PROGRESSIF
+       ============================================ */
+    .msg.bot .streaming-content {
+      min-height: 20px;
+    }
+
+    .msg.bot .streaming-cursor {
+      display: inline-block;
+      width: 8px;
+      height: 1.2em;
+      background: var(--accent-cyan);
+      margin-left: 2px;
+      vertical-align: middle;
+      animation: blink 1s infinite;
+    }
+
+    @keyframes blink {
+      0%, 50% { opacity: 1; }
+      51%, 100% { opacity: 0; }
+    }
+
+    .msg.bot pre {
+      background: var(--code-bg) !important;
+      color: var(--code-text) !important;
+      padding: 0;
+      border-radius: 8px;
+      margin-bottom: 12px;
+      overflow-x: auto;
+      font-family: 'Monaco', 'Consolas', 'Courier New', monospace;
+      font-size: 14px;
+      position: relative;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .msg.bot pre code { background: none !important; padding: 16px; display: block; color: var(--code-text) !important; }
+
+    .code-actions {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(255, 255, 255, 0.05);
+      padding: 6px 12px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 8px 8px 0 0;
+      font-size: 12px;
+      color: #888;
+    }
+
+    .code-actions-buttons { display: flex; gap: 10px; }
+
+    .code-action-btn {
+      background: none;
+      border: none;
+      color: #ccc;
+      cursor: pointer;
+      font-size: 12px;
+      padding: 4px 8px;
+      border-radius: 4px;
+      transition: all 0.2s ease;
+    }
+
+    .code-action-btn:hover { background: rgba(255, 255, 255, 0.1); color: white; }
+
+    /* ============================================
+       BOUTONS DISCRETS SUR LES MESSAGES (STYLE CHATGPT)
+       ============================================ */
+    .message-actions {
+      display: flex;
+      gap: 6px;
+      margin-top: 8px;
+      opacity: 0;
+      transition: opacity 0.2s ease;
+      flex-wrap: wrap;
+    }
+
+    .msg:hover .message-actions { opacity: 1; }
+
+    .msg-action-btn {
+      background: rgba(0, 0, 0, 0.05);
+      border: none;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 11px;
+      padding: 6px 10px;
+      border-radius: 6px;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      min-height: 28px;
+      white-space: nowrap;
+    }
+
+    .msg-action-btn:hover {
+      background: var(--primary);
+      color: white;
+      transform: translateY(-1px);
+    }
+
+    .msg-action-btn.danger:hover { background: var(--danger); }
+
+    /* ============================================
+       ÉDITEUR DE MESSAGE EN LIGNE
+       ============================================ */
+    .message-edit-container {
+      display: none;
+      margin-top: 12px;
+      padding: 12px;
+      background: rgba(0, 0, 0, 0.03);
+      border-radius: 8px;
+      border: 1px solid rgba(0, 0, 0, 0.1);
+    }
+
+    body.night-mode .message-edit-container {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .message-edit-container.active { display: block; }
+
+    .edit-textarea {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid rgba(0, 0, 0, 0.1);
+      border-radius: 6px;
+      font-family: inherit;
+      font-size: 14px;
+      resize: vertical;
+      min-height: 80px;
+      margin-bottom: 8px;
+    }
+
+    body.night-mode .edit-textarea {
+      background: rgba(15, 23, 42, 0.8);
+      color: #e2e8f0;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .edit-actions { display: flex; gap: 8px; }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 16px 12px 100px;
+      height: 100%;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    header {
+      background: linear-gradient(90deg, #4b6cb7, #1f3b8a);
+      padding: 14px;
+      border-radius: 8px;
+      color: white;
+      text-align: center;
+      box-shadow: var(--shadow);
+      margin-bottom: 16px;
+    }
+
+    header h1 { margin: 0; font-size: 22px; }
+
+    .section { display: none; }
+    .section.active { display: block; }
+
+    #sec-intelligence { height: 100%; padding-top: 0; margin-top: -16px; display: none; flex-direction: row; position: relative; }
+    #sec-intelligence.active { display: flex; }
+
+    #chat-sidebar {
+      width: 260px;
+      height: 100%;
+      background: #f8f9fa;
+      border-right: 1px solid rgba(0, 0, 0, 0.1);
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+    }
+
+    #chat-sidebar-header { padding: 12px; border-bottom: 1px solid rgba(0, 0, 0, 0.1); display: flex; flex-direction: column; gap: 8px; }
+    #new-chat-btn { width: 100%; justify-content: center; }
+    #chat-history-list { flex: 1; overflow-y: auto; padding: 8px; }
+
+    .chat-history-item {
+      padding: 10px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      margin-bottom: 4px;
+      font-size: 14px;
+      transition: background 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      min-height: 44px;
+    }
+
+    .chat-history-item-title { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; padding-right: 8px; }
+    .chat-history-item .chat-history-delete { padding: 6px 10px; font-size: 14px; border-radius: 6px; flex-shrink: 0; min-width: 36px; min-height: 36px; background: rgba(0, 0, 0, 0.05); color: var(--muted); border: none; }
+    .chat-history-item .chat-history-delete:hover { background: var(--danger); color: white !important; }
+    .chat-history-item:hover { background: #e9ecef; }
+    .chat-history-item.active { background: var(--primary); color: white; }
+
+    #chat-section-container { flex: 1; height: 100%; display: flex; flex-direction: column; background: linear-gradient(135deg, #f5f7fa, #c3cfe2); position: relative; overflow: hidden; }
+    body.night-mode #chat-section-container { background: linear-gradient(135deg, #0e0f13, #0f1724); }
+
+    #chatFullWindow {
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: hidden;
+      padding: 16px;
+      padding-bottom: 16px;
+      display: flex;
+      flex-direction: column;
+      max-width: 800px;
+      width: 100%;
+      margin: 0 auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    #chat-input-container { padding: 12px; border-top: 1px solid rgba(0, 0, 0, 0.1); background: rgba(255, 255, 255, 0.9); flex-shrink: 0; max-width: 800px; width: 100%; margin: 0 auto; }
+    #chat-input-flex { display: flex; gap: 8px; }
+    #chatFullInput { flex: 1; padding: 12px; border-radius: 8px; border: 1px solid #ddd; font-size: 15px; }
+    #chat-input-buttons { display: flex; gap: 8px; }
+    #chatFullSend { padding: 0 16px; }
+
+    #attachment-preview-container { display: flex; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
+    .attachment-preview { display: flex; align-items: center; gap: 8px; background: #e9ecef; padding: 6px 10px; border-radius: 6px; font-size: 13px; }
+    .attachment-preview img { width: 32px; height: 32px; object-fit: cover; border-radius: 4px; }
+    .remove-attachment { cursor: pointer; font-size: 14px; color: var(--danger); }
+    #file-input { display: none; }
+
+    .msg {
+      padding: 10px 14px;
+      border-radius: 12px;
+      max-width: 90%;
+      margin-bottom: 10px;
+      word-wrap: break-word;
+      line-height: 1.6;
+      position: relative;
+    }
+
+    .msg.user { align-self: flex-end; background: linear-gradient(135deg, #4895ef, #4361ee); color: white; }
+    .msg.bot { align-self: flex-start; background: rgba(255, 255, 255, 0.95); border: 1px solid rgba(0, 0, 0, 0.06); color: var(--dark); width: 100%; max-width: 100%; overflow-wrap: break-word; }
+    .msg.bot h1, .msg.bot h2, .msg.bot h3 { margin-top: 16px; margin-bottom: 8px; color: var(--primary); }
+    .msg.bot p { margin-bottom: 12px; }
+    .msg.bot ul, .msg.bot ol { margin-left: 20px; margin-bottom: 12px; }
+    .msg.bot li { margin-bottom: 4px; }
+    .msg.bot strong { color: var(--primary); }
+    .msg.bot code:not(pre code) { background: rgba(0, 0, 0, 0.05); padding: 2px 4px; border-radius: 4px; font-family: monospace; }
+
+    .continue-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 20px;
+      background: linear-gradient(135deg, #4361ee, #3651de);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 15px;
+      font-weight: 600;
+      margin-top: 15px;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 12px rgba(67, 97, 238, 0.3);
+    }
+
+    .continue-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(67, 97, 238, 0.4); background: linear-gradient(135deg, #3651de, #2941ce); }
+
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
+    .card { background: rgba(255, 255, 255, 0.95); border-radius: 12px; padding: 14px; box-shadow: var(--shadow); }
+    .chip { display: inline-block; padding: 6px 10px; border-radius: 999px; background: rgba(0, 0, 0, 0.05); margin-right: 8px; font-size: 13px; }
+
+    .device-card { border-radius: 12px; padding: 14px; background: rgba(255, 255, 255, 0.95); box-shadow: var(--shadow); transition: transform 0.2s ease; }
+    .device-card:hover { transform: translateY(-2px); }
+
+    .device-header { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+    .device-icon { width: 48px; height: 48px; border-radius: 10px; background: linear-gradient(135deg, #4895ef, #4361ee); display: flex; align-items: center; justify-content: center; color: white; }
+    .device-name { font-weight: 700; }
+    .device-status { color: var(--muted); font-size: 13px; }
+    .status-indicator { width: 10px; height: 10px; border-radius: 50%; background: var(--muted); display: inline-block; margin-right: 8px; }
+    .status-indicator.active { background: var(--success); }
+
+    .controls { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+
+    .btn {
+      padding: 8px 12px;
+      border-radius: 999px;
+      border: 0;
+      background: #f1f5f9;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 14px;
+    }
+
+    .btn:hover { transform: translateY(-1px); box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); }
+    .btn.primary { background: var(--primary); color: white; }
+    .btn.warn { background: var(--danger); color: white; }
+    .btn.success { background: var(--success); color: white; }
+    .btn.warning { background: var(--warning); color: white; }
+    .btn.active { background: var(--accent-cyan); color: white; }
+    .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    input[type="range"] { width: 100%; }
+    .flex { display: flex; gap: 10px; align-items: center; }
+    label { display: block; margin: 6px 0; font-size: 13px; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 8px; border-bottom: 1px solid rgba(0, 0, 0, 0.06); }
+
+    footer {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 72px;
+      background: linear-gradient(90deg, #14151a, #1a1c23);
+      display: flex;
+      align-items: center;
+      justify-content: space-around;
+      color: var(--muted);
+      z-index: 1000;
+      width: 100%;
+    }
+
+    .btn-nav { background: none; border: none; color: var(--muted); display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; transition: color 0.2s ease; padding: 8px; }
+    .btn-nav.active { color: var(--accent-cyan); }
+
+    .switch-3d { position: relative; display: inline-block; width: 50px; height: 24px; }
+    .switch-3d input { opacity: 0; width: 0; height: 0; }
+    .slider-3d { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(145deg, #e0e0e0, #bebebe); transition: 0.4s; border-radius: 24px; box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.2); }
+    .slider-3d:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background: linear-gradient(145deg, #ffffff, #e6e6e6); transition: 0.4s; border-radius: 50%; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); }
+    input:checked + .slider-3d { background: linear-gradient(145deg, var(--accent-cyan), var(--primary)); }
+    input:checked + .slider-3d:before { transform: translateX(26px); }
+
+    .settings-group { margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid rgba(0, 0, 0, 0.1); }
+    .settings-group h3 { margin-bottom: 15px; color: var(--primary); }
+    .toggle-section { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+
+    /* ============================================
+       NOUVEAU STYLE POUR DOCUMENTS MARKDOWN
+       ============================================ */
+    .document-cv, .document-lettre, .document-rapport, .document-facture, .document-contrat {
+      background: white;
+      padding: 40px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      max-width: 800px;
+      margin: 20px auto;
+      font-family: 'Segoe UI', Arial, sans-serif;
+      color: #333;
+      line-height: 1.8;
+    }
+
+    body.night-mode .document-cv, body.night-mode .document-lettre, body.night-mode .document-rapport, body.night-mode .document-facture, body.night-mode .document-contrat {
+      background: rgba(30, 41, 59, 0.95);
+      color: #e2e8f0;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .document-cv h1 { color: #4361ee; font-size: 32px; margin-bottom: 5px; text-align: center; }
+    body.night-mode .document-cv h1 { color: var(--accent-cyan); }
+
+    /* ============================================
+       INDICATEURS WEBSOCKET AMÉLIORÉS
+       ============================================ */
+    .websocket-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    .websocket-status.connected {
+      background: rgba(46, 213, 115, 0.2);
+      color: #2ed573;
+    }
+
+    .websocket-status.connecting {
+      background: rgba(243, 156, 18, 0.2);
+      color: #f39c12;
+      animation: pulse 1.5s infinite;
+    }
+
+    .websocket-status.disconnected {
+      background: rgba(231, 76, 60, 0.2);
+      color: #e74c3c;
+    }
+
+    @keyframes pulse {
+      0% { opacity: 1; }
+      50% { opacity: 0.5; }
+      100% { opacity: 1; }
+    }
+
+    /* ============================================
+       NOUVEAU PLANNING AVANCÉ
+       ============================================ */
+    .planning-options {
+      display: none;
+      margin-top: 10px;
+      padding: 12px;
+      background: rgba(0, 0, 0, 0.03);
+      border-radius: 8px;
+    }
+
+    .planning-options.active {
+      display: block;
+    }
+
+    .planning-days {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .planning-day {
+      padding: 6px 12px;
+      border-radius: 6px;
+      background: #f1f5f9;
+      cursor: pointer;
+      font-size: 13px;
+      transition: all 0.2s ease;
+    }
+
+    .planning-day.selected {
+      background: var(--primary);
+      color: white;
+    }
+
+    @media (max-width: 760px) {
+      .grid { grid-template-columns: 1fr; }
+      .controls { flex-direction: column; }
+      .btn { width: 100%; justify-content: center; }
+      .flex { flex-direction: column; align-items: stretch; }
+      .container { padding-bottom: 88px; }
+
+      #chat-sidebar {
+        position: fixed;
+        left: -100%;
+        top: 0;
+        bottom: 0;
+        width: 85%;
+        max-width: 320px;
+        z-index: 10000;
+        transition: left 0.3s ease;
+        box-shadow: 2px 0 10px rgba(0, 0, 0, 0.3);
+      }
+      #chat-sidebar.open { left: 0; }
+
+      #sidebar-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 9999;
+      }
+      #sidebar-overlay.open { display: block; }
+
+      #sidebar-toggle-btn {
+        display: flex;
+        position: absolute;
+        top: 16px;
+        left: 16px;
+        z-index: 1000;
+        background: var(--primary);
+        color: white;
+        border: 0;
+        border-radius: 8px;
+        width: 48px;
+        height: 48px;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+      }
+
+      #chatFullWindow {
+        padding: 80px 12px 16px;
+        padding-bottom: 200px;
+      }
+
+      #chat-input-container {
+        position: fixed;
+        bottom: 72px;
+        left: 0;
+        right: 0;
+        width: 100%;
+        max-width: 100%;
+        margin: 0;
+        padding: 12px;
+        z-index: 999;
+        box-sizing: border-box;
+      }
+    }
+
+    @media (min-width: 761px) {
+      #sidebar-toggle-btn { display: none; }
+      #sidebar-overlay { display: none; }
+    }
+
+    #login-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(135deg, #f5f7fa, #c3cfe2);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 2000;
+      transition: opacity 0.3s ease;
+    }
+
+    .login-box {
+      background: rgba(255, 255, 255, 0.95);
+      padding: 30px 40px;
+      border-radius: 12px;
+      box-shadow: var(--shadow);
+      text-align: center;
+      max-width: 400px;
+    }
+
+    .login-box .app-icon { font-size: 48px; color: var(--primary); margin-bottom: 16px; }
+    .login-box h2 { margin-bottom: 8px; }
+    .login-box p { color: var(--muted); margin-bottom: 24px; }
+
+    .main-app { display: none; height: 100%; }
+
+    #user-profile-card {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      background: rgba(0, 0, 0, 0.02);
+      padding: 12px;
+      border-radius: 8px;
+    }
+
+    #user-photo { width: 60px; height: 60px; border-radius: 50%; object-fit: cover; border: 2px solid var(--primary); }
+    #user-profile-card div { flex: 1; }
+    #user-name-display { font-weight: 700; font-size: 16px; }
+    #user-email-display { font-size: 14px; color: var(--muted); word-break: break-all; }
+  </style>
+</head>
+<body>
+
+  <!-- ============================================
+       OVERLAY CONNEXION
+       ============================================ -->
+  <div id="login-overlay">
+    <div class="login-box">
+      <div class="app-icon"><i class="fas fa-home-user"></i></div>
+      <h2>SmartHome Intelligence </h2>
+      <p>Veuillez vous connecter pour accéder à votre assistant domotique.</p>
+      <button class="btn primary" id="googleSignInOverlayBtn" style="width:100%; justify-content:center;">
+          <svg style="width:20px; height:20px; margin-right:8px;" viewBox="0 0 24 24"><path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" style="color:#4285F4"></path><path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" style="color:#34A853"></path><path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" style="color:#FBBC05"></path><path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" style="color:#EA4335"></path><path fill="none" d="M1 1h22v22H1z"></path></svg>
+          Se connecter avec Google
+      </button>
+    </div>
+  </div>
+
+  <!-- ============================================
+       APPLICATION PRINCIPALE
+       ============================================ -->
+  <div class="main-app">
+    <div class="container">
+      <header id="main-header">
+        <h1 id="section-header-title">Domotique</h1>
+        <div style="margin-top:8px; display:flex; flex-wrap: wrap; justify-content: center; gap: 8px;">
+          <span id="statusLocal" class="chip websocket-status disconnected">ESP32: Déconnecté</span>
+          <span id="statusFirebase" class="chip">Firebase : -</span> 
+          <span id="statusOnline" class="chip">Assistant : -</span>
+          <span id="intelliaLatency" class="chip">latence: -</span>
+          <span id="db-count" class="chip">on: 0</span>
+        </div>
+      </header>
+
+      <!-- ============================================
+           SECTION DOMOTIQUE
+           ============================================ -->
+      <section id="sec-domotique" class="section active">
+        <div class="grid" style="grid-template-columns:1fr">
+          <div>
+            <div class="card">
+              <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+                <strong>Contrôles rapides</strong>
+                <div class="flex" style="flex-wrap:wrap">
+                  <button class="btn" id="dayModeBtn"><i class="fas fa-sun"></i> Jour</button>
+                  <button class="btn" id="nightModeBtn"><i class="fas fa-moon"></i> Nuit</button>
+                  <button class="btn success" id="allOnBtn">Tout allumer</button>
+                  <button class="btn warn" id="allOffBtn">Tout éteindre</button>
+                </div>
+              </div>
+              
+              <div style="margin-top:12px; border-top: 1px solid rgba(0,0,0,0.1); padding-top:12px;">
+                <strong><i class="fas fa-robot"></i> Assistant Vocal (Raccourci)</strong>
+                <button class="btn primary" id="quickVoiceToggleBtn" style="width:100%; justify-content:center; margin-top:8px; font-size: 15px;">
+                  <i class="fas fa-waveform"></i> Lancer la conversation
+                </button>
+              </div>
+            </div>
+            
+            <div class="card" style="margin-top:12px">
+              <h3>💡 Suggestions Proactives</h3>
+              <p id="proactive-suggestion" style="font-size:14px; color:var(--muted)">...</p>
+            </div>
+
+            <div style="margin-top:12px"> <div id="deviceGrid" class="grid"></div> </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================
+           SECTION INTELLIGENCE / CHAT
+           ============================================ -->
+      <section id="sec-intelligence" class="section">
+        <button id="sidebar-toggle-btn"><i class="fas fa-bars"></i></button>
+        <div id="sidebar-overlay"></div>
+        
+        <div id="chat-sidebar">
+          <div id="chat-sidebar-header">
+            <button class="btn" id="close-sidebar-btn" style="display: none;">
+              <i class="fas fa-arrow-left"></i> Retour
+            </button>
+            <button class="btn primary" id="new-chat-btn">
+              <i class="fas fa-plus"></i> Nouvelle Discussion
+            </button>
+          </div>
+          <div id="chat-history-list"></div>
+        </div>
+        
+        <div id="chat-section-container">
+          <div id="chatFullWindow"></div>
+          
+          <div id="chat-input-container">
+            <div id="chat-loading" style="display:none; padding-bottom: 8px; text-align:center; font-style:italic; color:var(--muted); font-size: 14px;">
+              <i class="fas fa-spinner fa-spin"></i> Assistant en train de réfléchir...
+            </div>
+          
+            <div id="attachment-preview-container"></div>
+            
+            <div id="chat-input-flex">
+              <input type="file" id="file-input" accept="image/*,application/pdf,text/*,.txt,.docx,.doc,.html,.htm,.js,.json,.css,.xml,.csv,.xlsx,.xls,.pptx,.ppt,.zip,.rar" multiple>
+              <button class="btn" id="attach-file-btn" title="Joindre un fichier">
+                <i class="fas fa-paperclip"></i>
+              </button>
+              
+              <input id="chatFullInput" placeholder="Posez une question à l'Assistant..." />
+              
+              <div id="chat-input-buttons">
+                <button class="btn" id="voicePushToTalk" title="Appuyer pour enregistrer">
+                  <i class="fas fa-microphone-alt"></i>
+                </button>
+                <button class="btn" id="voiceContinuous" title="Mode conversation continue">
+                  <i class="fa-solid fa-waveform"></i>
+                </button>
+                
+                <button class="btn" id="toggleVoiceBtn" title="Activer/Désactiver la synthèse vocale">
+                  <i class="fas fa-volume-up"></i>
+                </button>
+                
+                <button class="btn primary" id="chatFullSend">
+                  <i class="fas fa-paper-plane"></i>
+                </button>
+                <button class="btn warn" id="stopAIBtn" style="display: none; min-width: 56px; min-height: 48px;">
+                  <i class="fas fa-stop-circle" style="font-size: 20px;"></i>
+                </button>
+              </div>
+            </div>
+            <div style="margin-top:8px; display:flex; flex-wrap:wrap; gap: 8px;">
+              <span class="chip">Mode Conversation: <span id="continuousStatus">Désactivé</span></span>
+              <span class="chip" id="intelliaStatus">Assistant: Non connecté</span>
+              <span class="chip" id="voiceStatus">Voix: Inactive</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================
+           SECTION PLANNING AVANCÉ
+           ============================================ -->
+      <section id="sec-planning" class="section">
+        <div class="grid" style="grid-template-columns: 1fr 1fr; gap: 16px;">
+          <div class="card">
+            <strong>⏰ Ajouter une planification</strong>
+            <div style="margin-top:12px">
+              <label>Appareil</label>
+              <select id="plan-device" style="width:100%;padding:8px;border-radius:8px;border:1px solid #ddd;margin-bottom:10px"></select>
+              
+              <label>Type de planification</label>
+              <select id="plan-frequency" style="width:100%;padding:8px;border-radius:8px;border:1px solid #ddd;margin-bottom:10px">
+                <option value="once">Une fois (date spécifique)</option>
+                <option value="daily">Tous les jours</option>
+                <option value="weekly">Hebdomadaire (certains jours)</option>
+                <option value="monthly">Mensuel (jour du mois)</option>
+                <option value="duration">Par durée (du... au...)</option>
+              </select>
+
+              <!-- Options pour chaque type de planification -->
+              <div id="planning-options-container">
+                <!-- Une fois -->
+                <div id="opt-once" class="planning-options">
+                  <label>Date</label>
+                  <input type="date" id="plan-date" style="width:100%;padding:8px;border-radius:8px;border:1px solid #ddd;margin-bottom:10px" />
+                </div>
+
+                <!-- Hebdomadaire -->
+                <div id="opt-weekly" class="planning-options">
+                  <label>Jours de la semaine</label>
+                  <div class="planning-days">
+                    <div class="planning-day" data-day="1">Lun</div>
+                    <div class="planning-day" data-day="2">Mar</div>
+                    <div class="planning-day" data-day="3">Mer</div>
+                    <div class="planning-day" data-day="4">Jeu</div>
+                    <div class="planning-day" data-day="5">Ven</div>
+                    <div class="planning-day" data-day="6">Sam</div>
+                    <div class="planning-day" data-day="0">Dim</div>
+                  </div>
+                  <input type="hidden" id="plan-days" value="">
+                </div>
+
+                <!-- Mensuel -->
+                <div id="opt-monthly" class="planning-options">
+                  <label>Jour du mois (1-31)</label>
+                  <input type="number" id="plan-day-of-month" min="1" max="31" value="1" style="width:100%;padding:8px;border-radius:8px;border:1px solid #ddd;margin-bottom:10px" />
+                </div>
+
+                <!-- Durée -->
+                <div id="opt-duration" class="planning-options">
+                  <label>Date de début</label>
+                  <input type="date" id="plan-start-date" style="width:100%;padding:8px;border-radius:8px;border:1px solid #ddd;margin-bottom:10px" />
+                  
+                  <label>Date de fin</label>
+                  <input type="date" id="plan-end-date" style="width:100%;padding:8px;border-radius:8px;border:1px solid #ddd;margin-bottom:10px" />
+                </div>
+              </div>
+
+              <label>Heure</label>
+              <input type="time" id="plan-time" style="width:100%;padding:8px;border-radius:8px;border:1px solid #ddd;margin-bottom:10px" />
+              
+              <label>Action</label>
+              <select id="plan-action" style="width:100%;padding:8px;border-radius:8px;border:1px solid #ddd;margin-bottom:10px">
+                <option value="ON">Allumer</option><option value="OFF">Éteindre</option>
+              </select>
+
+              <div id="power-control-container">
+                <label>Puissance (%)</label>
+                <input id="plan-power" type="number" min="0" max="100" value="100" style="width:100%;padding:8px;border-radius:8px;border:1px solid #ddd;margin-bottom:10px" />
+              </div>
+              
+              <div style="display:flex;gap:8px">
+                <button class="btn primary" id="addPlan" style="flex:1"><i class="fas fa-plus"></i> Planifier</button>
+                <button class="btn warning" id="clearAllPlans" style="flex:1"><i class="fas fa-trash"></i> Effacer tout</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <strong>📋 Tâches Programmées</strong>
+            <div id="planningTable" style="margin-top:12px;font-size:13px"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================
+           SECTION PARAMÈTRES
+           ============================================ -->
+      <section id="sec-params" class="section">
+        <div class="card">
+          <h2>Paramètres du Système</h2>
+          
+          <div class="settings-group">
+            <h3>⚡ Connexion Locale (WebSocket)</h3>
+            <p style="font-size:13px; color:var(--muted); margin-bottom:10px;">
+              Permet un contrôle instantané lorsque vous êtes sur le même WiFi que l'ESP32.
+            </p>
+            <label>Adresse IP de l'ESP32 :</label>
+            <input id="esp32IpInput" placeholder="192.168.x.x" style="width:100%;padding:8px;border-radius:8px;border:1px solid #ddd" />
+            <div style="margin-top:10px;display:flex;gap:8px">
+              <button class="btn primary" id="btnConnectLocal">Sauver & Connecter</button>
+              <button class="btn" id="btnDisconnectLocal">Déconnecter</button>
+            </div>
+            <div id="websocket-status" style="margin-top:10px; font-size:13px;"></div>
+          </div>
+          
+          <div class="settings-group">
+            <h3>Apparence</h3>
+            <div class="toggle-section">
+              <span>Mode sombre</span>
+              <label class="switch-3d"><input type="checkbox" id="darkModeToggle"><span class="slider-3d"></span></label>
+            </div>
+          </div>
+
+          <div class="settings-group">
+            <h3>ðŸ'¤ Profil Utilisateur</h3>
+            <div id="user-profile-card">
+                <img id="user-photo" src="" alt="Photo de profil">
+                <div>
+                    <strong id="user-name-display"></strong>
+                    <p id="user-email-display"></p>
+                </div>
+            </div>
+            <button class="btn warn" id="signOutBtn" style="margin-top: 15px; width: 100%; justify-content: center;">
+              <i class="fas fa-sign-out-alt"></i> Déconnexion
+            </button>
+          </div>
+
+          <div class="settings-group">
+              <h3>Journal d'Activité</h3>
+              <div id="activityLog" style="height: 200px; overflow-y: auto; background: rgba(0,0,0,0.03); border-radius: 8px; padding: 10px; font-size: 13px; border: 1px solid rgba(0,0,0,0.06);"></div>
+          </div>
+        </div>
+      </section>
+    </div> 
+    
+    <footer id="main-footer">
+      <button data-target="sec-domotique" class="btn-nav active"><i class="fas fa-home"></i><span>Accueil</span></button>
+      <button data-target="sec-intelligence" class="btn-nav"><i class="fas fa-robot"></i><span>Assistant</span></button>
+      <button data-target="sec-planning" class="btn-nav"><i class="fas fa-calendar-alt"></i><span>Planning</span></button>
+      <button data-target="sec-params" class="btn-nav"><i class="fas fa-cog"></i><span>Paramètres</span></button>
+    </footer>
+  </div>
+  
+  <script type="module">
+  /* ====================================================
+     SmartHome Intelligence v11.0 - REFONTE COMPLÈTE
+     ✅ Appareils variables/fixes
+     ✅ Planning avancé (daily, weekly, monthly, duration, once)
+     ✅ Markdown 100% avec streaming intelligent
+     ✅ Outils discrets style ChatGPT
+     ✅ WebSocket amélioré avec indicateurs
+     ✅ PWA complète
+     ==================================================== */
+
+  // =============================================
+  // 📋 CONFIGURATION GLOBALE
+  // =============================================
+  let RENDER_API;
+
+  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+    RENDER_API = 'http://localhost:3000';
+    console.log('✅ Environnement LOCAL détecté');
+  } else {
+    RENDER_API = 'https://intellia-smarthome.onrender.com';
+    console.log('✅ Environnement PRODUCTION détecté');
+  }
+
+  const AUTH_KEY = "cle-secrete-intellia";
+  const defaultAvatar = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iI2FlYWVhZSI+PHBhdGggZD0iTTEyIDJDNi44OCAyIDIgNi44OCAyIDEyczQuNDggMTQgMTAgMTBjNS41MiAwIDEwLTQuNDggMTAtMTBTMjcuNTIgMiAxMiAyem0wIDJjMS42NiAwIDMgMS4zNCAzIDNzLTEuMzQgMy0zIDMtMy0xLjM0LTMtM1MwLjM0IDQgMTIgNHptMCAxNmMtMi42NyAwLTUuNDMtMS4yOS03LTIuODguNTYtMS42NSAzLjU1LTIuNjIgNy0yLjYyczYuNDQgLjk3IDcgMi42MmMtMS41NyAxLjU5LTQuMzMgMi44OC03IDIuODh6Ii8+PC9zdmc+";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyA5oYEu4-nOUtjOe2JJ4C9VwNniNSBdjqI",
+    authDomain: "mamaisonintelligente-14485.firebaseapp.com",
+    databaseURL: "https://mamaisonintelligente-14485-default-rtdb.firebaseio.com",
+    projectId: "mamaisonintelligente-14485",
+    storageBucket: "mamaisonintelligente-14485.firebasestorage.app",
+    messagingSenderId: "197281963087",
+    appId: "1:197281963087:web:da680779479391d91f1e3a"
+  };
+
+  // =============================================
+  // 🎯 TYPES D'APPAREILS AVEC VARIABLE/FIXE
+  // =============================================
+  const deviceTypes = {
+    'lamp': { name: 'Lampe', hasBrightness: true, isVariable: true, icon: 'lightbulb' },
+    'plug': { name: 'Prise', hasBrightness: false, isVariable: false, icon: 'plug' },
+    'ventilateur': { name: 'Ventilateur', hasBrightness: true, isVariable: true, icon: 'fan' },
+    'thermostat': { name: 'Thermostat', hasBrightness: false, isVariable: true, icon: 'temperature-low' },
+    'volet': { name: 'Volet Roulant', hasBrightness: false, isVariable: false, icon: 'window-maximize' }
+  };
+
+  const proactiveSuggestions = [
+    "Bonjour ! Pensez à allumer la lumière du bureau si vous commencez à travailler.",
+    "Il est l'heure du déjeuner. N'oubliez pas d'éteindre les appareils de la cuisine après usage.",
+    "Le soleil se couche bientôt. Voulez-vous que j'allume les lampes d'ambiance ?",
+    "Une nouvelle journée commence ! Je suis prêt à vous aider à automatiser vos tâches."
+  ];
+
+  let suggestionIndex = 0;
+
+  // =============================================
+  // 🎯 ÉTAT GLOBAL DE L'APPLICATION
+  // =============================================
+  const appState = {
+    devices: [],
+    deviceStates: {},
+    isNightMode: localStorage.getItem('nightMode') === 'true',
+    intelliaOnline: false,
+    notificationsEnabled: localStorage.getItem('notifications') !== 'false',
+    voiceNotifications: localStorage.getItem('voiceNotifications') !== 'false',
+    plans: [],
+    currentUser: null,
+    currentSessionId: null,
+    attachments: [],
+    chatInProgress: false,
+    shouldStopResponse: false,
+    localWebSocket: null,
+    isLocalConnected: false,
+    esp32Ip: localStorage.getItem('esp32Ip') || '',
+    editingMessageId: null,
+    // Nouveaux états pour v11.0
+    streamingEventSource: null,
+    isStreaming: false,
+    currentStreamingMessage: null
+  };
+
+  // =============================================
+  // 🔧 UTILITAIRE: Sélectionner éléments DOM
+  // =============================================
+  const el = id => document.getElementById(id);
+
+  // =============================================
+  // 📄 FONCTION: EXTRAIRE TEXTE LISIBLE (pour synthèse vocale)
+  // =============================================
+  function extractReadableText(content) {
+    // Supprimer le HTML et garder seulement le texte
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = content;
+    
+    // Supprimer les éléments de code et les balises
+    tempDiv.querySelectorAll('pre, code, style, script, button, .code-actions').forEach(elem => elem.remove());
+    
+    let text = (tempDiv.innerText || tempDiv.textContent || '')
+      .replace(/\s+/g, ' ')
+      .trim();
+    
+    return text.substring(0, 100000);
+  }
+
+  // =============================================
+  // 🖨️ FONCTION: IMPRIMER DOCUMENT MARKDOWN
+  // =============================================
+  window.printDocument = function(btnElement) {
+    try {
+      console.log('🖨️ Impression lancée...');
+      let docElement = null;
+
+      if (btnElement && btnElement.closest) {
+        const messageContainer = btnElement.closest('.msg.bot');
+        
+        if (messageContainer) {
+          docElement = messageContainer.querySelector('.document-cv, .document-lettre, .document-rapport, .document-facture, .document-contrat');
+          
+          if (!docElement) {
+            const clone = messageContainer.cloneNode(true);
+            clone.querySelectorAll('button, .copy-code-btn, .continue-btn, .flex-btns, .code-actions, .message-actions').forEach(b => b.remove());
+            docElement = clone;
+          }
+        }
+      }
+
+      if (!docElement) {
+        const allDocs = document.querySelectorAll('.document-cv, .document-lettre, .document-rapport, .document-facture, .document-contrat');
+        if (allDocs.length > 0) {
+          docElement = allDocs[allDocs.length - 1];
+          console.log('✅ Document trouvé via méthode de secours');
+        }
+      }
+
+      if (!docElement) {
+        alert('❌ Erreur : Impossible de localiser le document à imprimer.');
+        return;
+      }
+
+      const printWindow = window.open('', '_blank');
+      if (!printWindow) {
+        alert('❌ Pop-up bloquée. Veuillez autoriser les pop-ups pour imprimer.');
+        return;
+      }
+
+      const css = `
+        <style>
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          body { 
+            font-family: 'Segoe UI', Arial, sans-serif; 
+            margin: 0; 
+            padding: 20px;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+          }
+          
+          .document-cv, .document-facture, .document-lettre, .document-rapport, .document-contrat { 
+            width: 100%; 
+            max-width: 100%; 
+            margin: 0; 
+            padding: 0;
+            border: none;
+            background: white !important;
+            color: #333 !important;
+          }
+          
+          button, .copy-code-btn, .continue-btn, .code-actions, .message-actions {
+            display: none !important;
+          }
+          
+          @page { 
+            margin: 1cm; 
+            size: A4;
+          }
+          
+          h1, h2, h3 { color: #333 !important; }
+          table { border-collapse: collapse; width: 100%; }
+          th, td { border: 1px solid #ddd; padding: 8px; }
+          th { background: #f0f0f0 !important; }
+        </style>
+      `;
+
+      const htmlContent = docElement.outerHTML || docElement.innerHTML;
+      printWindow.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Impression</title>${css}</head><body>${htmlContent}</body></html>`);
+      printWindow.document.close();
+      
+      printWindow.onload = function() {
+        setTimeout(() => {
+          printWindow.focus();
+          printWindow.print();
+        }, 500);
+      };
+
+    } catch (error) {
+      console.error('❌ Erreur impression:', error);
+      alert('Erreur technique lors de l\'impression : ' + error.message);
+    }
+  };
+
+  // =============================================
+  // 📋 FONCTION: COPIER TEXTE MARKDOWN
+  // =============================================
+  window.copyDocumentText = function() {
+    try {
+      let textContent = '';
+
+      const messageContainer = document.querySelector('.msg.bot:last-of-type');
+      if (messageContainer) {
+        textContent = messageContainer.innerText || messageContainer.textContent || '';
+      }
+
+      if (!textContent) {
+        alert('❌ Aucun texte trouvé');
+        return;
+      }
+
+      navigator.clipboard.writeText(textContent).then(() => {
+        console.log('✅ Texte copié dans le presse-papier');
+        alert('✅ Texte copié dans le presse-papier !');
+      }).catch(err => {
+        console.error('❌ Erreur copie:', err);
+        
+        const textarea = document.createElement('textarea');
+        textarea.value = textContent;
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+        document.body.appendChild(textarea);
+        textarea.select();
+        
+        try {
+          document.execCommand('copy');
+          alert('✅ Texte copié dans le presse-papier !');
+        } catch (e) {
+          alert('❌ Impossible de copier. Utilisez Ctrl+C manuellement.');
+        }
+        
+        document.body.removeChild(textarea);
+      });
+        
+    } catch (error) {
+      console.error('❌ Erreur copie texte:', error);
+      alert('❌ Erreur lors de la copie. Veuillez réessayer.');
+    }
+  };
+
+  // =============================================
+  // 🔤 FONCTION: AJOUTER BOUTONS COPIER CODE
+  // =============================================
+  function addCopyButtons(element) {
+    const codeBlocks = element.querySelectorAll('pre');
+    codeBlocks.forEach(block => {
+      if (block.querySelector('.code-actions')) return;
+      
+      const code = block.querySelector('code');
+      if (!code) return;
+      
+      let language = 'TEXT';
+      let extension = 'txt';
+      const classes = code.className.split(' ');
+      const langClass = classes.find(c => c.startsWith('language-'));
+      
+      if (langClass) {
+        language = langClass.replace('language-', '').toUpperCase();
+        const langMap = {
+          'JAVASCRIPT': 'js', 'PYTHON': 'py', 'HTML': 'html', 
+          'CSS': 'css', 'JSON': 'json', 'JAVA': 'java',
+          'CPP': 'cpp', 'C': 'c', 'PHP': 'php', 'RUBY': 'rb',
+          'GO': 'go', 'RUST': 'rs', 'TYPESCRIPT': 'ts',
+          'BASH': 'sh', 'SQL': 'sql', 'XML': 'xml'
+        };
+        extension = langMap[language] || language.toLowerCase();
+      }
+      
+      const actions = document.createElement('div');
+      actions.className = 'code-actions';
+      actions.innerHTML = `
+        <span>${language}</span>
+        <div class="code-actions-buttons">
+          <button class="code-action-btn" onclick="
+            const codeText = this.closest('pre').querySelector('code').innerText;
+            navigator.clipboard.writeText(codeText)
+              .then(() => { 
+                this.innerHTML = '<i class=\\'fas fa-check\\'></i> Copié'; 
+                setTimeout(() => { this.innerHTML = '<i class=\\'fas fa-copy\\'></i> Copier'; }, 2000); 
+              });
+          ">
+            <i class="fas fa-copy"></i> Copier
+          </button>
+          <button class="code-action-btn" onclick="
+            const codeText = this.closest('pre').querySelector('code').innerText;
+            const blob = new Blob([codeText], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'code.${extension}';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+          ">
+            <i class="fas fa-download"></i> Télécharger
+          </button>
+        </div>
+      `;
+      
+      block.insertBefore(actions, block.firstChild);
+    });
+  }
+
+  // =============================================
+  // 💬 FONCTION: AJOUTER BOUTONS DISCRETS AU MESSAGE
+  // =============================================
+  function addMessageActions(messageElement, isUserMessage = false) {
+    if (messageElement.querySelector('.message-actions')) return;
+
+    const actionsDiv = document.createElement('div');
+    actionsDiv.className = 'message-actions';
+
+    const actions = [
+      {
+        icon: 'fa-copy',
+        label: 'Copier',
+        onclick: `
+          const msgText = this.closest('.msg').innerText;
+          navigator.clipboard.writeText(msgText)
+            .then(() => { 
+              this.innerHTML = '<i class="fas fa-check"></i> Copié'; 
+              setTimeout(() => { this.innerHTML = '<i class="fas fa-copy"></i> Copier'; }, 2000); 
+            });
+        `
+      },
+      isUserMessage ? {
+        icon: 'fa-edit',
+        label: 'Éditer',
+        onclick: `showEditMessage(this.closest('.msg'))`
+      } : null,
+      !isUserMessage ? {
+        icon: 'fa-redo',
+        label: 'Régénérer',
+        onclick: `regenerateMessage(this.closest('.msg'))`
+      } : null,
+      {
+        icon: 'fa-download',
+        label: 'Télécharger',
+        onclick: `downloadMessage(this.closest('.msg'))`
+      }
+    ].filter(Boolean);
+
+    actions.forEach(action => {
+      const btn = document.createElement('button');
+      btn.className = `msg-action-btn ${action.class || ''}`;
+      btn.innerHTML = `<i class="fas ${action.icon}"></i> ${action.label}`;
+      btn.onclick = new Function(action.onclick);
+      actionsDiv.appendChild(btn);
+    });
+
+    messageElement.appendChild(actionsDiv);
+  }
+
+  // =============================================
+  // ✏️ FONCTION: AFFICHER ÉDITEUR DE MESSAGE
+  // =============================================
+  function showEditMessage(messageElement) {
+    const isAlreadyEditing = messageElement.querySelector('.message-edit-container.active');
+    if (isAlreadyEditing) {
+      isAlreadyEditing.classList.remove('active');
+      return;
+    }
+
+    let editContainer = messageElement.querySelector('.message-edit-container');
+    if (!editContainer) {
+      editContainer = document.createElement('div');
+      editContainer.className = 'message-edit-container';
+      messageElement.appendChild(editContainer);
+    }
+
+    const originalText = messageElement.innerText.trim();
+    editContainer.innerHTML = `
+      <textarea class="edit-textarea">${originalText}</textarea>
+      <div class="edit-actions">
+        <button class="btn primary" onclick="submitEditMessage(this)">💾 Envoyer</button>
+        <button class="btn" onclick="this.closest('.message-edit-container').classList.remove('active')">❌ Annuler</button>
+      </div>
+    `;
+    editContainer.classList.add('active');
+    editContainer.querySelector('.edit-textarea').focus();
+  }
+
+  window.submitEditMessage = function(btn) {
+    const editContainer = btn.closest('.message-edit-container');
+    const messageElement = editContainer.closest('.msg');
+    const newText = editContainer.querySelector('.edit-textarea').value.trim();
+
+    if (!newText) {
+      alert('❌ Le message ne peut pas être vide');
+      return;
+    }
+
+    if (messageElement.classList.contains('user')) {
+      handleChatSubmit(newText, appState.attachments);
+      editContainer.classList.remove('active');
+    } else {
+      alert('ℹ️ Vous ne pouvez éditer que vos propres messages');
+    }
+  };
+
+  // =============================================
+  // 📥 FONCTION: TÉLÉCHARGER MESSAGE
+  // =============================================
+  window.downloadMessage = function(messageElement) {
+    const msgText = messageElement.innerText.trim();
+    const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
+    const filename = `message_${timestamp}.txt`;
+    
+    const blob = new Blob([msgText], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    console.log(`✅ Message téléchargé: ${filename}`);
+  };
+
+  // =============================================
+  // 🔄 FONCTION: RÉGÉNÉRER MESSAGE IA
+  // =============================================
+  async function regenerateMessage(messageElement) {
+    const prevUserMsg = messageElement.previousElementSibling;
+    if (!prevUserMsg || !prevUserMsg.classList.contains('user')) {
+      alert('❌ Impossible de trouver le message utilisateur précédent');
+      return;
+    }
+
+    const userMessage = prevUserMsg.innerText.trim();
+    if (!userMessage) {
+      alert('❌ Message vide');
+      return;
+    }
+
+    console.log('🔄 Régénération en cours...');
+    messageElement.innerHTML = '<div style="text-align:center; color: var(--muted);"><i class="fas fa-spinner fa-spin"></i> Régénération...</div>';
+
+    appState.chatInProgress = true;
+    appState.shouldStopResponse = false;
+
+    try {
+      const reply = await sendToOnline(userMessage, [], false);
+
+      if (!appState.shouldStopResponse) {
+        // Utiliser le streaming pour afficher la réponse
+        const renderedHtml = marked.parse(reply, { sanitize: false, gfm: true });
+        messageElement.innerHTML = renderedHtml;
+
+        messageElement.querySelectorAll('pre code').forEach(block => {
+          hljs.highlightElement(block);
+        });
+
+        addCopyButtons(messageElement);
+        addMessageActions(messageElement, false);
+        logActivity('✅ Message régénéré avec succès');
+      }
+    } catch (error) {
+      console.error('❌ Erreur régénération:', error);
+      messageElement.innerHTML = '<em style="color: #e74c3c;">❌ Erreur lors de la régénération</em>';
+    } finally {
+      appState.chatInProgress = false;
+    }
+  }
+
+  window.regenerateMessage = regenerateMessage;
+
+  // =============================================
+  // 💬 FONCTION: AJOUTER MESSAGE AU CHAT AVEC STREAMING
+  // =============================================
+  function appendChat(role, text, returnElement = false, attachments = []) {
+    const target = document.getElementById('chatFullWindow');
+    if (!target) return;
+    
+    const node = document.createElement('div');
+    node.className = 'msg ' + (role === 'user' ? 'user' : 'bot');
+
+    if (role === 'user') {
+      if (text) node.textContent = text;
+    } else {
+      // Pour les messages bot, créer une structure de streaming
+      const streamingContent = document.createElement('div');
+      streamingContent.className = 'streaming-content';
+      
+      if (text) {
+        const renderedHtml = marked.parse(text, { sanitize: false, gfm: true });
+        streamingContent.innerHTML = renderedHtml;
+      } else if (returnElement) {
+        // Message vide pour le streaming
+        streamingContent.innerHTML = '<div class="streaming-cursor"></div>';
+        node.classList.add('loading');
+      }
+      
+      node.appendChild(streamingContent);
+      
+      // Appliquer la coloration syntaxique
+      node.querySelectorAll('pre code').forEach(block => {
+        hljs.highlightElement(block);
+      });
+      
+      addCopyButtons(node);
+    }
+    
+    if (attachments && attachments.length > 0) {
+      const attachmentsDiv = document.createElement('div');
+      attachmentsDiv.style.cssText = 'margin-top: 8px; display: flex; flex-wrap: wrap; gap: 8px;';
+      
+      attachments.forEach(att => {
+        if (att.type === 'image' && att.data) {
+          const img = document.createElement('img');
+          img.src = att.data;
+          img.style.cssText = 'max-width: 150px; max-height: 150px; border-radius: 8px; object-fit: cover; cursor: pointer;';
+          img.onclick = () => window.open(att.data, '_blank');
+          attachmentsDiv.appendChild(img);
+        } else if (att.type === 'file') {
+          const fileDiv = document.createElement('div');
+          fileDiv.style.cssText = 'padding: 8px 12px; background: rgba(0,0,0,0.1); border-radius: 6px; font-size: 13px;';
+          let iconClass = 'fa-file';
+          let iconColor = '#6c757d';
+          
+          const fileName = att.name.toLowerCase();
+          if (fileName.endsWith('.pdf')) { iconClass = 'fa-file-pdf'; iconColor = '#dc3545'; }
+          else if (fileName.endsWith('.docx') || fileName.endsWith('.doc')) { iconClass = 'fa-file-word'; iconColor = '#2b579a'; }
+          else if (fileName.endsWith('.xlsx') || fileName.endsWith('.xls')) { iconClass = 'fa-file-excel'; iconColor = '#217346'; }
+          else if (fileName.endsWith('.txt')) { iconClass = 'fa-file-alt'; }
+          else if (fileName.endsWith('.html') || fileName.endsWith('.htm')) { iconClass = 'fa-file-code'; iconColor = '#f06529'; }
+          else if (fileName.endsWith('.js')) { iconClass = 'fa-file-code'; iconColor = '#f7df1e'; }
+          else if (fileName.endsWith('.json')) { iconClass = 'fa-file-code'; iconColor = '#5a5a5a'; }
+          else if (fileName.endsWith('.css')) { iconClass = 'fa-file-code'; iconColor = '#264de4'; }
+          
+          fileDiv.innerHTML = `<i class="fas ${iconClass}" style="color: ${iconColor}; margin-right: 6px;"></i> ${att.name}`;
+          attachmentsDiv.appendChild(fileDiv);
+        }
+      });
+      node.appendChild(attachmentsDiv);
+    }
+
+    target.appendChild(node);
+    addMessageActions(node, role === 'user');
+    scrollToBottom();
+    if (returnElement) return node;
+  }
+
+  // =============================================
+  // 🔄 FONCTION: STREAMING INTELLIGENT MARKDOWN
+  // =============================================
+  function startStreamingResponse(messageElement, messageId) {
+    appState.isStreaming = true;
+    appState.currentStreamingMessage = messageElement;
+    
+    const streamingContent = messageElement.querySelector('.streaming-content');
+    if (!streamingContent) return;
+    
+    // Initialiser avec un curseur
+    streamingContent.innerHTML = '<div class="streaming-cursor"></div>';
+    
+    // Établir la connexion Server-Sent Events
+    const eventSource = new EventSource(`${RENDER_API}/api/stream?messageId=${messageId}`);
+    appState.streamingEventSource = eventSource;
+    
+    let accumulatedText = '';
+    
+    eventSource.onmessage = function(event) {
+      if (!appState.isStreaming) {
+        eventSource.close();
+        return;
+      }
+      
+      const data = JSON.parse(event.data);
+      
+      if (data.type === 'chunk') {
+        accumulatedText += data.content;
+        
+        // Convertir le markdown en HTML
+        const htmlContent = marked.parse(accumulatedText, { sanitize: false, gfm: true });
+        streamingContent.innerHTML = htmlContent + '<div class="streaming-cursor"></div>';
+        
+        // Appliquer la coloration syntaxique
+        streamingContent.querySelectorAll('pre code').forEach(block => {
+          hljs.highlightElement(block);
+        });
+        
+        scrollToBottom();
+      }
+      
+      if (data.type === 'complete') {
+        // Finaliser le message
+        const finalHtml = marked.parse(accumulatedText, { sanitize: false, gfm: true });
+        streamingContent.innerHTML = finalHtml;
+        
+        // Appliquer la coloration syntaxique
+        streamingContent.querySelectorAll('pre code').forEach(block => {
+          hljs.highlightElement(block);
+        });
+        
+        addCopyButtons(messageElement);
+        addMessageActions(messageElement, false);
+        
+        // Synthèse vocale si activée
+        if (appState.voiceNotifications) {
+          const readableText = extractReadableText(finalHtml);
+          speak(readableText);
+        }
+        
+        eventSource.close();
+        appState.isStreaming = false;
+        appState.currentStreamingMessage = null;
+        
+        scrollToBottom();
+      }
+      
+      if (data.type === 'error') {
+        streamingContent.innerHTML = '<em style="color: #e74c3c;">❌ Erreur lors de la génération de la réponse</em>';
+        eventSource.close();
+        appState.isStreaming = false;
+        appState.currentStreamingMessage = null;
+      }
+    };
+    
+    eventSource.onerror = function() {
+      if (accumulatedText.length === 0) {
+        streamingContent.innerHTML = '<em style="color: #e74c3c;">❌ Erreur de connexion</em>';
+      }
+      eventSource.close();
+      appState.isStreaming = false;
+      appState.currentStreamingMessage = null;
+    };
+  }
+
+  function stopStreaming() {
+    if (appState.streamingEventSource) {
+      appState.streamingEventSource.close();
+    }
+    appState.isStreaming = false;
+    
+    if (appState.currentStreamingMessage) {
+      const streamingContent = appState.currentStreamingMessage.querySelector('.streaming-content');
+      if (streamingContent) {
+        streamingContent.innerHTML = streamingContent.innerHTML.replace('<div class="streaming-cursor"></div>', '');
+      }
+      appState.currentStreamingMessage = null;
+    }
+  }
+
+  function scrollToBottom() {
+    const container = document.getElementById('chatFullWindow');
+    if (container) {
+      container.scrollTop = container.scrollHeight;
+    }
+  }
+
+  // =============================================
+  // 💬 FONCTION: SOUMETTRE MESSAGE CHAT
+  // =============================================
+  async function handleChatSubmit(message, attachments = []) {
+    if (appState.chatInProgress) return;
+    if (!message && attachments.length === 0) return;
+
+    if (!appState.currentSessionId) {
+      createNewChatSession();
+    }
+  
+    appState.shouldStopResponse = false; 
+    appState.chatInProgress = true;
+    el('intelliaStatus').textContent = "Assistant: En cours...";
+    el('chat-loading').style.display = 'block';
+    el('chatFullSend').style.display = 'none';
+    el('stopAIBtn').style.display = 'flex'; 
+  
+    appendChat('user', message, false, attachments); 
+    el('chatFullInput').value = '';
+    appState.attachments = [];
+    renderAttachmentPreviews();
+    
+    try {
+      // Créer un message vide pour le streaming
+      const botMsgElement = appendChat('bot', '', true);
+      const messageId = `msg_${Date.now()}`;
+      
+      // Démarrer le streaming
+      startStreamingResponse(botMsgElement, messageId);
+      
+      // Envoyer la requête au serveur
+      const response = await fetch(`${RENDER_API}/api/chat-stream`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message,
+          attachments: attachments,
+          key: AUTH_KEY,
+          devices: appState.devices.map(d => ({ 
+            id: d.id, 
+            name: d.name, 
+            type: d.type, 
+            room: d.room,
+            isVariable: d.isVariable 
+          })),
+          deviceStates: appState.deviceStates,
+          sessionId: appState.currentSessionId,
+          userId: appState.currentUser.uid,
+          messageId: messageId,
+          preferences: {
+            voiceNotifications: appState.voiceNotifications
+          }
+        }),
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Server error ${response.status}`);
+      }
+      
+    } catch (error) {
+      if (!appState.shouldStopResponse) {
+        console.error("Erreur chat:", error);
+        stopStreaming();
+        appendChat('bot', "Désolé, une erreur s'est produite.");
+      }
+    } finally {
+      appState.chatInProgress = false;
+      appState.shouldStopResponse = false; 
+      el('chat-loading').style.display = 'none';
+      el('chatFullSend').style.display = 'flex';
+      el('stopAIBtn').style.display = 'none';
+    }
+  }
+
+  // =============================================
+  // 🎤 FONCTION: SOUMETTRE MESSAGE VOIX
+  // =============================================
+  async function handleVoiceSubmit(command) {
+    if (!command) return;
+    if (appState.chatInProgress) {
+      logActivity(`Voix ignorée (chat en cours): "${command}"`);
+      return;
+    }
+
+    if (!appState.currentSessionId) {
+      createNewChatSession();
+    }
+  
+    appState.shouldStopResponse = false; 
+    appState.chatInProgress = true;
+    el('intelliaStatus').textContent = "Assistant: En cours...";
+    el('chat-loading').style.display = 'block';
+    el('stopAIBtn').style.display = 'flex'; 
+    el('chatFullSend').style.display = 'none'; 
+  
+    appendChat('user', command);
+    logActivity(`Commande vocale: "${command}"`);
+    
+    try {
+      // Créer un message vide pour le streaming
+      const botMsgElement = appendChat('bot', '', true);
+      const messageId = `msg_${Date.now()}`;
+      
+      // Démarrer le streaming
+      startStreamingResponse(botMsgElement, messageId);
+      
+      // Envoyer la requête au serveur
+      const response = await fetch(`${RENDER_API}/api/chat-stream`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message: command,
+          attachments: [],
+          key: AUTH_KEY,
+          devices: appState.devices.map(d => ({ 
+            id: d.id, 
+            name: d.name, 
+            type: d.type, 
+            room: d.room,
+            isVariable: d.isVariable 
+          })),
+          deviceStates: appState.deviceStates,
+          sessionId: appState.currentSessionId,
+          userId: appState.currentUser.uid,
+          messageId: messageId,
+          preferences: {
+            voiceNotifications: appState.voiceNotifications
+          }
+        }),
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Server error ${response.status}`);
+      }
+      
+    } catch (error) {
+      if (!appState.shouldStopResponse) {
+        console.error("Erreur voix:", error);
+        stopStreaming();
+        appendChat('bot', "Désolé, une erreur s'est produite.");
+      }
+    } finally {
+      appState.chatInProgress = false;
+      appState.shouldStopResponse = false;
+      el('chat-loading').style.display = 'none';
+      el('chatFullSend').style.display = 'flex';
+      el('stopAIBtn').style.display = 'none';
+    }
+  }
+
+  // =============================================
+  // 🌐 FONCTION: ENVOYER À L'API (pour compatibilité)
+  // =============================================
+  async function sendToOnline(message, attachments = [], continuationMode = false) {
+    if (!appState.currentUser) {
+        alert("Erreur: Utilisateur non connecté. Veuillez rafraîchir.");
+        return "Erreur d'authentification.";
+    }
+    
+    const t0 = Date.now();
+    
+    try {
+      const response = await fetch(`${RENDER_API}/api/chat`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message,
+          attachments: attachments,
+          key: AUTH_KEY,
+          devices: appState.devices.map(d => ({ 
+            id: d.id, 
+            name: d.name, 
+            type: d.type, 
+            room: d.room,
+            isVariable: d.isVariable 
+          })),
+          deviceStates: appState.deviceStates,
+          sessionId: appState.currentSessionId,
+          userId: appState.currentUser.uid,
+          continuationMode: continuationMode,
+          preferences: {
+            voiceNotifications: appState.voiceNotifications
+          }
+        }),
+      });
+      
+      el('intelliaLatency').textContent = `latence: ${Date.now() - t0}ms`;
+      if (!response.ok) throw new Error(`Server error ${response.status}`);
+      const j = await response.json();
+      
+      if (appState.shouldStopResponse) {
+          return "Interrompu.";
+      }
+      
+      await saveMessageToFirebase(message, j.reply, attachments);
+      
+      if (j.suggestions && j.suggestions.length > 0) displaySuggestions(j.suggestions);
+      if (j.planning_commands) handlePlanningCommands(j.planning_commands);
+      if (j.execute) handleExecuteCommands(j.execute);
+      if (j.device_commands) handleDeviceCommands(j.device_commands);
+      
+      appState.intelliaOnline = true; 
+      el('intelliaStatus').textContent = "Assistant: Connecté";
+      el('statusOnline').textContent = "Assistant : disponible";
+      logActivity(`Assistant a répondu.`);
+      
+      return j.reply || "OK";
+      
+    } catch (e) {
+      if (appState.shouldStopResponse) {
+          return "Interrompu.";
+      }
+      console.warn("sendToOnline error", e);
+      appState.intelliaOnline = false;
+      el('intelliaStatus').textContent = "Assistant: Hors ligne";
+      el('statusOnline').textContent = "Assistant : indisponible";
+      logActivity(`Erreur de connexion Assistant.`);
+      return "Erreur de connexion avec l'Assistant.";
+    }
+  }
+
+  // ============================================
+  // ⚡ WEBSOCKET AMÉLIORÉ AVEC INDICATEURS
+  // ============================================
+  function connectWebSocket() {
+    if (!appState.esp32Ip) {
+      updateWebSocketStatus('disconnected', 'Adresse IP non configurée');
+      return;
+    }
+
+    const wsUrl = `ws://${appState.esp32Ip}:81`;
+    updateWebSocketStatus('connecting', 'Connexion en cours...');
+
+    try {
+      appState.localWebSocket = new WebSocket(wsUrl);
+
+      appState.localWebSocket.onopen = function() {
+        console.log('✅ WebSocket connecté à ESP32');
+        appState.isLocalConnected = true;
+        updateWebSocketStatus('connected', 'Connecté à ESP32');
+        logActivity('✅ WebSocket connecté à ESP32');
+      };
+
+      appState.localWebSocket.onmessage = function(event) {
+        try {
+          const data = JSON.parse(event.data);
+          console.log('📨 WebSocket message:', data);
+          
+          if (data.type === 'state_update' && data.device_id) {
+            // Mettre à jour l'état de l'appareil
+            appState.deviceStates[data.device_id] = {
+              etat: data.etat,
+              luminosite: data.luminosite || 0
+            };
+            renderDevices();
+            logActivity(`⚡[WS] État mis à jour: ${data.device_id} → ${data.etat}`);
+          }
+          
+          if (data.type === 'ping') {
+            // Répondre au ping
+            appState.localWebSocket.send(JSON.stringify({ type: 'pong' }));
+          }
+        } catch (e) {
+          console.error('❌ Erreur parsing WebSocket message:', e);
+        }
+      };
+
+      appState.localWebSocket.onclose = function() {
+        console.log('❌ WebSocket déconnecté');
+        appState.isLocalConnected = false;
+        updateWebSocketStatus('disconnected', 'Déconnecté');
+        logActivity('❌ WebSocket déconnecté');
+        
+        // Tentative de reconnexion après 5 secondes
+        setTimeout(() => {
+          if (appState.esp32Ip) {
+            connectWebSocket();
+          }
+        }, 5000);
+      };
+
+      appState.localWebSocket.onerror = function(error) {
+        console.error('❌ Erreur WebSocket:', error);
+        updateWebSocketStatus('disconnected', 'Erreur de connexion');
+        logActivity('❌ Erreur WebSocket');
+      };
+
+    } catch (error) {
+      console.error('❌ Erreur création WebSocket:', error);
+      updateWebSocketStatus('disconnected', 'Erreur de connexion');
+    }
+  }
+
+  function updateWebSocketStatus(status, message) {
+    const statusElement = el('statusLocal');
+    const detailsElement = el('websocket-status');
+    
+    if (statusElement) {
+      statusElement.className = `chip websocket-status ${status}`;
+      statusElement.textContent = `ESP32: ${message}`;
+    }
+    
+    if (detailsElement) {
+      detailsElement.textContent = message;
+      detailsElement.className = `websocket-status ${status}`;
+    }
+  }
+
+  function disconnectWebSocket() {
+    if (appState.localWebSocket) {
+      appState.localWebSocket.close();
+      appState.localWebSocket = null;
+    }
+    appState.isLocalConnected = false;
+    updateWebSocketStatus('disconnected', 'Déconnecté manuellement');
+    logActivity('🔌 WebSocket déconnecté manuellement');
+  }
+
+  // ============================================
+  // 🏠 FONCTION: AFFICHER APPAREILS VARIABLES/FIXES
+  // ============================================
+  function renderDevices() {
+    const grid = el('deviceGrid');
+    if (!grid) return;
+    grid.innerHTML = appState.devices.length === 0 ? '<div class="card"><p>Aucun appareil configuré.</p></div>' : '';
+    
+    for (const device of appState.devices) {
+      const isOn = appState.deviceStates[device.id]?.etat === 'ON';
+      const power = appState.deviceStates[device.id]?.luminosite ?? appState.deviceStates[device.id]?.vitesse ?? 0;
+      const deviceType = deviceTypes[device.type] || { name: 'Appareil', hasBrightness: false, isVariable: false, icon: 'plug' };
+      const isVariable = device.isVariable !== undefined ? device.isVariable : deviceType.isVariable;
+      
+      const card = document.createElement('div');
+      card.className = 'device-card';
+      card.dataset.deviceId = device.id;
+      card.innerHTML = `
+        <div class="device-header">
+          <div class="device-icon"><i class="fas fa-${deviceType.icon}"></i></div>
+          <div style="flex:1">
+            <div class="device-name">${device.name}</div>
+            <div class="device-status">
+              <span class="status-indicator ${isOn ? 'active' : ''}"></span>
+              <span>${isOn ? 'Allumé' : 'Éteint'}${isVariable ? ` • ${power}%` : ''}</span>
+              <small style="display:block;margin-top:4px">${device.room || 'Non spécifié'} • ${isVariable ? 'Variable' : 'Fixe'}</small>
+            </div>
+          </div>
+        </div>
+        <div class="controls">
+          <div style="flex:1">
+            <label>État : <label class="switch-3d" style="float:right">
+              <input type="checkbox" ${isOn ? 'checked' : ''} onchange="toggleDevice('${device.id}')"/>
+              <span class="slider-3d"></span></label>
+            </label>
+          </div>
+          ${isVariable ? `<div style="flex:1">
+            <label>Puissance : <span id="${device.id}-value">${power}%</span></label>
+            <input id="${device.id}-slider" type="range" min="0" max="100" value="${power}" oninput="adjustBrightness('${device.id}', this.value)"/>
+          </div>` : ''}
+          <div style="display:flex;gap:6px;width:100%">
+            <button class="btn" onclick="sendCommand('${device.id}','ON')">Allumer</button>
+            <button class="btn" onclick="sendCommand('${device.id}','OFF')">Éteindre</button>
+            <button class="btn warn" onclick="deleteDevicePrompt('${device.id}')"><i class="fas fa-trash"></i></button>
+          </div>
+        </div>`;
+      grid.appendChild(card);
+    }
+    populatePlanDeviceSelect();
+    updateCount();
+  }
+
+  // ============================================
+  // ⚙️ FONCTION: GESTION APPAREILS VARIABLES/FIXES
+  // ============================================
+  window.toggleDevice = (deviceId) => {
+    const current = appState.deviceStates[deviceId] || { etat: "OFF" };
+    const newEtat = current.etat === "ON" ? "OFF" : "ON";
+    const device = appState.devices.find(d => d.id === deviceId);
+    const isVariable = device?.isVariable || false;
+    
+    sendCommand(deviceId, newEtat, isVariable ? (newEtat === "ON" ? 100 : 0) : null);
+  };
+
+  window.adjustBrightness = (deviceId, value) => {
+    const v = parseInt(value, 10);
+    el(`${deviceId}-value`).textContent = v + '%';
+    sendCommand(deviceId, v > 0 ? "ON" : "OFF", v);
+  };
+
+  window.sendCommand = (deviceId, action, value = null) => {
+    const device = appState.devices.find(d => d.id === deviceId);
+    const isVariable = device?.isVariable || false;
+    const val = (value !== null && isVariable) ? parseInt(value) : (action === "ON" && isVariable ? 100 : 0);
+    
+    if (appState.isLocalConnected && appState.localWebSocket && appState.localWebSocket.readyState === 1) {
+      logActivity(`⚡[WS] Envoi: ${deviceId} → ${action} ${isVariable ? `(${val}%)` : ''}`);
+      appState.localWebSocket.send(JSON.stringify({
+        type: "control",
+        device_id: deviceId,
+        action: action,
+        value: val
+      }));
+      
+      appState.deviceStates[deviceId] = { etat: action, luminosite: val };
+      renderDevices();
+      
+    } else {
+      logActivity(`☁️ [Firebase] Envoi: ${deviceId} → ${action} ${isVariable ? `(${val}%)` : ''}`);
+      writeDeviceStateToBackend(deviceId, action, isVariable ? val : null);
+      
+      appState.deviceStates[deviceId] = { etat: action, luminosite: val };
+      renderDevices();
+    }
+  };
+
+  async function writeDeviceStateToBackend(deviceId, etat, value = null) {
+    const device = appState.devices.find(d => d.id === deviceId);
+    const isVariable = device?.isVariable || false;
+    
+    const payload = { etat };
+    if (isVariable && value !== null) payload.luminosite = parseInt(value, 10);
+    
+    if (!db) { 
+      appState.deviceStates[deviceId] = payload; 
+      renderDevices(); 
+      return; 
+    }
+    await set(ref(db, `${devicesRefPath}/${deviceId}`), payload);
+  }
+
+  // ============================================
+  // 📅 PLANNING AVANCÉ - GESTION DES TYPES
+  // ============================================
+  function setupPlanningInterface() {
+    const frequencySelect = el('plan-frequency');
+    if (!frequencySelect) return;
+    
+    frequencySelect.addEventListener('change', function() {
+      const frequency = this.value;
+      
+      // Masquer toutes les options
+      document.querySelectorAll('.planning-options').forEach(opt => {
+        opt.classList.remove('active');
+      });
+      
+      // Afficher les options correspondantes
+      if (frequency === 'once') {
+        el('opt-once').classList.add('active');
+        if (!el('plan-date').value) {
+          el('plan-date').valueAsDate = new Date();
+        }
+      } else if (frequency === 'weekly') {
+        el('opt-weekly').classList.add('active');
+      } else if (frequency === 'monthly') {
+        el('opt-monthly').classList.add('active');
+      } else if (frequency === 'duration') {
+        el('opt-duration').classList.add('active');
+        if (!el('plan-start-date').value) {
+          el('plan-start-date').valueAsDate = new Date();
+        }
+        if (!el('plan-end-date').value) {
+          const endDate = new Date();
+          endDate.setDate(endDate.getDate() + 7);
+          el('plan-end-date').valueAsDate = endDate;
+        }
+      }
+      
+      // Gérer l'affichage du contrôle de puissance
+      const deviceId = el('plan-device').value;
+      const device = appState.devices.find(d => d.id === deviceId);
+      const isVariable = device?.isVariable || false;
+      
+      const powerContainer = el('power-control-container');
+      if (powerContainer) {
+        powerContainer.style.display = isVariable ? 'block' : 'none';
+      }
+    });
+    
+    // Gestion des jours de la semaine
+    document.querySelectorAll('.planning-day').forEach(day => {
+      day.addEventListener('click', function() {
+        this.classList.toggle('selected');
+        updateSelectedDays();
+      });
+    });
+    
+    // Mettre à jour les options de puissance quand l'appareil change
+    el('plan-device').addEventListener('change', function() {
+      const deviceId = this.value;
+      const device = appState.devices.find(d => d.id === deviceId);
+      const isVariable = device?.isVariable || false;
+      
+      const powerContainer = el('power-control-container');
+      if (powerContainer) {
+        powerContainer.style.display = isVariable ? 'block' : 'none';
+      }
+    });
+    
+    // Initialiser l'interface
+    frequencySelect.dispatchEvent(new Event('change'));
+  }
+
+  function updateSelectedDays() {
+    const selectedDays = [];
+    document.querySelectorAll('.planning-day.selected').forEach(day => {
+      selectedDays.push(day.dataset.day);
+    });
+    el('plan-days').value = selectedDays.join(',');
+  }
+
+  // ============================================
+  // 🔊 SYNTHÈSE VOCALE AMÉLIORÉE
+  // ============================================
+  let preferredVoice = null;
+  const choosePreferredVoice = () => {
+    const voices = window.speechSynthesis.getVoices() || [];
+    return voices.find(x => /fr[-_]?FR/i.test(x.lang) && /Google/.test(x.name)) || 
+           voices.find(x => /fr[-_]?FR/i.test(x.lang)) || 
+           voices[0];
+  };
+
+  if ('speechSynthesis' in window) {
+    window.speechSynthesis.onvoiceschanged = () => { 
+      preferredVoice = choosePreferredVoice(); 
+    };
+  }
+
+  function speak(text, isStreaming = false) {
+    if (!appState.voiceNotifications || !text || !('speechSynthesis' in window)) {
+      VoiceEngine.resumeRecognition();
+      return;
+    }
+    
+    if (appState.shouldStopResponse) {
+      window.speechSynthesis.cancel();
+      VoiceEngine.resumeRecognition();
+      return;
+    }
+
+    VoiceEngine.pauseRecognition();
+    window.speechSynthesis.cancel();
+    
+    if (isStreaming) {
+      const sentences = text.match(/[^.!?]+[.!?]+/g) || [text];
+      let currentIndex = 0;
+      
+      function speakNextSentence() {
+        if (appState.shouldStopResponse) {
+          window.speechSynthesis.cancel();
+          VoiceEngine.resumeRecognition();
+          return;
+        }
+              
+        if (currentIndex >= sentences.length) {
+          setTimeout(() => VoiceEngine.resumeRecognition(), 150);
+          return;
+        }
+              
+        const sentence = sentences[currentIndex].trim();
+        if (sentence) {
+          const u = new SpeechSynthesisUtterance(sentence);
+          u.lang = 'fr-FR';
+          if (!preferredVoice) preferredVoice = choosePreferredVoice();
+          if (preferredVoice) u.voice = preferredVoice;
+          u.rate = 1.1;
+          
+          u.onend = () => {
+            currentIndex++;
+            speakNextSentence();
+          };
+          
+          u.onerror = () => {
+            if (appState.shouldStopResponse) {
+              window.speechSynthesis.cancel();
+            }
+          };
+          
+          window.speechSynthesis.speak(u);
+        } else {
+          currentIndex++;
+          speakNextSentence();
+        }
+      }
+      speakNextSentence();
+    } else {
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = 'fr-FR';
+      if (!preferredVoice) preferredVoice = choosePreferredVoice();
+      if (preferredVoice) u.voice = preferredVoice;
+      u.onend = () => {
+        setTimeout(() => VoiceEngine.resumeRecognition(), 150);
+      };
+      window.speechSynthesis.speak(u);
+    }
+  }
+
+  // ============================================
+  // 📋 JOURNAL D'ACTIVITÉ
+  // ============================================
+  function logActivity(message, type = 'info') {
+    const logContainer = el('activityLog');
+    if (!logContainer) return;
+    const time = new Date().toLocaleTimeString();
+    const entry = document.createElement('div');
+    let icon = 'ℹ️';
+    if (type === 'success') icon = '✅';
+    else if (type === 'error') icon = '❌';
+    else if (type === 'warning') icon = '⚠️';
+    entry.innerHTML = `<span style="color:var(--muted)">[${time}]</span> ${icon} ${message}`;
+    logContainer.prepend(entry);
+    if (logContainer.children.length > 50) {
+      logContainer.removeChild(logContainer.lastChild);
+    }
+  }
+
+  // ============================================
+  // 🎤 MOTEUR VOIX - VOICE ENGINE
+  // ============================================
+  const VoiceEngine = {
+    recognition: null,
+    isPushToTalkRecording: false,
+    isContinuousActive: false,
+    isPausedForSpeech: false,
+    
+    init() {
+      if (!("webkitSpeechRecognition" in window || "SpeechRecognition" in window)) {
+        el('voicePushToTalk').disabled = true;
+        el('voiceContinuous').disabled = true;
+        el('quickVoiceToggleBtn').disabled = true;
+        el('quickVoiceToggleBtn').textContent = 'Voix non supportée';
+        el('voiceStatus').textContent = 'Voix: Non supportée';
+        return;
+      }
+      this.requestMicrophonePermission();
+      const pushBtn = el('voicePushToTalk');
+      const continuousBtn = el('voiceContinuous');
+      const quickBtn = el('quickVoiceToggleBtn');
+      
+      pushBtn.addEventListener('touchstart', (e) => { e.preventDefault(); this.togglePushToTalk(); });
+      pushBtn.addEventListener('click', () => this.togglePushToTalk());
+      continuousBtn.addEventListener('touchstart', (e) => { e.preventDefault(); this.toggleContinuousConversation(); });
+      continuousBtn.addEventListener('click', () => this.toggleContinuousConversation());
+      quickBtn.addEventListener('touchstart', (e) => { e.preventDefault(); this.toggleContinuousConversation(); });
+      quickBtn.addEventListener('click', () => this.toggleContinuousConversation());
+    },
+
+    requestMicrophonePermission() {
+      navigator.mediaDevices.getUserMedia({ audio: true })
+        .then(stream => { stream.getTracks().forEach(track => track.stop()); })
+        .catch(err => { console.error("Permission micro:", err); el('voiceStatus').textContent = 'Voix: Permission requise'; });
+    },
+
+    createRecognitionInstance(continuous = false) {
+      const Rec = window.SpeechRecognition || window.webkitSpeechRecognition;
+      const rec = new Rec();
+      rec.lang = 'fr-FR';
+      rec.continuous = continuous;
+      rec.interimResults = false;
+      return rec;
+    },
+
+    updateContinuousUI() {
+      const btn1 = el('voiceContinuous');
+      const btn2 = el('quickVoiceToggleBtn');
+      const status = el('continuousStatus');
+      const isActive = this.isContinuousActive;
+      
+      if (status) status.textContent = isActive ? 'Activé' : 'Désactivé';
+      if (btn1) {
+        btn1.classList.toggle('active', isActive);
+        btn1.classList.toggle('warn', isActive);
+      }
+      if (btn2) {
+        btn2.classList.toggle('primary', !isActive);
+        btn2.classList.toggle('warn', isActive);
+        btn2.innerHTML = isActive ? 
+          '<i class="fas fa-stop-circle"></i> Conversation active' : 
+          '<i class="fas fa-waveform"></i> Lancer la conversation';
+      }
+    },
+
+    togglePushToTalk() {
+      if (this.isContinuousActive) this.toggleContinuousConversation();
+      const btn = el('voicePushToTalk');
+      if (this.isPushToTalkRecording) {
+        this.isPushToTalkRecording = false;
+        if (this.recognition) this.recognition.stop();
+        btn.classList.remove('pulse');
+        el('voiceStatus').textContent = 'Voix: Traitement...';
+      } else {
+        this.isPushToTalkRecording = true;
+        this.recognition = this.createRecognitionInstance(false);
+        btn.classList.add('pulse');
+        el('voiceStatus').textContent = 'Voix: Enregistrement...';
+        this.recognition.onresult = (e) => { handleVoiceSubmit(e.results[0][0].transcript); };
+        this.recognition.onend = () => {
+          this.isPushToTalkRecording = false;
+          btn.classList.remove('pulse');
+          el('voiceStatus').textContent = 'Voix: Inactive';
+          this.recognition = null;
+        };
+        this.recognition.start();
+      }
+    },
+
+    toggleContinuousConversation() {
+      this.isContinuousActive = !this.isContinuousActive;
+      this.updateContinuousUI();
+      if (this.isContinuousActive) { 
+        if (this.isPushToTalkRecording) this.togglePushToTalk();
+        this.startContinuousLoop(); 
+      } else { 
+        this.stopRecognition(); 
+      }
+    },
+
+    startContinuousLoop() {
+      if (!this.isContinuousActive || this.isPausedForSpeech) return;
+      this.recognition = this.createRecognitionInstance(false);
+      el('voiceStatus').textContent = 'Voix: Écoute...';
+      this.recognition.onresult = (e) => { handleVoiceSubmit(e.results[0][0].transcript); };
+      this.recognition.onerror = (e) => { if (e.error !== 'no-speech' && e.error !== 'aborted') console.warn('Voice error:', e.error); };
+      this.recognition.onend = () => { 
+        if (this.isContinuousActive && !this.isPausedForSpeech) {
+          setTimeout(() => this.startContinuousLoop(), 100);
+        } else {
+          el('voiceStatus').textContent = 'Voix: Inactive';
+        }
+      };
+      try { this.recognition.start(); } catch(e) {}
+    },
+
+    stopRecognition() {
+      if (this.recognition) { try { this.recognition.stop(); } catch(e) {} }
+      this.recognition = null;
+      this.isPushToTalkRecording = false;
+      this.isContinuousActive = false;
+      el('voicePushToTalk').classList.remove('pulse');
+      this.updateContinuousUI();
+      el('voiceStatus').textContent = 'Voix: Inactive';
+    },
+
+    pauseRecognition() {
+      if (this.isContinuousActive && !this.isPausedForSpeech) {
+        this.isPausedForSpeech = true;
+        if (this.recognition) {
+          this.recognition.onend = null;
+          try { this.recognition.stop(); } catch(e){}
+        }
+        el('voiceStatus').textContent = 'Voix: En pause';
+      }
+    },
+
+    resumeRecognition() {
+      if (this.isContinuousActive && this.isPausedForSpeech) { 
+        this.isPausedForSpeech = false; 
+        this.startContinuousLoop();
+      }
+    }
+  };
+
+  // ============================================
+  // 📧 FIREBASE - CHAT MULTI-SESSIONS
+  // ============================================
+  let db = null;
+  let auth = null;
+  
+  try {
+    const { initializeApp } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js");
+    const { getDatabase, ref, set, push, onValue, remove, get, serverTimestamp } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js");
+    const { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js");
+
+    window.firebaseModules = { initializeApp, getDatabase, ref, set, push, onValue, remove, get, serverTimestamp, getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged };
+  } catch (e) {
+    console.error("Import Firebase erreur:", e);
+  }
+
+  if (window.firebaseModules) {
+    const { initializeApp, getDatabase, ref, set, push, onValue, remove, get, serverTimestamp, getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } = window.firebaseModules;
+
+    try {
+      const app = initializeApp(firebaseConfig);
+      db = getDatabase(app);
+      auth = getAuth(app);
+      el('statusFirebase').textContent = 'Firebase : OK';
+      el('statusFirebase').style.background = 'rgba(46, 213, 115, 0.3)';
+    } catch (e) {
+      db = null;
+      el('statusFirebase').textContent = 'Firebase : Échec';
+      el('statusFirebase').style.background = 'rgba(231, 76, 60, 0.3)';
+      console.error("Erreur Firebase:", e);
+    }
+
+    const metaRefPath = "devicesMeta";
+    const devicesRefPath = "devices";
+    const planningRefPath = "planning";
+    const userChatsRefPath = "userChats";
+
+    if (db) {
+      onValue(ref(db, metaRefPath), snap => { 
+        const devicesData = snap.val() || {};
+        appState.devices = Object.values(devicesData); 
+        renderDevices(); 
+      });
+      onValue(ref(db, devicesRefPath), snap => { 
+        appState.deviceStates = snap.val() || {}; 
+        renderDevices(); 
+        logActivity('☁️ États Firebase synchronisés.');
+      });
+      onValue(ref(db, planningRefPath), snap => { 
+        const plansObj = snap.val() || {};
+        appState.plans = Object.entries(plansObj).map(([id, p]) => ({ ...p, firebaseId: id }));
+        renderPlanningListUI(appState.plans);
+      });
+    } else {
+      loadDevicesFromLocalStorage();
+      loadPlansFromLocalStorage();
+      renderDevices();
+      renderPlanningListUI(appState.plans);
+    }
+
+    // ============================================
+    // 🧩 FONCTION: GESTION PLANNING AVANCÉ
+    // ============================================
+    async function handlePlanningCommands(commands) {
+      for (const cmd of commands) {
+        if (cmd.action === 'add') {
+          const p = { 
+            device: cmd.device, 
+            time: cmd.time, 
+            action: cmd.action, 
+            power: cmd.power, 
+            schedule: cmd.schedule || { type: 'once' },
+            createdAt: Date.now(),
+            executed: false
+          };
+          if (db) await push(ref(db, planningRefPath), p);
+        } else if (cmd.action === 'delete_all') {
+          await deleteAllPlans();
+        }
+      }
+    }
+    
+    function handleExecuteCommands(commands) {
+      for (const exec of (Array.isArray(commands) ? commands : [commands])) {
+        const [devId, action, value] = exec.split('|');
+        if (appState.devices.some(d => d.id === devId)) {
+          sendCommand(devId, action, value ? parseInt(value) : null);
+        }
+      }
+    }
+
+    async function handleDeviceCommands(commands, userId) {
+      if (!db) return;
+      
+      for (const cmd of commands) {
+        // ✅ AJOUT D'APPAREIL
+        if (cmd.action === 'add') {
+          try {
+            const deviceName = cmd.name || 'Nouvel Appareil';
+            const deviceType = cmd.type || 'lamp';
+            const deviceRoom = cmd.room || 'Non spécifié';
+            
+            const deviceId = deviceName.toLowerCase()
+              .replace(/\s+/g, '_')
+              .replace(/[^\w\-]/g, '')
+              .substring(0, 30) + '_' + Date.now().toString().slice(-4);
+            
+            const typeInfo = deviceTypes[deviceType] || deviceTypes['lamp'];
+            
+            const newDevice = {
+              id: deviceId,
+              name: deviceName,
+              type: deviceType,
+              room: deviceRoom,
+              isVariable: typeInfo.isVariable,
+              hasBrightness: typeInfo.hasBrightness,
+              icon: typeInfo.icon,
+              createdAt: Date.now(),
+              createdBy: userId
+            };
+            
+            await set(ref(db, `${metaRefPath}/${deviceId}`), newDevice);
+            
+            await set(ref(db, `${devicesRefPath}/${deviceId}`), {
+              etat: 'OFF',
+              luminosite: 0
+            });
+            
+            console.log(`✅ Appareil ajouté: ${deviceName} (${deviceId})`);
+            
+          } catch (error) {
+            console.error(`❌ Erreur ajout appareil:`, error.message);
+          }
+        }
+        
+        // ✅ SUPPRESSION D'APPAREIL
+        else if (cmd.action === 'delete' || cmd.action === 'remove') {
+          try {
+            const deviceToDelete = cmd.device || cmd.deviceId || cmd.id;
+            
+            if (!deviceToDelete) {
+              console.warn("⚠️ Aucun appareil spécifié pour la suppression");
+              continue;
+            }
+            
+            // Supprimer de devicesMeta
+            await set(ref(db, `${metaRefPath}/${deviceToDelete}`), null);
+            
+            // Supprimer de devices (états)
+            await set(ref(db, `${devicesRefPath}/${deviceToDelete}`), null);
+            
+            // Supprimer du planning si existant
+            const planningSnapshot = await get(ref(db, planningRefPath));
+            if (planningSnapshot.exists()) {
+              const planning = planningSnapshot.val();
+              const updatedPlanning = {};
+              
+              Object.keys(planning).forEach(key => {
+                if (planning[key].device !== deviceToDelete) {
+                  updatedPlanning[key] = planning[key];
+                }
+              });
+              
+              await set(ref(db, planningRefPath), updatedPlanning);
+            }
+            
+            console.log(`✅ Appareil supprimé: ${deviceToDelete}`);
+            
+          } catch (error) {
+            console.error(`❌ Erreur suppression appareil:`, error.message);
+          }
+        }
+      }
+    }
+    
+    function displaySuggestions(suggestions) {
+      const container = el('proactive-suggestion');
+      if (!container || !suggestions.length > 0) return;
+      container.textContent = suggestions[0].message;
+    }
+
+    // ============================================
+    // 💬 FIREBASE: CHAT MULTI-SESSIONS
+    // ============================================
+    function getChatHistoryRef(userId, sessionId = null) {
+      let path = `${userChatsRefPath}/${userId}`;
+      if (sessionId) path += `/${sessionId}`;
+      return ref(db, path);
+    }
+
+    async function loadChatHistorySidebar() {
+      if (!appState.currentUser || !db) return;
+      const historyList = el('chat-history-list');
+      historyList.innerHTML = '';
+      const sessionsRef = getChatHistoryRef(appState.currentUser.uid);
+      const snapshot = await get(sessionsRef);
+      if (snapshot.exists()) {
+        const sessions = snapshot.val();
+        const sortedSessions = Object.keys(sessions).sort((a, b) => {
+          return (sessions[b].lastUpdated || 0) - (sessions[a].lastUpdated || 0);
+        });
+        
+        sortedSessions.forEach(sessionId => {
+          const session = sessions[sessionId];
+          const title = session.title || `Chat du ${new Date(session.createdAt || Date.now()).toLocaleDateString()}`;
+          
+          const item = document.createElement('div');
+          item.className = 'chat-history-item';
+          item.dataset.sessionId = sessionId;
+
+          const titleSpan = document.createElement('span');
+          titleSpan.textContent = title;
+          titleSpan.className = 'chat-history-item-title';
+          titleSpan.onclick = () => loadChatSession(sessionId);
+          
+          const deleteBtn = document.createElement('button');
+          deleteBtn.innerHTML = '<i class="fas fa-ellipsis-v"></i>';
+          deleteBtn.className = 'btn chat-history-delete';
+          deleteBtn.title = "Supprimer la discussion";
+          deleteBtn.onclick = (e) => {
+            e.stopPropagation();
+            deleteChatSession(sessionId, item);
+          };
+
+          item.appendChild(titleSpan);
+          item.appendChild(deleteBtn);
+          historyList.appendChild(item);
+        });
+      }
+    }
+
+    function createNewChatSession() {
+      const newSessionId = `chat_${Date.now()}`;
+      appState.currentSessionId = newSessionId;
+      
+      el('chatFullWindow').innerHTML = '';
+      appendChat('bot', '### 👋 Bienvenue !\n\nJe suis prêt pour notre nouvelle discussion.');
+      
+      setTimeout(() => {
+        document.querySelectorAll('.chat-history-item').forEach(i => i.classList.remove('active'));
+      }, 100);
+    }
+
+    el('new-chat-btn').addEventListener('click', createNewChatSession);
+
+    async function deleteChatSession(sessionId, itemElement) {
+      if (!appState.currentUser || !db) return;
+      if (!confirm("Voulez-vous vraiment supprimer cette discussion ?")) return;
+
+      try {
+        const sessionRef = getChatHistoryRef(appState.currentUser.uid, sessionId);
+        await set(sessionRef, null);
+        itemElement.remove();
+        if (appState.currentSessionId === sessionId) {
+          createNewChatSession();
+        }
+        logActivity(`Discussion ${sessionId} supprimée.`);
+      } catch (error) {
+        console.error("Erreur suppression chat:", error);
+        logActivity("Erreur de suppression du chat.");
+      }
+    }
+
+    async function loadChatSession(sessionId) {
+      if (!appState.currentUser || !db) return;
+      appState.currentSessionId = sessionId;
+      const chatWindow = el('chatFullWindow');
+      chatWindow.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--muted);"><i class="fas fa-spinner fa-spin"></i> Chargement...</div>';
+      
+      try {
+        const messagesRef = ref(db, `${userChatsRefPath}/${appState.currentUser.uid}/${sessionId}/messages`);
+        const snapshot = await get(messagesRef);
+        
+        chatWindow.innerHTML = '';
+        
+        if (snapshot.exists()) {
+          const messages = snapshot.val();
+          const sortedMessages = Object.values(messages).sort((a, b) => a.timestamp - b.timestamp);
+          
+          sortedMessages.forEach(msg => {
+            const attachmentsMeta = msg.attachments || [];
+            appendChat('user', msg.user, false, attachmentsMeta);
+            appendChat('bot', msg.bot, false);
+          });
+          
+          setTimeout(() => {
+            el('chatFullWindow').scrollTop = el('chatFullWindow').scrollHeight;
+          }, 100);
+          
+        } else {
+          appendChat('bot', 'C\'est le début de notre conversation.');
+        }
+        
+        document.querySelectorAll('.chat-history-item').forEach(i => i.classList.remove('active'));
+        document.querySelector(`.chat-history-item[data-session-id="${sessionId}"]`)?.classList.add('active');
+        
+        el('chat-sidebar').classList.remove('open');
+        el('sidebar-overlay').classList.remove('open');
+        
+      } catch (error) {
+        console.error("Erreur chargement chat:", error);
+        chatWindow.innerHTML = '<div class="card" style="text-align: center; color: var(--danger);"><i class="fas fa-exclamation-triangle"></i> Erreur de chargement</div>';
+      }
+    }
+
+    async function saveMessageToFirebase(userMsg, botMsg, attachments) {
+      if (!appState.currentUser || !db || !appState.currentSessionId) return;
+
+      const sessionRef = ref(db, `${userChatsRefPath}/${appState.currentUser.uid}/${appState.currentSessionId}`);
+      const sessionSnapshot = await get(sessionRef);
+      
+      const isNewSession = !sessionSnapshot.exists();
+      
+      if (isNewSession) {
+        let newTitle = userMsg;
+        if (!newTitle && attachments.length > 0) {
+          newTitle = `📎 ${attachments[0].name}`;
+        }
+        if (!newTitle) newTitle = "Nouvelle discussion";
+        newTitle = newTitle.substring(0, 30) + (newTitle.length > 30 ? '...' : '');
+        
+        await set(sessionRef, {
+          title: newTitle,
+          createdAt: serverTimestamp(),
+          lastUpdated: serverTimestamp()
+        });
+      }
+
+      const messagesRef = ref(db, `${userChatsRefPath}/${appState.currentUser.uid}/${appState.currentSessionId}/messages`);
+      const attachmentsMeta = attachments.map(att => ({
+        name: att.name,
+        type: att.type
+      }));
+
+      await push(messagesRef, {
+        user: userMsg,
+        bot: botMsg,
+        attachments: attachmentsMeta,
+        timestamp: serverTimestamp()
+      });
+
+      await set(ref(db, `${userChatsRefPath}/${appState.currentUser.uid}/${appState.currentSessionId}/lastUpdated`), serverTimestamp());
+      
+      if (isNewSession) {
+        loadChatHistorySidebar();
+        setTimeout(() => {
+          document.querySelectorAll('.chat-history-item').forEach(i => i.classList.remove('active'));
+          const item = document.querySelector(`.chat-history-item[data-session-id="${appState.currentSessionId}"]`);
+          if (item) item.classList.add('active');
+        }, 200);
+      }
+    }
+
+    // ============================================
+    // 📎 GESTION PIÈCES JOINTES
+    // ============================================
+    function renderAttachmentPreviews() {
+      const container = el('attachment-preview-container');
+      if (!container) return;
+      
+      container.innerHTML = '';
+      
+      appState.attachments.forEach((att, index) => {
+        const preview = document.createElement('div');
+        preview.className = 'attachment-preview';
+        
+        if (att.type === 'image') {
+          preview.innerHTML = `
+            <img src="${att.data}" alt="${att.name}">
+            <span>${att.name}</span>
+            <span class="remove-attachment" onclick="removeAttachment(${index})">
+              <i class="fas fa-times"></i>
+            </span>
+          `;
+        } else {
+          let iconClass = 'fa-file';
+          if (att.name.toLowerCase().endsWith('.pdf')) iconClass = 'fa-file-pdf';
+          else if (att.name.toLowerCase().endsWith('.docx') || att.name.toLowerCase().endsWith('.doc')) iconClass = 'fa-file-word';
+          else if (att.name.toLowerCase().endsWith('.xlsx') || att.name.toLowerCase().endsWith('.xls')) iconClass = 'fa-file-excel';
+          else if (att.name.toLowerCase().endsWith('.txt')) iconClass = 'fa-file-alt';
+          
+          preview.innerHTML = `
+            <i class="fas ${iconClass}"></i>
+            <span>${att.name}</span>
+            <span class="remove-attachment" onclick="removeAttachment(${index})">
+              <i class="fas fa-times"></i>
+            </span>
+          `;
+        }
+        
+        container.appendChild(preview);
+      });
+    }
+
+    window.removeAttachment = function(index) {
+      appState.attachments.splice(index, 1);
+      renderAttachmentPreviews();
+    };
+
+    el('attach-file-btn').addEventListener('click', () => {
+      el('file-input').click();
+    });
+
+    el('file-input').addEventListener('change', (event) => {
+      for (const file of event.target.files) {
+        if (appState.attachments.length >= 5) {
+          alert("Maximum 5 fichiers."); break;
+        }
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const dataUrl = e.target.result;
+          appState.attachments.push({
+            name: file.name,
+            type: file.type.startsWith('image/') ? 'image' : 'file',
+            data: dataUrl
+          });
+          renderAttachmentPreviews();
+        };
+        reader.readAsDataURL(file);
+      }
+      event.target.value = '';
+    });
+
+    // ============================================
+    // 🔑 AUTHENTIFICATION GOOGLE
+    // ============================================
+    el('googleSignInOverlayBtn').addEventListener('click', async () => {
+      try {
+        const provider = new GoogleAuthProvider();
+        const result = await signInWithPopup(auth, provider);
+        appState.currentUser = result.user;
+        
+        el('login-overlay').style.display = 'none';
+        el('main-app').style.display = 'block';
+        
+        // Mettre à jour le profil utilisateur
+        el('user-photo').src = appState.currentUser.photoURL || defaultAvatar;
+        el('user-name-display').textContent = appState.currentUser.displayName || 'Utilisateur';
+        el('user-email-display').textContent = appState.currentUser.email;
+        
+        // Charger l'historique des chats
+        loadChatHistorySidebar();
+        
+        logActivity(`✅ Connexion réussie: ${appState.currentUser.displayName}`);
+        
+      } catch (error) {
+        console.error("Erreur connexion Google:", error);
+        alert("Erreur de connexion: " + error.message);
+      }
+    });
+
+    el('signOutBtn').addEventListener('click', async () => {
+      try {
+        await signOut(auth);
+        appState.currentUser = null;
+        el('main-app').style.display = 'none';
+        el('login-overlay').style.display = 'flex';
+        logActivity('🔒 Déconnexion réussie');
+      } catch (error) {
+        console.error("Erreur déconnexion:", error);
+      }
+    });
+
+    // Surveiller l'état d'authentification
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        appState.currentUser = user;
+        el('login-overlay').style.display = 'none';
+        el('main-app').style.display = 'block';
+        
+        el('user-photo').src = user.photoURL || defaultAvatar;
+        el('user-name-display').textContent = user.displayName || 'Utilisateur';
+        el('user-email-display').textContent = user.email;
+        
+        loadChatHistorySidebar();
+      } else {
+        appState.currentUser = null;
+        el('main-app').style.display = 'none';
+        el('login-overlay').style.display = 'flex';
+      }
+    });
+
+  } else {
+    // Mode hors ligne sans Firebase
+    console.warn('⚠️ Mode hors ligne - Firebase non disponible');
+    loadDevicesFromLocalStorage();
+    loadPlansFromLocalStorage();
+    renderDevices();
+    renderPlanningListUI(appState.plans);
+    
+    // Simuler une connexion utilisateur pour le mode démo
+    setTimeout(() => {
+      el('login-overlay').style.display = 'none';
+      el('main-app').style.display = 'block';
+      appState.currentUser = { uid: 'demo-user', displayName: 'Utilisateur Démo', email: 'demo@example.com' };
+      logActivity('🔧 Mode démo activé (Firebase non disponible)');
+    }, 1000);
+  }
+
+  // ============================================
+  // 🎯 ÉVÉNEMENTS PRINCIPAUX
+  // ============================================
+  el('chatFullSend')?.addEventListener('click', () => {
+    handleChatSubmit(el('chatFullInput').value, appState.attachments);
+  });
+  
+  el('chatFullInput')?.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') handleChatSubmit(el('chatFullInput').value, appState.attachments);
+  });
+  
+  el('stopAIBtn')?.addEventListener('click', () => {
+    console.log('🛑 ARRÊT DEMANDÉ');
+    appState.shouldStopResponse = true;
+    stopStreaming();
+  
+    if (window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+    }
+    if (VoiceEngine && VoiceEngine.pauseRecognition) {
+      VoiceEngine.pauseRecognition();
+    }
+    appState.chatInProgress = false;
+  
+    el('chat-loading').style.display = 'none';
+    el('chatFullSend').style.display = 'flex';
+    el('stopAIBtn').style.display = 'none';
+    el('intelliaStatus').textContent = "Assistant: Interrompu";
+  
+    logActivity('⚠️ Réponse IA interrompue par l\'utilisateur');
+  });
+
+  // ============================================
+  // 📱 NAVIGATION ET INTERFACE
+  // ============================================
+  document.querySelectorAll('.btn-nav').forEach(btn => {
+    btn.addEventListener('click', function() {
+      const targetId = this.getAttribute('data-target');
+      
+      // Mettre à jour la navigation
+      document.querySelectorAll('.btn-nav').forEach(b => b.classList.remove('active'));
+      this.classList.add('active');
+      
+      // Afficher la section
+      document.querySelectorAll('.section').forEach(section => {
+        section.classList.remove('active');
+      });
+      document.getElementById(targetId).classList.add('active');
+      
+      // Mettre à jour le titre
+      const titles = {
+        'sec-domotique': 'Domotique',
+        'sec-intelligence': 'Assistant IA',
+        'sec-planning': 'Planning',
+        'sec-params': 'Paramètres'
+      };
+      el('section-header-title').textContent = titles[targetId] || 'SmartHome';
+    });
+  });
+
+  // ============================================
+  // ⚙️ GESTION DES PARAMÈTRES
+  // ============================================
+  el('darkModeToggle').addEventListener('change', function() {
+    appState.isNightMode = this.checked;
+    document.body.classList.toggle('night-mode', this.checked);
+    localStorage.setItem('nightMode', this.checked);
+  });
+
+  // Initialiser le mode sombre
+  document.body.classList.toggle('night-mode', appState.isNightMode);
+  el('darkModeToggle').checked = appState.isNightMode;
+
+  // ============================================
+  // 🔌 GESTION WEBSOCKET ESP32
+  // ============================================
+  el('btnConnectLocal').addEventListener('click', function() {
+    const ip = el('esp32IpInput').value.trim();
+    if (!ip) {
+      alert('Veuillez entrer une adresse IP');
+      return;
+    }
+    
+    appState.esp32Ip = ip;
+    localStorage.setItem('esp32Ip', ip);
+    connectWebSocket();
+    logActivity(`🔌 Connexion WebSocket à ${ip}`);
+  });
+
+  el('btnDisconnectLocal').addEventListener('click', function() {
+    disconnectWebSocket();
+  });
+
+  // Initialiser l'adresse IP sauvegardée
+  if (appState.esp32Ip) {
+    el('esp32IpInput').value = appState.esp32Ip;
+  }
+
+  // ============================================
+  // 🚀 INITIALISATION DE L'APPLICATION
+  // ============================================
+  function initApp() {
+    console.log('🚀 SmartHome Intelligence v11.0 initialisée');
+    
+    // Initialiser le moteur vocal
+    VoiceEngine.init();
+    
+    // Configurer l'interface de planning
+    setupPlanningInterface();
+    
+    // Afficher une suggestion proactive
+    displayNextSuggestion();
+    
+    // Tester la connexion à l'assistant
+    testIntelliaConnection();
+    
+    // Démarrer les vérifications périodiques
+    setInterval(displayNextSuggestion, 30000); // Toutes les 30 secondes
+    setInterval(testIntelliaConnection, 60000); // Toutes les minutes
+    setInterval(cleanupExecutedPlans, 300000); // Toutes les 5 minutes
+    
+    logActivity('✅ Application initialisée avec succès');
+  }
+
+  function displayNextSuggestion() {
+    const container = el('proactive-suggestion');
+    if (!container) return;
+    
+    container.textContent = proactiveSuggestions[suggestionIndex];
+    suggestionIndex = (suggestionIndex + 1) % proactiveSuggestions.length;
+  }
+
+  async function testIntelliaConnection() {
+    try {
+      const response = await fetch(`${RENDER_API}/api/health`);
+      if (response.ok) {
+        appState.intelliaOnline = true;
+        el('intelliaStatus').textContent = "Assistant: Connecté";
+        el('statusOnline').textContent = "Assistant : disponible";
+      } else {
+        throw new Error('Health check failed');
+      }
+    } catch (error) {
+      appState.intelliaOnline = false;
+      el('intelliaStatus').textContent = "Assistant: Hors ligne";
+      el('statusOnline').textContent = "Assistant : indisponible";
+    }
+  }
+
+  function updateCount() {
+    const onCount = Object.values(appState.deviceStates).filter(s => s?.etat === 'ON').length;
+    el('db-count').textContent = `on: ${onCount}`;
+  }
+
+  // ============================================
+  // 💾 FONCTIONS DE SAUVEGARDE LOCALE
+  // ============================================
+  const saveDevicesToLocalStorage = () => localStorage.setItem('sh_devices', JSON.stringify(appState.devices));
+  const loadDevicesFromLocalStorage = () => { 
+    const saved = localStorage.getItem('sh_devices');
+    if (saved) {
+      appState.devices = JSON.parse(saved);
+    }
+  };
+  
+  const savePlansToLocalStorage = () => localStorage.setItem('sh_plans', JSON.stringify(appState.plans));
+  const loadPlansFromLocalStorage = () => { 
+    const saved = localStorage.getItem('sh_plans');
+    if (saved) {
+      appState.plans = JSON.parse(saved);
+    }
+  };
+
+  // ============================================
+  // 📅 FONCTIONS DE PLANNING (COMPATIBILITÉ)
+  // ============================================
+  function populatePlanDeviceSelect() {
+    const sel = el('plan-device');
+    if (!sel) return;
+    sel.innerHTML = appState.devices.map(d => `<option value="${d.id}">${d.name} (${d.room})</option>`).join('');
+  }
+
+  function renderPlanningListUI(plans) {
+    const out = el('planningTable');
+    if (!out) return;
+    if (!plans || !plans.length) {
+      out.innerHTML = '<p style="text-align:center;color:var(--muted);padding:20px">🔭 Aucune tâche programmée</p>';
+      return;
+    }
+    
+    out.innerHTML = `<table style="width:100%;border-collapse:collapse">
+      <thead>
+        <tr style="background:rgba(0,0,0,0.03)">
+          <th style="padding:10px;text-align:left">Appareil</th>
+          <th style="padding:10px;text-align:left">Quand</th>
+          <th style="padding:10px;text-align:left">Action</th>
+          <th style="padding:10px;text-align:center">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${plans.map(p => {
+          const deviceName = appState.devices.find(d => d.id === p.device)?.name || p.device;
+          let whenText = p.time;
+          const freq = p.schedule?.type || p.frequency || 'once';
+          
+          if (freq === 'daily') {
+            whenText += ' <span class="chip">📅 Quotidien</span>';
+          } else if (freq === 'monthly') {
+            whenText += ` <span class="chip">📅 Mensuel (jour ${p.schedule?.dayOfMonth || 1})</span>`;
+          } else if (freq === 'weekly' && p.schedule?.days) {
+            const dayNames = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
+            const daysText = p.schedule.days.map(d => dayNames[d]).join(', ');
+            whenText += ` <span class="chip">📅 ${daysText}</span>`;
+          } else if (freq === 'duration' && p.schedule?.startDate && p.schedule?.endDate) {
+            whenText += ` <span class="chip">📅 ${p.schedule.startDate} à ${p.schedule.endDate}</span>`;
+          } else if (freq === 'once' && p.schedule?.targetDate) {
+            const date = new Date(p.schedule.targetDate).toLocaleDateString('fr-FR');
+            whenText += ` <span class="chip">📅 ${date}</span>`;
+          }
+          
+          const actionText = p.action === 'ON' ? '🟢 ON' : '🔴 OFF';
+          const powerText = p.power !== null ? ` ${p.power}%` : '';
+          const statusBadge = p.executed ? '<span class="chip" style="background: rgba(46, 213, 115, 0.3);">✅ Exécuté</span>' : '';
+          
+          return `<tr style="border-bottom:1px solid rgba(0,0,0,0.05)">
+            <td style="padding:10px"><strong>${deviceName}</strong></td>
+            <td style="padding:10px">${whenText}</td>
+            <td style="padding:10px">${actionText}${powerText} ${statusBadge}</td>
+            <td style="padding:10px;text-align:center">
+              <button class="btn warn" onclick="deletePlan('${p.firebaseId || p.createdAt}')" style="padding:6px 12px">
+                <i class="fas fa-trash"></i>
+              </button>
+            </td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>`;
+  }
+
+  window.deletePlan = async (planId) => {
+    if (!confirm('🗑️ Supprimer cette planification ?')) return;
+    if (db) { 
+      await remove(ref(db, `${planningRefPath}/${planId}`)); 
+    } else {
+      appState.plans = appState.plans.filter(p => (p.firebaseId || p.createdAt) != planId);
+      savePlansToLocalStorage(); 
+      renderPlanningListUI(appState.plans);
+    }
+    logActivity(`🗑️ Planification supprimée.`);
+  };
+
+  const deleteAllPlans = async () => {
+    if (!confirm('🗑️ Supprimer TOUTES les planifications ?')) return;
+    if (db) await set(ref(db, planningRefPath), null);
+    else { appState.plans = []; savePlansToLocalStorage(); renderPlanningListUI([]); }
+    logActivity(`🗑️ Toutes les planifications supprimées.`);
+    speak('Toutes les planifications ont été supprimées.');
+  };
+  el('clearAllPlans')?.addEventListener('click', deleteAllPlans);
+
+  // ============================================
+  // ✅ NETTOYAGE AUTO DES TÂCHES EXÉCUTÉES
+  // ============================================
+  async function cleanupExecutedPlans() {
+    const oneTimePlans = appState.plans.filter(p => 
+      (p.schedule?.type === 'once' || p.frequency === 'once') && p.executed
+    );
+    
+    for (const plan of oneTimePlans) {
+      if (db) {
+        await remove(ref(db, `${planningRefPath}/${plan.firebaseId}`));
+      } else {
+        appState.plans = appState.plans.filter(p => p !== plan);
+      }
+      logActivity(`🧹 Tâche unique exécutée nettoyée: ${plan.device}`);
+    }
+    
+    if (!db) {
+      savePlansToLocalStorage();
+      renderPlanningListUI(appState.plans);
+    }
+  }
+
+  // ============================================
+  // 🚀 DÉMARRAGE DE L'APPLICATION
+  // ============================================
+  window.addEventListener('DOMContentLoaded', initApp);
+
+  // ============================================
+  // 📱 PWA - SERVICE WORKER
+  // ============================================
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/service-worker.js')
+        .then(registration => {
+          console.log('✅ Service Worker enregistré:', registration);
+        })
+        .catch(error => {
+          console.log('❌ Échec enregistrement Service Worker:', error);
+        });
+    });
+  }
+
+  </script>
+</body>
+</html>
