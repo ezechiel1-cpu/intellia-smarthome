@@ -3088,21 +3088,23 @@ document.addEventListener('DOMContentLoaded', function() {
   // ============================================
   window.addEventListener('DOMContentLoaded', initApp);
 
-  // ============================================
-  // 📱 PWA - SERVICE WORKER
-  // ============================================
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('/service-worker.js')
-        .then(registration => {
-          console.log('✅ Service Worker enregistré:', registration);
-        })
-        .catch(error => {
-          console.log('❌ Échec enregistrement Service Worker:', error);
-        });
-    });
-  }
+ // ============================================
+// 📱 PWA - SERVICE WORKER
+// ============================================
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/service-worker.js')
+      .then(registration => {
+        console.log('✅ Service Worker enregistré:', registration);
+      })
+      .catch(error => {
+        console.log('❌ Échec enregistrement Service Worker:', error);
+      });
+  });
+}
 
-  </script>
+}); // ✅ AJOUTEZ CETTE LIGNE - FERMETURE MANQUANTE
+
+</script>
 </body>
 </html>
