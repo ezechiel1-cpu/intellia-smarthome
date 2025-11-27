@@ -3145,36 +3145,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
 // ============================================
-// 📅 FONCTION POUR AFFICHER LES PLANNINGS
-// ============================================
-
-function renderPlanningListUI(plans) {
-  try {
-    const container = document.getElementById('planningTable');
-    if (!container) {
-      console.warn('⚠️ Container planningTable non trouvé');
-      return;
-    }
-    
-    if (!plans || plans.length === 0) {
-      container.innerHTML = '<p style="text-align:center;color:var(--muted);padding:20px">🔭 Aucune tâche programmée</p>';
-      return;
-    }
-    
-    // Code basique d'affichage (à adapter)
-    container.innerHTML = `
-      <div style="color: var(--muted); text-align: center; padding: 20px;">
-        📋 ${plans.length} tâche(s) programmée(s)
-        <br><small>Fonction d'affichage à compléter</small>
-      </div>
-    `;
-    
-  } catch (error) {
-    console.error('❌ Erreur renderPlanningListUI:', error);
-  }
-}
-
-// ============================================
 // 📱 PWA - SERVICE WORKER
 // ============================================
 if ('serviceWorker' in navigator) {
