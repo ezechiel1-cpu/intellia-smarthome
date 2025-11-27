@@ -1881,6 +1881,43 @@
     updateWebSocketStatus('disconnected', 'Déconnecté manuellement');
     logActivity('🔌 WebSocket déconnecté manuellement');
   }
+// ============================================
+// 📋 FONCTIONS DE PLANNING AVEC GESTION D'ERREUR
+// ============================================
+
+function populatePlanDeviceSelect() {
+  try {
+    const selectElement = document.getElementById('plan-device');
+    if (!selectElement) {
+      console.warn('⚠️ Élément plan-device non trouvé (section planning peut être cachée)');
+      return;
+    }
+    
+    // Vider et remplir les options
+    selectElement.innerHTML = '';
+    
+    if (!appState.devices || appState.devices.length === 0) {
+      const option = document.createElement('option');
+      option.value = '';
+      option.textContent = 'Aucun appareil disponible';
+      selectElement.appendChild(option);
+      return;
+    }
+    
+    appState.devices.forEach(device => {
+      const option = document.createElement('option');
+      option.value = device.id;
+      option.textContent = `${device.name} (${device.room || 'Non spécifié'})`;
+      selectElement.appendChild(option);
+    });
+    
+    console.log(`✅ ${appState.devices.length} appareil(s) chargé(s) dans le planning`);
+    
+  } catch (error) {
+    console.error('❌ Erreur populatePlanDeviceSelect:', error);
+  }
+}
+
 
   // ============================================
   // 🏠 FONCTION: AFFICHER APPAREILS VARIABLES/FIXES
@@ -3087,6 +3124,7 @@ document.addEventListener('DOMContentLoaded', function() {
   // 🚀 DÉMARRAGE DE L'APPLICATION
   // ============================================
   window.addEventListener('DOMContentLoaded', initApp);
+
 // ============================================
 // 📱 PWA - SERVICE WORKER
 // ============================================
