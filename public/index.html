@@ -3143,53 +3143,6 @@ document.addEventListener('DOMContentLoaded', function() {
   // ============================================
   window.addEventListener('DOMContentLoaded', initApp);
 
-  // ============================================
-// 💾 FONCTIONS DE SAUVEGARDE LOCALE - À CRÉER
-// ============================================
-
-const saveDevicesToLocalStorage = () => {
-  try {
-    localStorage.setItem('sh_devices', JSON.stringify(appState.devices));
-    console.log('💾 Appareils sauvegardés dans localStorage');
-  } catch (error) {
-    console.error('❌ Erreur sauvegarde appareils:', error);
-  }
-};
-
-const loadDevicesFromLocalStorage = () => {
-  try {
-    const saved = localStorage.getItem('sh_devices');
-    if (saved) {
-      appState.devices = JSON.parse(saved);
-      console.log(`📁 ${appState.devices.length} appareil(s) chargé(s) du localStorage`);
-    }
-  } catch (error) {
-    console.error('❌ Erreur chargement appareils:', error);
-    appState.devices = [];
-  }
-};
-
-const savePlansToLocalStorage = () => {
-  try {
-    localStorage.setItem('sh_plans', JSON.stringify(appState.plans));
-    console.log('💾 Plans sauvegardés dans localStorage');
-  } catch (error) {
-    console.error('❌ Erreur sauvegarde plans:', error);
-  }
-};
-
-const loadPlansFromLocalStorage = () => {
-  try {
-    const saved = localStorage.getItem('sh_plans');
-    if (saved) {
-      appState.plans = JSON.parse(saved);
-      console.log(`📅 ${appState.plans.length} plan(s) chargé(s) du localStorage`);
-    }
-  } catch (error) {
-    console.error('❌ Erreur chargement plans:', error);
-    appState.plans = [];
-  }
-};
 
 // ============================================
 // 📅 FONCTION POUR AFFICHER LES PLANNINGS
