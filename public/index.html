@@ -1,15 +1,10 @@
-<!DOCTYPE html>
+il<!DOCTYPE html>
 <html lang="fr">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
-  <title>SmartHome Intelligence v11.0</title>
+  <title>SmartHome Intelligence </title>
   <meta name="theme-color" content="#06b6d4" />
-  
-  <!-- PWA Manifest -->
-  <link rel="manifest" href="/manifest.json">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
@@ -55,7 +50,7 @@
     body.night-mode input, body.night-mode select, body.night-mode textarea {
       background: rgba(15, 23, 42, 0.8);
       color: #e2e8f0;
-      border: 1px solid rgba(255, 255, 255, 0.2);
+      border: 1px solid rgba(255, 255, 0.2);
     }
 
     body.night-mode input::placeholder { color: #94a3b8; }
@@ -223,11 +218,6 @@
       flex-shrink: 0;
     }
 
-    body.night-mode #chat-sidebar {
-      background: rgba(30, 41, 59, 0.95);
-      border-right: 1px solid rgba(255, 255, 255, 0.1);
-    }
-
     #chat-sidebar-header { padding: 12px; border-bottom: 1px solid rgba(0, 0, 0, 0.1); display: flex; flex-direction: column; gap: 8px; }
     #new-chat-btn { width: 100%; justify-content: center; }
     #chat-history-list { flex: 1; overflow-y: auto; padding: 8px; }
@@ -252,8 +242,6 @@
     .chat-history-item:hover { background: #e9ecef; }
     .chat-history-item.active { background: var(--primary); color: white; }
 
-    body.night-mode .chat-history-item:hover { background: rgba(255, 255, 255, 0.1); }
-
     #chat-section-container { flex: 1; height: 100%; display: flex; flex-direction: column; background: linear-gradient(135deg, #f5f7fa, #c3cfe2); position: relative; overflow: hidden; }
     body.night-mode #chat-section-container { background: linear-gradient(135deg, #0e0f13, #0f1724); }
 
@@ -271,21 +259,7 @@
       -webkit-overflow-scrolling: touch;
     }
 
-    #chat-input-container { 
-      padding: 12px; 
-      border-top: 1px solid rgba(0, 0, 0, 0.1); 
-      background: rgba(255, 255, 255, 0.9); 
-      flex-shrink: 0; 
-      max-width: 800px; 
-      width: 100%; 
-      margin: 0 auto; 
-    }
-
-    body.night-mode #chat-input-container {
-      background: rgba(30, 41, 59, 0.95);
-      border-top: 1px solid rgba(255, 255, 255, 0.1);
-    }
-
+    #chat-input-container { padding: 12px; border-top: 1px solid rgba(0, 0, 0, 0.1); background: rgba(255, 255, 255, 0.9); flex-shrink: 0; max-width: 800px; width: 100%; margin: 0 auto; }
     #chat-input-flex { display: flex; gap: 8px; }
     #chatFullInput { flex: 1; padding: 12px; border-radius: 8px; border: 1px solid #ddd; font-size: 15px; }
     #chat-input-buttons { display: flex; gap: 8px; }
@@ -407,39 +381,26 @@
     .settings-group h3 { margin-bottom: 15px; color: var(--primary); }
     .toggle-section { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
 
-    /* ============================================
-       MODAL POUR APPAREILS VARIABLES
-       ============================================ */
-    .modal-overlay {
-      display: none;
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: rgba(0, 0, 0, 0.7);
-      z-index: 9999;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .modal-overlay.active { display: flex; }
-
-    .modal-box {
+    .doc-cv, .doc-lettre, .doc-rapport, .doc-facture, .doc-contrat {
       background: white;
-      padding: 30px;
-      border-radius: 16px;
-      max-width: 500px;
-      width: 90%;
-      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      padding: 40px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      max-width: 800px;
+      margin: 20px auto;
+      font-family: 'Segoe UI', Arial, sans-serif;
+      color: #333;
+      line-height: 1.8;
     }
 
-    body.night-mode .modal-box {
-      background: rgba(30, 41, 59, 0.98);
+    body.night-mode .doc-cv, body.night-mode .doc-lettre, body.night-mode .doc-rapport, body.night-mode .doc-facture, body.night-mode .doc-contrat {
+      background: rgba(30, 41, 59, 0.95);
       color: #e2e8f0;
+      border: 1px solid rgba(255, 255, 255, 0.1);
     }
 
-    .modal-box h3 { margin-bottom: 20px; color: var(--primary); }
+    .doc-cv h1 { color: #4361ee; font-size: 32px; margin-bottom: 5px; text-align: center; }
+    body.night-mode .doc-cv h1 { color: var(--accent-cyan); }
 
     @media (max-width: 760px) {
       .grid { grid-template-columns: 1fr; }
@@ -567,38 +528,11 @@
   <div id="login-overlay">
     <div class="login-box">
       <div class="app-icon"><i class="fas fa-home-user"></i></div>
-      <h2>SmartHome Intelligence v11.0</h2>
+      <h2>SmartHome Intelligence</h2>
       <p>Veuillez vous connecter pour accéder à votre assistant domotique.</p>
       <button class="btn primary" id="googleSignInOverlayBtn" style="width:100%; justify-content:center;">
           <svg style="width:20px; height:20px; margin-right:8px;" viewBox="0 0 24 24"><path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" style="color:#4285F4"></path><path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" style="color:#34A853"></path><path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" style="color:#FBBC05"></path><path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" style="color:#EA4335"></path><path fill="none" d="M1 1h22v22H1z"></path></svg>
           Se connecter avec Google
-      </button>
-    </div>
-  </div>
-
-  <!-- ============================================
-       MODAL CHOIX VARIABLE/FIXE
-       ============================================ -->
-  <div id="device-variable-modal" class="modal-overlay">
-    <div class="modal-box">
-      <h3>⚙️ Configuration de l'appareil</h3>
-      <p style="margin-bottom: 20px; color: var(--muted);">
-        Voulez-vous que cet appareil soit <strong>variable</strong> (avec réglage de puissance) ou <strong>fixe</strong> (ON/OFF uniquement) ?
-      </p>
-      
-      <div id="device-modal-name" style="font-size: 18px; font-weight: bold; margin-bottom: 20px; color: var(--primary);"></div>
-      
-      <div style="display: flex; gap: 12px; margin-bottom: 20px;">
-        <button class="btn primary" id="modal-variable-btn" style="flex: 1; padding: 15px; font-size: 16px;">
-          <i class="fas fa-sliders-h"></i> Variable (0-100%)
-        </button>
-        <button class="btn" id="modal-fixed-btn" style="flex: 1; padding: 15px; font-size: 16px;">
-          <i class="fas fa-power-off"></i> Fixe (ON/OFF)
-        </button>
-      </div>
-      
-      <button class="btn warn" id="modal-cancel-btn" style="width: 100%; justify-content: center;">
-        <i class="fas fa-times"></i> Annuler
       </button>
     </div>
   </div>
@@ -609,7 +543,7 @@
   <div class="main-app">
     <div class="container">
       <header id="main-header">
-        <h1 id="section-header-title">SmartHome Intelligence v11.0</h1>
+        <h1 id="section-header-title">Domotique</h1>
         <div style="margin-top:8px; display:flex; flex-wrap: wrap; justify-content: center; gap: 8px;">
           <span id="statusLocal" class="chip">ESP32: -</span>
           <span id="statusFirebase" class="chip">Firebase : -</span> 
@@ -640,24 +574,6 @@
                 <strong><i class="fas fa-robot"></i> Assistant Vocal (Raccourci)</strong>
                 <button class="btn primary" id="quickVoiceToggleBtn" style="width:100%; justify-content:center; margin-top:8px; font-size: 15px;">
                   <i class="fas fa-waveform"></i> Lancer la conversation
-                </button>
-              </div>
-
-              <div style="margin-top:12px; border-top: 1px solid rgba(0,0,0,0.1); padding-top:12px;">
-                <strong><i class="fas fa-plus-circle"></i> Ajouter un appareil</strong>
-                <div style="display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap;">
-                  <input type="text" id="new-device-name" placeholder="Nom de l'appareil" style="flex: 1; min-width: 150px; padding: 8px; border-radius: 8px; border: 1px solid #ddd;" />
-                  <select id="new-device-type" style="padding: 8px; border-radius: 8px; border: 1px solid #ddd;">
-                    <option value="lamp">💡 Lampe</option>
-                    <option value="plug">🔌 Prise</option>
-                    <option value="ventilateur">🌀 Ventilateur</option>
-                    <option value="thermostat">🌡️ Thermostat</option>
-                    <option value="volet">🪟 Volet</option>
-                  </select>
-                  <input type="text" id="new-device-room" placeholder="Pièce" style="flex: 1; min-width: 100px; padding: 8px; border-radius: 8px; border: 1px solid #ddd;" />
-                </div>
-                <button class="btn primary" id="add-device-btn" style="width:100%; justify-content:center; margin-top:8px;">
-                  <i class="fas fa-plus"></i> Ajouter l'appareil
                 </button>
               </div>
             </div>
@@ -754,38 +670,12 @@
                 <option value="once">Une fois (date spécifique)</option>
                 <option value="daily">Tous les jours</option>
                 <option value="weekly">Hebdomadaire (certains jours)</option>
-                <option value="monthly">Mensuel (jour du mois)</option>
-                <option value="duration">Période (début - fin)</option>
+                <option value="monthly">Mensuel</option>
               </select>
 
               <div id="opt-date" style="margin-bottom:10px">
                 <label>Date</label>
                 <input type="date" id="plan-date" style="width:100%;padding:8px;border-radius:8px;border:1px solid #ddd" />
-              </div>
-
-              <div id="opt-duration" style="margin-bottom:10px; display:none;">
-                <label>Date début</label>
-                <input type="date" id="plan-start-date" style="width:100%;padding:8px;border-radius:8px;border:1px solid #ddd;margin-bottom:8px" />
-                <label>Date fin</label>
-                <input type="date" id="plan-end-date" style="width:100%;padding:8px;border-radius:8px;border:1px solid #ddd" />
-              </div>
-
-              <div id="opt-weekly" style="margin-bottom:10px; display:none;">
-                <label>Jours de la semaine</label>
-                <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px;">
-                  <label style="flex: 0 0 45%;"><input type="checkbox" class="week-day" value="1"> Lundi</label>
-                  <label style="flex: 0 0 45%;"><input type="checkbox" class="week-day" value="2"> Mardi</label>
-                  <label style="flex: 0 0 45%;"><input type="checkbox" class="week-day" value="3"> Mercredi</label>
-                  <label style="flex: 0 0 45%;"><input type="checkbox" class="week-day" value="4"> Jeudi</label>
-                  <label style="flex: 0 0 45%;"><input type="checkbox" class="week-day" value="5"> Vendredi</label>
-                  <label style="flex: 0 0 45%;"><input type="checkbox" class="week-day" value="6"> Samedi</label>
-                  <label style="flex: 0 0 45%;"><input type="checkbox" class="week-day" value="0"> Dimanche</label>
-                </div>
-              </div>
-
-              <div id="opt-monthly" style="margin-bottom:10px; display:none;">
-                <label>Jour du mois (1-31)</label>
-                <input type="number" id="plan-month-day" min="1" max="31" value="1" style="width:100%;padding:8px;border-radius:8px;border:1px solid #ddd" />
               </div>
 
               <label>Heure</label>
@@ -841,7 +731,7 @@
           </div>
 
           <div class="settings-group">
-            <h3>👤 Profil Utilisateur</h3>
+            <h3>ðŸ'¤ Profil Utilisateur</h3>
             <div id="user-profile-card">
                 <img id="user-photo" src="" alt="Photo de profil">
                 <div>
@@ -872,14 +762,13 @@
   
   <script type="module">
   /* ====================================================
-     SmartHome Intelligence v11.0 - COMPLET
-     ✅ Markdown 100% (rendu côté client)
-     ✅ Streaming simulé (50ms/mot)
-     ✅ Appareils variables/fixes (choix utilisateur)
-     ✅ Planning avancé (daily, weekly, monthly, duration, once)
-     ✅ Boutons discrets au survol (copier, régénérer, etc.)
-     ✅ Édition de messages inline
-     ✅ PWA ready
+     SmartHome Intelligence v13.0 - COMPLET & OPTIMISÉ
+     • Suppression du bug setTimeout printWindow.close()
+     • Boutons discrets sur messages (copier, éditer, etc.)
+     • Édition de messages inline
+     • Tous les outils ChatGPT/Claude/Gemini
+     • Nettoyage auto des tâches exécutées
+     • Code structuré avec commentaires détaillés
      ==================================================== */
 
   // =============================================
@@ -909,11 +798,11 @@
   };
 
   const deviceTypes = {
-    'lamp': { name: 'Lampe', icon: 'lightbulb' },
-    'plug': { name: 'Prise', icon: 'plug' },
-    'ventilateur': { name: 'Ventilateur', icon: 'fan' },
-    'thermostat': { name: 'Thermostat', icon: 'temperature-low' },
-    'volet': { name: 'Volet Roulant', icon: 'window-maximize' }
+    'lamp': { name: 'Lampe', hasBrightness: true, icon: 'lightbulb' },
+    'plug': { name: 'Prise', hasBrightness: false, icon: 'plug' },
+    'ventilateur': { name: 'Ventilateur', hasBrightness: true, icon: 'fan' },
+    'thermostat': { name: 'Thermostat', hasBrightness: false, icon: 'temperature-low' },
+    'volet': { name: 'Volet Roulant', hasBrightness: false, icon: 'window-maximize' }
   };
 
   const proactiveSuggestions = [
@@ -944,8 +833,7 @@
     localWebSocket: null,
     isLocalConnected: false,
     esp32Ip: localStorage.getItem('esp32Ip') || '',
-    editingMessageId: null,
-    pendingDeviceToAdd: null
+    editingMessageId: null
   };
 
   // =============================================
@@ -955,50 +843,134 @@
 
   // =============================================
   // 📄 FONCTION: EXTRAIRE TEXTE LISIBLE
-  // (Pour synthèse vocale - ignore HTML/CSS/Code/Markdown)
+  // (Pour synthèse vocale - ignore HTML/CSS/Code)
   // =============================================
   function extractReadableText(content) {
-    // Retirer tout le code (entre ```)
-    let text = content.replace(/```[\s\S]*?```/g, '');
+    if (content.includes('class="doc-cv"') || 
+        content.includes('class="doc-facture"') ||
+        content.includes('class="doc-lettre"') ||
+        content.includes('class="doc-rapport"') ||
+        content.includes('class="doc-contrat"')) {
+      
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = content;
+      
+      tempDiv.querySelectorAll('style, script, button, .no-print, .code-actions, pre, code, .code-action-btn').forEach(elem => elem.remove());
+      
+      let text = tempDiv.innerText || tempDiv.textContent || '';
+      text = text
+        .replace(/\s+/g, ' ')
+        .replace(/[\n\r]+/g, ' ')
+        .trim();
+      
+      return text.substring(0, 100000);
+    }
+
+    if (content.includes('```')) {
+      const withoutCode = content.replace(/```[\s\S]*?```/g, ' ');
+      return extractReadableText(withoutCode);
+    }
+
+    const html = marked.parse(content, { sanitize: false, gfm: true });
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = html;
     
-    // Retirer les symboles Markdown
-    text = text
-      .replace(/#{1,6}\s+/g, '')      // Titres
-      .replace(/\*\*(.+?)\*\*/g, '$1') // Gras
-      .replace(/\*(.+?)\*/g, '$1')     // Italique
-      .replace(/\[(.+?)\]\(.+?\)/g, '$1') // Liens
-      .replace(/^[-*+]\s+/gm, '')      // Listes
-      .replace(/^\d+\.\s+/gm, '')      // Listes numérotées
+    tempDiv.querySelectorAll('pre, code, style, script, button').forEach(elem => elem.remove());
+    
+    let text = (tempDiv.innerText || tempDiv.textContent || '')
+      .replace(/\s+/g, ' ')
       .trim();
     
-    return text.substring(0, 10000);
+    return text.substring(0, 100000);
   }
 
   // =============================================
   // 🖨️ FONCTION: IMPRIMER DOCUMENT
+  // ✅ FENÊTRE RESTE OUVERTE INDÉFINIMENT
   // =============================================
   window.printDocument = function(btnElement) {
     try {
       console.log('🖨️ Impression lancée...');
+      let docElement = null;
+
+      if (btnElement && btnElement.closest) {
+        const messageContainer = btnElement.closest('.msg.bot');
+        
+        if (messageContainer) {
+          docElement = messageContainer.querySelector(
+            '.doc-cv, .doc-lettre, .doc-rapport, .doc-facture, .doc-contrat'
+          );
+          
+          if (!docElement) {
+            const clone = messageContainer.cloneNode(true);
+            clone.querySelectorAll('button, .copy-code-btn, .continue-btn, .flex-btns, .code-actions, .message-actions').forEach(b => b.remove());
+            docElement = clone;
+          }
+        }
+      }
+
+      if (!docElement) {
+        const allDocs = document.querySelectorAll('.doc-cv, .doc-lettre, .doc-rapport, .doc-facture, .doc-contrat');
+        if (allDocs.length > 0) {
+          docElement = allDocs[allDocs.length - 1];
+          console.log('✅ Document trouvé via méthode de secours');
+        }
+      }
+
+      if (!docElement) {
+        alert('❌ Erreur : Impossible de localiser le document à imprimer.');
+        return;
+      }
+
       const printWindow = window.open('', '_blank');
       if (!printWindow) {
         alert('❌ Pop-up bloquée. Veuillez autoriser les pop-ups pour imprimer.');
         return;
       }
 
-      let docElement = btnElement?.closest('.msg.bot');
-      if (!docElement) {
-        docElement = document.querySelector('.msg.bot:last-of-type');
-      }
+      const css = `
+        <style>
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          body { 
+            font-family: 'Segoe UI', Arial, sans-serif; 
+            margin: 0; 
+            padding: 20px;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+          }
+          
+          .doc-cv, .doc-facture, .doc-lettre, .doc-rapport, .doc-contrat { 
+            width: 100%; 
+            max-width: 100%; 
+            margin: 0; 
+            padding: 0;
+            border: none;
+            background: white !important;
+            color: #333 !important;
+          }
+          
+          .facture-header, thead { 
+            -webkit-print-color-adjust: exact; 
+            print-color-adjust: exact;
+          }
+          
+          button, .copy-code-btn, .continue-btn, .code-actions, .message-actions {
+            display: none !important;
+          }
+          
+          @page { 
+            margin: 1cm; 
+            size: A4;
+          }
+          
+          h1, h2, h3 { color: #333 !important; }
+          table { border-collapse: collapse; width: 100%; }
+          th, td { border: 1px solid #ddd; padding: 8px; }
+          th { background: #f0f0f0 !important; }
+        </style>
+      `;
 
-      const css = `<style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Segoe UI', Arial, sans-serif; margin: 20px; }
-        button, .copy-code-btn, .continue-btn, .code-actions, .message-actions { display: none !important; }
-        @page { margin: 1cm; size: A4; }
-      </style>`;
-
-      const htmlContent = docElement.innerHTML;
+      const htmlContent = docElement.outerHTML || docElement.innerHTML;
       printWindow.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Impression</title>${css}</head><body>${htmlContent}</body></html>`);
       printWindow.document.close();
       
@@ -1016,254 +988,67 @@
   };
 
   // =============================================
-  // 📋 FONCTION: COPIER TEXTE
+  // 📋 FONCTION: COPIER HTML DOCUMENT
   // =============================================
-  function copyToClipboard(text) {
-    navigator.clipboard.writeText(text)
-      .then(() => console.log('✅ Texte copié'))
-      .catch(err => console.error('❌ Erreur copie:', err));
-  }
-
-  // =============================================
-  // 💬 FONCTION: AJOUTER MESSAGE AU CHAT
-  // =============================================
-  function appendChat(role, text, returnElement = false, attachments = []) {
-    const target = el('chatFullWindow');
-    if (!target) return;
-    
-    const node = document.createElement('div');
-    node.className = 'msg ' + (role === 'user' ? 'user' : 'bot');
-
-    if (role === 'user') {
-      if (text) node.textContent = text;
-    } else {
-      // Détection d'image
-      const imageMatch = text.match(/<IMAGE_URL_TOKEN>(.*?)<\/IMAGE_URL_TOKEN>/);
-      if (imageMatch) {
-        const imageUrl = imageMatch[1];
-        node.innerHTML = `
-          <div style="text-align: center;">
-            <img src="${imageUrl}" style="max-width: 100%; border-radius: 12px; margin-bottom: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.2);" />
-            <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
-              <button class="btn primary" onclick="downloadImage('${imageUrl}')">
-                <i class="fas fa-download"></i> Télécharger
-              </button>
-              <button class="btn" onclick="window.open('${imageUrl}', '_blank')">
-                <i class="fas fa-external-link-alt"></i> Ouvrir
-              </button>
-            </div>
-          </div>
-        `;
-        target.appendChild(node);
-        addMessageActions(node, false);
-        scrollToBottom();
-        return node;
-      }
-      
-      if (text) {
-        const renderedHtml = marked.parse(text, { sanitize: false, gfm: true });
-        node.innerHTML = renderedHtml;
-        
-        node.querySelectorAll('pre code').forEach(block => {
-          hljs.highlightElement(block);
-        });
-        
-        addCopyButtons(node);
-      } else if (returnElement) {
-        node.classList.add('loading');
-      }
-    }
-    
-    // Pièces jointes
-    if (attachments && attachments.length > 0) {
-      const attachmentsDiv = document.createElement('div');
-      attachmentsDiv.style.cssText = 'margin-top: 8px; display: flex; flex-wrap: wrap; gap: 8px;';
-      
-      attachments.forEach(att => {
-        if (att.type === 'image' && att.data) {
-          const img = document.createElement('img');
-          img.src = att.data;
-          img.style.cssText = 'max-width: 150px; max-height: 150px; border-radius: 8px; object-fit: cover; cursor: pointer;';
-          img.onclick = () => window.open(att.data, '_blank');
-          attachmentsDiv.appendChild(img);
-        } else if (att.type === 'file') {
-          const fileDiv = document.createElement('div');
-          fileDiv.style.cssText = 'padding: 8px 12px; background: rgba(0,0,0,0.1); border-radius: 6px; font-size: 13px;';
-          fileDiv.innerHTML = `<i class="fas fa-file"></i> ${att.name}`;
-          attachmentsDiv.appendChild(fileDiv);
-        }
-      });
-      node.appendChild(attachmentsDiv);
-    }
-
-    target.appendChild(node);
-    addMessageActions(node, role === 'user');
-    scrollToBottom();
-    if (returnElement) return node;
-  }
-
-  function scrollToBottom() {
-    const container = el('chatFullWindow');
-    if (container) {
-      setTimeout(() => {
-        container.scrollTop = container.scrollHeight;
-      }, 100);
-    }
-  }
-
-  // =============================================
-  // 📤 FONCTION: AJOUTER BOUTONS COPIER CODE
-  // =============================================
-  function addCopyButtons(element) {
-    const codeBlocks = element.querySelectorAll('pre');
-    codeBlocks.forEach(block => {
-      if (block.querySelector('.code-actions')) return;
-      
-      const code = block.querySelector('code');
-      if (!code) return;
-      
-      let language = 'TEXT';
-      const classes = code.className.split(' ');
-      const langClass = classes.find(c => c.startsWith('language-'));
-      
-      if (langClass) {
-        language = langClass.replace('language-', '').toUpperCase();
-      }
-      
-      const actions = document.createElement('div');
-      actions.className = 'code-actions';
-      actions.innerHTML = `
-        <span>${language}</span>
-        <div class="code-actions-buttons">
-          <button class="code-action-btn" onclick="
-            const codeText = this.closest('pre').querySelector('code').innerText;
-            navigator.clipboard.writeText(codeText)
-              .then(() => { 
-                this.innerHTML = '<i class=\\'fas fa-check\\'></i> Copié'; 
-                setTimeout(() => { this.innerHTML = '<i class=\\'fas fa-copy\\'></i> Copier'; }, 2000); 
-              });
-          ">
-            <i class="fas fa-copy"></i> Copier
-          </button>
-        </div>
-      `;
-      
-      block.insertBefore(actions, block.firstChild);
-    });
-  }
-
-  // =============================================
-  // 🔘 FONCTION: BOUTONS ACTIONS SUR MESSAGES
-  // =============================================
-  function addMessageActions(messageElement, isUserMessage = false) {
-    if (messageElement.querySelector('.message-actions')) return;
-
-    const actionsDiv = document.createElement('div');
-    actionsDiv.className = 'message-actions';
-
-    const actions = [
-      {
-        icon: 'fa-copy',
-        label: 'Copier',
-        onclick: `
-          const msgText = this.closest('.msg').innerText;
-          navigator.clipboard.writeText(msgText)
-            .then(() => { 
-              this.innerHTML = '<i class="fas fa-check"></i> Copié'; 
-              setTimeout(() => { this.innerHTML = '<i class="fas fa-copy"></i> Copier'; }, 2000); 
-            });
-        `
-      },
-      !isUserMessage ? {
-        icon: 'fa-redo',
-        label: 'Régénérer',
-        onclick: `regenerateMessage(this.closest('.msg'))`
-      } : null,
-      {
-        icon: 'fa-share-alt',
-        label: 'Partager',
-        onclick: `shareMessage(this.closest('.msg'))`
-      }
-    ].filter(Boolean);
-
-    actions.forEach(action => {
-      const btn = document.createElement('button');
-      btn.className = `msg-action-btn ${action.class || ''}`;
-      btn.innerHTML = `<i class="fas ${action.icon}"></i> ${action.label}`;
-      btn.onclick = new Function(action.onclick);
-      actionsDiv.appendChild(btn);
-    });
-
-    messageElement.appendChild(actionsDiv);
-  }
-
-  // =============================================
-  // 🔄 FONCTION: RÉGÉNÉRER MESSAGE
-  // =============================================
-  async function regenerateMessage(messageElement) {
-    const prevUserMsg = messageElement.previousElementSibling;
-    if (!prevUserMsg || !prevUserMsg.classList.contains('user')) {
-      alert('❌ Impossible de trouver le message précédent');
-      return;
-    }
-
-    const userMessage = prevUserMsg.innerText.trim();
-    if (!userMessage) return;
-
-    console.log('🔄 Régénération en cours...');
-    messageElement.innerHTML = '<div style="text-align:center; color: var(--muted);"><i class="fas fa-spinner fa-spin"></i> Régénération...</div>';
-
-    appState.chatInProgress = true;
-    appState.shouldStopResponse = false;
-
+  window.copyDocumentHtml = function() {
     try {
-      const reply = await sendToOnline(userMessage, [], false);
+      let docElement = null;
 
-      if (!appState.shouldStopResponse) {
-        const renderedHtml = marked.parse(reply, { sanitize: false, gfm: true });
-        messageElement.innerHTML = renderedHtml;
-
-        messageElement.querySelectorAll('pre code').forEach(block => {
-          hljs.highlightElement(block);
-        });
-
-        addCopyButtons(messageElement);
-        addMessageActions(messageElement, false);
+      const messageContainer = document.querySelector('.msg.bot:last-of-type');
+      if (messageContainer) {
+        docElement = messageContainer.querySelector(
+          '.doc-cv, .doc-lettre, .doc-rapport, .doc-facture, .doc-contrat'
+        );
       }
+
+      if (!docElement) {
+        const allDocs = document.querySelectorAll('.doc-cv, .doc-lettre, .doc-rapport, .doc-facture, .doc-contrat');
+        if (allDocs.length > 0) docElement = allDocs[allDocs.length - 1];
+      }
+
+      if (!docElement) {
+        alert('❌ Aucun document trouvé');
+        return;
+      }
+
+      const html = docElement.outerHTML || docElement.innerHTML;
+
+      navigator.clipboard.writeText(html).then(() => {
+        console.log('✅ HTML copié dans le presse-papier');
+        alert('✅ HTML copié dans le presse-papier !');
+      }).catch(err => {
+        console.error('❌ Erreur copie:', err);
+        
+        const textarea = document.createElement('textarea');
+        textarea.value = html;
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+        document.body.appendChild(textarea);
+        textarea.select();
+        
+        try {
+          document.execCommand('copy');
+          alert('✅ HTML copié dans le presse-papier !');
+        } catch (e) {
+          alert('❌ Impossible de copier. Utilisez Ctrl+C manuellement.');
+        }
+        
+        document.body.removeChild(textarea);
+      });
+        
     } catch (error) {
-      console.error('❌ Erreur régénération:', error);
-      messageElement.innerHTML = '<em style="color: #e74c3c;">❌ Erreur lors de la régénération</em>';
-    } finally {
-      appState.chatInProgress = false;
+      console.error('❌ Erreur copie HTML:', error);
+      alert('❌ Erreur lors de la copie. Veuillez réessayer.');
     }
-  }
-
-  window.regenerateMessage = regenerateMessage;
-
-  // =============================================
-  // 📤 FONCTION: PARTAGER MESSAGE
-  // =============================================
-  function shareMessage(messageElement) {
-    const msgText = messageElement.innerText.trim();
-    
-    if (navigator.share) {
-      navigator.share({
-        title: 'SmartHome Intelligence',
-        text: msgText.substring(0, 200)
-      }).catch(err => console.log('Partage annulé'));
-    } else {
-      copyToClipboard(msgText);
-      alert('✅ Message copié dans le presse-papier');
-    }
-  }
-
-  window.shareMessage = shareMessage;
+  };
 
   // =============================================
   // 📥 FONCTION: TÉLÉCHARGER IMAGE
   // =============================================
-  window.downloadImage = function(imageUrl) {
-    const filename = `intellia_image_${Date.now()}.png`;
+  window.downloadImage = function(imageUrl, filename = null) {
+    if (!filename) {
+      filename = `intellia_image_${Date.now()}.png`;
+    }
     
     fetch(imageUrl)
       .then(response => response.blob())
@@ -1285,9 +1070,383 @@
   };
 
   // =============================================
-  // ⌨️ FONCTION: STREAMING (SIMULATION 50ms/mot)
+  // 🔤 FONCTION: AJOUTER BOUTONS COPIER CODE
   // =============================================
-  function simulateTyping(element, text, enableVoice = true) {
+  function addCopyButtons(element) {
+    const codeBlocks = element.querySelectorAll('pre');
+    codeBlocks.forEach(block => {
+      if (block.querySelector('.code-actions')) return;
+      
+      const code = block.querySelector('code');
+      if (!code) return;
+      
+      let language = 'TEXT';
+      let extension = 'txt';
+      const classes = code.className.split(' ');
+      const langClass = classes.find(c => c.startsWith('language-'));
+      
+      if (langClass) {
+        language = langClass.replace('language-', '').toUpperCase();
+        const langMap = {
+          'JAVASCRIPT': 'js', 'PYTHON': 'py', 'HTML': 'html', 
+          'CSS': 'css', 'JSON': 'json', 'JAVA': 'java',
+          'CPP': 'cpp', 'C': 'c', 'PHP': 'php', 'RUBY': 'rb',
+          'GO': 'go', 'RUST': 'rs', 'TYPESCRIPT': 'ts',
+          'BASH': 'sh', 'SQL': 'sql', 'XML': 'xml'
+        };
+        extension = langMap[language] || language.toLowerCase();
+      }
+      
+      const actions = document.createElement('div');
+      actions.className = 'code-actions';
+      actions.innerHTML = `
+        <span>${language}</span>
+        <div class="code-actions-buttons">
+          <button class="code-action-btn" onclick="
+            const codeText = this.closest('pre').querySelector('code').innerText;
+            navigator.clipboard.writeText(codeText)
+              .then(() => { 
+                this.innerHTML = '<i class=\\'fas fa-check\\'></i> Copié'; 
+                setTimeout(() => { this.innerHTML = '<i class=\\'fas fa-copy\\'></i> Copier'; }, 2000); 
+              });
+          ">
+            <i class="fas fa-copy"></i> Copier
+          </button>
+          <button class="code-action-btn" onclick="
+            const codeText = this.closest('pre').querySelector('code').innerText;
+            const blob = new Blob([codeText], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'code.${extension}';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+          ">
+            <i class="fas fa-download"></i> Télécharger
+          </button>
+        </div>
+      `;
+      
+      block.insertBefore(actions, block.firstChild);
+    });
+  }
+
+  // =============================================
+  // 💬 FONCTION: AJOUTER BOUTONS DISCRETS AU MESSAGE
+  // =============================================
+  function addMessageActions(messageElement, isUserMessage = false) {
+    if (messageElement.querySelector('.message-actions')) return;
+
+    const actionsDiv = document.createElement('div');
+    actionsDiv.className = 'message-actions';
+
+    const actions = [
+      {
+        icon: 'fa-copy',
+        label: 'Copier',
+        onclick: `
+          const msgText = this.closest('.msg').innerText;
+          navigator.clipboard.writeText(msgText)
+            .then(() => { 
+              this.innerHTML = '<i class=\\"fas fa-check\\"></i> Copié'; 
+              setTimeout(() => { this.innerHTML = '<i class=\\"fas fa-copy\\"></i> Copier'; }, 2000); 
+            });
+        `
+      },
+      isUserMessage ? {
+        icon: 'fa-edit',
+        label: 'Éditer',
+        onclick: `showEditMessage(this.closest('.msg'))`
+      } : null,
+      !isUserMessage ? {
+        icon: 'fa-redo',
+        label: 'Régénérer',
+        onclick: `regenerateMessage(this.closest('.msg'))`
+      } : null,
+      {
+        icon: 'fa-share-alt',
+        label: 'Partager',
+        onclick: `shareMessage(this.closest('.msg'))`
+      },
+      {
+        icon: 'fa-thumbs-up',
+        label: 'J\'aime',
+        onclick: `likeMessage(this.closest('.msg'), true)`
+      },
+      !isUserMessage ? {
+        icon: 'fa-thumbs-down',
+        label: 'Pas bon',
+        onclick: `likeMessage(this.closest('.msg'), false)`
+      } : null,
+      {
+        icon: 'fa-thumbs-tack',
+        label: 'Épingler',
+        onclick: `pinMessage(this.closest('.msg'))`
+      },
+      {
+        icon: 'fa-trash',
+        label: 'Supprimer',
+        class: 'danger',
+        onclick: `this.closest('.msg').remove()`
+      }
+    ].filter(Boolean);
+
+    actions.forEach(action => {
+      const btn = document.createElement('button');
+      btn.className = `msg-action-btn ${action.class || ''}`;
+      btn.innerHTML = `<i class="fas ${action.icon}"></i> ${action.label}`;
+      btn.onclick = new Function(action.onclick);
+      actionsDiv.appendChild(btn);
+    });
+
+    messageElement.appendChild(actionsDiv);
+  }
+
+  // =============================================
+  // ✏️ FONCTION: AFFICHER ÉDITEUR DE MESSAGE
+  // =============================================
+  function showEditMessage(messageElement) {
+    const isAlreadyEditing = messageElement.querySelector('.message-edit-container.active');
+    if (isAlreadyEditing) {
+      isAlreadyEditing.classList.remove('active');
+      return;
+    }
+
+    let editContainer = messageElement.querySelector('.message-edit-container');
+    if (!editContainer) {
+      editContainer = document.createElement('div');
+      editContainer.className = 'message-edit-container';
+      messageElement.appendChild(editContainer);
+    }
+
+    const originalText = messageElement.innerText.trim();
+    editContainer.innerHTML = `
+      <textarea class="edit-textarea">${originalText}</textarea>
+      <div class="edit-actions">
+        <button class="btn primary" onclick="submitEditMessage(this)">💾 Envoyer</button>
+        <button class="btn" onclick="this.closest('.message-edit-container').classList.remove('active')">❌ Annuler</button>
+      </div>
+    `;
+    editContainer.classList.add('active');
+    editContainer.querySelector('.edit-textarea').focus();
+  }
+
+  window.submitEditMessage = function(btn) {
+    const editContainer = btn.closest('.message-edit-container');
+    const messageElement = editContainer.closest('.msg');
+    const newText = editContainer.querySelector('.edit-textarea').value.trim();
+
+    if (!newText) {
+      alert('❌ Le message ne peut pas être vide');
+      return;
+    }
+
+    if (messageElement.classList.contains('user')) {
+      handleChatSubmit(newText, appState.attachments);
+      editContainer.classList.remove('active');
+    } else {
+      alert('ℹ️ Vous ne pouvez éditer que vos propres messages');
+    }
+  };
+
+  // =============================================
+  // 🔄 FONCTION: RÉGÉNÉRER MESSAGE IA
+  // =============================================
+  async function regenerateMessage(messageElement) {
+    const prevUserMsg = messageElement.previousElementSibling;
+    if (!prevUserMsg || !prevUserMsg.classList.contains('user')) {
+      alert('❌ Impossible de trouver le message utilisateur précédent');
+      return;
+    }
+
+    const userMessage = prevUserMsg.innerText.trim();
+    if (!userMessage) {
+      alert('❌ Message vide');
+      return;
+    }
+
+    console.log('🔄 Régénération en cours...');
+    messageElement.innerHTML = '<div style="text-align:center; color: var(--muted);"><i class="fas fa-spinner fa-spin"></i> Régénération...</div>';
+
+    appState.chatInProgress = true;
+    appState.shouldStopResponse = false;
+
+    try {
+      const reply = await sendToOnline(userMessage, [], false);
+
+      if (!appState.shouldStopResponse) {
+        const renderedHtml = marked.parse(reply, { sanitize: false, gfm: true });
+        messageElement.innerHTML = renderedHtml;
+
+        messageElement.querySelectorAll('pre code').forEach(block => {
+          hljs.highlightElement(block);
+        });
+
+        addCopyButtons(messageElement);
+        addMessageActions(messageElement, false);
+        logActivity('✅ Message régénéré avec succès');
+      }
+    } catch (error) {
+      console.error('❌ Erreur régénération:', error);
+      messageElement.innerHTML = '<em style="color: #e74c3c;">❌ Erreur lors de la régénération</em>';
+    } finally {
+      appState.chatInProgress = false;
+    }
+  }
+
+  window.regenerateMessage = regenerateMessage;
+
+  // =============================================
+  // 🔗 FONCTION: PARTAGER MESSAGE
+  // =============================================
+  function shareMessage(messageElement) {
+    const msgText = messageElement.innerText.trim();
+    const shareUrl = `${window.location.origin}${window.location.pathname}`;
+
+    const shareData = {
+      title: 'SmartHome Intelligence',
+      text: msgText.substring(0, 100),
+      url: shareUrl
+    };
+
+    if (navigator.share) {
+      navigator.share(shareData)
+        .then(() => console.log('✅ Partagé avec succès'))
+        .catch(err => console.error('❌ Erreur partage:', err));
+    } else {
+      navigator.clipboard.writeText(`${msgText}\n\n${shareUrl}`)
+        .then(() => alert('✅ Message copié avec lien'))
+        .catch(err => alert('❌ Erreur copie'));
+    }
+  }
+
+  window.shareMessage = shareMessage;
+
+  // =============================================
+  // 👍 FONCTION: LIKE/DISLIKE MESSAGE
+  // =============================================
+  function likeMessage(messageElement, isLike) {
+    const feedback = isLike ? '👍' : '👎';
+    messageElement.setAttribute('data-feedback', feedback);
+    logActivity(`${feedback} Feedback envoyé`);
+  }
+
+  window.likeMessage = likeMessage;
+
+  // =============================================
+  // 📌 FONCTION: ÉPINGLER MESSAGE
+  // =============================================
+  function pinMessage(messageElement) {
+    messageElement.classList.toggle('pinned');
+    const isPinned = messageElement.classList.contains('pinned');
+    logActivity(isPinned ? '📌 Message épinglé' : '📌 Message désépinglé');
+  }
+
+  window.pinMessage = pinMessage;
+
+  // =============================================
+  // 💬 FONCTION: AJOUTER MESSAGE AU CHAT
+  // =============================================
+  function appendChat(role, text, returnElement = false, attachments = []) {
+    const target = document.getElementById('chatFullWindow');
+    if (!target) return;
+    
+    const node = document.createElement('div');
+    node.className = 'msg ' + (role === 'user' ? 'user' : 'bot');
+
+    if (role === 'user') {
+      if (text) node.textContent = text;
+    } else {
+      const documentHtmlMatch = text.match(/<DOCUMENT_HTML>([\s\S]*?)<\/DOCUMENT_HTML>/);
+      if (documentHtmlMatch) {
+        const documentHtml = documentHtmlMatch[1].trim();
+        
+        node.innerHTML = `
+          ${documentHtml}
+          <div style="margin-top: 30px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+            <button class="btn primary" onclick="printDocument(this)">
+              <i class="fas fa-print"></i> Imprimer
+            </button>
+            <button class="btn success" onclick="copyDocumentHtml()">
+              <i class="fas fa-copy"></i> Copier HTML
+            </button>
+          </div>
+        `;
+        
+        target.appendChild(node);
+        addMessageActions(node, false);
+        scrollToBottom();
+        return node;
+      }
+      
+      if (text) {
+        const renderedHtml = marked.parse(text, { sanitize: false, gfm: true });
+        node.innerHTML = renderedHtml;
+        
+        node.querySelectorAll('pre code').forEach(block => {
+          hljs.highlightElement(block);
+        });
+        
+        addCopyButtons(node);
+        
+      } else if (returnElement) {
+        node.classList.add('loading');
+      }
+    }
+    
+    if (attachments && attachments.length > 0) {
+      const attachmentsDiv = document.createElement('div');
+      attachmentsDiv.style.cssText = 'margin-top: 8px; display: flex; flex-wrap: wrap; gap: 8px;';
+      
+      attachments.forEach(att => {
+        if (att.type === 'image' && att.data) {
+          const img = document.createElement('img');
+          img.src = att.data;
+          img.style.cssText = 'max-width: 150px; max-height: 150px; border-radius: 8px; object-fit: cover; cursor: pointer;';
+          img.onclick = () => window.open(att.data, '_blank');
+          attachmentsDiv.appendChild(img);
+        } else if (att.type === 'file') {
+          const fileDiv = document.createElement('div');
+          fileDiv.style.cssText = 'padding: 8px 12px; background: rgba(0,0,0,0.1); border-radius: 6px; font-size: 13px;';
+          let iconClass = 'fa-file';
+          let iconColor = '#6c757d';
+          
+          const fileName = att.name.toLowerCase();
+          if (fileName.endsWith('.pdf')) { iconClass = 'fa-file-pdf'; iconColor = '#dc3545'; }
+          else if (fileName.endsWith('.docx') || fileName.endsWith('.doc')) { iconClass = 'fa-file-word'; iconColor = '#2b579a'; }
+          else if (fileName.endsWith('.xlsx') || fileName.endsWith('.xls')) { iconClass = 'fa-file-excel'; iconColor = '#217346'; }
+          else if (fileName.endsWith('.txt')) { iconClass = 'fa-file-alt'; }
+          else if (fileName.endsWith('.html') || fileName.endsWith('.htm')) { iconClass = 'fa-file-code'; iconColor = '#f06529'; }
+          else if (fileName.endsWith('.js')) { iconClass = 'fa-file-code'; iconColor = '#f7df1e'; }
+          else if (fileName.endsWith('.json')) { iconClass = 'fa-file-code'; iconColor = '#5a5a5a'; }
+          else if (fileName.endsWith('.css')) { iconClass = 'fa-file-code'; iconColor = '#264de4'; }
+          
+          fileDiv.innerHTML = `<i class="fas ${iconClass}" style="color: ${iconColor}; margin-right: 6px;"></i> ${att.name}`;
+          attachmentsDiv.appendChild(fileDiv);
+        }
+      });
+      node.appendChild(attachmentsDiv);
+    }
+
+    target.appendChild(node);
+    addMessageActions(node, role === 'user');
+    scrollToBottom();
+    if (returnElement) return node;
+  }
+
+  function scrollToBottom() {
+    const container = document.getElementById('chatFullWindow');
+    if (container) {
+      container.scrollTop = container.scrollHeight;
+    }
+  }
+
+  // =============================================
+  // ⌨️ FONCTION: SIMULER TYPING & AFFICHAGE
+  // =============================================
+  function simulateTyping(element, text, enableVoice = true, needsContinuation = false) {
     return new Promise((resolve, reject) => {
       
       if (appState.shouldStopResponse) {
@@ -1296,21 +1455,19 @@
         return;
       }
       
-      // Détection d'image
-      const imageMatch = text.match(/<IMAGE_URL_TOKEN>(.*?)<\/IMAGE_URL_TOKEN>/);
-      if (imageMatch) {
-        const imageUrl = imageMatch[1];
+      const documentHtmlMatch = text.match(/<DOCUMENT_HTML>([\s\S]*?)<\/DOCUMENT_HTML>/);
+      if (documentHtmlMatch) {
+        const documentHtml = documentHtmlMatch[1].trim();
+        
         element.innerHTML = `
-          <div style="text-align: center;">
-            <img src="${imageUrl}" style="max-width: 100%; border-radius: 12px; margin-bottom: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.2);" />
-            <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
-              <button class="btn primary" onclick="downloadImage('${imageUrl}')">
-                <i class="fas fa-download"></i> Télécharger
-              </button>
-              <button class="btn" onclick="window.open('${imageUrl}', '_blank')">
-                <i class="fas fa-external-link-alt"></i> Ouvrir
-              </button>
-            </div>
+          ${documentHtml}
+          <div style="margin-top: 30px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+            <button class="btn primary" onclick="printDocument(this)">
+              <i class="fas fa-print"></i> Imprimer
+            </button>
+            <button class="btn success" onclick="copyDocumentHtml()">
+              <i class="fas fa-copy"></i> Copier HTML
+            </button>
           </div>
         `;
         
@@ -1318,22 +1475,25 @@
         scrollToBottom();
         
         if (enableVoice && appState.voiceNotifications) {
-          speak("Image générée avec succès");
+          const readableText = extractReadableText(documentHtml);
+          if (readableText) {
+            console.log('🔊 Lecture vocale (document):', readableText.substring(0, 100) + '...');
+            speak(readableText);
+          }
         }
         
         resolve();
         return;
       }
       
-      // Synthèse vocale
       if (enableVoice && appState.voiceNotifications) {
         const readableText = extractReadableText(text);
         if (readableText) {
+          console.log('🔊 Lecture vocale (markdown):', readableText.substring(0, 100) + '...');
           speak(readableText, true);
         }
       }
       
-      // Rendu Markdown
       const renderedHtml = marked.parse(text, { sanitize: false, gfm: true });
       element.innerHTML = renderedHtml;
       
@@ -1343,11 +1503,65 @@
       
       addCopyButtons(element);
       
+      if (needsContinuation) {
+        const continueBtn = document.createElement('button');
+        continueBtn.className = 'continue-btn';
+        continueBtn.innerHTML = '<i class="fas fa-chevron-down"></i> Continuer';
+        continueBtn.onclick = () => handleContinuation();
+        element.appendChild(continueBtn);
+      }
+      
       element.classList.remove('loading');
       scrollToBottom();
       resolve();
     });
   }
+
+  // =============================================
+  // 🔄 FONCTION: GESTION DE LA CONTINUATION
+  // =============================================
+  async function handleContinuation() {
+    console.log('📄 Continuation demandée');
+    
+    const continueBtn = event.target;
+    continueBtn.disabled = true;
+    continueBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Chargement...';
+    
+    appState.chatInProgress = true;
+    appState.shouldStopResponse = false;
+    el('intelliaStatus').textContent = "Assistant: En cours...";
+    el('chat-loading').style.display = 'block';
+    el('chatFullSend').style.display = 'none';
+    el('stopAIBtn').style.display = 'flex';
+    
+    try {
+      const reply = await sendToOnline("Continue", [], true);
+      
+      if (!appState.shouldStopResponse) {
+        const botMsgElement = appendChat('bot', '', true);
+        try {
+          await simulateTyping(botMsgElement, reply, true, false);
+        } catch (interruptError) {
+          console.log('⚠️ Typing interrompu');
+        }
+      } else {
+        appendChat('bot', '<em style="color: #e74c3c;">⚠️ Réponse interrompue</em>');
+      }
+    } catch (error) {
+      if (!appState.shouldStopResponse) {
+        console.error("Erreur continuation:", error);
+        appendChat('bot', "Désolé, une erreur s'est produite lors de la continuation.");
+      }
+    } finally {
+      appState.chatInProgress = false;
+      appState.shouldStopResponse = false;
+      el('chat-loading').style.display = 'none';
+      el('chatFullSend').style.display = 'flex';
+      el('stopAIBtn').style.display = 'none';
+    }
+  }
+
+  window.handleContinuation = handleContinuation;
 
   // =============================================
   // 💬 FONCTION: SOUMETTRE MESSAGE CHAT
@@ -1362,6 +1576,7 @@
   
     appState.shouldStopResponse = false; 
     appState.chatInProgress = true;
+    el('intelliaStatus').textContent = "Assistant: En cours...";
     el('chat-loading').style.display = 'block';
     el('chatFullSend').style.display = 'none';
     el('stopAIBtn').style.display = 'flex'; 
@@ -1377,16 +1592,73 @@
       if (!appState.shouldStopResponse) {
         const botMsgElement = appendChat('bot', '', true);
         try {
-          await simulateTyping(botMsgElement, reply, true);
+          const needsContinuation = reply.includes('[SUITE DANS LA PROCHAINE RÉPONSE]') || 
+                                     reply.includes('[À suivre...]') || 
+                                     reply.includes('<!-- CONTINUATION NÉCESSAIRE -->');
+          
+          await simulateTyping(botMsgElement, reply, true, needsContinuation);
         } catch (interruptError) {
           console.log('⚠️ Typing interrompu');
+        }
+      } else {
+        appendChat('bot', '<em style="color: #e74c3c;">⚠️ Réponse interrompue par l\'utilisateur</em>');
+      }
+    } catch (error) {
+      if (!appState.shouldStopResponse) {
+        console.error("Erreur chat:", error);
+        appendChat('bot', "Désolé, une erreur s'est produite.");
+      }
+    } finally {
+      appState.chatInProgress = false;
+      appState.shouldStopResponse = false; 
+      el('chat-loading').style.display = 'none';
+      el('chatFullSend').style.display = 'flex';
+      el('stopAIBtn').style.display = 'none';
+    }
+  }
+
+  // =============================================
+  // 🎤 FONCTION: SOUMETTRE MESSAGE VOIX
+  // =============================================
+  async function handleVoiceSubmit(command) {
+    if (!command) return;
+    if (appState.chatInProgress) {
+      logActivity(`Voix ignorée (chat en cours): "${command}"`);
+      return;
+    }
+
+    if (!appState.currentSessionId) {
+      createNewChatSession();
+    }
+  
+    appState.shouldStopResponse = false; 
+    appState.chatInProgress = true;
+    el('intelliaStatus').textContent = "Assistant: En cours...";
+    el('chat-loading').style.display = 'block';
+    el('stopAIBtn').style.display = 'flex'; 
+    el('chatFullSend').style.display = 'none'; 
+  
+    appendChat('user', command);
+    logActivity(`Commande vocale: "${command}"`);
+    
+    try {
+      const reply = await sendToOnline(command, [], false);
+      
+      if (!appState.shouldStopResponse) {
+        const botMsgElement = appendChat('bot', '', true);
+        try {
+          const needsContinuation = reply.includes('[SUITE DANS LA PROCHAINE RÉPONSE]') || 
+                                     reply.includes('[À suivre...]');
+          await simulateTyping(botMsgElement, reply, true, needsContinuation);
+        } catch (interruptError) {
+          console.log('⚠️ Typing interrompu (voix)');
         }
       } else {
         appendChat('bot', '<em style="color: #e74c3c;">⚠️ Réponse interrompue</em>');
       }
     } catch (error) {
       if (!appState.shouldStopResponse) {
-        console.error("Erreur chat:", error);
+        console.error("Erreur voix:", error);
         appendChat('bot', "Désolé, une erreur s'est produite.");
       }
     } finally {
@@ -1402,6 +1674,11 @@
   // 🌐 FONCTION: ENVOYER À L'API
   // =============================================
   async function sendToOnline(message, attachments = [], continuationMode = false) {
+    if (!appState.currentUser) {
+        alert("Erreur: Utilisateur non connecté. Veuillez rafraîchir.");
+        return "Erreur d'authentification.";
+    }
+    
     const t0 = Date.now();
     
     try {
@@ -1412,10 +1689,10 @@
           message,
           attachments: attachments,
           key: AUTH_KEY,
-          devices: appState.devices.map(d => ({ id: d.id, name: d.name, type: d.type, room: d.room, isVariable: d.isVariable })),
+          devices: appState.devices.map(d => ({ id: d.id, name: d.name, type: d.type, room: d.room })),
           deviceStates: appState.deviceStates,
           sessionId: appState.currentSessionId,
-          userId: appState.currentUser?.uid || 'demo_user',
+          userId: appState.currentUser.uid,
           continuationMode: continuationMode,
           preferences: {
             voiceNotifications: appState.voiceNotifications
@@ -1431,11 +1708,16 @@
           return "Interrompu.";
       }
       
+      await saveMessageToFirebase(message, j.reply, attachments);
+      
+      if (j.suggestions && j.suggestions.length > 0) displaySuggestions(j.suggestions);
       if (j.planning_commands) handlePlanningCommands(j.planning_commands);
       if (j.execute) handleExecuteCommands(j.execute);
       
       appState.intelliaOnline = true; 
+      el('intelliaStatus').textContent = "Assistant: Connecté";
       el('statusOnline').textContent = "Assistant : disponible";
+      logActivity(`Assistant a répondu.`);
       
       return j.reply || "OK";
       
@@ -1445,10 +1727,50 @@
       }
       console.warn("sendToOnline error", e);
       appState.intelliaOnline = false;
+      el('intelliaStatus').textContent = "Assistant: Hors ligne";
       el('statusOnline').textContent = "Assistant : indisponible";
+      logActivity(`Erreur de connexion Assistant.`);
       return "Erreur de connexion avec l'Assistant.";
     }
   }
+
+  // =============================================
+  // 🎯 ÉVÉNEMENTS CHAT
+  // =============================================
+  el('chatFullSend')?.addEventListener('click', () => {
+    handleChatSubmit(el('chatFullInput').value, appState.attachments);
+  });
+  el('chatFullInput')?.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') handleChatSubmit(el('chatFullInput').value, appState.attachments);
+  });
+  
+  // =============================================
+  // ⏹️ FONCTION: ARRÊTER IA
+  // =============================================
+  el('stopAIBtn')?.addEventListener('click', () => {
+    console.log('🛑 ARRÊT DEMANDÉ');
+    appState.shouldStopResponse = true;
+  
+    if (window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+    }
+    if (VoiceEngine && VoiceEngine.pauseRecognition) {
+      VoiceEngine.pauseRecognition();
+    }
+    appState.chatInProgress = false;
+  
+    el('chat-loading').style.display = 'none';
+    el('chatFullSend').style.display = 'flex';
+    el('stopAIBtn').style.display = 'none';
+    el('intelliaStatus').textContent = "Assistant: Interrompu";
+  
+    logActivity('⚠️ Réponse IA interrompue par l\'utilisateur');
+  });
+
+  el('close-sidebar-btn')?.addEventListener('click', () => {
+    el('chat-sidebar').classList.remove('open');
+    el('sidebar-overlay').classList.remove('open');
+  });
 
   // =============================================
   // 🔊 FONCTION: SYNTHÈSE VOCALE
@@ -1461,22 +1783,91 @@
   if ('speechSynthesis' in window) window.speechSynthesis.onvoiceschanged = () => { preferredVoice = choosePreferredVoice(); };
 
   function speak(text, isStreaming = false) {
-    if (!appState.voiceNotifications || !text || !('speechSynthesis' in window)) return;
+    if (!appState.voiceNotifications || !text || !('speechSynthesis' in window)) {
+      VoiceEngine.resumeRecognition();
+      return;
+    }
     
     if (appState.shouldStopResponse) {
       window.speechSynthesis.cancel();
+      VoiceEngine.resumeRecognition();
       return;
     }
 
+    VoiceEngine.pauseRecognition();
     window.speechSynthesis.cancel();
     
-    const u = new SpeechSynthesisUtterance(text);
-    u.lang = 'fr-FR';
-    if (!preferredVoice) preferredVoice = choosePreferredVoice();
-    if (preferredVoice) u.voice = preferredVoice;
-    u.rate = 1.1;
-    
-    window.speechSynthesis.speak(u);
+    if (isStreaming) {
+      const sentences = text.match(/[^.!?]+[.!?]+/g) || [text];
+      let currentIndex = 0;
+      
+      function speakNextSentence() {
+        if (appState.shouldStopResponse) {
+          window.speechSynthesis.cancel();
+          VoiceEngine.resumeRecognition();
+          return;
+        }
+              
+        if (currentIndex >= sentences.length) {
+          setTimeout(() => VoiceEngine.resumeRecognition(), 150);
+          return;
+        }
+              
+        const sentence = sentences[currentIndex].trim();
+        if (sentence) {
+          const u = new SpeechSynthesisUtterance(sentence);
+          u.lang = 'fr-FR';
+          if (!preferredVoice) preferredVoice = choosePreferredVoice();
+          if (preferredVoice) u.voice = preferredVoice;
+          u.rate = 1.1;
+          
+          u.onend = () => {
+            currentIndex++;
+            speakNextSentence();
+          };
+          
+          u.onerror = () => {
+            if (appState.shouldStopResponse) {
+              window.speechSynthesis.cancel();
+            }
+          };
+          
+          window.speechSynthesis.speak(u);
+        } else {
+          currentIndex++;
+          speakNextSentence();
+        }
+      }
+      speakNextSentence();
+    } else {
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = 'fr-FR';
+      if (!preferredVoice) preferredVoice = choosePreferredVoice();
+      if (preferredVoice) u.voice = preferredVoice;
+      u.onend = () => {
+        setTimeout(() => VoiceEngine.resumeRecognition(), 150);
+      };
+      window.speechSynthesis.speak(u);
+    }
+  }
+
+  // =============================================
+  // 📋 FONCTION: JOURNAL D'ACTIVITÉ
+  // =============================================
+  function logActivity(message, type = 'info') {
+      const logContainer = el('activityLog');
+      if (!logContainer) return;
+      const time = new Date().toLocaleTimeString();
+      const entry = document.createElement('div');
+      let icon = 'ℹ️';
+      if (type === 'success') icon = '✅';
+      else if (type === 'error') icon = '❌';
+      else if (type === 'warning') icon = '⚠️';
+      entry.innerHTML = `<span style="color:var(--muted)">[${time}]</span> ${icon} ${message}`;
+      logContainer.prepend(entry);
+      if (logContainer.children.length > 50) {
+          logContainer.removeChild(logContainer.lastChild);
+      }
   }
 
   // =============================================
@@ -1489,8 +1880,8 @@
     
     for (const device of appState.devices) {
       const isOn = appState.deviceStates[device.id]?.etat === 'ON';
-      const power = appState.deviceStates[device.id]?.luminosite ?? 0;
-      const deviceType = deviceTypes[device.type] || { name: 'Appareil', icon: 'plug' };
+      const power = appState.deviceStates[device.id]?.luminosite ?? appState.deviceStates[device.id]?.vitesse ?? 0;
+      const deviceType = deviceTypes[device.type] || { name: 'Appareil', hasBrightness: false, icon: 'plug' };
       
       const card = document.createElement('div');
       card.className = 'device-card';
@@ -1502,8 +1893,8 @@
             <div class="device-name">${device.name}</div>
             <div class="device-status">
               <span class="status-indicator ${isOn ? 'active' : ''}"></span>
-              <span>${isOn ? 'Allumé' : 'Éteint'}${device.isVariable ? ` • ${power}%` : ''}</span>
-              <small style="display:block;margin-top:4px">${device.room || 'Non spécifié'} • ${device.isVariable ? 'Variable' : 'Fixe'}</small>
+              <span>${isOn ? 'Allumé' : 'Éteint'}${deviceType.hasBrightness ? ` • ${power}%` : ''}</span>
+              <small style="display:block;margin-top:4px">${device.room || 'Non spécifié'}</small>
             </div>
           </div>
         </div>
@@ -1514,7 +1905,7 @@
               <span class="slider-3d"></span></label>
             </label>
           </div>
-          ${device.isVariable ? `<div style="flex:1">
+          ${deviceType.hasBrightness ? `<div style="flex:1">
             <label>Puissance : <span id="${device.id}-value">${power}%</span></label>
             <input id="${device.id}-slider" type="range" min="0" max="100" value="${power}" oninput="adjustBrightness('${device.id}', this.value)"/>
           </div>` : ''}
@@ -1526,13 +1917,9 @@
         </div>`;
       grid.appendChild(card);
     }
+    populatePlanDeviceSelect();
     updateCount();
   }
-
- // =============================================
-  // 📂 SUITE COMPLÈTE DU CODE JAVASCRIPT
-  // Vient APRÈS renderDevices()
-  // =============================================
 
   // =============================================
   // ⚙️ FONCTION: GESTION APPAREILS
@@ -1550,10 +1937,6 @@
   };
 
   window.sendCommand = (deviceId, action, value = null) => {
-    const device = appState.devices.find(d => d.id === deviceId);
-    if (!device) return;
-    
-    const deviceType = deviceTypes[device.type] || { hasBrightness: false };
     const val = (value !== null) ? parseInt(value) : (action === "ON" ? 100 : 0);
     
     if (appState.isLocalConnected && appState.localWebSocket && appState.localWebSocket.readyState === 1) {
@@ -1565,46 +1948,32 @@
         value: val
       }));
       
-      const newState = { etat: action };
-      if (deviceType.hasBrightness) newState.luminosite = val;
-      appState.deviceStates[deviceId] = newState;
+      appState.deviceStates[deviceId] = { etat: action, luminosite: val };
       renderDevices();
       
     } else {
       logActivity(`☁️ [Firebase] Envoi: ${deviceId} → ${action} (${val}%)`);
       writeDeviceStateToBackend(deviceId, action, val);
       
-      const newState = { etat: action };
-      if (deviceType.hasBrightness) newState.luminosite = val;
-      appState.deviceStates[deviceId] = newState;
+      appState.deviceStates[deviceId] = { etat: action, luminosite: val };
       renderDevices();
     }
   };
 
   async function writeDeviceStateToBackend(deviceId, etat, value = null) {
-    const device = appState.devices.find(d => d.id === deviceId);
-    const deviceType = deviceTypes[device?.type] || { hasBrightness: false };
-    
     const payload = { etat };
-    if (deviceType.hasBrightness && value !== null) {
-      payload.luminosite = parseInt(value, 10);
-    }
-    
+    if (value !== null) payload.luminosite = parseInt(value, 10);
     if (!db) { 
       appState.deviceStates[deviceId] = payload; 
       renderDevices(); 
       return; 
     }
-    
-    const { set, ref } = window.firebaseModules;
     await set(ref(db, `${devicesRefPath}/${deviceId}`), payload);
   }
 
   window.deleteDevicePrompt = async function(id) {
     if (!confirm(`Supprimer l'appareil ${id} ?`)) return;
-    
     if (db) {
-      const { set, ref } = window.firebaseModules;
       await set(ref(db, `${metaRefPath}/${id}`), null); 
       await set(ref(db, `${devicesRefPath}/${id}`), null);
     } else {
@@ -1613,7 +1982,7 @@
       saveDevicesToLocalStorage();
       renderDevices();
     }
-    logActivity(`🗑️ Appareil supprimé: ${id}`);
+    logActivity(`Appareil supprimé: ${id}`);
   };
 
   // =============================================
@@ -1622,20 +1991,14 @@
   function populatePlanDeviceSelect() {
     const sel = el('plan-device');
     if (!sel) return;
-    sel.innerHTML = appState.devices.map(d => `<option value="${d.id}">${d.name} (${d.room || 'Non spécifié'})</option>`).join('');
+    sel.innerHTML = appState.devices.map(d => `<option value="${d.id}">${d.name} (${d.room})</option>`).join('');
   }
 
   function togglePlanOptions() {
-    const freq = el('plan-frequency')?.value;
-    if (!freq) return;
+    const freq = el('plan-frequency').value;
+    el('opt-date').style.display = (freq === 'once') ? 'block' : 'none';
     
-    const optDate = el('opt-date');
-    
-    if (optDate) {
-      optDate.style.display = (freq === 'once') ? 'block' : 'none';
-    }
-    
-    if (freq === 'once' && el('plan-date') && !el('plan-date').value) {
+    if (freq === 'once' && !el('plan-date').value) {
       el('plan-date').valueAsDate = new Date();
     }
   }
@@ -1644,18 +2007,15 @@
   setTimeout(togglePlanOptions, 500);
 
   el('addPlan')?.addEventListener('click', async () => {
-    const device = el('plan-device')?.value;
-    const time = el('plan-time')?.value;
-    const action = el('plan-action')?.value;
-    const freq = el('plan-frequency')?.value;
-    let power = el('plan-power')?.value;
+    const device = el('plan-device').value;
+    const time = el('plan-time').value;
+    const action = el('plan-action').value;
+    const freq = el('plan-frequency').value;
+    let power = el('plan-power').value;
     
     if (!device || !time) return alert('⚠️ Appareil et heure requis');
     
-    const deviceObj = appState.devices.find(d => d.id === device);
-    const deviceType = deviceTypes[deviceObj?.type] || { hasBrightness: false };
-    const hasBrightness = deviceType.hasBrightness;
-    
+    const hasBrightness = appState.devices.find(d => d.id === device)?.hasBrightness ?? true;
     power = hasBrightness ? (power || (action === "ON" ? 100 : 0)) : null;
     
     const payload = {
@@ -1669,13 +2029,12 @@
     };
     
     if (freq === 'once') {
-      const dateValue = el('plan-date')?.value;
+      const dateValue = el('plan-date').value;
       if (!dateValue) return alert('⚠️ Veuillez sélectionner une date');
       payload.targetDate = dateValue;
     }
     
     if (db) {
-      const { push, ref } = window.firebaseModules;
       await push(ref(db, planningRefPath), payload);
     } else {
       appState.plans.push(payload);
@@ -1686,8 +2045,8 @@
     logActivity(`✅ Plan ajouté: ${device} à ${time} (${freq})`);
     alert('✅ Planification ajoutée avec succès !');
     
-    if (el('plan-time')) el('plan-time').value = '';
-    if (el('plan-date')) el('plan-date').value = '';
+    el('plan-time').value = '';
+    el('plan-date').value = '';
   });
 
   function renderPlanningListUI(plans) {
@@ -1715,8 +2074,6 @@
           
           if (freq === 'daily') {
             whenText += ' <span class="chip">📅 Quotidien</span>';
-          } else if (freq === 'weekly') {
-            whenText += ' <span class="chip">📅 Hebdomadaire</span>';
           } else if (freq === 'monthly') {
             whenText += ' <span class="chip">📅 Mensuel</span>';
           } else if (freq === 'once' && p.targetDate) {
@@ -1746,7 +2103,6 @@
   window.deletePlan = async (planId) => {
     if (!confirm('🗑️ Supprimer cette planification ?')) return;
     if (db) { 
-      const { remove, ref } = window.firebaseModules;
       await remove(ref(db, `${planningRefPath}/${planId}`)); 
     } else {
       appState.plans = appState.plans.filter(p => (p.firebaseId || p.createdAt) != planId);
@@ -1758,18 +2114,11 @@
 
   const deleteAllPlans = async () => {
     if (!confirm('🗑️ Supprimer TOUTES les planifications ?')) return;
-    if (db) {
-      const { set, ref } = window.firebaseModules;
-      await set(ref(db, planningRefPath), null);
-    } else { 
-      appState.plans = []; 
-      savePlansToLocalStorage(); 
-      renderPlanningListUI([]); 
-    }
+    if (db) await set(ref(db, planningRefPath), null);
+    else { appState.plans = []; savePlansToLocalStorage(); renderPlanningListUI([]); }
     logActivity(`🗑️ Toutes les planifications supprimées.`);
     speak('Toutes les planifications ont été supprimées.');
   };
-  
   el('clearAllPlans')?.addEventListener('click', deleteAllPlans);
 
   // =============================================
@@ -1780,7 +2129,6 @@
     
     for (const plan of oneTimePlans) {
       if (db) {
-        const { remove, ref } = window.firebaseModules;
         await remove(ref(db, `${planningRefPath}/${plan.firebaseId}`));
       } else {
         appState.plans = appState.plans.filter(p => p !== plan);
@@ -1794,7 +2142,7 @@
     }
   }
 
-  setInterval(cleanupExecutedPlans, 300000); // Toutes les 5 minutes
+  setInterval(cleanupExecutedPlans, 300000);
 
   function updateCount() {
     const onCount = Object.values(appState.deviceStates).filter(s => s?.etat === 'ON').length;
@@ -1805,30 +2153,9 @@
   // 💾 FONCTION: SAUVEGARDE LOCALE
   // =============================================
   const saveDevicesToLocalStorage = () => localStorage.setItem('sh_devices', JSON.stringify(appState.devices));
-  const loadDevicesFromLocalStorage = () => { 
-    const stored = localStorage.getItem('sh_devices');
-    if (stored) {
-      try {
-        appState.devices = JSON.parse(stored);
-      } catch (e) {
-        console.error('Erreur chargement devices:', e);
-        appState.devices = [];
-      }
-    }
-  };
-  
+  const loadDevicesFromLocalStorage = () => { appState.devices = JSON.parse(localStorage.getItem('sh_devices') || '[]'); };
   const savePlansToLocalStorage = () => localStorage.setItem('sh_plans', JSON.stringify(appState.plans));
-  const loadPlansFromLocalStorage = () => { 
-    const stored = localStorage.getItem('sh_plans');
-    if (stored) {
-      try {
-        appState.plans = JSON.parse(stored);
-      } catch (e) {
-        console.error('Erreur chargement plans:', e);
-        appState.plans = [];
-      }
-    }
-  };
+  const loadPlansFromLocalStorage = () => { appState.plans = JSON.parse(localStorage.getItem('sh_plans') || '[]'); };
 
   // =============================================
   // 🎤 MOTEUR VOIX - VOICE ENGINE
@@ -1841,50 +2168,30 @@
     
     init() {
       if (!("webkitSpeechRecognition" in window || "SpeechRecognition" in window)) {
-        if (el('voicePushToTalk')) el('voicePushToTalk').disabled = true;
-        if (el('voiceContinuous')) el('voiceContinuous').disabled = true;
-        if (el('quickVoiceToggleBtn')) {
-          el('quickVoiceToggleBtn').disabled = true;
-          el('quickVoiceToggleBtn').textContent = 'Voix non supportée';
-        }
-        if (el('voiceStatus')) el('voiceStatus').textContent = 'Voix: Non supportée';
+        el('voicePushToTalk').disabled = true;
+        el('voiceContinuous').disabled = true;
+        el('quickVoiceToggleBtn').disabled = true;
+        el('quickVoiceToggleBtn').textContent = 'Voix non supportée';
+        el('voiceStatus').textContent = 'Voix: Non supportée';
         return;
       }
-      
       this.requestMicrophonePermission();
-      
       const pushBtn = el('voicePushToTalk');
       const continuousBtn = el('voiceContinuous');
       const quickBtn = el('quickVoiceToggleBtn');
       
-      if (pushBtn) {
-        pushBtn.addEventListener('touchstart', (e) => { e.preventDefault(); this.togglePushToTalk(); });
-        pushBtn.addEventListener('click', () => this.togglePushToTalk());
-      }
-      
-      if (continuousBtn) {
-        continuousBtn.addEventListener('touchstart', (e) => { e.preventDefault(); this.toggleContinuousConversation(); });
-        continuousBtn.addEventListener('click', () => this.toggleContinuousConversation());
-      }
-      
-      if (quickBtn) {
-        quickBtn.addEventListener('touchstart', (e) => { e.preventDefault(); this.toggleContinuousConversation(); });
-        quickBtn.addEventListener('click', () => this.toggleContinuousConversation());
-      }
+      pushBtn.addEventListener('touchstart', (e) => { e.preventDefault(); this.togglePushToTalk(); });
+      pushBtn.addEventListener('click', () => this.togglePushToTalk());
+      continuousBtn.addEventListener('touchstart', (e) => { e.preventDefault(); this.toggleContinuousConversation(); });
+      continuousBtn.addEventListener('click', () => this.toggleContinuousConversation());
+      quickBtn.addEventListener('touchstart', (e) => { e.preventDefault(); this.toggleContinuousConversation(); });
+      quickBtn.addEventListener('click', () => this.toggleContinuousConversation());
     },
 
     requestMicrophonePermission() {
-      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-        navigator.mediaDevices.getUserMedia({ audio: true })
-          .then(stream => { 
-            stream.getTracks().forEach(track => track.stop()); 
-            console.log('✅ Permission micro accordée');
-          })
-          .catch(err => { 
-            console.error("Permission micro:", err); 
-            if (el('voiceStatus')) el('voiceStatus').textContent = 'Voix: Permission requise'; 
-          });
-      }
+      navigator.mediaDevices.getUserMedia({ audio: true })
+        .then(stream => { stream.getTracks().forEach(track => track.stop()); })
+        .catch(err => { console.error("Permission micro:", err); el('voiceStatus').textContent = 'Voix: Permission requise'; });
     },
 
     createRecognitionInstance(continuous = false) {
@@ -1919,50 +2226,30 @@
     togglePushToTalk() {
       if (this.isContinuousActive) this.toggleContinuousConversation();
       const btn = el('voicePushToTalk');
-      if (!btn) return;
-      
       if (this.isPushToTalkRecording) {
         this.isPushToTalkRecording = false;
         if (this.recognition) this.recognition.stop();
         btn.classList.remove('pulse');
-        if (el('voiceStatus')) el('voiceStatus').textContent = 'Voix: Traitement...';
+        el('voiceStatus').textContent = 'Voix: Traitement...';
       } else {
         this.isPushToTalkRecording = true;
         this.recognition = this.createRecognitionInstance(false);
         btn.classList.add('pulse');
-        if (el('voiceStatus')) el('voiceStatus').textContent = 'Voix: Enregistrement...';
-        
-        this.recognition.onresult = (e) => { 
-          const transcript = e.results[0][0].transcript;
-          handleVoiceSubmit(transcript); 
-        };
-        
+        el('voiceStatus').textContent = 'Voix: Enregistrement...';
+        this.recognition.onresult = (e) => { handleVoiceSubmit(e.results[0][0].transcript); };
         this.recognition.onend = () => {
           this.isPushToTalkRecording = false;
           btn.classList.remove('pulse');
-          if (el('voiceStatus')) el('voiceStatus').textContent = 'Voix: Inactive';
+          el('voiceStatus').textContent = 'Voix: Inactive';
           this.recognition = null;
         };
-        
-        this.recognition.onerror = (e) => {
-          console.error('Voice recognition error:', e.error);
-          this.isPushToTalkRecording = false;
-          btn.classList.remove('pulse');
-          if (el('voiceStatus')) el('voiceStatus').textContent = 'Voix: Erreur';
-        };
-        
-        try {
-          this.recognition.start();
-        } catch (e) {
-          console.error('Erreur démarrage reconnaissance:', e);
-        }
+        this.recognition.start();
       }
     },
 
     toggleContinuousConversation() {
       this.isContinuousActive = !this.isContinuousActive;
       this.updateContinuousUI();
-      
       if (this.isContinuousActive) { 
         if (this.isPushToTalkRecording) this.togglePushToTalk();
         this.startContinuousLoop(); 
@@ -1973,49 +2260,28 @@
 
     startContinuousLoop() {
       if (!this.isContinuousActive || this.isPausedForSpeech) return;
-      
       this.recognition = this.createRecognitionInstance(false);
-      if (el('voiceStatus')) el('voiceStatus').textContent = 'Voix: Écoute...';
-      
-      this.recognition.onresult = (e) => { 
-        const transcript = e.results[0][0].transcript;
-        handleVoiceSubmit(transcript); 
-      };
-      
-      this.recognition.onerror = (e) => { 
-        if (e.error !== 'no-speech' && e.error !== 'aborted') {
-          console.warn('Voice error:', e.error); 
-        }
-      };
-      
+      el('voiceStatus').textContent = 'Voix: Écoute...';
+      this.recognition.onresult = (e) => { handleVoiceSubmit(e.results[0][0].transcript); };
+      this.recognition.onerror = (e) => { if (e.error !== 'no-speech' && e.error !== 'aborted') console.warn('Voice error:', e.error); };
       this.recognition.onend = () => { 
         if (this.isContinuousActive && !this.isPausedForSpeech) {
           setTimeout(() => this.startContinuousLoop(), 100);
         } else {
-          if (el('voiceStatus')) el('voiceStatus').textContent = 'Voix: Inactive';
+          el('voiceStatus').textContent = 'Voix: Inactive';
         }
       };
-      
-      try { 
-        this.recognition.start(); 
-      } catch(e) {
-        console.error('Erreur démarrage continu:', e);
-      }
+      try { this.recognition.start(); } catch(e) {}
     },
 
     stopRecognition() {
-      if (this.recognition) { 
-        try { this.recognition.stop(); } catch(e) {} 
-      }
+      if (this.recognition) { try { this.recognition.stop(); } catch(e) {} }
       this.recognition = null;
       this.isPushToTalkRecording = false;
       this.isContinuousActive = false;
-      
-      const pushBtn = el('voicePushToTalk');
-      if (pushBtn) pushBtn.classList.remove('pulse');
-      
+      el('voicePushToTalk').classList.remove('pulse');
       this.updateContinuousUI();
-      if (el('voiceStatus')) el('voiceStatus').textContent = 'Voix: Inactive';
+      el('voiceStatus').textContent = 'Voix: Inactive';
     },
 
     pauseRecognition() {
@@ -2025,7 +2291,7 @@
           this.recognition.onend = null;
           try { this.recognition.stop(); } catch(e){}
         }
-        if (el('voiceStatus')) el('voiceStatus').textContent = 'Voix: En pause';
+        el('voiceStatus').textContent = 'Voix: En pause';
       }
     },
 
@@ -2038,669 +2304,560 @@
   };
 
   // =============================================
-  // 🔧 FIREBASE - INITIALISATION COMPLÈTE
+  // 📧 FIREBASE - CHAT MULTI-SESSIONS
   // =============================================
   let db = null;
   let auth = null;
   
-  const metaRefPath = "devicesMeta";
-  const devicesRefPath = "devices";
-  const planningRefPath = "planning";
-  const userChatsRefPath = "userChats";
+  try {
+    const { initializeApp } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js");
+    const { getDatabase, ref, set, push, onValue, remove, get, serverTimestamp } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js");
+    const { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js");
 
-  // Import Firebase
-  (async () => {
+    window.firebaseModules = { initializeApp, getDatabase, ref, set, push, onValue, remove, get, serverTimestamp, getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged };
+  } catch (e) {
+    console.error("Import Firebase erreur:", e);
+  }
+
+  if (window.firebaseModules) {
+    const { initializeApp, getDatabase, ref, set, push, onValue, remove, get, serverTimestamp, getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } = window.firebaseModules;
+
     try {
-      const { initializeApp } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js");
-      const { getDatabase, ref, set, push, onValue, remove, get, serverTimestamp } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js");
-      const { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js");
-
-      window.firebaseModules = { initializeApp, getDatabase, ref, set, push, onValue, remove, get, serverTimestamp, getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged };
-      
       const app = initializeApp(firebaseConfig);
       db = getDatabase(app);
       auth = getAuth(app);
-      
       el('statusFirebase').textContent = 'Firebase : OK';
       el('statusFirebase').style.background = 'rgba(46, 213, 115, 0.3)';
-      
-      // =============================================
-      // 📡 FIREBASE LISTENERS
-      // =============================================
-      onValue(ref(db, metaRefPath), snap => { 
-        const meta = snap.val();
-        if (meta) {
-          appState.devices = Object.entries(meta).map(([id, data]) => ({ id, ...data }));
-          renderDevices(); 
-        }
-      });
-      
+    } catch (e) {
+      db = null;
+      el('statusFirebase').textContent = 'Firebase : Échec';
+      el('statusFirebase').style.background = 'rgba(231, 76, 60, 0.3)';
+      console.error("Erreur Firebase:", e);
+    }
+
+    const metaRefPath = "devicesMeta";
+    const devicesRefPath = "devices";
+    const planningRefPath = "planning";
+    const userChatsRefPath = "userChats";
+
+    if (db) {
+      onValue(ref(db, metaRefPath), snap => { appState.devices = Object.values(snap.val() || {}); renderDevices(); });
       onValue(ref(db, devicesRefPath), snap => { 
         appState.deviceStates = snap.val() || {}; 
         renderDevices(); 
         logActivity('☁️ États Firebase synchronisés.');
       });
-      
       onValue(ref(db, planningRefPath), snap => { 
         const plansObj = snap.val() || {};
         appState.plans = Object.entries(plansObj).map(([id, p]) => ({ ...p, firebaseId: id }));
         renderPlanningListUI(appState.plans);
       });
-
-      // =============================================
-      // 🧩 FONCTION: GESTION PLANNING & EXÉCUTION
-      // =============================================
-      window.handlePlanningCommands = async function(commands) {
-        for (const cmd of commands) {
-          if (cmd.action === 'add') {
-            const p = { 
-              device: cmd.device, 
-              time: cmd.time, 
-              action: cmd.deviceAction || 'ON', 
-              power: cmd.power || 100,
-              frequency: cmd.frequency || 'once',
-              createdAt: Date.now(),
-              executed: false
-            };
-            if (cmd.targetDate) p.targetDate = cmd.targetDate;
-            await push(ref(db, planningRefPath), p);
-          } else if (cmd.action === 'delete_all') {
-            await deleteAllPlans();
-          }
-        }
-      };
-      
-      window.handleExecuteCommands = function(commands) {
-        const cmdArray = Array.isArray(commands) ? commands : [commands];
-        for (const exec of cmdArray) {
-          const parts = exec.split('|');
-          const devId = parts[0];
-          const action = parts[1];
-          const value = parts[2] ? parseInt(parts[2]) : null;
-          
-          if (appState.devices.some(d => d.id === devId)) {
-            sendCommand(devId, action, value);
-          }
-        }
-      };
-      
-      window.displaySuggestions = function(suggestions) {
-        const container = el('proactive-suggestion');
-        if (!container || !suggestions || suggestions.length === 0) return;
-        container.textContent = suggestions[0].message || suggestions[0];
-      };
-
-      // =============================================
-      // 💬 FIREBASE: CHAT MULTI-SESSIONS
-      // =============================================
-      function getChatHistoryRef(userId, sessionId = null) {
-        let path = `${userChatsRefPath}/${userId}`;
-        if (sessionId) path += `/${sessionId}`;
-        return ref(db, path);
-      }
-
-      async function loadChatHistorySidebar() {
-        if (!appState.currentUser || !db) return;
-        const historyList = el('chat-history-list');
-        if (!historyList) return;
-        
-        historyList.innerHTML = '<div style="text-align:center; padding:10px; color:var(--muted);"><i class="fas fa-spinner fa-spin"></i></div>';
-        
-        try {
-          const sessionsRef = getChatHistoryRef(appState.currentUser.uid);
-          const snapshot = await get(sessionsRef);
-          
-          historyList.innerHTML = '';
-          
-          if (snapshot.exists()) {
-            const sessions = snapshot.val();
-            const sortedSessions = Object.keys(sessions).sort((a, b) => {
-              return (sessions[b].lastUpdated || 0) - (sessions[a].lastUpdated || 0);
-            });
-            
-            sortedSessions.forEach(sessionId => {
-              const session = sessions[sessionId];
-              const title = session.title || `Chat du ${new Date(session.createdAt || Date.now()).toLocaleDateString()}`;
-              
-              const item = document.createElement('div');
-              item.className = 'chat-history-item';
-              item.dataset.sessionId = sessionId;
-
-              const titleSpan = document.createElement('span');
-              titleSpan.textContent = title;
-              titleSpan.className = 'chat-history-item-title';
-              titleSpan.onclick = () => loadChatSession(sessionId);
-              
-              const deleteBtn = document.createElement('button');
-              deleteBtn.innerHTML = '<i class="fas fa-trash"></i>';
-              deleteBtn.className = 'btn chat-history-delete';
-              deleteBtn.title = "Supprimer la discussion";
-              deleteBtn.onclick = (e) => {
-                e.stopPropagation();
-                deleteChatSession(sessionId, item);
-              };
-
-              item.appendChild(titleSpan);
-              item.appendChild(deleteBtn);
-              historyList.appendChild(item);
-            });
-          } else {
-            historyList.innerHTML = '<p style="text-align:center; padding:20px; color:var(--muted); font-size:13px;">Aucune discussion</p>';
-          }
-        } catch (error) {
-          console.error('Erreur chargement historique:', error);
-          historyList.innerHTML = '<p style="text-align:center; padding:20px; color:var(--danger);">Erreur de chargement</p>';
-        }
-      }
-
-      function createNewChatSession() {
-        const newSessionId = `chat_${Date.now()}`;
-        appState.currentSessionId = newSessionId;
-        
-        const chatWindow = el('chatFullWindow');
-        if (chatWindow) chatWindow.innerHTML = '';
-        
-        appendChat('bot', '### 👋 Bienvenue !\n\nJe suis prêt pour notre nouvelle discussion.');
-        
-        setTimeout(() => {
-          document.querySelectorAll('.chat-history-item').forEach(i => i.classList.remove('active'));
-        }, 100);
-      }
-
-      el('new-chat-btn')?.addEventListener('click', createNewChatSession);
-
-      async function deleteChatSession(sessionId, itemElement) {
-        if (!appState.currentUser || !db) return;
-        if (!confirm("Voulez-vous vraiment supprimer cette discussion ?")) return;
-
-        try {
-          const sessionRef = getChatHistoryRef(appState.currentUser.uid, sessionId);
-          await set(sessionRef, null);
-          if (itemElement) itemElement.remove();
-          
-          if (appState.currentSessionId === sessionId) {
-            createNewChatSession();
-          }
-          logActivity(`🗑️ Discussion ${sessionId} supprimée.`);
-        } catch (error) {
-          console.error("Erreur suppression chat:", error);
-          logActivity("❌ Erreur de suppression du chat.", 'error');
-        }
-      }
-
-      async function loadChatSession(sessionId) {
-        if (!appState.currentUser || !db) return;
-        appState.currentSessionId = sessionId;
-        
-        const chatWindow = el('chatFullWindow');
-        if (!chatWindow) return;
-        
-        chatWindow.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--muted);"><i class="fas fa-spinner fa-spin"></i> Chargement...</div>';
-        
-        try {
-          const messagesRef = ref(db, `${userChatsRefPath}/${appState.currentUser.uid}/${sessionId}/messages`);
-          const snapshot = await get(messagesRef);
-          
-          chatWindow.innerHTML = '';
-          
-          if (snapshot.exists()) {
-            const messages = snapshot.val();
-            const sortedMessages = Object.values(messages).sort((a, b) => a.timestamp - b.timestamp);
-            
-            sortedMessages.forEach(msg => {
-              const attachmentsMeta = msg.attachments || [];
-              appendChat('user', msg.user, false, attachmentsMeta);
-              appendChat('bot', msg.bot, false);
-            });
-            
-            setTimeout(() => {
-              chatWindow.scrollTop = chatWindow.scrollHeight;
-            }, 100);
-            
-          } else {
-            appendChat('bot', 'C\'est le début de notre conversation.');
-          }
-          
-          document.querySelectorAll('.chat-history-item').forEach(i => i.classList.remove('active'));
-          const activeItem = document.querySelector(`.chat-history-item[data-session-id="${sessionId}"]`);
-          if (activeItem) activeItem.classList.add('active');
-          
-          const sidebar = el('chat-sidebar');
-          const overlay = el('sidebar-overlay');
-          if (sidebar) sidebar.classList.remove('open');
-          if (overlay) overlay.classList.remove('open');
-          
-        } catch (error) {
-          console.error("Erreur chargement chat:", error);
-          chatWindow.innerHTML = '<div class="card" style="text-align: center; color: var(--danger);"><i class="fas fa-exclamation-triangle"></i> Erreur de chargement</div>';
-        }
-      }
-
-      async function saveMessageToFirebase(userMsg, botMsg, attachments) {
-        if (!appState.currentUser || !db || !appState.currentSessionId) return;
-
-        const sessionRef = ref(db, `${userChatsRefPath}/${appState.currentUser.uid}/${appState.currentSessionId}`);
-        const sessionSnapshot = await get(sessionRef);
-        
-        const isNewSession = !sessionSnapshot.exists();
-        
-        if (isNewSession) {
-          let newTitle = userMsg;
-          if (!newTitle && attachments.length > 0) {
-            newTitle = `📎 ${attachments[0].name}`;
-          }
-          if (!newTitle) newTitle = "Nouvelle discussion";
-          newTitle = newTitle.substring(0, 30) + (newTitle.length > 30 ? '...' : '');
-          
-          await set(sessionRef, {
-            title: newTitle,
-            createdAt: serverTimestamp(),
-            lastUpdated: serverTimestamp()
-          });
-        }
-
-        const messagesRef = ref(db, `${userChatsRefPath}/${appState.currentUser.uid}/${appState.currentSessionId}/messages`);
-        const attachmentsMeta = attachments.map(att => ({
-          name: att.name,
-          type: att.type
-        }));
-
-        await push(messagesRef, {
-          user: userMsg,
-          bot: botMsg,
-          attachments: attachmentsMeta,
-          timestamp: serverTimestamp()
-        });
-
-        await set(ref(db, `${userChatsRefPath}/${appState.currentUser.uid}/${appState.currentSessionId}/lastUpdated`), serverTimestamp());
-        
-        if (isNewSession) {
-          loadChatHistorySidebar();
-          setTimeout(() => {
-            document.querySelectorAll('.chat-history-item').forEach(i => i.classList.remove('active'));
-            const item = document.querySelector(`.chat-history-item[data-session-id="${appState.currentSessionId}"]`);
-            if (item) item.classList.add('active');
-          }, 200);
-        }
-      }
-
-      // =============================================
-      // 📎 GESTION PIÈCES JOINTES
-      // =============================================
-      el('attach-file-btn')?.addEventListener('click', () => {
-        el('file-input')?.click();
-      });
-
-      el('file-input')?.addEventListener('change', (event) => {
-        const files = event.target.files;
-        if (!files) return;
-        
-        for (const file of files) {
-          if (appState.attachments.length >= 15) {
-            alert("Maximum 15 fichiers."); 
-            break;
-          }
-          
-          const reader = new FileReader();
-          reader.onload = (e) => {
-            const dataUrl = e.target.result;
-            appState.attachments.push({
-              name: file.name,
-              type: file.type.startsWith('image/') ? 'image' : 'file',
-              data: dataUrl
-            });
-            renderAttachmentPreviews();
-          };
-          
-          if (file.type.startsWith('image/')) {
-            reader.readAsDataURL(file);
-          } else {
-            reader.readAsDataURL(file);
-          }
-        }
-        event.target.value = '';
-      });
-
-      function renderAttachmentPreviews() {
-        const container = el('attachment-preview-container');
-        if (!container) return;
-        
-        container.innerHTML = '';
-        
-        appState.attachments.forEach((att, index) => {
-          const preview = document.createElement('div');
-          preview.className = 'attachment-preview';
-          
-          if (att.type === 'image') {
-            preview.innerHTML = `
-              <img src="${att.data}" alt="${att.name}">
-              <span>${att.name}</span>
-              <i class="fas fa-times remove-attachment" onclick="removeAttachment(${index})"></i>
-            `;
-          } else {
-            let iconClass = 'fa-file';
-            let iconColor = '#6c757d';
-            
-            const fileName = att.name.toLowerCase();
-            if (fileName.endsWith('.pdf')) { iconClass = 'fa-file-pdf'; iconColor = '#dc3545'; }
-            else if (fileName.endsWith('.docx') || fileName.endsWith('.doc')) { iconClass = 'fa-file-word'; iconColor = '#2b579a'; }
-            else if (fileName.endsWith('.xlsx') || fileName.endsWith('.xls')) { iconClass = 'fa-file-excel'; iconColor = '#217346'; }
-            else if (fileName.endsWith('.txt')) { iconClass = 'fa-file-alt'; }
-            else if (fileName.endsWith('.html') || fileName.endsWith('.htm')) { iconClass = 'fa-file-code'; iconColor = '#f06529'; }
-            else if (fileName.endsWith('.js')) { iconClass = 'fa-file-code'; iconColor = '#f7df1e'; }
-            else if (fileName.endsWith('.json')) { iconClass = 'fa-file-code'; iconColor = '#5a5a5a'; }
-            else if (fileName.endsWith('.css')) { iconClass = 'fa-file-code'; iconColor = '#264de4'; }
-            
-            preview.innerHTML = `
-              <i class="fas ${iconClass}" style="color: ${iconColor};"></i>
-              <span>${att.name}</span>
-              <i class="fas fa-times remove-attachment" onclick="removeAttachment(${index})"></i>
-            `;
-          }
-          
-          container.appendChild(preview);
-        });
-      }
-
-      window.removeAttachment = function(index) {
-        appState.attachments.splice(index, 1);
-        renderAttachmentPreviews();
-      };
-
-      // =============================================
-      // 🔐 AUTHENTIFICATION GOOGLE
-      // =============================================
-      const provider = new GoogleAuthProvider();
-      
-      onAuthStateChanged(auth, async (user) => {
-        if (user) {
-          appState.currentUser = user;
-          
-          el('user-name-display').textContent = user.displayName || 'Utilisateur';
-          el('user-email-display').textContent = user.email || '';
-          
-          const photoURL = user.photoURL || defaultAvatar;
-          el('user-photo').src = photoURL;
-          
-          el('login-overlay').style.display = 'none';
-          const mainApp = document.querySelector('.main-app');
-          if (mainApp) mainApp.style.display = 'flex';
-          
-          await loadChatHistorySidebar();
-          createNewChatSession();
-          
-          logActivity(`✅ Connecté: ${user.displayName}`);
-        } else {
-          appState.currentUser = null;
-          el('login-overlay').style.display = 'flex';
-          const mainApp = document.querySelector('.main-app');
-          if (mainApp) mainApp.style.display = 'none';
-        }
-      });
-
-      el('googleSignInOverlayBtn')?.addEventListener('click', () => {
-        signInWithPopup(auth, provider).catch(error => {
-          console.error("Erreur Google Sign-In:", error);
-          alert("Erreur de connexion. Veuillez réessayer.");
-        });
-      });
-
-      el('signOutBtn')?.addEventListener('click', () => {
-        if (confirm('Voulez-vous vraiment vous déconnecter ?')) {
-          signOut(auth);
-          logActivity('👋 Déconnexion réussie');
-        }
-      });
-
-      // =============================================
-      // 🌐 WEBSOCKET LOCAL (ESP32)
-      // =============================================
-      el('btnConnectLocal')?.addEventListener('click', () => {
-        const ip = el('esp32IpInput')?.value.trim();
-        if (!ip) return alert('⚠️ Veuillez entrer une adresse IP');
-        localStorage.setItem('esp32Ip', ip);
-        appState.esp32Ip = ip;
-        connectLocalWebSocket();
-        logActivity(`⚡ Tentative connexion WebSocket: ws://${ip}`);
-      });
-
-      function connectLocalWebSocket() {
-        if (appState.localWebSocket) {
-          appState.localWebSocket.close();
-        }
-        
-        if (!appState.esp32Ip) {
-          el('statusLocal').textContent = 'ESP32: Pas d\'IP';
-          return;
-        }
-
-        try {
-          appState.localWebSocket = new WebSocket(`ws://${appState.esp32Ip}/ws`);
-          
-          appState.localWebSocket.onopen = () => {
-            appState.isLocalConnected = true;
-            el('statusLocal').textContent = 'ESP32: 🟢 Connecté';
-            el('statusLocal').style.background = 'rgba(46, 213, 115, 0.3)';
-            logActivity('✅ WebSocket connecté', 'success');
-            speak('Connexion locale établie');
-          };
-
-          appState.localWebSocket.onmessage = (event) => {
-            try {
-              const data = JSON.parse(event.data);
-              if (data.device_id && data.etat) {
-                const deviceObj = appState.devices.find(d => d.id === data.device_id);
-                const deviceType = deviceTypes[deviceObj?.type] || { hasBrightness: false };
-                
-                const newState = { etat: data.etat };
-                if (deviceType.hasBrightness && data.luminosite !== undefined) {
-                  newState.luminosite = data.luminosite;
-                }
-                
-                appState.deviceStates[data.device_id] = newState;
-                renderDevices();
-                logActivity(`⚡[WS] Reçu: ${data.device_id} → ${data.etat}`);
-              }
-            } catch (e) {
-              console.warn('WS message parse error', e);
-            }
-          };
-
-          appState.localWebSocket.onerror = (error) => {
-            console.error('WebSocket error', error);
-            appState.isLocalConnected = false;
-            el('statusLocal').textContent = 'ESP32: ❌ Erreur';
-            el('statusLocal').style.background = 'rgba(231, 76, 60, 0.3)';
-            logActivity('❌ Erreur WebSocket', 'error');
-          };
-
-          appState.localWebSocket.onclose = () => {
-            appState.isLocalConnected = false;
-            el('statusLocal').textContent = 'ESP32: 🔴 Déconnecté';
-            el('statusLocal').style.background = 'rgba(231, 76, 60, 0.3)';
-            logActivity('⚠️ WebSocket déconnecté', 'warning');
-            
-            setTimeout(() => {
-              if (!appState.isLocalConnected && appState.esp32Ip) {
-                connectLocalWebSocket();
-              }
-            }, 5000);
-          };
-          
-        } catch (error) {
-          console.error('WebSocket connection error:', error);
-          appState.isLocalConnected = false;
-          el('statusLocal').textContent = 'ESP32: ❌ Erreur';
-        }
-      }
-
-      // =============================================
-      // 🎨 MODE SOMBRE
-      // =============================================
-      el('darkModeToggle')?.addEventListener('change', (e) => {
-        appState.isNightMode = e.target.checked;
-        localStorage.setItem('nightMode', appState.isNightMode);
-        document.body.classList.toggle('night-mode', appState.isNightMode);
-        logActivity(`🌙 Mode ${appState.isNightMode ? 'sombre' : 'clair'} activé`);
-      });
-
-      if (appState.isNightMode) {
-        document.body.classList.add('night-mode');
-        const darkToggle = el('darkModeToggle');
-        if (darkToggle) darkToggle.checked = true;
-      }
-
-      // =============================================
-      // 🔊 TOGGLE SYNTHÈSE VOCALE
-      // =============================================
-      el('toggleVoiceBtn')?.addEventListener('click', () => {
-        appState.voiceNotifications = !appState.voiceNotifications;
-        localStorage.setItem('voiceNotifications', appState.voiceNotifications);
-        const btn = el('toggleVoiceBtn');
-        
-        if (appState.voiceNotifications) {
-          btn.classList.add('primary');
-          btn.innerHTML = '<i class="fas fa-volume-up"></i>';
-          logActivity('🔊 Synthèse vocale activée');
-          speak('Synthèse vocale activée');
-        } else {
-          btn.classList.remove('primary');
-          btn.innerHTML = '<i class="fas fa-volume-mute"></i>';
-          logActivity('🔇 Synthèse vocale désactivée');
-        }
-      });
-
-      // =============================================
-      // 🏠 CONTRÔLES RAPIDES
-      // =============================================
-      el('dayModeBtn')?.addEventListener('click', () => {
-        appState.devices.forEach(d => sendCommand(d.id, 'OFF'));
-        logActivity('☀️ Mode jour activé - Tous les appareils éteints');
-        speak('Mode jour activé');
-      });
-
-      el('nightModeBtn')?.addEventListener('click', () => {
-        appState.devices.filter(d => d.type === 'lamp').forEach(d => sendCommand(d.id, 'ON', 30));
-        logActivity('🌙 Mode nuit activé - Lumières tamisées');
-        speak('Mode nuit activé');
-      });
-
-      el('allOnBtn')?.addEventListener('click', () => {
-        appState.devices.forEach(d => sendCommand(d.id, 'ON', 100));
-        logActivity('✅ Tous les appareils allumés');
-        speak('Tous les appareils sont maintenant allumés');
-      });
-
-      el('allOffBtn')?.addEventListener('click', () => {
-        appState.devices.forEach(d => sendCommand(d.id, 'OFF'));
-        logActivity('❌ Tous les appareils éteints');
-        speak('Tous les appareils sont maintenant éteints');
-      });
-
-      // =============================================
-      // 🔀 NAVIGATION ENTRE SECTIONS
-      // =============================================
-      document.querySelectorAll('.btn-nav').forEach(btn => {
-        btn.addEventListener('click', function() {
-          const target = this.getAttribute('data-target');
-          
-          document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-          const targetSection = document.getElementById(target);
-          if (targetSection) targetSection.classList.add('active');
-          
-          document.querySelectorAll('.btn-nav').forEach(b => b.classList.remove('active'));
-          this.classList.add('active');
-          
-          const titles = {
-            'sec-domotique': 'Domotique',
-            'sec-intelligence': 'Assistant Intelligent',
-            'sec-planning': 'Planification',
-            'sec-params': 'Paramètres'
-          };
-          const headerTitle = el('section-header-title');
-          if (headerTitle) headerTitle.textContent = titles[target] || 'SmartHome';
-        });
-      });
-
-      // =============================================
-      // 📱 SIDEBAR MOBILE
-      // =============================================
-      el('sidebar-toggle-btn')?.addEventListener('click', () => {
-        const sidebar = el('chat-sidebar');
-        const overlay = el('sidebar-overlay');
-        if (sidebar) sidebar.classList.add('open');
-        if (overlay) overlay.classList.add('open');
-      });
-
-      el('sidebar-overlay')?.addEventListener('click', () => {
-        const sidebar = el('chat-sidebar');
-        const overlay = el('sidebar-overlay');
-        if (sidebar) sidebar.classList.remove('open');
-        if (overlay) overlay.classList.remove('open');
-      });
-
-      // =============================================
-      // 💡 SUGGESTIONS PROACTIVES
-      // =============================================
-      setInterval(() => {
-        if (appState.intelliaOnline) {
-          const suggestionEl = el('proactive-suggestion');
-          if (suggestionEl) {
-            suggestionEl.textContent = proactiveSuggestions[suggestionIndex];
-            suggestionIndex = (suggestionIndex + 1) % proactiveSuggestions.length;
-          }
-        }
-      }, 20000);
-
-      // =============================================
-      // 🚀 INITIALISATION FINALE
-      // =============================================
-      if (appState.esp32Ip) {
-        const ipInput = el('esp32IpInput');
-        if (ipInput) ipInput.value = appState.esp32Ip;
-        setTimeout(connectLocalWebSocket, 2000);
-      }
-
-      VoiceEngine.init();
-      
-      setTimeout(() => {
-        const firstSuggestion = proactiveSuggestions[0];
-        const suggestionEl = el('proactive-suggestion');
-        if (suggestionEl) suggestionEl.textContent = firstSuggestion;
-      }, 1000);
-
-      logActivity('🚀 SmartHome Intelligence v13 démarré', 'success');
-      console.log('%c🚀 SmartHome Intelligence v13.0 - PRÊT', 'color: #4361ee; font-size: 20px; font-weight: bold;');
-      
-    } catch (e) {
-      console.error("Erreur Firebase:", e);
-      db = null;
-      el('statusFirebase').textContent = 'Firebase : Échec';
-      el('statusFirebase').style.background = 'rgba(231, 76, 60, 0.3)';
-      
+    } else {
       loadDevicesFromLocalStorage();
       loadPlansFromLocalStorage();
       renderDevices();
       renderPlanningListUI(appState.plans);
-      
-      VoiceEngine.init();
-      logActivity('⚠️ Mode local activé (Firebase indisponible)', 'warning');
     }
-  })();
 
-  // =============================================
-  // 🔄 GESTION DES ERREURS GLOBALES
-  // =============================================
-  window.addEventListener('error', (event) => {
-    console.error('❌ Erreur globale:', event.error);
-    logActivity('❌ Erreur technique détectée', 'error');
+    // =============================================
+    // 🧩 FONCTION: GESTION PLANNING & EXÉCUTION
+    // =============================================
+    async function handlePlanningCommands(commands) {
+      for (const cmd of commands) {
+        if (cmd.action === 'add') {
+          const p = { device: cmd.device, time: cmd.time, action: cmd.action, power: cmd.power, createdAt: Date.now() };
+          if (db) await push(ref(db, planningRefPath), p);
+        } else if (cmd.action === 'delete_all') {
+          await deleteAllPlans();
+        }
+      }
+    }
+    
+    function handleExecuteCommands(commands) {
+      for (const exec of (Array.isArray(commands) ? commands : [commands])) {
+        const [devId, action, value] = exec.split('|');
+        if (appState.devices.some(d => d.id === devId)) {
+          sendCommand(devId, action, value ? parseInt(value) : null);
+        }
+      }
+    }
+    
+    function displaySuggestions(suggestions) {
+      const container = el('proactive-suggestion');
+      if (!container || !suggestions.length > 0) return;
+      container.textContent = suggestions[0].message;
+    }
+
+    // =============================================
+    // 💬 FIREBASE: CHAT MULTI-SESSIONS
+    // =============================================
+    function getChatHistoryRef(userId, sessionId = null) {
+      let path = `${userChatsRefPath}/${userId}`;
+      if (sessionId) path += `/${sessionId}`;
+      return ref(db, path);
+    }
+
+    async function loadChatHistorySidebar() {
+      if (!appState.currentUser || !db) return;
+      const historyList = el('chat-history-list');
+      historyList.innerHTML = '';
+      const sessionsRef = getChatHistoryRef(appState.currentUser.uid);
+      const snapshot = await get(sessionsRef);
+      if (snapshot.exists()) {
+        const sessions = snapshot.val();
+        const sortedSessions = Object.keys(sessions).sort((a, b) => {
+          return (sessions[b].lastUpdated || 0) - (sessions[a].lastUpdated || 0);
+        });
+        
+        sortedSessions.forEach(sessionId => {
+          const session = sessions[sessionId];
+          const title = session.title || `Chat du ${new Date(session.createdAt || Date.now()).toLocaleDateString()}`;
+          
+          const item = document.createElement('div');
+          item.className = 'chat-history-item';
+          item.dataset.sessionId = sessionId;
+
+          const titleSpan = document.createElement('span');
+          titleSpan.textContent = title;
+          titleSpan.className = 'chat-history-item-title';
+          titleSpan.onclick = () => loadChatSession(sessionId);
+          
+          const deleteBtn = document.createElement('button');
+          deleteBtn.innerHTML = '<i class="fas fa-ellipsis-v"></i>';
+          deleteBtn.className = 'btn chat-history-delete';
+          deleteBtn.title = "Supprimer la discussion";
+          deleteBtn.onclick = (e) => {
+            e.stopPropagation();
+            deleteChatSession(sessionId, item);
+          };
+
+          item.appendChild(titleSpan);
+          item.appendChild(deleteBtn);
+          historyList.appendChild(item);
+        });
+      }
+    }
+
+    function createNewChatSession() {
+      const newSessionId = `chat_${Date.now()}`;
+      appState.currentSessionId = newSessionId;
+      
+      el('chatFullWindow').innerHTML = '';
+      appendChat('bot', '### 👋 Bienvenue !\n\nJe suis prêt pour notre nouvelle discussion.');
+      
+      setTimeout(() => {
+        document.querySelectorAll('.chat-history-item').forEach(i => i.classList.remove('active'));
+      }, 100);
+    }
+
+    el('new-chat-btn').addEventListener('click', createNewChatSession);
+
+    async function deleteChatSession(sessionId, itemElement) {
+      if (!appState.currentUser || !db) return;
+      if (!confirm("Voulez-vous vraiment supprimer cette discussion ?")) return;
+
+      try {
+        const sessionRef = getChatHistoryRef(appState.currentUser.uid, sessionId);
+        await set(sessionRef, null);
+        itemElement.remove();
+        if (appState.currentSessionId === sessionId) {
+          createNewChatSession();
+        }
+        logActivity(`Discussion ${sessionId} supprimée.`);
+      } catch (error) {
+        console.error("Erreur suppression chat:", error);
+        logActivity("Erreur de suppression du chat.");
+      }
+    }
+
+    async function loadChatSession(sessionId) {
+      if (!appState.currentUser || !db) return;
+      appState.currentSessionId = sessionId;
+      const chatWindow = el('chatFullWindow');
+      chatWindow.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--muted);"><i class="fas fa-spinner fa-spin"></i> Chargement...</div>';
+      
+      try {
+        const messagesRef = ref(db, `${userChatsRefPath}/${appState.currentUser.uid}/${sessionId}/messages`);
+        const snapshot = await get(messagesRef);
+        
+        chatWindow.innerHTML = '';
+        
+        if (snapshot.exists()) {
+          const messages = snapshot.val();
+          const sortedMessages = Object.values(messages).sort((a, b) => a.timestamp - b.timestamp);
+          
+          sortedMessages.forEach(msg => {
+            const attachmentsMeta = msg.attachments || [];
+            appendChat('user', msg.user, false, attachmentsMeta);
+            appendChat('bot', msg.bot, false);
+          });
+          
+          setTimeout(() => {
+            el('chatFullWindow').scrollTop = el('chatFullWindow').scrollHeight;
+          }, 100);
+          
+        } else {
+          appendChat('bot', 'C\'est le début de notre conversation.');
+        }
+        
+        document.querySelectorAll('.chat-history-item').forEach(i => i.classList.remove('active'));
+        document.querySelector(`.chat-history-item[data-session-id="${sessionId}"]`)?.classList.add('active');
+        
+        el('chat-sidebar').classList.remove('open');
+        el('sidebar-overlay').classList.remove('open');
+        
+      } catch (error) {
+        console.error("Erreur chargement chat:", error);
+        chatWindow.innerHTML = '<div class="card" style="text-align: center; color: var(--danger);"><i class="fas fa-exclamation-triangle"></i> Erreur de chargement</div>';
+      }
+    }
+
+    async function saveMessageToFirebase(userMsg, botMsg, attachments) {
+      if (!appState.currentUser || !db || !appState.currentSessionId) return;
+
+      const sessionRef = ref(db, `${userChatsRefPath}/${appState.currentUser.uid}/${appState.currentSessionId}`);
+      const sessionSnapshot = await get(sessionRef);
+      
+      const isNewSession = !sessionSnapshot.exists();
+      
+      if (isNewSession) {
+        let newTitle = userMsg;
+        if (!newTitle && attachments.length > 0) {
+          newTitle = `📎 ${attachments[0].name}`;
+        }
+        if (!newTitle) newTitle = "Nouvelle discussion";
+        newTitle = newTitle.substring(0, 30) + (newTitle.length > 30 ? '...' : '');
+        
+        await set(sessionRef, {
+          title: newTitle,
+          createdAt: serverTimestamp(),
+          lastUpdated: serverTimestamp()
+        });
+      }
+
+      const messagesRef = ref(db, `${userChatsRefPath}/${appState.currentUser.uid}/${appState.currentSessionId}/messages`);
+      const attachmentsMeta = attachments.map(att => ({
+        name: att.name,
+        type: att.type
+      }));
+
+      await push(messagesRef, {
+        user: userMsg,
+        bot: botMsg,
+        attachments: attachmentsMeta,
+        timestamp: serverTimestamp()
+      });
+
+      await set(ref(db, `${userChatsRefPath}/${appState.currentUser.uid}/${appState.currentSessionId}/lastUpdated`), serverTimestamp());
+      
+      if (isNewSession) {
+        loadChatHistorySidebar();
+        setTimeout(() => {
+          document.querySelectorAll('.chat-history-item').forEach(i => i.classList.remove('active'));
+          const item = document.querySelector(`.chat-history-item[data-session-id="${appState.currentSessionId}"]`);
+          if (item) item.classList.add('active');
+        }, 200);
+      }
+    }
+
+    
+// ======= Gestion des Pièces Jointes =======
+
+el('attach-file-btn').addEventListener('click', () => {
+  el('file-input').click();
+});
+
+el('file-input').addEventListener('change', (event) => {
+  for (const file of event.target.files) {
+    if (appState.attachments.length >= 12) {
+      alert("Vous ne pouvez joindre que 12 fichiers maximum."); break;
+    }
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const dataUrl = e.target.result;
+      appState.attachments.push({
+        name: file.name,
+        type: file.type.startsWith('image/') ? 'image' : 'file',
+        data: dataUrl
+      });
+      renderAttachmentPreviews();
+    };
+    reader.readAsDataURL(file);
+  }
+  event.target.value = null;
+});
+
+function renderAttachmentPreviews() {
+  const container = el('attachment-preview-container');
+  container.innerHTML = '';
+  appState.attachments.forEach((file, index) => {
+    const preview = document.createElement('div');
+    preview.className = 'attachment-preview';
+    let iconHtml = '';
+    if (file.type === 'image') {
+      iconHtml = `<img src="${file.data}" alt="${file.name}">`;
+    } else {
+      let iconClass = 'fa-file';
+      let iconColor = '#6c757d';
+      const fileName = file.name.toLowerCase();
+
+      if (fileName.endsWith('.pdf')) {
+        iconClass = 'fa-file-pdf'; iconColor = '#dc3545';
+      } else if (fileName.endsWith('.docx') || fileName.endsWith('.doc')) {
+        iconClass = 'fa-file-word'; iconColor = '#2b579a';
+      } else if (fileName.endsWith('.xlsx') || fileName.endsWith('.xls')) {
+        iconClass = 'fa-file-excel'; iconColor = '#217346';
+      } else if (fileName.endsWith('.txt') || fileName.endsWith('.log')) {
+        iconClass = 'fa-file-alt'; iconColor = '#6c757d';
+      } else if (fileName.endsWith('.html') || fileName.endsWith('.htm')) {
+        iconClass = 'fa-file-code'; iconColor = '#f06529';
+      } else if (fileName.endsWith('.js')) {
+        iconClass = 'fa-file-code'; iconColor = '#f7df1e';
+      } else if (fileName.endsWith('.json')) {
+        iconClass = 'fa-file-code'; iconColor = '#5a5a5a';
+      } else if (fileName.endsWith('.css')) {
+        iconClass = 'fa-file-code'; iconColor = '#264de4';
+      }
+      iconHtml = `<i class="fas ${iconClass}" style="font-size: 24px; color: ${iconColor};"></i>`;
+    }
+    preview.innerHTML = `
+      ${iconHtml}
+      <span style="flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${file.name}</span>
+      <i class="fas fa-times-circle remove-attachment" data-index="${index}"></i>
+    `;
+    container.appendChild(preview);
   });
-
-  window.addEventListener('unhandledrejection', (event) => {
-    console.error('❌ Promise rejetée:', event.reason);
-    logActivity('❌ Erreur de promesse détectée', 'error');
+  container.querySelectorAll('.remove-attachment').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const indexToRemove = parseInt(e.target.dataset.index, 10);
+      appState.attachments.splice(indexToRemove, 1);
+      renderAttachmentPreviews();
+    });
   });
+}
 
+// ======= Quick Controls =======
+el('dayModeBtn')?.addEventListener('click', () => { document.body.classList.remove('night-mode'); localStorage.setItem('nightMode', false); });
+el('nightModeBtn')?.addEventListener('click', () => { document.body.classList.add('night-mode'); localStorage.setItem('nightMode', true); });
+el('allOnBtn')?.addEventListener('click', () => appState.devices.forEach(d => sendCommand(d.id, 'ON', 100)));
+el('allOffBtn')?.addEventListener('click', () => appState.devices.forEach(d => sendCommand(d.id, 'OFF', 0)));
+// ======= Settings Management =======
+
+function updateToggleVoiceBtnUI() {
+  const btn = el('toggleVoiceBtn');
+  if (!btn) return;
+  const icon = btn.querySelector('i');
+  if (appState.voiceNotifications) {
+    btn.classList.remove('muted');
+    icon.className = 'fas fa-volume-up';
+    btn.title = "Désactiver la synthèse vocale";
+  } else {
+    btn.classList.add('muted');
+    icon.className = 'fas fa-volume-mute';
+    btn.title = "Activer la synthèse vocale";
+  }
+}
+  
+function setupSettings() {
+  el('darkModeToggle').checked = appState.isNightMode;
+  el('darkModeToggle').addEventListener('change', (e) => {
+    appState.isNightMode = e.target.checked; localStorage.setItem('nightMode', e.target.checked);
+    document.body.classList.toggle('night-mode', e.target.checked);
+  });
+  el('notificationsToggle').checked = appState.notificationsEnabled;
+  el('notificationsToggle').addEventListener('change', (e) => {
+      appState.notificationsEnabled = e.target.checked;
+      localStorage.setItem('notifications', e.target.checked);
+      if (e.target.checked) requestNotificationPermission();
+  });
+  el('voiceNotificationsToggle').checked = appState.voiceNotifications;
+  el('voiceNotificationsToggle').addEventListener('change', (e) => {
+      appState.voiceNotifications = e.target.checked;
+      localStorage.setItem('voiceNotifications', e.target.checked);
+      updateToggleVoiceBtnUI();
+  });
+  el('testNotificationBtn')?.addEventListener('click', () => {
+    if (!appState.notificationsEnabled) { alert('❌ Activez d\'abord les notifications.'); return; }
+    sendBrowserNotification('🔔 Test de Notification', 'Si vous voyez ce message, tout fonctionne !');
+    logActivity('Test de notification envoyé.');
+  });
+  el('resetBtn').addEventListener('click', () => { if (confirm("Réinitialiser l'application ?")) { localStorage.clear(); location.reload(); } });
+  el('googleSignInOverlayBtn').addEventListener('click', handleGoogleSignIn);
+  el('signOutBtn').addEventListener('click', handleSignOut);
+  
+  el('toggleVoiceBtn').addEventListener('click', () => {
+    appState.voiceNotifications = !appState.voiceNotifications;
+    localStorage.setItem('voiceNotifications', appState.voiceNotifications);
+    el('voiceNotificationsToggle').checked = appState.voiceNotifications;
+    updateToggleVoiceBtnUI();
+    if (!appState.voiceNotifications && window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+    }
+  });
+}
+
+// ======= User Profile Functions =======
+function handleGoogleSignIn() {
+  if (!auth) return;
+  const provider = new GoogleAuthProvider();
+  signInWithPopup(auth, provider).catch((error) => { console.error("Erreur Auth:", error); logActivity(`Erreur: ${error.message}`); });
+}
+function handleSignOut() { if (auth) signOut(auth).catch((error) => console.error("Erreur Déco:", error)); }
+  // ======= Navigation =======
+function navigateTo(targetSection) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  const targetEl = el(targetSection);
+  if (targetEl) targetEl.classList.add('active');
+  
+  document.querySelectorAll('.btn-nav').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll(`[data-target="${targetSection}"]`).forEach(b => b.classList.add('active'));
+  
+  const titleMap = {
+    'sec-domotique': 'Domotique',
+    'sec-planning': 'Planning',
+    'sec-params': 'Paramètres',
+    'sec-intelligence': 'Assistant IA'
+  };
+  el('section-header-title').textContent = titleMap[targetSection] || 'Domotique';
+}
+
+document.querySelectorAll('.btn-nav').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const target = btn.dataset.target;
+    navigateTo(target);
+  });
+});
+
+el('sidebar-toggle-btn').addEventListener('click', () => {
+  el('chat-sidebar').classList.toggle('open');
+  el('sidebar-overlay').classList.toggle('open');
+});
+el('sidebar-overlay').addEventListener('click', () => {
+  el('chat-sidebar').classList.remove('open');
+  el('sidebar-overlay').classList.remove('open');
+});
+
+// ======= Auth State Change Listener =======
+if (auth) {
+  onAuthStateChanged(auth, (user) => {
+    if (user) {
+      appState.currentUser = user;
+      document.querySelector('.main-app').style.display = 'block';
+      el('login-overlay').style.display = 'none';
+      const userPhoto = el('user-photo');
+      userPhoto.src = user.photoURL || defaultAvatar;
+      userPhoto.onerror = () => { userPhoto.src = defaultAvatar; }; 
+      el('user-name-display').textContent = user.displayName || 'Utilisateur';
+      el('user-email-display').textContent = user.email;
+      
+      loadChatHistorySidebar();
+      
+      if (appState.esp32Ip) {
+        connectToESP32();
+      }
+      
+      navigateTo('sec-domotique');
+
+    } else {
+      appState.currentUser = null;
+      document.querySelector('.main-app').style.display = 'none';
+      el('login-overlay').style.display = 'flex';
+      
+      if (appState.localWebSocket) {
+        appState.isLocalConnected = false;
+        appState.localWebSocket.close();
+        updateStatusUI('local', false);
+      }
+    }
+  });
+} else {
+  el('login-overlay').innerHTML = `
+    <div class="login-box">
+      <h2>Erreur Critique</h2>
+      <p>Impossible de se connecter à la base de données (Firebase). L'application ne peut pas démarrer.</p>
+    </div>`;
+  el('login-overlay').style.display = 'flex';
+}
+
+function updateProactiveSuggestion() {
+  const el_sug = document.getElementById('proactive-suggestion');
+  if (!el_sug) return;
+  el_sug.classList.add('fade-out');
+  setTimeout(() => {
+    suggestionIndex = (suggestionIndex + 1) % proactiveSuggestions.length;
+    el_sug.textContent = proactiveSuggestions[suggestionIndex];
+    el_sug.classList.remove('fade-out');
+  }, 500);
+}
+
+// ======= Initialisation =======
+function initUI() {
+  if (appState.isNightMode) document.body.classList.add('night-mode');
+  setupSettings();
+  VoiceEngine.init();
+  populatePlanDeviceSelect();
+  renderDevices();
+  logActivity("Application initialisée.");
+  requestNotificationPermission();
+  updateProactiveSuggestion();
+  setInterval(updateProactiveSuggestion, 10000);
+  
+  updateToggleVoiceBtnUI();
+  
+  el('toggleAddDeviceForm').addEventListener('click', () => {
+    const form = el('addDeviceFormContainer');
+    const btn = el('toggleAddDeviceForm');
+    const isHidden = form.style.display === 'none' || form.style.display === '';
+    form.style.display = isHidden ? 'block' : 'none';
+    btn.innerHTML = isHidden ? '➖ Masquer le formulaire' : '➕ Ajouter un appareil';
+  });
+  
+  el('btnConnectLocal').addEventListener('click', () => {
+    const ip = el('esp32IpInput').value.trim();
+    if (ip) {
+      appState.esp32Ip = ip;
+      localStorage.setItem('esp32Ip', ip);
+      logActivity(`IP locale sauvée: ${ip}. Connexion...`);
+      connectToESP32();
+    }
+  });
+  el('esp32IpInput').value = appState.esp32Ip;
+  
+  navigateTo('sec-domotique');
+}
+
+function requestNotificationPermission() {
+  if (!('Notification' in window)) return;
+  if (Notification.permission === 'default' && appState.notificationsEnabled) {
+    setTimeout(() => {
+      Notification.requestPermission().then(permission => {
+        if (permission === 'granted') {
+          logActivity('✅ Notifications activées');
+          sendBrowserNotification('🏠 SmartHome Intelligence', 'Notifications activées !', { requireInteraction: false });
+        } else {
+          logActivity('ℹ️ Notifications refusées');
+        }
+      });
+    }, 3000);
+  }
+}
+
+initUI(); 
+    window.appState = appState;
+
+console.log('✅ SmartHome Intelligence v12.0 COMPLET - Prêt à l\'emploi');
+console.log('📄 Documents HTML: CV, Lettre, Rapport, Facture, Contrat');
+console.log('🔄 Système de continuation: Actif');
+console.log('⬛ Blocs de code: Style Gemini (fond noir)');
+console.log('🗣️ Lecture vocale: Texte uniquement (pas de code)');
+console.log('📎 Gestion fichiers avancée: Icônes par type');
+console.log('⏰ Planning: Synchronisation FIREBASE (serveur gère tout)');
+console.log('🎤 VoiceEngine: Push-to-talk + Continu');
+console.log('💬 Chat: Multi-sessions Firebase');
+console.log('🔔 Notifications: Push + Vocales');
+console.log('📥 Code: Copier + Télécharger par langage');
+console.log('📡 WebSocket: ESP32 local');
+console.log('📊 Total: ~3500 lignes');
   </script>
 </body>
 </html>
