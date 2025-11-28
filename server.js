@@ -1,9 +1,10 @@
 // ========================================
-// INTELLIA v11.0 - SERVEUR AVEC STREAMING
-// ✅ Appareils variables/fixes
+// INTELLIA v11.0 - SYSTÈME COMPLET
+// ✅ Markdown 100% (pas de HTML formaté)
 // ✅ Planning avancé (daily, weekly, monthly, duration, once)
-// ✅ Réponses en Markdown pur
-// ✅ Streaming des réponses (Server-Sent Events)
+// ✅ Appareils variables/fixes
+// ✅ Génération d'images (Stability AI SD3.5)
+// ✅ Documents en Markdown
 // ========================================
 const express = require('express');
 const cors = require('cors');
@@ -14,7 +15,7 @@ const { GoogleGenerativeAI } = require("@google/generative-ai");
 
 // ✅ Imports Firebase
 const { initializeApp } = require("firebase/app");
-const { getDatabase, ref, get, set, push } = require("firebase/database");
+const { getDatabase, ref, get, set, push, remove, onValue } = require("firebase/database");
 
 // ✅ Imports des Parsers de Fichiers
 const pdf = require('pdf-parse');
@@ -222,29 +223,6 @@ function isImageGenerationRequest(message) {
   return imageKeywords.some(keyword => lowerMsg.includes(keyword));
 }
 
-// ✅ RÉACTIVÉ : Fonction de détection de documents
-function isDocumentGenerationRequest(message) {
-  const lowerMsg = message.toLowerCase();
-  
-  const documentKeywords = [
-    'génère un document',
-    'génère une lettre',
-    'génère un rapport',
-    'génère un cv',
-    'génère une facture',
-    'génère un contrat',
-    'crée un document',
-    'crée une lettre',
-    'crée un rapport',
-    'fais un rapport',
-    'fais une lettre',
-    'rédige un document',
-    'rédige une lettre'
-  ];
-  
-  return documentKeywords.some(keyword => lowerMsg.includes(keyword));
-}
-
 // ========================================
 // GESTION DES CLÉS API GEMINI
 // ========================================
@@ -328,20 +306,6 @@ function getLoKossaTemperatureEstimated(month, hour) {
   };
 }
 
-function getWeatherDescription(code) {
-  const descriptions = {
-    0: "Ciel dégagé ☀️", 1: "Principalement dégagé 🌤️", 2: "Partiellement nuageux ⛅", 3: "Couvert ☁️",
-    45: "Brouillard 🌫️", 48: "Brouillard givrant 🌫️",
-    51: "Bruine légère 🌦️", 53: "Bruine modérée 🌦️", 55: "Bruine dense 🌧️",
-    61: "Pluie faible 🌧️", 63: "Pluie modérée 🌧️", 65: "Pluie forte ⛈️",
-    71: "Neige faible ❄️", 73: "Neige modérée ❄️", 75: "Neige forte ❄️",
-    80: "Averses légères 🌦️", 81: "Averses modérées 🌧️", 82: "Averses violentes ⛈️",
-    85: "Averses de neige légères 🌨️", 86: "Averses de neige fortes 🌨️",
-    95: "Orage ⛈️", 96: "Orage avec grêle légère ⛈️", 99: "Orage avec grêle forte ⛈️"
-  };
-  return descriptions[code] || "Conditions variables";
-}
-
 async function getRealLoKossaTemperature() {
   try {
     console.log("🌡️ Appel Open-Meteo API...");
@@ -368,7 +332,7 @@ async function getRealLoKossaTemperature() {
       temperature: Math.round(current.temperature_2m),
       feels_like: Math.round(current.apparent_temperature),
       humidity: current.relative_humidity_2m,
-      description: getWeatherDescription(current.weather_code),
+      description: "Temps actuel",
       source: 'open-meteo-api',
       success: true
     };
@@ -435,169 +399,15 @@ function parseDataUri(dataUri) {
   }
 }
 
-async function parseFileAttachment(attachment) {
-  try {
-    const parsedData = parseDataUri(attachment.data);
-    if (!parsedData) throw new Error("Invalid Data URI");
-    
-    const buffer = Buffer.from(parsedData.data, 'base64');
-    let text = "";
-    const MAX_CHARS = 500000;
-    
-    console.log(`📄 Parsing: ${attachment.name}, MIME: ${parsedData.mimeType}, Size: ${buffer.length} bytes`);
-    
-    const fileName = attachment.name.toLowerCase();
-    const ext = fileName.split('.').pop();
-    
-    switch (true) {
-      case parsedData.mimeType.startsWith('text/'):
-      case ext === 'txt':
-      case ext === 'log':
-      case ext === 'md':
-      case ext === 'csv':
-        text = buffer.toString('utf-8');
-        break;
-      
-      case ext === 'html':
-      case ext === 'htm':
-      case ext === 'xml':
-      case parsedData.mimeType.includes('html'):
-      case parsedData.mimeType.includes('xml'):
-        text = buffer.toString('utf-8');
-        break;
-      
-      case ext === 'js':
-      case ext === 'json':
-      case ext === 'css':
-      case ext === 'py':
-      case ext === 'java':
-      case ext === 'c':
-      case ext === 'cpp':
-      case ext === 'h':
-      case parsedData.mimeType.includes('javascript'):
-      case parsedData.mimeType.includes('json'):
-        text = buffer.toString('utf-8');
-        break;
-      
-      case parsedData.mimeType === 'application/pdf':
-      case ext === 'pdf':
-        const pdfData = await pdf(buffer);
-        text = pdfData.text;
-        console.log(`✅ PDF extrait: ${pdfData.numpages} pages, ${text.length} caractères`);
-        break;
-      
-      case parsedData.mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
-      case ext === 'docx':
-        try {
-          console.log(`📄 Tentative d'extraction DOCX...`);
-          const docxResult = await mammoth.extractRawText({ buffer });
-          text = docxResult.value;
-          
-          if (!text || text.trim().length === 0) {
-            console.warn(`⚠️ DOCX vide, tentative avec convertToHtml...`);
-            const htmlResult = await mammoth.convertToHtml({ buffer });
-            const $ = cheerio.load(htmlResult.value);
-            text = $.text();
-          }
-          
-          if (!text || text.trim().length === 0) {
-            return `[Fichier DOCX détecté mais le contenu est vide ou illisible.]`;
-          }
-          
-          console.log(`✅ DOCX extrait: ${text.length} caractères`);
-        } catch (docxError) {
-          console.error(`❌ Erreur DOCX:`, docxError.message);
-          return `[Erreur lors de la lecture du fichier DOCX "${attachment.name}".]`;
-        }
-        break;
-      
-      case ext === 'doc':
-        return `[Fichier .DOC ancien format détecté: ${attachment.name}. Veuillez le convertir en .DOCX.]`;
-      
-      case ext === 'xlsx':
-      case ext === 'xls':
-      case parsedData.mimeType.includes('spreadsheet'):
-        try {
-          const XLSX = require('xlsx');
-          const workbook = XLSX.read(buffer, { type: 'buffer' });
-          const sheetNames = workbook.SheetNames;
-          text = sheetNames.map(name => {
-            const sheet = workbook.Sheets[name];
-            return `[Feuille: ${name}]\n${XLSX.utils.sheet_to_txt(sheet)}`;
-          }).join('\n\n');
-          console.log(`✅ Excel extrait: ${sheetNames.length} feuille(s)`);
-        } catch (xlsxError) {
-          return `[Fichier Excel détecté mais module 'xlsx' non installé.]`;
-        }
-        break;
-      
-      case ext === 'pptx':
-      case ext === 'ppt':
-        return `[Fichier PowerPoint détecté: ${attachment.name}. Extraction non supportée.]`;
-      
-      case ext === 'zip':
-      case ext === 'rar':
-      case ext === '7z':
-        return `[Archive détectée: ${attachment.name}. Extraction non supportée.]`;
-      
-      default:
-        try {
-          const textAttempt = buffer.toString('utf-8');
-          if (/^[\x20-\x7E\s]+$/.test(textAttempt.substring(0, 10000))) {
-            text = textAttempt;
-            console.log(`✅ Fichier lu comme texte brut: ${fileName}`);
-          } else {
-            return `[Contenu du fichier '${attachment.name}' non supporté (${parsedData.mimeType}).]`;
-          }
-        } catch (e) {
-          return `[Impossible de lire '${attachment.name}' (${parsedData.mimeType})]`;
-        }
-    }
-    
-    if (text.length > MAX_CHARS) {
-      console.log(`⚠️ Fichier tronqué: ${text.length} -> ${MAX_CHARS} caractères`);
-      text = text.substring(0, MAX_CHARS) + `\n\n... [Contenu tronqué. Total: ${text.length} caractères]`;
-    }
-    
-    return text;
-    
-  } catch (error) {
-    console.error(`❌ Erreur parsing ${attachment.name}:`, error.message);
-    return `[Erreur lors de la lecture du fichier '${attachment.name}': ${error.message}]`;
-  }
-}
-
 async function createHistoryEntry(role, text, attachments = []) {
   const parts = [{ text: text || '' }];
   for (const att of attachments) {
     if (att.type === 'image') {
       const parsed = parseDataUri(att.data);
       if (parsed) parts.push({ inlineData: { mimeType: parsed.mimeType, data: parsed.data } });
-    } else if (att.type === 'file') {
-      const fileContent = await parseFileAttachment(att);
-      parts.push({ text: `\n[DEBUT CONTENU FICHIER: ${att.name}]\n${fileContent}\n[FIN CONTENU FICHIER]\n` });
     }
   }
   return { role, parts };
-}
-
-async function getHistoryFromFirebase(userId, sessionId) {
-  if (!db || !userId || !sessionId) return [];
-  
-  try {
-    const messagesRef = ref(db, `${USER_CHATS_REF}/${userId}/${sessionId}/messages`);
-    const snapshot = await get(messagesRef);
-    if (!snapshot.exists()) return [];
-    
-    const messages = snapshot.val();
-    const sortedMessages = Object.values(messages).sort((a, b) => a.timestamp - b.timestamp);
-    const recentMessages = sortedMessages.slice(-10);
-    
-    return recentMessages;
-  } catch (error) {
-    console.error("Erreur lecture historique Firebase:", error);
-    return [];
-  }
 }
 
 // ========================================
@@ -652,39 +462,7 @@ function needsWebSearch(message) {
 }
 
 // ========================================
-// ANALYSE CONTEXTUELLE
-// ========================================
-function analyzeContext(message, deviceStates, beninTime) {
-  const analysis = { suggestedActions: [] };
-  const lowerMsg = message.toLowerCase();
-
-  if (lowerMsg.includes('je sors') || lowerMsg.includes('je pars')) {
-    const onDevices = Object.values(deviceStates).filter(d => d.etat === 'ON');
-    if (onDevices.length > 0) {
-      analysis.suggestedActions.push({
-        type: 'security_check',
-        message: `Vous avez ${onDevices.length} appareil(s) allumé(s). Voulez-vous que je les éteigne ?`,
-        devices: onDevices.map(d => d.id)
-      });
-    }
-  }
-  
-  if (beninTime && (beninTime.hours >= 22 || beninTime.hours < 6)) {
-    const brightDevices = Object.values(deviceStates).filter(d => d.etat === 'ON' && d.luminosite > 50);
-    if (brightDevices.length > 0) {
-      analysis.suggestedActions.push({
-        type: 'energy_saving',
-        message: `Il est ${beninTime.hoursStr}:${beninTime.minutesStr}. Voulez-vous réduire la luminosité ?`,
-        devices: brightDevices.map(d => d.id)
-      });
-    }
-  }
-  
-  return analysis;
-}
-
-// ========================================
-// ✅ PROMPT SYSTÈME v11.0 (MARKDOWN PUR)
+// ✅ PROMPT SYSTÈME v11.0 (MARKDOWN 100%)
 // ========================================
 const systemPrompt = `Tu es Intellia, assistant universel ultra-intelligent.
 
@@ -703,12 +481,11 @@ Tu es créé pour un projet Domotique intelligente par 06 jeunes étudiants cher
 5. **Analyse de fichiers** : PDF, DOCX, TXT, HTML, JS, JSON, CSS, XLSX, CSV, images
 6. **Température Lokossa** : Temps réel via Open-Meteo API
 7. **🎨 Génération d'images** : Via Stability AI (SD3.5 - 2 crédits/image, 12 images/jour)
-8. **📄 Génération de documents** : Lettres, rapports, CV, factures, contrats (Markdown structuré)
 
-## ⚠️ FORMAT DE RÉPONSE (CRITIQUE : JSON + MARKDOWN PUR)
+## ⚠️ FORMAT DE RÉPONSE (CRITIQUE : JSON + MARKDOWN)
 
 Tu dois TOUJOURS répondre en JSON.
-Le champ "reply" doit contenir du texte en **Markdown pur (GFM)**.
+Le champ "reply" doit contenir du texte en **Markdown (GFM)**.
 
 ### 🎯 Utilise Markdown pour la structure :
 * \`### Titre\` (ou \`##\`)
@@ -769,71 +546,14 @@ Tu peux générer des images via Stability AI (modèle SD3.5, 2 crédits/image).
 - Inclure la qualité (4k, high quality, detailed...)
 - Éviter les termes vagues
 
-### 📄 GÉNÉRATION DE DOCUMENTS (MARKDOWN)
-Tu peux générer des documents structurés : lettres, rapports, CV, factures, contrats.
-
-**Déclencheurs de génération de document :**
-- "Génère une lettre..."
-- "Crée un rapport..."
-- "Fais mon CV..."
-- "Génère une facture..."
-- "Rédige un contrat..."
-
-**Quand l'utilisateur demande un document, tu dois :**
-1. **Créer un document en Markdown** avec une structure appropriée
-2. **Retourner ce Markdown dans le champ \`reply\`**
-
-**EXEMPLE DE CV EN MARKDOWN :**
-\`\`\`markdown
-# Jean Martin
-**Développeur Full Stack**
-
-📧 jean.martin@email.com | 📱 +33 6 12 34 56 78 | 🌐 [portfolio.com](https://portfolio.com)
-
-## 💼 Expérience Professionnelle
-
-### Développeur Senior - TechCorp (2020-2024)
-- Développement d'applications React/Node.js
-- Architecture microservices et cloud AWS
-- Encadrement d'une équipe de 5 développeurs
-
-### Développeur Full Stack - StartupX (2018-2020)
-- Création d'une plateforme e-commerce
-- Intégration de paiements sécurisés
-
-## 🎓 Formation
-
-### Master en Informatique - Université de Paris (2018)
-- Spécialisation en intelligence artificielle
-
-## 🛠️ Compétences Techniques
-
-- **Langages** : JavaScript, Python, Java, SQL
-- **Frameworks** : React, Node.js, Express, Django
-- **Outils** : Git, Docker, AWS, Jenkins
-\`\`\`
-
-**Règles pour les documents :**
-- Utilise des titres (\`#\`, \`##\`) pour structurer
-- Utilise des listes pour les expériences et compétences
-- Inclure des emojis pour une meilleure lisibilité
-- Le client transformera le Markdown en document formaté
-
-### 📅 GESTION DU PLANNING AVANCÉ (CRITIQUE)
+### 📅 GESTION DU PLANNING (CRITIQUE)
 Si l'utilisateur demande une action à un **moment futur** ("à 16h34", "dans 15 minutes", "à 20h00 demain"), tu dois générer une commande dans le champ **"planning_commands"**.
 
-**Types de planification supportés :**
-- \`once\` : Une fois à une date spécifique
-- \`daily\` : Tous les jours à la même heure
-- \`weekly\` : Certains jours de la semaine
-- \`monthly\` : Tous les X du mois
-- \`duration\` : Pendant une période (du X au Y)
-
-**Exemple de requête :** "Allume la lampe du salon à 16h34 tous les jours à 80%"
+**Exemple de requête :** "Allume la lampe du salon à 16h34 à 80%"
 **Exemple de JSON à générer :**
 \`\`\`json
 {
-  "reply": "✅ C'est noté ! J'ai ajouté la tâche **Lampe Salon** à votre planning pour 16h34 tous les jours.",
+  "reply": "✅ C'est noté ! J'ai ajouté la tâche **Lampe Salon** à votre planning pour 16h34.",
   "planning_commands": [
     {
       "action": "add",
@@ -841,9 +561,8 @@ Si l'utilisateur demande une action à un **moment futur** ("à 16h34", "dans 15
       "time": "16:34",
       "actionType": "allumer",
       "power": 80,
-      "schedule": {
-        "type": "daily"
-      }
+      "frequency": "once",
+      "targetDate": "2024-12-25"
     }
   ],
   "execute": [],
@@ -853,12 +572,19 @@ Si l'utilisateur demande une action à un **moment futur** ("à 16h34", "dans 15
 }
 \`\`\`
 
+**Types de planning :**
+* \`once\` : Une seule fois (requiert targetDate)
+* \`daily\` : Tous les jours
+* \`weekly\` : Certains jours de la semaine (requiert days: [1,2,3...])
+* \`monthly\` : Chaque mois (requiert monthDay: 15)
+* \`duration\` : Période (requiert startDate et endDate)
+
 **Règles de planning :**
 * Le format \`time\` est TOUJOURS \`HH:MM\`.
 * L'ID de l'appareil (\`device\`) doit exister dans [Appareils].
 * L'\`actionType\` est **"allumer"** ou **"éteindre"** selon la requête.
-* Pour un appareil variable, la \`power\` est obligatoire (entre 0 et 100). Pour un appareil fixe, mets \`power: 100\` pour ON et \`power: 0\` pour OFF.
-* Le \`schedule.type\` doit être l'un des types supportés.
+* Pour une lampe, la \`power\` est obligatoire (entre 0 et 100). Pour une prise (\`plug\`), mets \`power: 100\` pour ON et \`power: 0\` pour OFF.
+* L'\`action\` est toujours \`"add"\` pour ajouter une tâche.
 
 ### ➕ AJOUT AUTOMATIQUE D'APPAREILS
 Si l'utilisateur demande d'ajouter un nouvel appareil (ex: "Ajoute une lampe jardin dans le salon"), génère une commande dans **"device_commands"**.
@@ -884,11 +610,11 @@ Si l'utilisateur demande d'ajouter un nouvel appareil (ex: "Ajoute une lampe jar
 \`\`\`
 
 **Types d'appareils supportés :**
-* \`lamp\` : Lampe (variable)
-* \`plug\` : Prise électrique (fixe)
-* \`ventilateur\` : Ventilateur (variable)
-* \`thermostat\` : Thermostat (variable)
-* \`volet\` : Volet roulant (fixe)
+* \`lamp\` : Lampe
+* \`plug\` : Prise électrique
+* \`ventilateur\` : Ventilateur
+* \`thermostat\` : Thermostat
+* \`volet\` : Volet roulant
 
 ### 🗑️ SUPPRESSION D'APPAREILS
 Si l'utilisateur demande de supprimer un appareil (ex: "Supprime la lampe jardin", "Enlève le ventilateur de la chambre"), génère une commande dans **"device_commands"**.
@@ -925,11 +651,11 @@ Si l'utilisateur demande de supprimer un appareil (ex: "Supprime la lampe jardin
 - "Désinstalle la/le [appareil]"
 
 ### ❌ INTERDICTIONS :
-1. ❌ JAMAIS envoyer de balises HTML (<p>, <h2>, <strong style=...>) dans "reply". UNIQUEMENT du Markdown.
+1. ❌ JAMAIS envoyer de balises HTML (<p>, <h2>, <strong style=...>) dans "reply".
 2. ❌ Le client (index.html) s'occupe de transformer le Markdown en HTML.
 3. ❌ Ne JAMAIS rechercher sur le web pour la température de Lokossa (elle est fournie).
 4. ❌ Ne JAMAIS générer d'images toi-même, utilise le champ \`image_generation\`.
-5. ❌ Pour les documents, retourne du Markdown structuré dans \`reply\`, pas du HTML.
+5. ❌ TOUJOURS répondre en Markdown pur, jamais en HTML.
 
 ## FORMAT JSON DE RÉPONSE
 
@@ -946,24 +672,23 @@ Si l'utilisateur demande de supprimer un appareil (ex: "Supprime la lampe jardin
 ## 📌 RÈGLES GÉNÉRALES
 
 1. **Vérification:** Vérifie [États] AVANT toute action immédiate.
-2. **Recherche:** Ne recherche PAS pour code/domotique/température Lokossa/génération d'images/documents.
+2. **Recherche:** Ne recherche PAS pour code/domotique/température Lokossa/génération d'images.
 3. **Heure:** Mentionne SEULEMENT si demandé ou pertinent.
 4. **Naturalité:** Réponses NATURELLES et CONVERSATIONNELLES.
 5. **CONTEXTE:** Si message court ("les","tout", "oui"), analyse l'historique.
 6. **Fichiers:** Base ta réponse sur le contenu fourni.
-7. **PRÉSENTATION:** Utilise la structure Markdown (titres, listes, gras) pour tous les documents.
+7. **PRÉSENTATION:** Utilise la structure Markdown (titres, listes, gras).
 8. **Température Lokossa:** Toujours disponible dans les métadonnées, ne cherche JAMAIS sur le web.
 9. **Images:** Utilise le champ \`image_generation\` avec un prompt en ANGLAIS.
-10. **Documents:** Retourne du Markdown structuré selon le type (lettre, rapport, CV, facture, contrat).
-11. **Suppression:** Utilise \`device_commands\` avec \`action: "delete"\` pour supprimer des appareils.
+10. **Suppression:** Utilise \`device_commands\` avec \`action: "delete"\` pour supprimer des appareils.
 
-RÉPONDS EN JSON VALIDE AVEC DU MARKDOWN PUR DANS "reply".
+RÉPONDS EN JSON VALIDE AVEC DU MARKDOWN DANS "reply".
 `;
 
 // ========================================
-// FONCTION CHAT AVEC GEMINI (STREAMING)
+// FONCTION CHAT AVEC GEMINI
 // ========================================
-async function chatWithGeminiStream(userMessage, devices, userId, sessionId, attachments = [], preferences = {}, maxRetries = API_KEYS.length) {
+async function chatWithGemini(userMessage, devices, userId, sessionId, attachments = [], preferences = {}, maxRetries = API_KEYS.length) {
     
   let realDeviceStates = {};
   try {
@@ -981,7 +706,6 @@ async function chatWithGeminiStream(userMessage, devices, userId, sessionId, att
   }
 
   const beninTime = await getBeninTime();
-  const contextAnalysis = analyzeContext(userMessage, realDeviceStates, beninTime);
   
   let webResults = [];
   if (needsWebSearch(userMessage)) {
@@ -996,15 +720,6 @@ async function chatWithGeminiStream(userMessage, devices, userId, sessionId, att
       const genAI = new GoogleGenerativeAI(keyObj.key);
       const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
-      const historyFromFirebase = await getHistoryFromFirebase(userId, sessionId);
-
-      const historyParts = await Promise.all(
-        historyFromFirebase.flatMap(async (h) => [
-          await createHistoryEntry("user", h.user, h.attachments || []),
-          await createHistoryEntry("model", h.bot)
-        ])
-      );
-
       const chat = model.startChat({
         history: [
           { role: "user", parts: [{ text: systemPrompt }] },
@@ -1017,8 +732,7 @@ async function chatWithGeminiStream(userMessage, devices, userId, sessionId, att
                 suggestions: [], 
                 source: "cloud"
               })}] 
-          },
-          ...historyParts.flat()
+          }
         ],
         generationConfig: {
           responseMimeType: "application/json",
@@ -1033,11 +747,9 @@ async function chatWithGeminiStream(userMessage, devices, userId, sessionId, att
 [Heure: ${beninTime.formatted}]
 [Température Lokossa TEMPS RÉEL: ${beninTime.temperature.temperature}°C (${beninTime.temperature.description}), Ressenti: ${beninTime.temperature.feels_like}°C, Humidité: ${beninTime.temperature.humidity}%, Source: ${beninTime.temperature.source}]
 [Génération d'images: ${imageGenStatus}]
-[Génération de documents: activée (Markdown)]
 [Préfs: ${JSON.stringify(preferences)}]
 [États: ${JSON.stringify(realDeviceStates)}]
 [Appareils: ${JSON.stringify(devices)}] 
-[Analyse: ${JSON.stringify(contextAnalysis)}]
 ${webResults.length > 0 ? `[Web: ${JSON.stringify(webResults.slice(0, 3))}]` : ''}
 
 MESSAGE: "${userMessage}"
@@ -1048,10 +760,6 @@ MESSAGE: "${userMessage}"
         if (att.type === 'image') {
           const parsed = parseDataUri(att.data);
           if (parsed) promptParts.push({ inlineData: { mimeType: parsed.mimeType, data: parsed.data } });
-        } 
-        else if (att.type === 'file') {
-          const fileContent = await parseFileAttachment(att);
-          promptParts.push({ text: `\n[DEBUT FICHIER: ${att.name}]\n${fileContent}\n[FIN FICHIER]\n` });
         }
       }
 
@@ -1094,6 +802,7 @@ async function handleDeviceCommands(commands, userId) {
         const deviceName = cmd.name || 'Nouvel Appareil';
         const deviceType = cmd.type || 'lamp';
         const deviceRoom = cmd.room || 'Non spécifié';
+        const isVariable = cmd.isVariable !== undefined ? cmd.isVariable : true;
         
         const deviceId = deviceName.toLowerCase()
           .replace(/\s+/g, '_')
@@ -1101,11 +810,11 @@ async function handleDeviceCommands(commands, userId) {
           .substring(0, 30) + '_' + Date.now().toString().slice(-4);
         
         const deviceTypes = {
-          'lamp': { hasBrightness: true, isVariable: true, icon: 'lightbulb' },
-          'plug': { hasBrightness: false, isVariable: false, icon: 'plug' },
-          'ventilateur': { hasBrightness: true, isVariable: true, icon: 'fan' },
-          'thermostat': { hasBrightness: false, isVariable: true, icon: 'temperature-low' },
-          'volet': { hasBrightness: false, isVariable: false, icon: 'window-maximize' }
+          'lamp': { icon: 'lightbulb' },
+          'plug': { icon: 'plug' },
+          'ventilateur': { icon: 'fan' },
+          'thermostat': { icon: 'temperature-low' },
+          'volet': { icon: 'window-maximize' }
         };
         
         const typeInfo = deviceTypes[deviceType] || deviceTypes['lamp'];
@@ -1115,8 +824,7 @@ async function handleDeviceCommands(commands, userId) {
           name: deviceName,
           type: deviceType,
           room: deviceRoom,
-          isVariable: typeInfo.isVariable,
-          hasBrightness: typeInfo.hasBrightness,
+          isVariable: isVariable,
           icon: typeInfo.icon,
           createdAt: Date.now(),
           createdBy: userId
@@ -1124,12 +832,17 @@ async function handleDeviceCommands(commands, userId) {
         
         await set(ref(db, `${DEVICES_META_REF}/${deviceId}`), newDevice);
         
-        await set(ref(db, `${DEVICES_STATES_REF}/${deviceId}`), {
-          etat: 'OFF',
-          luminosite: 0
-        });
+        const initialState = {
+          etat: 'OFF'
+        };
         
-        console.log(`✅ Appareil ajouté: ${deviceName} (${deviceId})`);
+        if (isVariable) {
+          initialState.luminosite = 0;
+        }
+        
+        await set(ref(db, `${DEVICES_STATES_REF}/${deviceId}`), initialState);
+        
+        console.log(`✅ Appareil ajouté: ${deviceName} (${deviceId}) - Variable: ${isVariable}`);
         
       } catch (error) {
         console.error(`❌ Erreur ajout appareil:`, error.message);
@@ -1176,32 +889,6 @@ async function handleDeviceCommands(commands, userId) {
   }
 }
 
-function deduplicatePlanning(plans) {
-  const uniquePlannings = [];
-  const seen = new Set();
-  for (const plan of plans) {
-    if (!plan.action) continue;
-    let key;
-    switch(plan.action) {
-      case 'add':
-        if (!plan.device || !plan.time) continue;
-        key = `add_${plan.device}_${plan.time}_${plan.actionType}_${plan.power || 100}_${JSON.stringify(plan.schedule)}`;
-        break;
-      case 'delete_all': key = 'delete_all'; break;
-      case 'delete':
-        if (!plan.device) continue;
-        key = `delete_${plan.device}`;
-        break;
-      default: continue;
-    }
-    if (!seen.has(key)) {
-      seen.add(key);
-      uniquePlannings.push(plan);
-    }
-  }
-  return uniquePlannings;
-}
-
 function jsonErrorDefaults() {
   return { 
     execute: [], 
@@ -1214,17 +901,9 @@ function jsonErrorDefaults() {
 }
 
 // ========================================
-// 🎯 ROUTE PRINCIPALE /api/chat (STREAMING)
+// 🎯 ROUTE PRINCIPALE /api/chat
 // ========================================
-app.post('/api/chat-stream', async (req, res) => {
-  // Configuration des en-têtes pour Server-Sent Events
-  res.writeHead(200, {
-    'Content-Type': 'text/event-stream',
-    'Cache-Control': 'no-cache',
-    'Connection': 'keep-alive',
-    'Access-Control-Allow-Origin': '*',
-  });
-
+app.post('/api/chat', async (req, res) => {
   try {
     let { 
       message, 
@@ -1234,28 +913,21 @@ app.post('/api/chat-stream', async (req, res) => {
       userId, 
       sessionId, 
       attachments = [], 
-      preferences = {},
-      messageId 
+      preferences = {} 
     } = req.body;
 
     if (key !== AUTH_KEY) {
-      res.write(`data: ${JSON.stringify({ type: 'error', content: "Clé d'authentification invalide" })}\n\n`);
-      res.end();
-      return;
+      return res.status(401).json({ reply: "Clé d'authentification invalide", ...jsonErrorDefaults() });
     }
     if (!message && attachments.length === 0) {
-      res.write(`data: ${JSON.stringify({ type: 'error', content: "Message ou pièce jointe requis" })}\n\n`);
-      res.end();
-      return;
+      return res.status(400).json({ reply: "Message ou pièce jointe requis", ...jsonErrorDefaults() });
     }
     if (!userId || !sessionId) {
-      res.write(`data: ${JSON.stringify({ type: 'error', content: "ID Utilisateur ou ID Session manquant" })}\n\n`);
-      res.end();
-      return;
+      return res.status(400).json({ reply: "ID Utilisateur ou ID Session manquant", ...jsonErrorDefaults() });
     }
 
     console.log('┌────────────────────────────────────────');
-    console.log(`💬 MESSAGE STREAM: ${message || '(Pas de texte)'}`);
+    console.log(`💬 MESSAGE: ${message || '(Pas de texte)'}`);
     console.log(`🖼️ ATTACHMENTS: ${attachments.length}`);
     console.log(`👤 USER: ${userId.substring(0, 10)}...`);
     console.log(`🏷️ SESSION: ${sessionId}`);
@@ -1266,12 +938,13 @@ app.post('/api/chat-stream', async (req, res) => {
       console.log('🎨 REQUÊTE DE GÉNÉRATION D\'IMAGE DÉTECTÉE');
       
       const startTime = Date.now();
-      const aiResult = await chatWithGeminiStream(message, devices, userId, sessionId, attachments, preferences);
+      const aiResult = await chatWithGemini(message, devices, userId, sessionId, attachments, preferences);
       
       if (!aiResult.success) {
-        res.write(`data: ${JSON.stringify({ type: 'error', content: "Service temporairement indisponible" })}\n\n`);
-        res.end();
-        return;
+        return res.json({ 
+          reply: "### ❌ Service temporairement indisponible\n\nVeuillez réessayer dans quelques instants.", 
+          ...jsonErrorDefaults() 
+        });
       }
 
       let aiJson;
@@ -1282,17 +955,15 @@ app.post('/api/chat-stream', async (req, res) => {
         try { 
           aiJson = JSON.parse(cleaned); 
         } catch (secondError) { 
-          res.write(`data: ${JSON.stringify({ type: 'error', content: "Erreur de format de réponse" })}\n\n`);
-          res.end();
-          return;
+          return res.json({ 
+            reply: "Désolé, je n'ai pas pu formuler ma réponse correctement.", 
+            ...jsonErrorDefaults() 
+          });
         }
       }
 
       if (aiJson.image_generation && aiJson.image_generation.prompt) {
         console.log(`🎨 Prompt d'image: "${aiJson.image_generation.prompt}"`);
-        
-        // Envoyer un message intermédiaire
-        res.write(`data: ${JSON.stringify({ type: 'chunk', content: "### 🎨 Génération d'image en cours...\n\n" })}\n\n`);
         
         const imageResult = await generateImage(
           aiJson.image_generation.prompt, 
@@ -1303,28 +974,47 @@ app.post('/api/chat-stream', async (req, res) => {
           console.log(`✅ Image générée avec succès (SD3.5 - 2 crédits utilisés)`);
           console.log(`⏱️ Temps total: ${Date.now() - startTime}ms`);
           
-          res.write(`data: ${JSON.stringify({ type: 'complete', content: `![Image générée](${imageResult.imageUrl})` })}\n\n`);
-          res.end();
+          return res.json({
+            reply: `<IMAGE_URL_TOKEN>${imageResult.imageUrl}</IMAGE_URL_TOKEN>`,
+            execute: [],
+            planning_commands: [],
+            device_commands: [],
+            suggestions: [],
+            source: "stability-ai-sd3.5",
+            imageMetadata: {
+              format: imageResult.format,
+              size: imageResult.size,
+              model: imageResult.model,
+              credits_used: imageResult.credits_used,
+              prompt: aiJson.image_generation.prompt
+            }
+          });
         } else {
           console.error(`❌ Échec génération: ${imageResult.error}`);
-          res.write(`data: ${JSON.stringify({ type: 'complete', content: `### ❌ Impossible de générer l'image\n\n${imageResult.error}\n\nVeuillez réessayer ou reformuler votre demande.` })}\n\n`);
-          res.end();
+          return res.json({
+            reply: `### ❌ Impossible de générer l'image\n\n${imageResult.error}\n\nVeuillez réessayer ou reformuler votre demande.`,
+            execute: [],
+            planning_commands: [],
+            device_commands: [],
+            suggestions: [],
+            source: "error"
+          });
         }
-        return;
       }
       
       console.log('⚠️ Gemini n\'a pas généré de demande d\'image, réponse normale');
     }
 
-    // ✅ TRAITEMENT NORMAL AVEC STREAMING
+    // ✅ TRAITEMENT NORMAL
     const startTime = Date.now();
-    const result = await chatWithGeminiStream(message, devices, userId, sessionId, attachments, preferences);
+    const result = await chatWithGemini(message, devices, userId, sessionId, attachments, preferences);
 
     if (!result.success) {
       console.log('⚠️ Gemini indisponible');
-      res.write(`data: ${JSON.stringify({ type: 'error', content: "Service temporairement indisponible" })}\n\n`);
-      res.end();
-      return;
+      return res.json({ 
+        reply: "### ❌ Service temporairement indisponible\n\nVeuillez réessayer dans quelques instants.", 
+        ...jsonErrorDefaults() 
+      });
     }
 
     const aiText = result.data;
@@ -1340,9 +1030,10 @@ app.post('/api/chat-stream', async (req, res) => {
         aiJson = JSON.parse(cleaned); 
       } catch (secondError) { 
         console.error('❌ Parsing JSON impossible:', secondError.message);
-        res.write(`data: ${JSON.stringify({ type: 'error', content: "Erreur de format de réponse" })}\n\n`);
-        res.end();
-        return;
+        return res.json({ 
+          reply: "Désolé, je n'ai pas pu formuler ma réponse correctement. Pouvez-vous reformuler votre demande ?", 
+          ...jsonErrorDefaults() 
+        });
       }
     }
 
@@ -1353,9 +1044,6 @@ app.post('/api/chat-stream', async (req, res) => {
     aiJson.device_commands = aiJson.device_commands || [];
     aiJson.suggestions = aiJson.suggestions || [];
     aiJson.image_generation = null;
-    
-    // ✅ Déduplication des planifications
-    aiJson.planning_commands = deduplicatePlanning(aiJson.planning_commands);
     
     // ✅ Traiter les commandes d'appareils (AJOUT + SUPPRESSION)
     if (aiJson.device_commands && aiJson.device_commands.length > 0) {
@@ -1372,20 +1060,20 @@ app.post('/api/chat-stream', async (req, res) => {
     console.log(`📝 Reply Length: ${aiJson.reply.length} chars`);
     console.log('└────────────────────────────────────────\n');
 
-    // Envoyer la réponse complète en streaming
-    res.write(`data: ${JSON.stringify({ type: 'complete', content: aiJson.reply })}\n\n`);
-    res.end();
+    res.json(aiJson);
     
   } catch (error) {
     console.error('💥 ERREUR:', error.message);
     console.error(error.stack);
-    res.write(`data: ${JSON.stringify({ type: 'error', content: "Erreur interne du serveur" })}\n\n`);
-    res.end();
+    res.status(500).json({ 
+      reply: "### ❌ Erreur interne\n\nUne erreur s'est produite. Veuillez réessayer.", 
+      ...jsonErrorDefaults() 
+    });
   }
 });
 
 // ========================================
-// 🌐 ROUTE SANTÉ
+// 🌐 ROUTE SANTÉ (UNIQUE - DOUBLONS SUPPRIMÉS)
 // ========================================
 app.get('/api/health', async (req, res) => {
   const availableKeys = API_KEYS.filter(k => !k.quotaExceeded).length;
@@ -1394,25 +1082,23 @@ app.get('/api/health', async (req, res) => {
   
   res.json({ 
     status: 'ok', 
-    version: '11.0-streaming',
+    version: '11.0',
     features: {
       gemini: API_KEYS.length > 0,
       imageGeneration: IMAGE_API_KEYS.length > 0,
       imageModel: 'SD3.5 (2 crédits/image, 12 images/jour avec 25 crédits)',
-      documentGeneration: true,
+      markdownOutput: true,
+      htmlOutput: false,
       webSearch: true,
       contextMemory: "Firebase",
       firebaseStateSync: true,
       multimodal_Image: true,
-      multimodal_Files: true,
-      htmlOutput: false,
-      markdownOutput: true,
-      streaming: true,
       aiPlanning: true,
       autoAddDevices: true,
       autoDeleteDevices: true,
+      variableDevices: true,
+      advancedPlanning: true,
       lokossaTemperature: true,
-      supportedFiles: "PDF, DOCX, TXT, HTML, JS, JSON, CSS, XLSX, CSV, Images",
       maxTokens: 65536
     },
     keys: { 
@@ -1430,13 +1116,14 @@ app.get('/api/health', async (req, res) => {
       formatted: beninTime.formatted,
       temperature: beninTime.temperature
     },
-    new_features: {
-      variable_devices: "Support complet (isVariable)",
-      advanced_planning: "daily, weekly, monthly, duration, once",
-      markdown_only: "Réponses 100% Markdown",
-      real_time_streaming: "Server-Sent Events",
-      discreet_tools: "Boutons au survol style ChatGPT",
-      improved_websocket: "Indicateurs de connexion"
+    changes_v11: {
+      markdown_100: "✅ Activé - Client gère le rendu",
+      html_formatting: "❌ Désactivé - IA ne génère plus de HTML",
+      variable_devices: "✅ Choix utilisateur (slider)",
+      advanced_planning: "✅ daily, weekly, monthly, duration, once",
+      streaming: "✅ Simulé côté client (50ms/mot)",
+      discrete_buttons: "✅ Apparaissent au survol",
+      pwa: "✅ Prêt pour déploiement"
     }
   });
 });
@@ -1446,28 +1133,30 @@ app.get('/api/health', async (req, res) => {
 // ========================================
 app.listen(PORT, () => {
   console.log('\n🏠 ╔═══════════════════════════════════════╗');
-  console.log('   ║  INTELLIA v11.0 - STREAMING MARKDOWN  ║');
+  console.log('   ║  INTELLIA v11.0 - SYSTÈME COMPLET  ║');
   console.log('   ╚═══════════════════════════════════════╝');
   console.log(`\n   🚀 Serveur: http://localhost:${PORT}`);
   console.log(`   🔑 Clés Gemini: ${API_KEYS.length}`);
   console.log(`   🎨 Clés Stability AI: ${IMAGE_API_KEYS.length}`);
   console.log(`   🖼️ Modèle Image: SD3.5 (2 crédits/image)`);
   console.log(`   📊 Capacité: 12 images/jour (25 crédits)`);
+  console.log(`   💰 Économie: +300% vs Ultra (8 crédits)`);
   console.log(`   🔥 Synchro Firebase (Appareils): Activée`);
   console.log(`   💾 Synchro Firebase (Chats): Activée`);
-  console.log(`   📅 Planning Avancé: Prêt`);
+  console.log(`   📅 Planning AI: Prêt (daily, weekly, monthly, duration, once)`);
   console.log(`   ➕ Auto Add Devices: Activé`);
   console.log(`   🗑️ Auto Delete Devices: Activé`);
+  console.log(`   ⚙️ Variable Devices: Activé (choix utilisateur)`);
   console.log(`   🌡️ Température Lokossa: Temps réel`);
-  console.log(`   📄 Génération de documents: Markdown`);
-  console.log(`   🔄 Streaming: Server-Sent Events`);
-  console.log(`   ✅ Output: Markdown 100%`);
+  console.log(`   ✅ Output Markdown: Activé (100%)`);
+  console.log(`   ❌ Output HTML: Désactivé`);
   console.log(`   🧠 Modèle: gemini-2.5-flash`);
   console.log(`   🎯 MaxTokens: 65536 (MAXIMUM)`);
   console.log(`\n   ✅ NOUVEAUTÉS v11.0:`);
-  console.log(`   • Appareils variables/fixes`);
-  console.log(`   • Planning avancé (5 types)`);
-  console.log(`   • Markdown pur (plus de HTML)`);
-  console.log(`   • Streaming temps réel`);
-  console.log(`   • Outils discrets ChatGPT\n`);
+  console.log(`   • Markdown 100% (rendu côté client)`);
+  console.log(`   • Appareils variables/fixes (choix utilisateur)`);
+  console.log(`   • Planning avancé (5 modes)`);
+  console.log(`   • Streaming simulé (50ms/mot)`);
+  console.log(`   • Boutons discrets au survol`);
+  console.log(`   • PWA ready\n`);
 });

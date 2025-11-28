@@ -3,14 +3,12 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
-  <title>SmartHome Intelligence </title>
+  <title>SmartHome Intelligence v11.0</title>
   <meta name="theme-color" content="#06b6d4" />
   
   <!-- PWA Manifest -->
-  <link rel="manifest" href="manifest.json">
-  <!-- ✅ CORRECTION : Les deux meta tags pour compatibilité -->
+  <link rel="manifest" href="/manifest.json">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
@@ -69,28 +67,6 @@
     body.night-mode .msg.bot code:not(pre code) { background: rgba(255, 255, 255, 0.1); }
     body.night-mode .msg-action-btn { background: rgba(255, 255, 255, 0.05); color: #cbd5e1; }
 
-    /* ============================================
-       STREAMING MARKDOWN - AFFICHAGE PROGRESSIF
-       ============================================ */
-    .msg.bot .streaming-content {
-      min-height: 20px;
-    }
-
-    .msg.bot .streaming-cursor {
-      display: inline-block;
-      width: 8px;
-      height: 1.2em;
-      background: var(--accent-cyan);
-      margin-left: 2px;
-      vertical-align: middle;
-      animation: blink 1s infinite;
-    }
-
-    @keyframes blink {
-      0%, 50% { opacity: 1; }
-      51%, 100% { opacity: 0; }
-    }
-
     .msg.bot pre {
       background: var(--code-bg) !important;
       color: var(--code-text) !important;
@@ -134,7 +110,7 @@
     .code-action-btn:hover { background: rgba(255, 255, 255, 0.1); color: white; }
 
     /* ============================================
-       BOUTONS DISCRETS SUR LES MESSAGES (STYLE CHATGPT)
+       BOUTONS DISCRETS SUR LES MESSAGES
        ============================================ */
     .message-actions {
       display: flex;
@@ -247,6 +223,11 @@
       flex-shrink: 0;
     }
 
+    body.night-mode #chat-sidebar {
+      background: rgba(30, 41, 59, 0.95);
+      border-right: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
     #chat-sidebar-header { padding: 12px; border-bottom: 1px solid rgba(0, 0, 0, 0.1); display: flex; flex-direction: column; gap: 8px; }
     #new-chat-btn { width: 100%; justify-content: center; }
     #chat-history-list { flex: 1; overflow-y: auto; padding: 8px; }
@@ -271,6 +252,8 @@
     .chat-history-item:hover { background: #e9ecef; }
     .chat-history-item.active { background: var(--primary); color: white; }
 
+    body.night-mode .chat-history-item:hover { background: rgba(255, 255, 255, 0.1); }
+
     #chat-section-container { flex: 1; height: 100%; display: flex; flex-direction: column; background: linear-gradient(135deg, #f5f7fa, #c3cfe2); position: relative; overflow: hidden; }
     body.night-mode #chat-section-container { background: linear-gradient(135deg, #0e0f13, #0f1724); }
 
@@ -288,7 +271,21 @@
       -webkit-overflow-scrolling: touch;
     }
 
-    #chat-input-container { padding: 12px; border-top: 1px solid rgba(0, 0, 0, 0.1); background: rgba(255, 255, 255, 0.9); flex-shrink: 0; max-width: 800px; width: 100%; margin: 0 auto; }
+    #chat-input-container { 
+      padding: 12px; 
+      border-top: 1px solid rgba(0, 0, 0, 0.1); 
+      background: rgba(255, 255, 255, 0.9); 
+      flex-shrink: 0; 
+      max-width: 800px; 
+      width: 100%; 
+      margin: 0 auto; 
+    }
+
+    body.night-mode #chat-input-container {
+      background: rgba(30, 41, 59, 0.95);
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
     #chat-input-flex { display: flex; gap: 8px; }
     #chatFullInput { flex: 1; padding: 12px; border-radius: 8px; border: 1px solid #ddd; font-size: 15px; }
     #chat-input-buttons { display: flex; gap: 8px; }
@@ -411,99 +408,38 @@
     .toggle-section { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
 
     /* ============================================
-       NOUVEAU STYLE POUR DOCUMENTS MARKDOWN
+       MODAL POUR APPAREILS VARIABLES
        ============================================ */
-    .document-cv, .document-lettre, .document-rapport, .document-facture, .document-contrat {
-      background: white;
-      padding: 40px;
-      border-radius: 12px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-      max-width: 800px;
-      margin: 20px auto;
-      font-family: 'Segoe UI', Arial, sans-serif;
-      color: #333;
-      line-height: 1.8;
-    }
-
-    body.night-mode .document-cv, body.night-mode .document-lettre, body.night-mode .document-rapport, body.night-mode .document-facture, body.night-mode .document-contrat {
-      background: rgba(30, 41, 59, 0.95);
-      color: #e2e8f0;
-      border: 1px solid rgba(255, 255, 255, 0.1);
-    }
-
-    .document-cv h1 { color: #4361ee; font-size: 32px; margin-bottom: 5px; text-align: center; }
-    body.night-mode .document-cv h1 { color: var(--accent-cyan); }
-
-    /* ============================================
-       INDICATEURS WEBSOCKET AMÉLIORÉS
-       ============================================ */
-    .websocket-status {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 4px 10px;
-      border-radius: 20px;
-      font-size: 12px;
-      font-weight: 500;
-    }
-
-    .websocket-status.connected {
-      background: rgba(46, 213, 115, 0.2);
-      color: #2ed573;
-    }
-
-    .websocket-status.connecting {
-      background: rgba(243, 156, 18, 0.2);
-      color: #f39c12;
-      animation: pulse 1.5s infinite;
-    }
-
-    .websocket-status.disconnected {
-      background: rgba(231, 76, 60, 0.2);
-      color: #e74c3c;
-    }
-
-    @keyframes pulse {
-      0% { opacity: 1; }
-      50% { opacity: 0.5; }
-      100% { opacity: 1; }
-    }
-
-    /* ============================================
-       NOUVEAU PLANNING AVANCÉ
-       ============================================ */
-    .planning-options {
+    .modal-overlay {
       display: none;
-      margin-top: 10px;
-      padding: 12px;
-      background: rgba(0, 0, 0, 0.03);
-      border-radius: 8px;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.7);
+      z-index: 9999;
+      align-items: center;
+      justify-content: center;
     }
 
-    .planning-options.active {
-      display: block;
+    .modal-overlay.active { display: flex; }
+
+    .modal-box {
+      background: white;
+      padding: 30px;
+      border-radius: 16px;
+      max-width: 500px;
+      width: 90%;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
     }
 
-    .planning-days {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      margin-top: 8px;
+    body.night-mode .modal-box {
+      background: rgba(30, 41, 59, 0.98);
+      color: #e2e8f0;
     }
 
-    .planning-day {
-      padding: 6px 12px;
-      border-radius: 6px;
-      background: #f1f5f9;
-      cursor: pointer;
-      font-size: 13px;
-      transition: all 0.2s ease;
-    }
-
-    .planning-day.selected {
-      background: var(--primary);
-      color: white;
-    }
+    .modal-box h3 { margin-bottom: 20px; color: var(--primary); }
 
     @media (max-width: 760px) {
       .grid { grid-template-columns: 1fr; }
@@ -631,11 +567,38 @@
   <div id="login-overlay">
     <div class="login-box">
       <div class="app-icon"><i class="fas fa-home-user"></i></div>
-      <h2>SmartHome Intelligence </h2>
+      <h2>SmartHome Intelligence v11.0</h2>
       <p>Veuillez vous connecter pour accéder à votre assistant domotique.</p>
       <button class="btn primary" id="googleSignInOverlayBtn" style="width:100%; justify-content:center;">
           <svg style="width:20px; height:20px; margin-right:8px;" viewBox="0 0 24 24"><path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" style="color:#4285F4"></path><path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" style="color:#34A853"></path><path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" style="color:#FBBC05"></path><path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" style="color:#EA4335"></path><path fill="none" d="M1 1h22v22H1z"></path></svg>
           Se connecter avec Google
+      </button>
+    </div>
+  </div>
+
+  <!-- ============================================
+       MODAL CHOIX VARIABLE/FIXE
+       ============================================ -->
+  <div id="device-variable-modal" class="modal-overlay">
+    <div class="modal-box">
+      <h3>⚙️ Configuration de l'appareil</h3>
+      <p style="margin-bottom: 20px; color: var(--muted);">
+        Voulez-vous que cet appareil soit <strong>variable</strong> (avec réglage de puissance) ou <strong>fixe</strong> (ON/OFF uniquement) ?
+      </p>
+      
+      <div id="device-modal-name" style="font-size: 18px; font-weight: bold; margin-bottom: 20px; color: var(--primary);"></div>
+      
+      <div style="display: flex; gap: 12px; margin-bottom: 20px;">
+        <button class="btn primary" id="modal-variable-btn" style="flex: 1; padding: 15px; font-size: 16px;">
+          <i class="fas fa-sliders-h"></i> Variable (0-100%)
+        </button>
+        <button class="btn" id="modal-fixed-btn" style="flex: 1; padding: 15px; font-size: 16px;">
+          <i class="fas fa-power-off"></i> Fixe (ON/OFF)
+        </button>
+      </div>
+      
+      <button class="btn warn" id="modal-cancel-btn" style="width: 100%; justify-content: center;">
+        <i class="fas fa-times"></i> Annuler
       </button>
     </div>
   </div>
@@ -646,9 +609,9 @@
   <div class="main-app">
     <div class="container">
       <header id="main-header">
-        <h1 id="section-header-title">Domotique</h1>
+        <h1 id="section-header-title">SmartHome Intelligence v11.0</h1>
         <div style="margin-top:8px; display:flex; flex-wrap: wrap; justify-content: center; gap: 8px;">
-          <span id="statusLocal" class="chip websocket-status disconnected">ESP32: Déconnecté</span>
+          <span id="statusLocal" class="chip">ESP32: -</span>
           <span id="statusFirebase" class="chip">Firebase : -</span> 
           <span id="statusOnline" class="chip">Assistant : -</span>
           <span id="intelliaLatency" class="chip">latence: -</span>
@@ -677,6 +640,24 @@
                 <strong><i class="fas fa-robot"></i> Assistant Vocal (Raccourci)</strong>
                 <button class="btn primary" id="quickVoiceToggleBtn" style="width:100%; justify-content:center; margin-top:8px; font-size: 15px;">
                   <i class="fas fa-waveform"></i> Lancer la conversation
+                </button>
+              </div>
+
+              <div style="margin-top:12px; border-top: 1px solid rgba(0,0,0,0.1); padding-top:12px;">
+                <strong><i class="fas fa-plus-circle"></i> Ajouter un appareil</strong>
+                <div style="display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap;">
+                  <input type="text" id="new-device-name" placeholder="Nom de l'appareil" style="flex: 1; min-width: 150px; padding: 8px; border-radius: 8px; border: 1px solid #ddd;" />
+                  <select id="new-device-type" style="padding: 8px; border-radius: 8px; border: 1px solid #ddd;">
+                    <option value="lamp">💡 Lampe</option>
+                    <option value="plug">🔌 Prise</option>
+                    <option value="ventilateur">🌀 Ventilateur</option>
+                    <option value="thermostat">🌡️ Thermostat</option>
+                    <option value="volet">🪟 Volet</option>
+                  </select>
+                  <input type="text" id="new-device-room" placeholder="Pièce" style="flex: 1; min-width: 100px; padding: 8px; border-radius: 8px; border: 1px solid #ddd;" />
+                </div>
+                <button class="btn primary" id="add-device-btn" style="width:100%; justify-content:center; margin-top:8px;">
+                  <i class="fas fa-plus"></i> Ajouter l'appareil
                 </button>
               </div>
             </div>
@@ -758,7 +739,7 @@
       </section>
 
       <!-- ============================================
-           SECTION PLANNING AVANCÉ
+           SECTION PLANNING
            ============================================ -->
       <section id="sec-planning" class="section">
         <div class="grid" style="grid-template-columns: 1fr 1fr; gap: 16px;">
@@ -768,52 +749,43 @@
               <label>Appareil</label>
               <select id="plan-device" style="width:100%;padding:8px;border-radius:8px;border:1px solid #ddd;margin-bottom:10px"></select>
               
-              <label>Type de planification</label>
+              <label>Fréquence</label>
               <select id="plan-frequency" style="width:100%;padding:8px;border-radius:8px;border:1px solid #ddd;margin-bottom:10px">
                 <option value="once">Une fois (date spécifique)</option>
                 <option value="daily">Tous les jours</option>
                 <option value="weekly">Hebdomadaire (certains jours)</option>
                 <option value="monthly">Mensuel (jour du mois)</option>
-                <option value="duration">Par durée (du... au...)</option>
+                <option value="duration">Période (début - fin)</option>
               </select>
 
-              <!-- Options pour chaque type de planification -->
-              <div id="planning-options-container">
-                <!-- Une fois -->
-                <div id="opt-once" class="planning-options">
-                  <label>Date</label>
-                  <input type="date" id="plan-date" style="width:100%;padding:8px;border-radius:8px;border:1px solid #ddd;margin-bottom:10px" />
-                </div>
+              <div id="opt-date" style="margin-bottom:10px">
+                <label>Date</label>
+                <input type="date" id="plan-date" style="width:100%;padding:8px;border-radius:8px;border:1px solid #ddd" />
+              </div>
 
-                <!-- Hebdomadaire -->
-                <div id="opt-weekly" class="planning-options">
-                  <label>Jours de la semaine</label>
-                  <div class="planning-days">
-                    <div class="planning-day" data-day="1">Lun</div>
-                    <div class="planning-day" data-day="2">Mar</div>
-                    <div class="planning-day" data-day="3">Mer</div>
-                    <div class="planning-day" data-day="4">Jeu</div>
-                    <div class="planning-day" data-day="5">Ven</div>
-                    <div class="planning-day" data-day="6">Sam</div>
-                    <div class="planning-day" data-day="0">Dim</div>
-                  </div>
-                  <input type="hidden" id="plan-days" value="">
-                </div>
+              <div id="opt-duration" style="margin-bottom:10px; display:none;">
+                <label>Date début</label>
+                <input type="date" id="plan-start-date" style="width:100%;padding:8px;border-radius:8px;border:1px solid #ddd;margin-bottom:8px" />
+                <label>Date fin</label>
+                <input type="date" id="plan-end-date" style="width:100%;padding:8px;border-radius:8px;border:1px solid #ddd" />
+              </div>
 
-                <!-- Mensuel -->
-                <div id="opt-monthly" class="planning-options">
-                  <label>Jour du mois (1-31)</label>
-                  <input type="number" id="plan-day-of-month" min="1" max="31" value="1" style="width:100%;padding:8px;border-radius:8px;border:1px solid #ddd;margin-bottom:10px" />
+              <div id="opt-weekly" style="margin-bottom:10px; display:none;">
+                <label>Jours de la semaine</label>
+                <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px;">
+                  <label style="flex: 0 0 45%;"><input type="checkbox" class="week-day" value="1"> Lundi</label>
+                  <label style="flex: 0 0 45%;"><input type="checkbox" class="week-day" value="2"> Mardi</label>
+                  <label style="flex: 0 0 45%;"><input type="checkbox" class="week-day" value="3"> Mercredi</label>
+                  <label style="flex: 0 0 45%;"><input type="checkbox" class="week-day" value="4"> Jeudi</label>
+                  <label style="flex: 0 0 45%;"><input type="checkbox" class="week-day" value="5"> Vendredi</label>
+                  <label style="flex: 0 0 45%;"><input type="checkbox" class="week-day" value="6"> Samedi</label>
+                  <label style="flex: 0 0 45%;"><input type="checkbox" class="week-day" value="0"> Dimanche</label>
                 </div>
+              </div>
 
-                <!-- Durée -->
-                <div id="opt-duration" class="planning-options">
-                  <label>Date de début</label>
-                  <input type="date" id="plan-start-date" style="width:100%;padding:8px;border-radius:8px;border:1px solid #ddd;margin-bottom:10px" />
-                  
-                  <label>Date de fin</label>
-                  <input type="date" id="plan-end-date" style="width:100%;padding:8px;border-radius:8px;border:1px solid #ddd;margin-bottom:10px" />
-                </div>
+              <div id="opt-monthly" style="margin-bottom:10px; display:none;">
+                <label>Jour du mois (1-31)</label>
+                <input type="number" id="plan-month-day" min="1" max="31" value="1" style="width:100%;padding:8px;border-radius:8px;border:1px solid #ddd" />
               </div>
 
               <label>Heure</label>
@@ -824,10 +796,8 @@
                 <option value="ON">Allumer</option><option value="OFF">Éteindre</option>
               </select>
 
-              <div id="power-control-container">
-                <label>Puissance (%)</label>
-                <input id="plan-power" type="number" min="0" max="100" value="100" style="width:100%;padding:8px;border-radius:8px;border:1px solid #ddd;margin-bottom:10px" />
-              </div>
+              <label>Puissance (%)</label>
+              <input id="plan-power" type="number" min="0" max="100" value="100" style="width:100%;padding:8px;border-radius:8px;border:1px solid #ddd;margin-bottom:10px" />
               
               <div style="display:flex;gap:8px">
                 <button class="btn primary" id="addPlan" style="flex:1"><i class="fas fa-plus"></i> Planifier</button>
@@ -859,9 +829,7 @@
             <input id="esp32IpInput" placeholder="192.168.x.x" style="width:100%;padding:8px;border-radius:8px;border:1px solid #ddd" />
             <div style="margin-top:10px;display:flex;gap:8px">
               <button class="btn primary" id="btnConnectLocal">Sauver & Connecter</button>
-              <button class="btn" id="btnDisconnectLocal">Déconnecter</button>
             </div>
-            <div id="websocket-status" style="margin-top:10px; font-size:13px;"></div>
           </div>
           
           <div class="settings-group">
@@ -873,7 +841,7 @@
           </div>
 
           <div class="settings-group">
-            <h3>ðŸ'¤ Profil Utilisateur</h3>
+            <h3>👤 Profil Utilisateur</h3>
             <div id="user-profile-card">
                 <img id="user-photo" src="" alt="Photo de profil">
                 <div>
@@ -904,16 +872,16 @@
   
   <script type="module">
   /* ====================================================
-     SmartHome Intelligence v11.0 - REFONTE COMPLÈTE
-     ✅ Appareils variables/fixes
+     SmartHome Intelligence v11.0 - COMPLET
+     ✅ Markdown 100% (rendu côté client)
+     ✅ Streaming simulé (50ms/mot)
+     ✅ Appareils variables/fixes (choix utilisateur)
      ✅ Planning avancé (daily, weekly, monthly, duration, once)
-     ✅ Markdown 100% avec streaming intelligent
-     ✅ Outils discrets style ChatGPT
-     ✅ WebSocket amélioré avec indicateurs
-     ✅ PWA complète
+     ✅ Boutons discrets au survol (copier, régénérer, etc.)
+     ✅ Édition de messages inline
+     ✅ PWA ready
      ==================================================== */
 
-  
   // =============================================
   // 📋 CONFIGURATION GLOBALE
   // =============================================
@@ -940,15 +908,12 @@
     appId: "1:197281963087:web:da680779479391d91f1e3a"
   };
 
-  // =============================================
-  // 🎯 TYPES D'APPAREILS AVEC VARIABLE/FIXE
-  // =============================================
   const deviceTypes = {
-    'lamp': { name: 'Lampe', hasBrightness: true, isVariable: true, icon: 'lightbulb' },
-    'plug': { name: 'Prise', hasBrightness: false, isVariable: false, icon: 'plug' },
-    'ventilateur': { name: 'Ventilateur', hasBrightness: true, isVariable: true, icon: 'fan' },
-    'thermostat': { name: 'Thermostat', hasBrightness: false, isVariable: true, icon: 'temperature-low' },
-    'volet': { name: 'Volet Roulant', hasBrightness: false, isVariable: false, icon: 'window-maximize' }
+    'lamp': { name: 'Lampe', icon: 'lightbulb' },
+    'plug': { name: 'Prise', icon: 'plug' },
+    'ventilateur': { name: 'Ventilateur', icon: 'fan' },
+    'thermostat': { name: 'Thermostat', icon: 'temperature-low' },
+    'volet': { name: 'Volet Roulant', icon: 'window-maximize' }
   };
 
   const proactiveSuggestions = [
@@ -980,10 +945,7 @@
     isLocalConnected: false,
     esp32Ip: localStorage.getItem('esp32Ip') || '',
     editingMessageId: null,
-    // Nouveaux états pour v11.0
-    streamingEventSource: null,
-    isStreaming: false,
-    currentStreamingMessage: null
+    pendingDeviceToAdd: null
   };
 
   // =============================================
@@ -992,245 +954,51 @@
   const el = id => document.getElementById(id);
 
   // =============================================
-  // 📧 FIREBASE - INITIALISATION STABLE (CORRIGÉE)
-  // =============================================
-  
-  // 1. Imports Standards
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-  import { getDatabase, ref, set, push, onValue, remove, get, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
-  import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-
-  // 2. Initialisation immédiate
-  let db = null;
-  let auth = null;
-
-  try {
-    const app = initializeApp(firebaseConfig);
-    db = getDatabase(app);
-    auth = getAuth(app);
-    
-    // Indicateur visuel de succès
-    const statusFb = document.getElementById('statusFirebase');
-    if(statusFb) {
-        statusFb.textContent = 'Firebase : OK';
-        statusFb.style.background = 'rgba(46, 213, 115, 0.3)';
-    }
-    console.log("✅ Firebase initialisé avec succès");
-  } catch (e) {
-    console.error("❌ Erreur critique Firebase:", e);
-    const statusFb = document.getElementById('statusFirebase');
-    if(statusFb) {
-        statusFb.textContent = 'Firebase : Erreur';
-        statusFb.style.background = 'rgba(231, 76, 60, 0.3)';
-    }
-    alert("Erreur de connexion à la base de données. Vérifiez votre connexion internet.");
-  }
-
-  // 3. Références Base de données
-  const metaRefPath = "devicesMeta";
-  const devicesRefPath = "devices";
-  const planningRefPath = "planning";
-  const userChatsRefPath = "userChats";
-
-  // 4. Écouteurs de données (Si DB connectée)
-  if (db) {
-    onValue(ref(db, metaRefPath), snap => { 
-      const devicesData = snap.val() || {};
-      appState.devices = Object.values(devicesData); 
-      renderDevices(); 
-    });
-    onValue(ref(db, devicesRefPath), snap => { 
-      appState.deviceStates = snap.val() || {}; 
-      renderDevices(); 
-    });
-    onValue(ref(db, planningRefPath), snap => { 
-      const plansObj = snap.val() || {};
-      appState.plans = Object.entries(plansObj).map(([id, p]) => ({ ...p, firebaseId: id }));
-      renderPlanningListUI(appState.plans);
-    });
-  } else {
-    // Mode hors ligne / Fallback
-    loadDevicesFromLocalStorage();
-    loadPlansFromLocalStorage();
-    renderDevices();
-    renderPlanningListUI(appState.plans);
-  }
-
-  // ============================================
-  // 🔐 AUTHENTIFICATION - LOGIQUE DE CONNEXION
-  // ============================================
-
-  // Gestionnaire de connexion Google
-  window.handleGoogleSignIn = function() {
-    if (!auth) return;
-    const provider = new GoogleAuthProvider();
-    signInWithPopup(auth, provider).catch((error) => { 
-        console.error("Erreur Auth:", error); 
-        alert("Erreur de connexion : " + error.message);
-    });
-  };
-
-  // Gestionnaire de déconnexion
-  window.handleSignOut = function() { 
-    if (auth) signOut(auth).catch((error) => console.error("Erreur Déco:", error)); 
-  };
-
-  // Attacher les événements aux boutons
-  document.addEventListener('DOMContentLoaded', function() {
-    const loginBtn = document.getElementById('googleSignInOverlayBtn');
-    if(loginBtn) loginBtn.addEventListener('click', window.handleGoogleSignIn);
-    
-    const logoutBtn = document.getElementById('signOutBtn');
-    if(logoutBtn) logoutBtn.addEventListener('click', window.handleSignOut);
-  });
-
-  // Surveillance de l'état de connexion
-  if (auth) {
-    onAuthStateChanged(auth, (user) => {
-      const loginOverlay = document.getElementById('login-overlay');
-      const mainApp = document.querySelector('.main-app');
-      
-      if (user) {
-        // ✅ UTILISATEUR CONNECTÉ
-        console.log("👤 Utilisateur connecté:", user.email);
-        appState.currentUser = user;
-        
-        if(loginOverlay) loginOverlay.style.display = 'none';
-        if(mainApp) mainApp.style.display = 'block';
-        
-        // Mise à jour UI Profil
-        const userPhoto = document.getElementById('user-photo');
-        if(userPhoto) {
-            userPhoto.src = user.photoURL || defaultAvatar;
-            userPhoto.onerror = () => { userPhoto.src = defaultAvatar; }; 
-        }
-        const userName = document.getElementById('user-name-display');
-        if(userName) userName.textContent = user.displayName || 'Utilisateur';
-        
-        const userEmail = document.getElementById('user-email-display');
-        if(userEmail) userEmail.textContent = user.email;
-        
-        // Charger l'historique de chat
-        loadChatHistorySidebar();
-        
-        // Connexion ESP32 si IP sauvegardée
-        if (appState.esp32Ip) {
-          connectWebSocket();
-        }
-
-      } else {
-        // ❌ UTILISATEUR DÉCONNECTÉ
-        console.log("👤 Utilisateur déconnecté");
-        appState.currentUser = null;
-        
-        if(mainApp) mainApp.style.display = 'none';
-        if(loginOverlay) loginOverlay.style.display = 'flex';
-        
-        // Déconnecter WebSocket si actif
-        if (appState.localWebSocket) {
-          disconnectWebSocket();
-        }
-      }
-    });
-  }
-
-  // =============================================
-  // 📄 FONCTION: EXTRAIRE TEXTE LISIBLE (pour synthèse vocale)
+  // 📄 FONCTION: EXTRAIRE TEXTE LISIBLE
+  // (Pour synthèse vocale - ignore HTML/CSS/Code/Markdown)
   // =============================================
   function extractReadableText(content) {
-    // Supprimer le HTML et garder seulement le texte
-    const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = content;
+    // Retirer tout le code (entre ```)
+    let text = content.replace(/```[\s\S]*?```/g, '');
     
-    // Supprimer les éléments de code et les balises
-    tempDiv.querySelectorAll('pre, code, style, script, button, .code-actions').forEach(elem => elem.remove());
-    
-    let text = (tempDiv.innerText || tempDiv.textContent || '')
-      .replace(/\s+/g, ' ')
+    // Retirer les symboles Markdown
+    text = text
+      .replace(/#{1,6}\s+/g, '')      // Titres
+      .replace(/\*\*(.+?)\*\*/g, '$1') // Gras
+      .replace(/\*(.+?)\*/g, '$1')     // Italique
+      .replace(/\[(.+?)\]\(.+?\)/g, '$1') // Liens
+      .replace(/^[-*+]\s+/gm, '')      // Listes
+      .replace(/^\d+\.\s+/gm, '')      // Listes numérotées
       .trim();
     
-    return text.substring(0, 100000);
+    return text.substring(0, 10000);
   }
 
   // =============================================
-  // 🖨️ FONCTION: IMPRIMER DOCUMENT MARKDOWN
+  // 🖨️ FONCTION: IMPRIMER DOCUMENT
   // =============================================
   window.printDocument = function(btnElement) {
     try {
       console.log('🖨️ Impression lancée...');
-      let docElement = null;
-
-      if (btnElement && btnElement.closest) {
-        const messageContainer = btnElement.closest('.msg.bot');
-        
-        if (messageContainer) {
-          docElement = messageContainer.querySelector('.document-cv, .document-lettre, .document-rapport, .document-facture, .document-contrat');
-          
-          if (!docElement) {
-            const clone = messageContainer.cloneNode(true);
-            clone.querySelectorAll('button, .copy-code-btn, .continue-btn, .flex-btns, .code-actions, .message-actions').forEach(b => b.remove());
-            docElement = clone;
-          }
-        }
-      }
-
-      if (!docElement) {
-        const allDocs = document.querySelectorAll('.document-cv, .document-lettre, .document-rapport, .document-facture, .document-contrat');
-        if (allDocs.length > 0) {
-          docElement = allDocs[allDocs.length - 1];
-          console.log('✅ Document trouvé via méthode de secours');
-        }
-      }
-
-      if (!docElement) {
-        alert('❌ Erreur : Impossible de localiser le document à imprimer.');
-        return;
-      }
-
       const printWindow = window.open('', '_blank');
       if (!printWindow) {
         alert('❌ Pop-up bloquée. Veuillez autoriser les pop-ups pour imprimer.');
         return;
       }
 
-      const css = `
-        <style>
-          * { margin: 0; padding: 0; box-sizing: border-box; }
-          body { 
-            font-family: 'Segoe UI', Arial, sans-serif; 
-            margin: 0; 
-            padding: 20px;
-            -webkit-print-color-adjust: exact;
-            print-color-adjust: exact;
-          }
-          
-          .document-cv, .document-facture, .document-lettre, .document-rapport, .document-contrat { 
-            width: 100%; 
-            max-width: 100%; 
-            margin: 0; 
-            padding: 0;
-            border: none;
-            background: white !important;
-            color: #333 !important;
-          }
-          
-          button, .copy-code-btn, .continue-btn, .code-actions, .message-actions {
-            display: none !important;
-          }
-          
-          @page { 
-            margin: 1cm; 
-            size: A4;
-          }
-          
-          h1, h2, h3 { color: #333 !important; }
-          table { border-collapse: collapse; width: 100%; }
-          th, td { border: 1px solid #ddd; padding: 8px; }
-          th { background: #f0f0f0 !important; }
-        </style>
-      `;
+      let docElement = btnElement?.closest('.msg.bot');
+      if (!docElement) {
+        docElement = document.querySelector('.msg.bot:last-of-type');
+      }
 
-      const htmlContent = docElement.outerHTML || docElement.innerHTML;
+      const css = `<style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Arial, sans-serif; margin: 20px; }
+        button, .copy-code-btn, .continue-btn, .code-actions, .message-actions { display: none !important; }
+        @page { margin: 1cm; size: A4; }
+      </style>`;
+
+      const htmlContent = docElement.innerHTML;
       printWindow.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Impression</title>${css}</head><body>${htmlContent}</body></html>`);
       printWindow.document.close();
       
@@ -1248,53 +1016,103 @@
   };
 
   // =============================================
-  // 📋 FONCTION: COPIER TEXTE MARKDOWN
+  // 📋 FONCTION: COPIER TEXTE
   // =============================================
-  window.copyDocumentText = function() {
-    try {
-      let textContent = '';
+  function copyToClipboard(text) {
+    navigator.clipboard.writeText(text)
+      .then(() => console.log('✅ Texte copié'))
+      .catch(err => console.error('❌ Erreur copie:', err));
+  }
 
-      const messageContainer = document.querySelector('.msg.bot:last-of-type');
-      if (messageContainer) {
-        textContent = messageContainer.innerText || messageContainer.textContent || '';
+  // =============================================
+  // 💬 FONCTION: AJOUTER MESSAGE AU CHAT
+  // =============================================
+  function appendChat(role, text, returnElement = false, attachments = []) {
+    const target = el('chatFullWindow');
+    if (!target) return;
+    
+    const node = document.createElement('div');
+    node.className = 'msg ' + (role === 'user' ? 'user' : 'bot');
+
+    if (role === 'user') {
+      if (text) node.textContent = text;
+    } else {
+      // Détection d'image
+      const imageMatch = text.match(/<IMAGE_URL_TOKEN>(.*?)<\/IMAGE_URL_TOKEN>/);
+      if (imageMatch) {
+        const imageUrl = imageMatch[1];
+        node.innerHTML = `
+          <div style="text-align: center;">
+            <img src="${imageUrl}" style="max-width: 100%; border-radius: 12px; margin-bottom: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.2);" />
+            <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+              <button class="btn primary" onclick="downloadImage('${imageUrl}')">
+                <i class="fas fa-download"></i> Télécharger
+              </button>
+              <button class="btn" onclick="window.open('${imageUrl}', '_blank')">
+                <i class="fas fa-external-link-alt"></i> Ouvrir
+              </button>
+            </div>
+          </div>
+        `;
+        target.appendChild(node);
+        addMessageActions(node, false);
+        scrollToBottom();
+        return node;
       }
-
-      if (!textContent) {
-        alert('❌ Aucun texte trouvé');
-        return;
+      
+      if (text) {
+        const renderedHtml = marked.parse(text, { sanitize: false, gfm: true });
+        node.innerHTML = renderedHtml;
+        
+        node.querySelectorAll('pre code').forEach(block => {
+          hljs.highlightElement(block);
+        });
+        
+        addCopyButtons(node);
+      } else if (returnElement) {
+        node.classList.add('loading');
       }
-
-      navigator.clipboard.writeText(textContent).then(() => {
-        console.log('✅ Texte copié dans le presse-papier');
-        alert('✅ Texte copié dans le presse-papier !');
-      }).catch(err => {
-        console.error('❌ Erreur copie:', err);
-        
-        const textarea = document.createElement('textarea');
-        textarea.value = textContent;
-        textarea.style.position = 'fixed';
-        textarea.style.opacity = '0';
-        document.body.appendChild(textarea);
-        textarea.select();
-        
-        try {
-          document.execCommand('copy');
-          alert('✅ Texte copié dans le presse-papier !');
-        } catch (e) {
-          alert('❌ Impossible de copier. Utilisez Ctrl+C manuellement.');
-        }
-        
-        document.body.removeChild(textarea);
-      });
-        
-    } catch (error) {
-      console.error('❌ Erreur copie texte:', error);
-      alert('❌ Erreur lors de la copie. Veuillez réessayer.');
     }
-  };
+    
+    // Pièces jointes
+    if (attachments && attachments.length > 0) {
+      const attachmentsDiv = document.createElement('div');
+      attachmentsDiv.style.cssText = 'margin-top: 8px; display: flex; flex-wrap: wrap; gap: 8px;';
+      
+      attachments.forEach(att => {
+        if (att.type === 'image' && att.data) {
+          const img = document.createElement('img');
+          img.src = att.data;
+          img.style.cssText = 'max-width: 150px; max-height: 150px; border-radius: 8px; object-fit: cover; cursor: pointer;';
+          img.onclick = () => window.open(att.data, '_blank');
+          attachmentsDiv.appendChild(img);
+        } else if (att.type === 'file') {
+          const fileDiv = document.createElement('div');
+          fileDiv.style.cssText = 'padding: 8px 12px; background: rgba(0,0,0,0.1); border-radius: 6px; font-size: 13px;';
+          fileDiv.innerHTML = `<i class="fas fa-file"></i> ${att.name}`;
+          attachmentsDiv.appendChild(fileDiv);
+        }
+      });
+      node.appendChild(attachmentsDiv);
+    }
+
+    target.appendChild(node);
+    addMessageActions(node, role === 'user');
+    scrollToBottom();
+    if (returnElement) return node;
+  }
+
+  function scrollToBottom() {
+    const container = el('chatFullWindow');
+    if (container) {
+      setTimeout(() => {
+        container.scrollTop = container.scrollHeight;
+      }, 100);
+    }
+  }
 
   // =============================================
-  // 🔤 FONCTION: AJOUTER BOUTONS COPIER CODE
+  // 📤 FONCTION: AJOUTER BOUTONS COPIER CODE
   // =============================================
   function addCopyButtons(element) {
     const codeBlocks = element.querySelectorAll('pre');
@@ -1305,20 +1123,11 @@
       if (!code) return;
       
       let language = 'TEXT';
-      let extension = 'txt';
       const classes = code.className.split(' ');
       const langClass = classes.find(c => c.startsWith('language-'));
       
       if (langClass) {
         language = langClass.replace('language-', '').toUpperCase();
-        const langMap = {
-          'JAVASCRIPT': 'js', 'PYTHON': 'py', 'HTML': 'html', 
-          'CSS': 'css', 'JSON': 'json', 'JAVA': 'java',
-          'CPP': 'cpp', 'C': 'c', 'PHP': 'php', 'RUBY': 'rb',
-          'GO': 'go', 'RUST': 'rs', 'TYPESCRIPT': 'ts',
-          'BASH': 'sh', 'SQL': 'sql', 'XML': 'xml'
-        };
-        extension = langMap[language] || language.toLowerCase();
       }
       
       const actions = document.createElement('div');
@@ -1336,20 +1145,6 @@
           ">
             <i class="fas fa-copy"></i> Copier
           </button>
-          <button class="code-action-btn" onclick="
-            const codeText = this.closest('pre').querySelector('code').innerText;
-            const blob = new Blob([codeText], { type: 'text/plain' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'code.${extension}';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-          ">
-            <i class="fas fa-download"></i> Télécharger
-          </button>
         </div>
       `;
       
@@ -1358,7 +1153,7 @@
   }
 
   // =============================================
-  // 💬 FONCTION: AJOUTER BOUTONS DISCRETS AU MESSAGE
+  // 🔘 FONCTION: BOUTONS ACTIONS SUR MESSAGES
   // =============================================
   function addMessageActions(messageElement, isUserMessage = false) {
     if (messageElement.querySelector('.message-actions')) return;
@@ -1379,20 +1174,15 @@
             });
         `
       },
-      isUserMessage ? {
-        icon: 'fa-edit',
-        label: 'Éditer',
-        onclick: `showEditMessage(this.closest('.msg'))`
-      } : null,
       !isUserMessage ? {
         icon: 'fa-redo',
         label: 'Régénérer',
         onclick: `regenerateMessage(this.closest('.msg'))`
       } : null,
       {
-        icon: 'fa-download',
-        label: 'Télécharger',
-        onclick: `downloadMessage(this.closest('.msg'))`
+        icon: 'fa-share-alt',
+        label: 'Partager',
+        onclick: `shareMessage(this.closest('.msg'))`
       }
     ].filter(Boolean);
 
@@ -1408,88 +1198,17 @@
   }
 
   // =============================================
-  // ✏️ FONCTION: AFFICHER ÉDITEUR DE MESSAGE
-  // =============================================
-  function showEditMessage(messageElement) {
-    const isAlreadyEditing = messageElement.querySelector('.message-edit-container.active');
-    if (isAlreadyEditing) {
-      isAlreadyEditing.classList.remove('active');
-      return;
-    }
-
-    let editContainer = messageElement.querySelector('.message-edit-container');
-    if (!editContainer) {
-      editContainer = document.createElement('div');
-      editContainer.className = 'message-edit-container';
-      messageElement.appendChild(editContainer);
-    }
-
-    const originalText = messageElement.innerText.trim();
-    editContainer.innerHTML = `
-      <textarea class="edit-textarea">${originalText}</textarea>
-      <div class="edit-actions">
-        <button class="btn primary" onclick="submitEditMessage(this)">💾 Envoyer</button>
-        <button class="btn" onclick="this.closest('.message-edit-container').classList.remove('active')">❌ Annuler</button>
-      </div>
-    `;
-    editContainer.classList.add('active');
-    editContainer.querySelector('.edit-textarea').focus();
-  }
-
-  window.submitEditMessage = function(btn) {
-    const editContainer = btn.closest('.message-edit-container');
-    const messageElement = editContainer.closest('.msg');
-    const newText = editContainer.querySelector('.edit-textarea').value.trim();
-
-    if (!newText) {
-      alert('❌ Le message ne peut pas être vide');
-      return;
-    }
-
-    if (messageElement.classList.contains('user')) {
-      handleChatSubmit(newText, appState.attachments);
-      editContainer.classList.remove('active');
-    } else {
-      alert('ℹ️ Vous ne pouvez éditer que vos propres messages');
-    }
-  };
-
-  // =============================================
-  // 📥 FONCTION: TÉLÉCHARGER MESSAGE
-  // =============================================
-  window.downloadMessage = function(messageElement) {
-    const msgText = messageElement.innerText.trim();
-    const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
-    const filename = `message_${timestamp}.txt`;
-    
-    const blob = new Blob([msgText], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    
-    console.log(`✅ Message téléchargé: ${filename}`);
-  };
-
-  // =============================================
-  // 🔄 FONCTION: RÉGÉNÉRER MESSAGE IA
+  // 🔄 FONCTION: RÉGÉNÉRER MESSAGE
   // =============================================
   async function regenerateMessage(messageElement) {
     const prevUserMsg = messageElement.previousElementSibling;
     if (!prevUserMsg || !prevUserMsg.classList.contains('user')) {
-      alert('❌ Impossible de trouver le message utilisateur précédent');
+      alert('❌ Impossible de trouver le message précédent');
       return;
     }
 
     const userMessage = prevUserMsg.innerText.trim();
-    if (!userMessage) {
-      alert('❌ Message vide');
-      return;
-    }
+    if (!userMessage) return;
 
     console.log('🔄 Régénération en cours...');
     messageElement.innerHTML = '<div style="text-align:center; color: var(--muted);"><i class="fas fa-spinner fa-spin"></i> Régénération...</div>';
@@ -1501,7 +1220,6 @@
       const reply = await sendToOnline(userMessage, [], false);
 
       if (!appState.shouldStopResponse) {
-        // Utiliser le streaming pour afficher la réponse
         const renderedHtml = marked.parse(reply, { sanitize: false, gfm: true });
         messageElement.innerHTML = renderedHtml;
 
@@ -1511,7 +1229,6 @@
 
         addCopyButtons(messageElement);
         addMessageActions(messageElement, false);
-        logActivity('✅ Message régénéré avec succès');
       }
     } catch (error) {
       console.error('❌ Erreur régénération:', error);
@@ -1524,187 +1241,112 @@
   window.regenerateMessage = regenerateMessage;
 
   // =============================================
-  // 💬 FONCTION: AJOUTER MESSAGE AU CHAT AVEC STREAMING
+  // 📤 FONCTION: PARTAGER MESSAGE
   // =============================================
-  function appendChat(role, text, returnElement = false, attachments = []) {
-    const target = document.getElementById('chatFullWindow');
-    if (!target) return;
+  function shareMessage(messageElement) {
+    const msgText = messageElement.innerText.trim();
     
-    const node = document.createElement('div');
-    node.className = 'msg ' + (role === 'user' ? 'user' : 'bot');
-
-    if (role === 'user') {
-      if (text) node.textContent = text;
+    if (navigator.share) {
+      navigator.share({
+        title: 'SmartHome Intelligence',
+        text: msgText.substring(0, 200)
+      }).catch(err => console.log('Partage annulé'));
     } else {
-      // Pour les messages bot, créer une structure de streaming
-      const streamingContent = document.createElement('div');
-      streamingContent.className = 'streaming-content';
-      
-      if (text) {
-        const renderedHtml = marked.parse(text, { sanitize: false, gfm: true });
-        streamingContent.innerHTML = renderedHtml;
-      } else if (returnElement) {
-        // Message vide pour le streaming
-        streamingContent.innerHTML = '<div class="streaming-cursor"></div>';
-        node.classList.add('loading');
-      }
-      
-      node.appendChild(streamingContent);
-      
-      // Appliquer la coloration syntaxique
-      node.querySelectorAll('pre code').forEach(block => {
-        hljs.highlightElement(block);
-      });
-      
-      addCopyButtons(node);
+      copyToClipboard(msgText);
+      alert('✅ Message copié dans le presse-papier');
     }
-    
-    if (attachments && attachments.length > 0) {
-      const attachmentsDiv = document.createElement('div');
-      attachmentsDiv.style.cssText = 'margin-top: 8px; display: flex; flex-wrap: wrap; gap: 8px;';
-      
-      attachments.forEach(att => {
-        if (att.type === 'image' && att.data) {
-          const img = document.createElement('img');
-          img.src = att.data;
-          img.style.cssText = 'max-width: 150px; max-height: 150px; border-radius: 8px; object-fit: cover; cursor: pointer;';
-          img.onclick = () => window.open(att.data, '_blank');
-          attachmentsDiv.appendChild(img);
-        } else if (att.type === 'file') {
-          const fileDiv = document.createElement('div');
-          fileDiv.style.cssText = 'padding: 8px 12px; background: rgba(0,0,0,0.1); border-radius: 6px; font-size: 13px;';
-          let iconClass = 'fa-file';
-          let iconColor = '#6c757d';
-          
-          const fileName = att.name.toLowerCase();
-          if (fileName.endsWith('.pdf')) { iconClass = 'fa-file-pdf'; iconColor = '#dc3545'; }
-          else if (fileName.endsWith('.docx') || fileName.endsWith('.doc')) { iconClass = 'fa-file-word'; iconColor = '#2b579a'; }
-          else if (fileName.endsWith('.xlsx') || fileName.endsWith('.xls')) { iconClass = 'fa-file-excel'; iconColor = '#217346'; }
-          else if (fileName.endsWith('.txt')) { iconClass = 'fa-file-alt'; }
-          else if (fileName.endsWith('.html') || fileName.endsWith('.htm')) { iconClass = 'fa-file-code'; iconColor = '#f06529'; }
-          else if (fileName.endsWith('.js')) { iconClass = 'fa-file-code'; iconColor = '#f7df1e'; }
-          else if (fileName.endsWith('.json')) { iconClass = 'fa-file-code'; iconColor = '#5a5a5a'; }
-          else if (fileName.endsWith('.css')) { iconClass = 'fa-file-code'; iconColor = '#264de4'; }
-          
-          fileDiv.innerHTML = `<i class="fas ${iconClass}" style="color: ${iconColor}; margin-right: 6px;"></i> ${att.name}`;
-          attachmentsDiv.appendChild(fileDiv);
-        }
-      });
-      node.appendChild(attachmentsDiv);
-    }
-
-    target.appendChild(node);
-    addMessageActions(node, role === 'user');
-    scrollToBottom();
-    if (returnElement) return node;
   }
 
+  window.shareMessage = shareMessage;
+
   // =============================================
-  // 🔄 FONCTION: STREAMING INTELLIGENT MARKDOWN
+  // 📥 FONCTION: TÉLÉCHARGER IMAGE
   // =============================================
-  function startStreamingResponse(messageElement, messageId) {
-    appState.isStreaming = true;
-    appState.currentStreamingMessage = messageElement;
+  window.downloadImage = function(imageUrl) {
+    const filename = `intellia_image_${Date.now()}.png`;
     
-    const streamingContent = messageElement.querySelector('.streaming-content');
-    if (!streamingContent) return;
-    
-    // Initialiser avec un curseur
-    streamingContent.innerHTML = '<div class="streaming-cursor"></div>';
-    
-    // Établir la connexion Server-Sent Events
-    const eventSource = new EventSource(`${RENDER_API}/api/stream?messageId=${messageId}`);
-    appState.streamingEventSource = eventSource;
-    
-    let accumulatedText = '';
-    
-    eventSource.onmessage = function(event) {
-      if (!appState.isStreaming) {
-        eventSource.close();
+    fetch(imageUrl)
+      .then(response => response.blob())
+      .then(blob => {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        console.log(`✅ Image téléchargée: ${filename}`);
+      })
+      .catch(error => {
+        console.error("❌ Erreur téléchargement image:", error);
+        alert("❌ Impossible de télécharger l'image.");
+      });
+  };
+
+  // =============================================
+  // ⌨️ FONCTION: STREAMING (SIMULATION 50ms/mot)
+  // =============================================
+  function simulateTyping(element, text, enableVoice = true) {
+    return new Promise((resolve, reject) => {
+      
+      if (appState.shouldStopResponse) {
+        element.innerHTML = '<br><br><em style="color: #e74c3c;">⚠️ Réponse interrompue</em>';
+        reject(new Error('Interrupted'));
         return;
       }
       
-      const data = JSON.parse(event.data);
-      
-      if (data.type === 'chunk') {
-        accumulatedText += data.content;
+      // Détection d'image
+      const imageMatch = text.match(/<IMAGE_URL_TOKEN>(.*?)<\/IMAGE_URL_TOKEN>/);
+      if (imageMatch) {
+        const imageUrl = imageMatch[1];
+        element.innerHTML = `
+          <div style="text-align: center;">
+            <img src="${imageUrl}" style="max-width: 100%; border-radius: 12px; margin-bottom: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.2);" />
+            <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+              <button class="btn primary" onclick="downloadImage('${imageUrl}')">
+                <i class="fas fa-download"></i> Télécharger
+              </button>
+              <button class="btn" onclick="window.open('${imageUrl}', '_blank')">
+                <i class="fas fa-external-link-alt"></i> Ouvrir
+              </button>
+            </div>
+          </div>
+        `;
         
-        // Convertir le markdown en HTML
-        const htmlContent = marked.parse(accumulatedText, { sanitize: false, gfm: true });
-        streamingContent.innerHTML = htmlContent + '<div class="streaming-cursor"></div>';
-        
-        // Appliquer la coloration syntaxique
-        streamingContent.querySelectorAll('pre code').forEach(block => {
-          hljs.highlightElement(block);
-        });
-        
+        element.classList.remove('loading');
         scrollToBottom();
-      }
-      
-      if (data.type === 'complete') {
-        // Finaliser le message
-        const finalHtml = marked.parse(accumulatedText, { sanitize: false, gfm: true });
-        streamingContent.innerHTML = finalHtml;
         
-        // Appliquer la coloration syntaxique
-        streamingContent.querySelectorAll('pre code').forEach(block => {
-          hljs.highlightElement(block);
-        });
-        
-        addCopyButtons(messageElement);
-        addMessageActions(messageElement, false);
-        
-        // Synthèse vocale si activée
-        if (appState.voiceNotifications) {
-          const readableText = extractReadableText(finalHtml);
-          speak(readableText);
+        if (enableVoice && appState.voiceNotifications) {
+          speak("Image générée avec succès");
         }
         
-        eventSource.close();
-        appState.isStreaming = false;
-        appState.currentStreamingMessage = null;
-        
-        scrollToBottom();
+        resolve();
+        return;
       }
       
-      if (data.type === 'error') {
-        streamingContent.innerHTML = '<em style="color: #e74c3c;">❌ Erreur lors de la génération de la réponse</em>';
-        eventSource.close();
-        appState.isStreaming = false;
-        appState.currentStreamingMessage = null;
+      // Synthèse vocale
+      if (enableVoice && appState.voiceNotifications) {
+        const readableText = extractReadableText(text);
+        if (readableText) {
+          speak(readableText, true);
+        }
       }
-    };
-    
-    eventSource.onerror = function() {
-      if (accumulatedText.length === 0) {
-        streamingContent.innerHTML = '<em style="color: #e74c3c;">❌ Erreur de connexion</em>';
-      }
-      eventSource.close();
-      appState.isStreaming = false;
-      appState.currentStreamingMessage = null;
-    };
-  }
-
-  function stopStreaming() {
-    if (appState.streamingEventSource) {
-      appState.streamingEventSource.close();
-    }
-    appState.isStreaming = false;
-    
-    if (appState.currentStreamingMessage) {
-      const streamingContent = appState.currentStreamingMessage.querySelector('.streaming-content');
-      if (streamingContent) {
-        streamingContent.innerHTML = streamingContent.innerHTML.replace('<div class="streaming-cursor"></div>', '');
-      }
-      appState.currentStreamingMessage = null;
-    }
-  }
-
-  function scrollToBottom() {
-    const container = document.getElementById('chatFullWindow');
-    if (container) {
-      container.scrollTop = container.scrollHeight;
-    }
+      
+      // Rendu Markdown
+      const renderedHtml = marked.parse(text, { sanitize: false, gfm: true });
+      element.innerHTML = renderedHtml;
+      
+      element.querySelectorAll('pre code').forEach(block => {
+        hljs.highlightElement(block);
+      });
+      
+      addCopyButtons(element);
+      
+      element.classList.remove('loading');
+      scrollToBottom();
+      resolve();
+    });
   }
 
   // =============================================
@@ -1720,7 +1362,6 @@
   
     appState.shouldStopResponse = false; 
     appState.chatInProgress = true;
-    el('intelliaStatus').textContent = "Assistant: En cours...";
     el('chat-loading').style.display = 'block';
     el('chatFullSend').style.display = 'none';
     el('stopAIBtn').style.display = 'flex'; 
@@ -1731,122 +1372,21 @@
     renderAttachmentPreviews();
     
     try {
-      // Créer un message vide pour le streaming
-      const botMsgElement = appendChat('bot', '', true);
-      const messageId = `msg_${Date.now()}`;
+      const reply = await sendToOnline(message, attachments, false);
       
-      // Démarrer le streaming
-      startStreamingResponse(botMsgElement, messageId);
-      
-      // Envoyer la requête au serveur
-      const response = await fetch(`${RENDER_API}/api/chat-stream`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          message,
-          attachments: attachments,
-          key: AUTH_KEY,
-          devices: appState.devices.map(d => ({ 
-            id: d.id, 
-            name: d.name, 
-            type: d.type, 
-            room: d.room,
-            isVariable: d.isVariable 
-          })),
-          deviceStates: appState.deviceStates,
-          sessionId: appState.currentSessionId,
-          userId: appState.currentUser.uid,
-          messageId: messageId,
-          preferences: {
-            voiceNotifications: appState.voiceNotifications
-          }
-        }),
-      });
-      
-      if (!response.ok) {
-        throw new Error(`Server error ${response.status}`);
+      if (!appState.shouldStopResponse) {
+        const botMsgElement = appendChat('bot', '', true);
+        try {
+          await simulateTyping(botMsgElement, reply, true);
+        } catch (interruptError) {
+          console.log('⚠️ Typing interrompu');
+        }
+      } else {
+        appendChat('bot', '<em style="color: #e74c3c;">⚠️ Réponse interrompue</em>');
       }
-      
     } catch (error) {
       if (!appState.shouldStopResponse) {
         console.error("Erreur chat:", error);
-        stopStreaming();
-        appendChat('bot', "Désolé, une erreur s'est produite.");
-      }
-    } finally {
-      appState.chatInProgress = false;
-      appState.shouldStopResponse = false; 
-      el('chat-loading').style.display = 'none';
-      el('chatFullSend').style.display = 'flex';
-      el('stopAIBtn').style.display = 'none';
-    }
-  }
-
-  // =============================================
-  // 🎤 FONCTION: SOUMETTRE MESSAGE VOIX
-  // =============================================
-  async function handleVoiceSubmit(command) {
-    if (!command) return;
-    if (appState.chatInProgress) {
-      logActivity(`Voix ignorée (chat en cours): "${command}"`);
-      return;
-    }
-
-    if (!appState.currentSessionId) {
-      createNewChatSession();
-    }
-  
-    appState.shouldStopResponse = false; 
-    appState.chatInProgress = true;
-    el('intelliaStatus').textContent = "Assistant: En cours...";
-    el('chat-loading').style.display = 'block';
-    el('stopAIBtn').style.display = 'flex'; 
-    el('chatFullSend').style.display = 'none'; 
-  
-    appendChat('user', command);
-    logActivity(`Commande vocale: "${command}"`);
-    
-    try {
-      // Créer un message vide pour le streaming
-      const botMsgElement = appendChat('bot', '', true);
-      const messageId = `msg_${Date.now()}`;
-      
-      // Démarrer le streaming
-      startStreamingResponse(botMsgElement, messageId);
-      
-      // Envoyer la requête au serveur
-      const response = await fetch(`${RENDER_API}/api/chat-stream`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          message: command,
-          attachments: [],
-          key: AUTH_KEY,
-          devices: appState.devices.map(d => ({ 
-            id: d.id, 
-            name: d.name, 
-            type: d.type, 
-            room: d.room,
-            isVariable: d.isVariable 
-          })),
-          deviceStates: appState.deviceStates,
-          sessionId: appState.currentSessionId,
-          userId: appState.currentUser.uid,
-          messageId: messageId,
-          preferences: {
-            voiceNotifications: appState.voiceNotifications
-          }
-        }),
-      });
-      
-      if (!response.ok) {
-        throw new Error(`Server error ${response.status}`);
-      }
-      
-    } catch (error) {
-      if (!appState.shouldStopResponse) {
-        console.error("Erreur voix:", error);
-        stopStreaming();
         appendChat('bot', "Désolé, une erreur s'est produite.");
       }
     } finally {
@@ -1859,14 +1399,9 @@
   }
 
   // =============================================
-  // 🌐 FONCTION: ENVOYER À L'API (pour compatibilité)
+  // 🌐 FONCTION: ENVOYER À L'API
   // =============================================
   async function sendToOnline(message, attachments = [], continuationMode = false) {
-    if (!appState.currentUser) {
-        alert("Erreur: Utilisateur non connecté. Veuillez rafraîchir.");
-        return "Erreur d'authentification.";
-    }
-    
     const t0 = Date.now();
     
     try {
@@ -1877,16 +1412,10 @@
           message,
           attachments: attachments,
           key: AUTH_KEY,
-          devices: appState.devices.map(d => ({ 
-            id: d.id, 
-            name: d.name, 
-            type: d.type, 
-            room: d.room,
-            isVariable: d.isVariable 
-          })),
+          devices: appState.devices.map(d => ({ id: d.id, name: d.name, type: d.type, room: d.room, isVariable: d.isVariable })),
           deviceStates: appState.deviceStates,
           sessionId: appState.currentSessionId,
-          userId: appState.currentUser.uid,
+          userId: appState.currentUser?.uid || 'demo_user',
           continuationMode: continuationMode,
           preferences: {
             voiceNotifications: appState.voiceNotifications
@@ -1902,17 +1431,11 @@
           return "Interrompu.";
       }
       
-      await saveMessageToFirebase(message, j.reply, attachments);
-      
-      if (j.suggestions && j.suggestions.length > 0) displaySuggestions(j.suggestions);
       if (j.planning_commands) handlePlanningCommands(j.planning_commands);
       if (j.execute) handleExecuteCommands(j.execute);
-      if (j.device_commands) handleDeviceCommands(j.device_commands);
       
       appState.intelliaOnline = true; 
-      el('intelliaStatus').textContent = "Assistant: Connecté";
       el('statusOnline').textContent = "Assistant : disponible";
-      logActivity(`Assistant a répondu.`);
       
       return j.reply || "OK";
       
@@ -1922,149 +1445,43 @@
       }
       console.warn("sendToOnline error", e);
       appState.intelliaOnline = false;
-      el('intelliaStatus').textContent = "Assistant: Hors ligne";
       el('statusOnline').textContent = "Assistant : indisponible";
-      logActivity(`Erreur de connexion Assistant.`);
       return "Erreur de connexion avec l'Assistant.";
     }
   }
 
-  // ============================================
-  // ⚡ WEBSOCKET AMÉLIORÉ AVEC INDICATEURS
-  // ============================================
-  function connectWebSocket() {
-    if (!appState.esp32Ip) {
-      updateWebSocketStatus('disconnected', 'Adresse IP non configurée');
+  // =============================================
+  // 🔊 FONCTION: SYNTHÈSE VOCALE
+  // =============================================
+  let preferredVoice = null;
+  const choosePreferredVoice = () => {
+    const voices = window.speechSynthesis.getVoices() || [];
+    return voices.find(x => /fr[-_]?FR/i.test(x.lang) && /Google/.test(x.name)) || voices.find(x => /fr[-_]?FR/i.test(x.lang)) || voices[0];
+  };
+  if ('speechSynthesis' in window) window.speechSynthesis.onvoiceschanged = () => { preferredVoice = choosePreferredVoice(); };
+
+  function speak(text, isStreaming = false) {
+    if (!appState.voiceNotifications || !text || !('speechSynthesis' in window)) return;
+    
+    if (appState.shouldStopResponse) {
+      window.speechSynthesis.cancel();
       return;
     }
 
-    const wsUrl = `ws://${appState.esp32Ip}:81`;
-    updateWebSocketStatus('connecting', 'Connexion en cours...');
-
-    try {
-      appState.localWebSocket = new WebSocket(wsUrl);
-
-      appState.localWebSocket.onopen = function() {
-        console.log('✅ WebSocket connecté à ESP32');
-        appState.isLocalConnected = true;
-        updateWebSocketStatus('connected', 'Connecté à ESP32');
-        logActivity('✅ WebSocket connecté à ESP32');
-      };
-
-      appState.localWebSocket.onmessage = function(event) {
-        try {
-          const data = JSON.parse(event.data);
-          console.log('📨 WebSocket message:', data);
-          
-          if (data.type === 'state_update' && data.device_id) {
-            // Mettre à jour l'état de l'appareil
-            appState.deviceStates[data.device_id] = {
-              etat: data.etat,
-              luminosite: data.luminosite || 0
-            };
-            renderDevices();
-            logActivity(`⚡[WS] État mis à jour: ${data.device_id} → ${data.etat}`);
-          }
-          
-          if (data.type === 'ping') {
-            // Répondre au ping
-            appState.localWebSocket.send(JSON.stringify({ type: 'pong' }));
-          }
-        } catch (e) {
-          console.error('❌ Erreur parsing WebSocket message:', e);
-        }
-      };
-
-      appState.localWebSocket.onclose = function() {
-        console.log('❌ WebSocket déconnecté');
-        appState.isLocalConnected = false;
-        updateWebSocketStatus('disconnected', 'Déconnecté');
-        logActivity('❌ WebSocket déconnecté');
-        
-        // Tentative de reconnexion après 5 secondes
-        setTimeout(() => {
-          if (appState.esp32Ip) {
-            connectWebSocket();
-          }
-        }, 5000);
-      };
-
-      appState.localWebSocket.onerror = function(error) {
-        console.error('❌ Erreur WebSocket:', error);
-        updateWebSocketStatus('disconnected', 'Erreur de connexion');
-        logActivity('❌ Erreur WebSocket');
-      };
-
-    } catch (error) {
-      console.error('❌ Erreur création WebSocket:', error);
-      updateWebSocketStatus('disconnected', 'Erreur de connexion');
-    }
-  }
-
-  function updateWebSocketStatus(status, message) {
-    const statusElement = el('statusLocal');
-    const detailsElement = el('websocket-status');
+    window.speechSynthesis.cancel();
     
-    if (statusElement) {
-      statusElement.className = `chip websocket-status ${status}`;
-      statusElement.textContent = `ESP32: ${message}`;
-    }
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = 'fr-FR';
+    if (!preferredVoice) preferredVoice = choosePreferredVoice();
+    if (preferredVoice) u.voice = preferredVoice;
+    u.rate = 1.1;
     
-    if (detailsElement) {
-      detailsElement.textContent = message;
-      detailsElement.className = `websocket-status ${status}`;
-    }
+    window.speechSynthesis.speak(u);
   }
 
-  function disconnectWebSocket() {
-    if (appState.localWebSocket) {
-      appState.localWebSocket.close();
-      appState.localWebSocket = null;
-    }
-    appState.isLocalConnected = false;
-    updateWebSocketStatus('disconnected', 'Déconnecté manuellement');
-    logActivity('🔌 WebSocket déconnecté manuellement');
-  }
-
-  // ============================================
-  // 📋 FONCTIONS MANQUANTES
-  // ============================================
-
-  function populatePlanDeviceSelect() {
-    try {
-      const selectElement = document.getElementById('plan-device');
-      if (!selectElement) {
-        console.warn('⚠️ Élément plan-device non trouvé (section planning peut être cachée)');
-        return;
-      }
-      
-      selectElement.innerHTML = '';
-      
-      if (!appState.devices || appState.devices.length === 0) {
-        const option = document.createElement('option');
-        option.value = '';
-        option.textContent = 'Aucun appareil disponible';
-        selectElement.appendChild(option);
-        return;
-      }
-      
-      appState.devices.forEach(device => {
-        const option = document.createElement('option');
-        option.value = device.id;
-        option.textContent = `${device.name} (${device.room || 'Non spécifié'})`;
-        selectElement.appendChild(option);
-      });
-      
-      console.log(`✅ ${appState.devices.length} appareil(s) chargé(s) dans le planning`);
-      
-    } catch (error) {
-      console.error('❌ Erreur populatePlanDeviceSelect:', error);
-    }
-  }
-
-  // ============================================
-  // 🏠 FONCTION: AFFICHER APPAREILS VARIABLES/FIXES
-  // ============================================
+  // =============================================
+  // 🏠 FONCTION: AFFICHER APPAREILS
+  // =============================================
   function renderDevices() {
     const grid = el('deviceGrid');
     if (!grid) return;
@@ -2072,9 +1489,8 @@
     
     for (const device of appState.devices) {
       const isOn = appState.deviceStates[device.id]?.etat === 'ON';
-      const power = appState.deviceStates[device.id]?.luminosite ?? appState.deviceStates[device.id]?.vitesse ?? 0;
-      const deviceType = deviceTypes[device.type] || { name: 'Appareil', hasBrightness: false, isVariable: false, icon: 'plug' };
-      const isVariable = device.isVariable !== undefined ? device.isVariable : deviceType.isVariable;
+      const power = appState.deviceStates[device.id]?.luminosite ?? 0;
+      const deviceType = deviceTypes[device.type] || { name: 'Appareil', icon: 'plug' };
       
       const card = document.createElement('div');
       card.className = 'device-card';
@@ -2086,8 +1502,8 @@
             <div class="device-name">${device.name}</div>
             <div class="device-status">
               <span class="status-indicator ${isOn ? 'active' : ''}"></span>
-              <span>${isOn ? 'Allumé' : 'Éteint'}${isVariable ? ` • ${power}%` : ''}</span>
-              <small style="display:block;margin-top:4px">${device.room || 'Non spécifié'} • ${isVariable ? 'Variable' : 'Fixe'}</small>
+              <span>${isOn ? 'Allumé' : 'Éteint'}${device.isVariable ? ` • ${power}%` : ''}</span>
+              <small style="display:block;margin-top:4px">${device.room || 'Non spécifié'} • ${device.isVariable ? 'Variable' : 'Fixe'}</small>
             </div>
           </div>
         </div>
@@ -2098,7 +1514,7 @@
               <span class="slider-3d"></span></label>
             </label>
           </div>
-          ${isVariable ? `<div style="flex:1">
+          ${device.isVariable ? `<div style="flex:1">
             <label>Puissance : <span id="${device.id}-value">${power}%</span></label>
             <input id="${device.id}-slider" type="range" min="0" max="100" value="${power}" oninput="adjustBrightness('${device.id}', this.value)"/>
           </div>` : ''}
@@ -2110,20 +1526,21 @@
         </div>`;
       grid.appendChild(card);
     }
-    populatePlanDeviceSelect();
     updateCount();
   }
 
-  // ============================================
-  // ⚙️ FONCTION: GESTION APPAREILS VARIABLES/FIXES
-  // ============================================
+ // =============================================
+  // 📂 SUITE COMPLÈTE DU CODE JAVASCRIPT
+  // Vient APRÈS renderDevices()
+  // =============================================
+
+  // =============================================
+  // ⚙️ FONCTION: GESTION APPAREILS
+  // =============================================
   window.toggleDevice = (deviceId) => {
     const current = appState.deviceStates[deviceId] || { etat: "OFF" };
     const newEtat = current.etat === "ON" ? "OFF" : "ON";
-    const device = appState.devices.find(d => d.id === deviceId);
-    const isVariable = device?.isVariable || false;
-    
-    sendCommand(deviceId, newEtat, isVariable ? (newEtat === "ON" ? 100 : 0) : null);
+    sendCommand(deviceId, newEtat, newEtat === "ON" ? 100 : 0);
   };
 
   window.adjustBrightness = (deviceId, value) => {
@@ -2134,11 +1551,13 @@
 
   window.sendCommand = (deviceId, action, value = null) => {
     const device = appState.devices.find(d => d.id === deviceId);
-    const isVariable = device?.isVariable || false;
-    const val = (value !== null && isVariable) ? parseInt(value) : (action === "ON" && isVariable ? 100 : 0);
+    if (!device) return;
+    
+    const deviceType = deviceTypes[device.type] || { hasBrightness: false };
+    const val = (value !== null) ? parseInt(value) : (action === "ON" ? 100 : 0);
     
     if (appState.isLocalConnected && appState.localWebSocket && appState.localWebSocket.readyState === 1) {
-      logActivity(`⚡[WS] Envoi: ${deviceId} → ${action} ${isVariable ? `(${val}%)` : ''}`);
+      logActivity(`⚡[WS] Envoi: ${deviceId} → ${action} (${val}%)`);
       appState.localWebSocket.send(JSON.stringify({
         type: "control",
         device_id: deviceId,
@@ -2146,221 +1565,274 @@
         value: val
       }));
       
-      appState.deviceStates[deviceId] = { etat: action, luminosite: val };
+      const newState = { etat: action };
+      if (deviceType.hasBrightness) newState.luminosite = val;
+      appState.deviceStates[deviceId] = newState;
       renderDevices();
       
     } else {
-      logActivity(`☁️ [Firebase] Envoi: ${deviceId} → ${action} ${isVariable ? `(${val}%)` : ''}`);
-      writeDeviceStateToBackend(deviceId, action, isVariable ? val : null);
+      logActivity(`☁️ [Firebase] Envoi: ${deviceId} → ${action} (${val}%)`);
+      writeDeviceStateToBackend(deviceId, action, val);
       
-      appState.deviceStates[deviceId] = { etat: action, luminosite: val };
+      const newState = { etat: action };
+      if (deviceType.hasBrightness) newState.luminosite = val;
+      appState.deviceStates[deviceId] = newState;
       renderDevices();
     }
   };
 
   async function writeDeviceStateToBackend(deviceId, etat, value = null) {
     const device = appState.devices.find(d => d.id === deviceId);
-    const isVariable = device?.isVariable || false;
+    const deviceType = deviceTypes[device?.type] || { hasBrightness: false };
     
     const payload = { etat };
-    if (isVariable && value !== null) payload.luminosite = parseInt(value, 10);
+    if (deviceType.hasBrightness && value !== null) {
+      payload.luminosite = parseInt(value, 10);
+    }
     
     if (!db) { 
       appState.deviceStates[deviceId] = payload; 
       renderDevices(); 
       return; 
     }
+    
+    const { set, ref } = window.firebaseModules;
     await set(ref(db, `${devicesRefPath}/${deviceId}`), payload);
   }
 
-  // ============================================
-  // 📅 PLANNING AVANCÉ - GESTION DES TYPES
-  // ============================================
-  function setupPlanningInterface() {
-    const frequencySelect = el('plan-frequency');
-    if (!frequencySelect) return;
+  window.deleteDevicePrompt = async function(id) {
+    if (!confirm(`Supprimer l'appareil ${id} ?`)) return;
     
-    frequencySelect.addEventListener('change', function() {
-      const frequency = this.value;
-      
-      // Masquer toutes les options
-      document.querySelectorAll('.planning-options').forEach(opt => {
-        opt.classList.remove('active');
-      });
-      
-      // Afficher les options correspondantes
-      if (frequency === 'once') {
-        el('opt-once').classList.add('active');
-        if (!el('plan-date').value) {
-          el('plan-date').valueAsDate = new Date();
-        }
-      } else if (frequency === 'weekly') {
-        el('opt-weekly').classList.add('active');
-      } else if (frequency === 'monthly') {
-        el('opt-monthly').classList.add('active');
-      } else if (frequency === 'duration') {
-        el('opt-duration').classList.add('active');
-        if (!el('plan-start-date').value) {
-          el('plan-start-date').valueAsDate = new Date();
-        }
-        if (!el('plan-end-date').value) {
-          const endDate = new Date();
-          endDate.setDate(endDate.getDate() + 7);
-          el('plan-end-date').valueAsDate = endDate;
-        }
-      }
-      
-      // Gérer l'affichage du contrôle de puissance
-      const deviceId = el('plan-device').value;
-      const device = appState.devices.find(d => d.id === deviceId);
-      const isVariable = device?.isVariable || false;
-      
-      const powerContainer = el('power-control-container');
-      if (powerContainer) {
-        powerContainer.style.display = isVariable ? 'block' : 'none';
-      }
-    });
-    
-    // Gestion des jours de la semaine
-    document.querySelectorAll('.planning-day').forEach(day => {
-      day.addEventListener('click', function() {
-        this.classList.toggle('selected');
-        updateSelectedDays();
-      });
-    });
-    
-    // Mettre à jour les options de puissance quand l'appareil change
-    el('plan-device').addEventListener('change', function() {
-      const deviceId = this.value;
-      const device = appState.devices.find(d => d.id === deviceId);
-      const isVariable = device?.isVariable || false;
-      
-      const powerContainer = el('power-control-container');
-      if (powerContainer) {
-        powerContainer.style.display = isVariable ? 'block' : 'none';
-      }
-    });
-    
-    // Initialiser l'interface
-    frequencySelect.dispatchEvent(new Event('change'));
-  }
-
-  function updateSelectedDays() {
-    const selectedDays = [];
-    document.querySelectorAll('.planning-day.selected').forEach(day => {
-      selectedDays.push(day.dataset.day);
-    });
-    el('plan-days').value = selectedDays.join(',');
-  }
-
-  // ============================================
-  // 🔊 SYNTHÈSE VOCALE AMÉLIORÉE
-  // ============================================
-  let preferredVoice = null;
-  const choosePreferredVoice = () => {
-    const voices = window.speechSynthesis.getVoices() || [];
-    return voices.find(x => /fr[-_]?FR/i.test(x.lang) && /Google/.test(x.name)) || 
-           voices.find(x => /fr[-_]?FR/i.test(x.lang)) || 
-           voices[0];
+    if (db) {
+      const { set, ref } = window.firebaseModules;
+      await set(ref(db, `${metaRefPath}/${id}`), null); 
+      await set(ref(db, `${devicesRefPath}/${id}`), null);
+    } else {
+      appState.devices = appState.devices.filter(d => d.id !== id);
+      delete appState.deviceStates[id];
+      saveDevicesToLocalStorage();
+      renderDevices();
+    }
+    logActivity(`🗑️ Appareil supprimé: ${id}`);
   };
 
-  if ('speechSynthesis' in window) {
-    window.speechSynthesis.onvoiceschanged = () => { 
-      preferredVoice = choosePreferredVoice(); 
+  // =============================================
+  // 📅 FONCTION: PLANNING & TÂCHES
+  // =============================================
+  function populatePlanDeviceSelect() {
+    const sel = el('plan-device');
+    if (!sel) return;
+    sel.innerHTML = appState.devices.map(d => `<option value="${d.id}">${d.name} (${d.room || 'Non spécifié'})</option>`).join('');
+  }
+
+  function togglePlanOptions() {
+    const freq = el('plan-frequency')?.value;
+    if (!freq) return;
+    
+    const optDate = el('opt-date');
+    
+    if (optDate) {
+      optDate.style.display = (freq === 'once') ? 'block' : 'none';
+    }
+    
+    if (freq === 'once' && el('plan-date') && !el('plan-date').value) {
+      el('plan-date').valueAsDate = new Date();
+    }
+  }
+
+  el('plan-frequency')?.addEventListener('change', togglePlanOptions);
+  setTimeout(togglePlanOptions, 500);
+
+  el('addPlan')?.addEventListener('click', async () => {
+    const device = el('plan-device')?.value;
+    const time = el('plan-time')?.value;
+    const action = el('plan-action')?.value;
+    const freq = el('plan-frequency')?.value;
+    let power = el('plan-power')?.value;
+    
+    if (!device || !time) return alert('⚠️ Appareil et heure requis');
+    
+    const deviceObj = appState.devices.find(d => d.id === device);
+    const deviceType = deviceTypes[deviceObj?.type] || { hasBrightness: false };
+    const hasBrightness = deviceType.hasBrightness;
+    
+    power = hasBrightness ? (power || (action === "ON" ? 100 : 0)) : null;
+    
+    const payload = {
+      device, 
+      time, 
+      action, 
+      frequency: freq,
+      power: hasBrightness ? parseInt(power) : null,
+      createdAt: Date.now(),
+      executed: false
     };
-  }
-
-  function speak(text, isStreaming = false) {
-    if (!appState.voiceNotifications || !text || !('speechSynthesis' in window)) {
-      VoiceEngine.resumeRecognition();
-      return;
+    
+    if (freq === 'once') {
+      const dateValue = el('plan-date')?.value;
+      if (!dateValue) return alert('⚠️ Veuillez sélectionner une date');
+      payload.targetDate = dateValue;
     }
     
-    if (appState.shouldStopResponse) {
-      window.speechSynthesis.cancel();
-      VoiceEngine.resumeRecognition();
-      return;
-    }
-
-    VoiceEngine.pauseRecognition();
-    window.speechSynthesis.cancel();
-    
-    if (isStreaming) {
-      const sentences = text.match(/[^.!?]+[.!?]+/g) || [text];
-      let currentIndex = 0;
-      
-      function speakNextSentence() {
-        if (appState.shouldStopResponse) {
-          window.speechSynthesis.cancel();
-          VoiceEngine.resumeRecognition();
-          return;
-        }
-              
-        if (currentIndex >= sentences.length) {
-          setTimeout(() => VoiceEngine.resumeRecognition(), 150);
-          return;
-        }
-              
-        const sentence = sentences[currentIndex].trim();
-        if (sentence) {
-          const u = new SpeechSynthesisUtterance(sentence);
-          u.lang = 'fr-FR';
-          if (!preferredVoice) preferredVoice = choosePreferredVoice();
-          if (preferredVoice) u.voice = preferredVoice;
-          u.rate = 1.1;
-          
-          u.onend = () => {
-            currentIndex++;
-            speakNextSentence();
-          };
-          
-          u.onerror = () => {
-            if (appState.shouldStopResponse) {
-              window.speechSynthesis.cancel();
-            }
-          };
-          
-          window.speechSynthesis.speak(u);
-        } else {
-          currentIndex++;
-          speakNextSentence();
-        }
-      }
-      speakNextSentence();
+    if (db) {
+      const { push, ref } = window.firebaseModules;
+      await push(ref(db, planningRefPath), payload);
     } else {
-      const u = new SpeechSynthesisUtterance(text);
-      u.lang = 'fr-FR';
-      if (!preferredVoice) preferredVoice = choosePreferredVoice();
-      if (preferredVoice) u.voice = preferredVoice;
-      u.onend = () => {
-        setTimeout(() => VoiceEngine.resumeRecognition(), 150);
-      };
-      window.speechSynthesis.speak(u);
+      appState.plans.push(payload);
+      savePlansToLocalStorage();
+      renderPlanningListUI(appState.plans);
+    }
+    
+    logActivity(`✅ Plan ajouté: ${device} à ${time} (${freq})`);
+    alert('✅ Planification ajoutée avec succès !');
+    
+    if (el('plan-time')) el('plan-time').value = '';
+    if (el('plan-date')) el('plan-date').value = '';
+  });
+
+  function renderPlanningListUI(plans) {
+    const out = el('planningTable');
+    if (!out) return;
+    if (!plans || !plans.length) {
+      out.innerHTML = '<p style="text-align:center;color:var(--muted);padding:20px">🔭 Aucune tâche programmée</p>';
+      return;
+    }
+    
+    out.innerHTML = `<table style="width:100%;border-collapse:collapse">
+      <thead>
+        <tr style="background:rgba(0,0,0,0.03)">
+          <th style="padding:10px;text-align:left">Appareil</th>
+          <th style="padding:10px;text-align:left">Quand</th>
+          <th style="padding:10px;text-align:left">Action</th>
+          <th style="padding:10px;text-align:center">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${plans.map(p => {
+          const deviceName = appState.devices.find(d => d.id === p.device)?.name || p.device;
+          let whenText = p.time;
+          const freq = p.frequency || 'once';
+          
+          if (freq === 'daily') {
+            whenText += ' <span class="chip">📅 Quotidien</span>';
+          } else if (freq === 'weekly') {
+            whenText += ' <span class="chip">📅 Hebdomadaire</span>';
+          } else if (freq === 'monthly') {
+            whenText += ' <span class="chip">📅 Mensuel</span>';
+          } else if (freq === 'once' && p.targetDate) {
+            const date = new Date(p.targetDate).toLocaleDateString('fr-FR');
+            whenText += ` <span class="chip">📅 ${date}</span>`;
+          }
+          
+          const actionText = p.action === 'ON' ? '🟢 ON' : '🔴 OFF';
+          const powerText = p.power !== null ? ` ${p.power}%` : '';
+          const statusBadge = p.executed ? '<span class="chip" style="background: rgba(46, 213, 115, 0.3);">✅ Exécuté</span>' : '';
+          
+          return `<tr style="border-bottom:1px solid rgba(0,0,0,0.05)">
+            <td style="padding:10px"><strong>${deviceName}</strong></td>
+            <td style="padding:10px">${whenText}</td>
+            <td style="padding:10px">${actionText}${powerText} ${statusBadge}</td>
+            <td style="padding:10px;text-align:center">
+              <button class="btn warn" onclick="deletePlan('${p.firebaseId || p.createdAt}')" style="padding:6px 12px">
+                <i class="fas fa-trash"></i>
+              </button>
+            </td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>`;
+  }
+
+  window.deletePlan = async (planId) => {
+    if (!confirm('🗑️ Supprimer cette planification ?')) return;
+    if (db) { 
+      const { remove, ref } = window.firebaseModules;
+      await remove(ref(db, `${planningRefPath}/${planId}`)); 
+    } else {
+      appState.plans = appState.plans.filter(p => (p.firebaseId || p.createdAt) != planId);
+      savePlansToLocalStorage(); 
+      renderPlanningListUI(appState.plans);
+    }
+    logActivity(`🗑️ Planification supprimée.`);
+  };
+
+  const deleteAllPlans = async () => {
+    if (!confirm('🗑️ Supprimer TOUTES les planifications ?')) return;
+    if (db) {
+      const { set, ref } = window.firebaseModules;
+      await set(ref(db, planningRefPath), null);
+    } else { 
+      appState.plans = []; 
+      savePlansToLocalStorage(); 
+      renderPlanningListUI([]); 
+    }
+    logActivity(`🗑️ Toutes les planifications supprimées.`);
+    speak('Toutes les planifications ont été supprimées.');
+  };
+  
+  el('clearAllPlans')?.addEventListener('click', deleteAllPlans);
+
+  // =============================================
+  // ✅ FONCTION: NETTOYER TÂCHES EXÉCUTÉES
+  // =============================================
+  async function cleanupExecutedPlans() {
+    const oneTimePlans = appState.plans.filter(p => p.frequency === 'once' && p.executed);
+    
+    for (const plan of oneTimePlans) {
+      if (db) {
+        const { remove, ref } = window.firebaseModules;
+        await remove(ref(db, `${planningRefPath}/${plan.firebaseId}`));
+      } else {
+        appState.plans = appState.plans.filter(p => p !== plan);
+      }
+      logActivity(`🧹 Tâche unique exécutée nettoyée: ${plan.device}`);
+    }
+    
+    if (!db) {
+      savePlansToLocalStorage();
+      renderPlanningListUI(appState.plans);
     }
   }
 
-  // ============================================
-  // 📋 JOURNAL D'ACTIVITÉ
-  // ============================================
-  function logActivity(message, type = 'info') {
-    const logContainer = el('activityLog');
-    if (!logContainer) return;
-    const time = new Date().toLocaleTimeString();
-    const entry = document.createElement('div');
-    let icon = 'ℹ️';
-    if (type === 'success') icon = '✅';
-    else if (type === 'error') icon = '❌';
-    else if (type === 'warning') icon = '⚠️';
-    entry.innerHTML = `<span style="color:var(--muted)">[${time}]</span> ${icon} ${message}`;
-    logContainer.prepend(entry);
-    if (logContainer.children.length > 50) {
-      logContainer.removeChild(logContainer.lastChild);
-    }
+  setInterval(cleanupExecutedPlans, 300000); // Toutes les 5 minutes
+
+  function updateCount() {
+    const onCount = Object.values(appState.deviceStates).filter(s => s?.etat === 'ON').length;
+    el('db-count').textContent = `on: ${onCount}`;
   }
 
-  // ============================================
+  // =============================================
+  // 💾 FONCTION: SAUVEGARDE LOCALE
+  // =============================================
+  const saveDevicesToLocalStorage = () => localStorage.setItem('sh_devices', JSON.stringify(appState.devices));
+  const loadDevicesFromLocalStorage = () => { 
+    const stored = localStorage.getItem('sh_devices');
+    if (stored) {
+      try {
+        appState.devices = JSON.parse(stored);
+      } catch (e) {
+        console.error('Erreur chargement devices:', e);
+        appState.devices = [];
+      }
+    }
+  };
+  
+  const savePlansToLocalStorage = () => localStorage.setItem('sh_plans', JSON.stringify(appState.plans));
+  const loadPlansFromLocalStorage = () => { 
+    const stored = localStorage.getItem('sh_plans');
+    if (stored) {
+      try {
+        appState.plans = JSON.parse(stored);
+      } catch (e) {
+        console.error('Erreur chargement plans:', e);
+        appState.plans = [];
+      }
+    }
+  };
+
+  // =============================================
   // 🎤 MOTEUR VOIX - VOICE ENGINE
-  // ============================================
+  // =============================================
   const VoiceEngine = {
     recognition: null,
     isPushToTalkRecording: false,
@@ -2369,30 +1841,50 @@
     
     init() {
       if (!("webkitSpeechRecognition" in window || "SpeechRecognition" in window)) {
-        el('voicePushToTalk').disabled = true;
-        el('voiceContinuous').disabled = true;
-        el('quickVoiceToggleBtn').disabled = true;
-        el('quickVoiceToggleBtn').textContent = 'Voix non supportée';
-        el('voiceStatus').textContent = 'Voix: Non supportée';
+        if (el('voicePushToTalk')) el('voicePushToTalk').disabled = true;
+        if (el('voiceContinuous')) el('voiceContinuous').disabled = true;
+        if (el('quickVoiceToggleBtn')) {
+          el('quickVoiceToggleBtn').disabled = true;
+          el('quickVoiceToggleBtn').textContent = 'Voix non supportée';
+        }
+        if (el('voiceStatus')) el('voiceStatus').textContent = 'Voix: Non supportée';
         return;
       }
+      
       this.requestMicrophonePermission();
+      
       const pushBtn = el('voicePushToTalk');
       const continuousBtn = el('voiceContinuous');
       const quickBtn = el('quickVoiceToggleBtn');
       
-      pushBtn.addEventListener('touchstart', (e) => { e.preventDefault(); this.togglePushToTalk(); });
-      pushBtn.addEventListener('click', () => this.togglePushToTalk());
-      continuousBtn.addEventListener('touchstart', (e) => { e.preventDefault(); this.toggleContinuousConversation(); });
-      continuousBtn.addEventListener('click', () => this.toggleContinuousConversation());
-      quickBtn.addEventListener('touchstart', (e) => { e.preventDefault(); this.toggleContinuousConversation(); });
-      quickBtn.addEventListener('click', () => this.toggleContinuousConversation());
+      if (pushBtn) {
+        pushBtn.addEventListener('touchstart', (e) => { e.preventDefault(); this.togglePushToTalk(); });
+        pushBtn.addEventListener('click', () => this.togglePushToTalk());
+      }
+      
+      if (continuousBtn) {
+        continuousBtn.addEventListener('touchstart', (e) => { e.preventDefault(); this.toggleContinuousConversation(); });
+        continuousBtn.addEventListener('click', () => this.toggleContinuousConversation());
+      }
+      
+      if (quickBtn) {
+        quickBtn.addEventListener('touchstart', (e) => { e.preventDefault(); this.toggleContinuousConversation(); });
+        quickBtn.addEventListener('click', () => this.toggleContinuousConversation());
+      }
     },
 
     requestMicrophonePermission() {
-      navigator.mediaDevices.getUserMedia({ audio: true })
-        .then(stream => { stream.getTracks().forEach(track => track.stop()); })
-        .catch(err => { console.error("Permission micro:", err); el('voiceStatus').textContent = 'Voix: Permission requise'; });
+      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        navigator.mediaDevices.getUserMedia({ audio: true })
+          .then(stream => { 
+            stream.getTracks().forEach(track => track.stop()); 
+            console.log('✅ Permission micro accordée');
+          })
+          .catch(err => { 
+            console.error("Permission micro:", err); 
+            if (el('voiceStatus')) el('voiceStatus').textContent = 'Voix: Permission requise'; 
+          });
+      }
     },
 
     createRecognitionInstance(continuous = false) {
@@ -2427,30 +1919,50 @@
     togglePushToTalk() {
       if (this.isContinuousActive) this.toggleContinuousConversation();
       const btn = el('voicePushToTalk');
+      if (!btn) return;
+      
       if (this.isPushToTalkRecording) {
         this.isPushToTalkRecording = false;
         if (this.recognition) this.recognition.stop();
         btn.classList.remove('pulse');
-        el('voiceStatus').textContent = 'Voix: Traitement...';
+        if (el('voiceStatus')) el('voiceStatus').textContent = 'Voix: Traitement...';
       } else {
         this.isPushToTalkRecording = true;
         this.recognition = this.createRecognitionInstance(false);
         btn.classList.add('pulse');
-        el('voiceStatus').textContent = 'Voix: Enregistrement...';
-        this.recognition.onresult = (e) => { handleVoiceSubmit(e.results[0][0].transcript); };
+        if (el('voiceStatus')) el('voiceStatus').textContent = 'Voix: Enregistrement...';
+        
+        this.recognition.onresult = (e) => { 
+          const transcript = e.results[0][0].transcript;
+          handleVoiceSubmit(transcript); 
+        };
+        
         this.recognition.onend = () => {
           this.isPushToTalkRecording = false;
           btn.classList.remove('pulse');
-          el('voiceStatus').textContent = 'Voix: Inactive';
+          if (el('voiceStatus')) el('voiceStatus').textContent = 'Voix: Inactive';
           this.recognition = null;
         };
-        this.recognition.start();
+        
+        this.recognition.onerror = (e) => {
+          console.error('Voice recognition error:', e.error);
+          this.isPushToTalkRecording = false;
+          btn.classList.remove('pulse');
+          if (el('voiceStatus')) el('voiceStatus').textContent = 'Voix: Erreur';
+        };
+        
+        try {
+          this.recognition.start();
+        } catch (e) {
+          console.error('Erreur démarrage reconnaissance:', e);
+        }
       }
     },
 
     toggleContinuousConversation() {
       this.isContinuousActive = !this.isContinuousActive;
       this.updateContinuousUI();
+      
       if (this.isContinuousActive) { 
         if (this.isPushToTalkRecording) this.togglePushToTalk();
         this.startContinuousLoop(); 
@@ -2461,28 +1973,49 @@
 
     startContinuousLoop() {
       if (!this.isContinuousActive || this.isPausedForSpeech) return;
+      
       this.recognition = this.createRecognitionInstance(false);
-      el('voiceStatus').textContent = 'Voix: Écoute...';
-      this.recognition.onresult = (e) => { handleVoiceSubmit(e.results[0][0].transcript); };
-      this.recognition.onerror = (e) => { if (e.error !== 'no-speech' && e.error !== 'aborted') console.warn('Voice error:', e.error); };
+      if (el('voiceStatus')) el('voiceStatus').textContent = 'Voix: Écoute...';
+      
+      this.recognition.onresult = (e) => { 
+        const transcript = e.results[0][0].transcript;
+        handleVoiceSubmit(transcript); 
+      };
+      
+      this.recognition.onerror = (e) => { 
+        if (e.error !== 'no-speech' && e.error !== 'aborted') {
+          console.warn('Voice error:', e.error); 
+        }
+      };
+      
       this.recognition.onend = () => { 
         if (this.isContinuousActive && !this.isPausedForSpeech) {
           setTimeout(() => this.startContinuousLoop(), 100);
         } else {
-          el('voiceStatus').textContent = 'Voix: Inactive';
+          if (el('voiceStatus')) el('voiceStatus').textContent = 'Voix: Inactive';
         }
       };
-      try { this.recognition.start(); } catch(e) {}
+      
+      try { 
+        this.recognition.start(); 
+      } catch(e) {
+        console.error('Erreur démarrage continu:', e);
+      }
     },
 
     stopRecognition() {
-      if (this.recognition) { try { this.recognition.stop(); } catch(e) {} }
+      if (this.recognition) { 
+        try { this.recognition.stop(); } catch(e) {} 
+      }
       this.recognition = null;
       this.isPushToTalkRecording = false;
       this.isContinuousActive = false;
-      el('voicePushToTalk').classList.remove('pulse');
+      
+      const pushBtn = el('voicePushToTalk');
+      if (pushBtn) pushBtn.classList.remove('pulse');
+      
       this.updateContinuousUI();
-      el('voiceStatus').textContent = 'Voix: Inactive';
+      if (el('voiceStatus')) el('voiceStatus').textContent = 'Voix: Inactive';
     },
 
     pauseRecognition() {
@@ -2492,7 +2025,7 @@
           this.recognition.onend = null;
           try { this.recognition.stop(); } catch(e){}
         }
-        el('voiceStatus').textContent = 'Voix: En pause';
+        if (el('voiceStatus')) el('voiceStatus').textContent = 'Voix: En pause';
       }
     },
 
@@ -2504,564 +2037,669 @@
     }
   };
 
-  // ============================================
-  // 📧 FIREBASE - CHAT MULTI-SESSIONS
-  // ============================================
+  // =============================================
+  // 🔧 FIREBASE - INITIALISATION COMPLÈTE
+  // =============================================
+  let db = null;
+  let auth = null;
+  
+  const metaRefPath = "devicesMeta";
+  const devicesRefPath = "devices";
+  const planningRefPath = "planning";
+  const userChatsRefPath = "userChats";
 
-  function getChatHistoryRef(userId, sessionId = null) {
-    let path = `${userChatsRefPath}/${userId}`;
-    if (sessionId) path += `/${sessionId}`;
-    return ref(db, path);
-  }
+  // Import Firebase
+  (async () => {
+    try {
+      const { initializeApp } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js");
+      const { getDatabase, ref, set, push, onValue, remove, get, serverTimestamp } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js");
+      const { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js");
 
-  async function loadChatHistorySidebar() {
-    if (!appState.currentUser || !db) return;
-    const historyList = el('chat-history-list');
-    historyList.innerHTML = '';
-    const sessionsRef = getChatHistoryRef(appState.currentUser.uid);
-    const snapshot = await get(sessionsRef);
-    if (snapshot.exists()) {
-      const sessions = snapshot.val();
-      const sortedSessions = Object.keys(sessions).sort((a, b) => {
-        return (sessions[b].lastUpdated || 0) - (sessions[a].lastUpdated || 0);
+      window.firebaseModules = { initializeApp, getDatabase, ref, set, push, onValue, remove, get, serverTimestamp, getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged };
+      
+      const app = initializeApp(firebaseConfig);
+      db = getDatabase(app);
+      auth = getAuth(app);
+      
+      el('statusFirebase').textContent = 'Firebase : OK';
+      el('statusFirebase').style.background = 'rgba(46, 213, 115, 0.3)';
+      
+      // =============================================
+      // 📡 FIREBASE LISTENERS
+      // =============================================
+      onValue(ref(db, metaRefPath), snap => { 
+        const meta = snap.val();
+        if (meta) {
+          appState.devices = Object.entries(meta).map(([id, data]) => ({ id, ...data }));
+          renderDevices(); 
+        }
       });
       
-      sortedSessions.forEach(sessionId => {
-        const session = sessions[sessionId];
-        const title = session.title || `Chat du ${new Date(session.createdAt || Date.now()).toLocaleDateString()}`;
-        
-        const item = document.createElement('div');
-        item.className = 'chat-history-item';
-        item.dataset.sessionId = sessionId;
-
-        const titleSpan = document.createElement('span');
-        titleSpan.textContent = title;
-        titleSpan.className = 'chat-history-item-title';
-        titleSpan.onclick = () => loadChatSession(sessionId);
-        
-        const deleteBtn = document.createElement('button');
-        deleteBtn.innerHTML = '<i class="fas fa-ellipsis-v"></i>';
-        deleteBtn.className = 'btn chat-history-delete';
-        deleteBtn.title = "Supprimer la discussion";
-        deleteBtn.onclick = (e) => {
-          e.stopPropagation();
-          deleteChatSession(sessionId, item);
-        };
-
-        item.appendChild(titleSpan);
-        item.appendChild(deleteBtn);
-        historyList.appendChild(item);
+      onValue(ref(db, devicesRefPath), snap => { 
+        appState.deviceStates = snap.val() || {}; 
+        renderDevices(); 
+        logActivity('☁️ États Firebase synchronisés.');
       });
-    }
-  }
+      
+      onValue(ref(db, planningRefPath), snap => { 
+        const plansObj = snap.val() || {};
+        appState.plans = Object.entries(plansObj).map(([id, p]) => ({ ...p, firebaseId: id }));
+        renderPlanningListUI(appState.plans);
+      });
 
-  function createNewChatSession() {
-    const newSessionId = `chat_${Date.now()}`;
-    appState.currentSessionId = newSessionId;
-    
-    el('chatFullWindow').innerHTML = '';
-    appendChat('bot', '### 👋 Bienvenue !\n\nJe suis prêt pour notre nouvelle discussion.');
-    
-    setTimeout(() => {
-      document.querySelectorAll('.chat-history-item').forEach(i => i.classList.remove('active'));
-    }, 100);
-  }
+      // =============================================
+      // 🧩 FONCTION: GESTION PLANNING & EXÉCUTION
+      // =============================================
+      window.handlePlanningCommands = async function(commands) {
+        for (const cmd of commands) {
+          if (cmd.action === 'add') {
+            const p = { 
+              device: cmd.device, 
+              time: cmd.time, 
+              action: cmd.deviceAction || 'ON', 
+              power: cmd.power || 100,
+              frequency: cmd.frequency || 'once',
+              createdAt: Date.now(),
+              executed: false
+            };
+            if (cmd.targetDate) p.targetDate = cmd.targetDate;
+            await push(ref(db, planningRefPath), p);
+          } else if (cmd.action === 'delete_all') {
+            await deleteAllPlans();
+          }
+        }
+      };
+      
+      window.handleExecuteCommands = function(commands) {
+        const cmdArray = Array.isArray(commands) ? commands : [commands];
+        for (const exec of cmdArray) {
+          const parts = exec.split('|');
+          const devId = parts[0];
+          const action = parts[1];
+          const value = parts[2] ? parseInt(parts[2]) : null;
+          
+          if (appState.devices.some(d => d.id === devId)) {
+            sendCommand(devId, action, value);
+          }
+        }
+      };
+      
+      window.displaySuggestions = function(suggestions) {
+        const container = el('proactive-suggestion');
+        if (!container || !suggestions || suggestions.length === 0) return;
+        container.textContent = suggestions[0].message || suggestions[0];
+      };
 
-  el('new-chat-btn').addEventListener('click', createNewChatSession);
-
-  async function deleteChatSession(sessionId, itemElement) {
-    if (!appState.currentUser || !db) return;
-    if (!confirm("Voulez-vous vraiment supprimer cette discussion ?")) return;
-
-    try {
-      const sessionRef = getChatHistoryRef(appState.currentUser.uid, sessionId);
-      await set(sessionRef, null);
-      itemElement.remove();
-      if (appState.currentSessionId === sessionId) {
-        createNewChatSession();
+      // =============================================
+      // 💬 FIREBASE: CHAT MULTI-SESSIONS
+      // =============================================
+      function getChatHistoryRef(userId, sessionId = null) {
+        let path = `${userChatsRefPath}/${userId}`;
+        if (sessionId) path += `/${sessionId}`;
+        return ref(db, path);
       }
-      logActivity(`Discussion ${sessionId} supprimée.`);
-    } catch (error) {
-      console.error("Erreur suppression chat:", error);
-      logActivity("Erreur de suppression du chat.");
-    }
-  }
 
-  async function loadChatSession(sessionId) {
-    if (!appState.currentUser || !db) return;
-    appState.currentSessionId = sessionId;
-    const chatWindow = el('chatFullWindow');
-    chatWindow.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--muted);"><i class="fas fa-spinner fa-spin"></i> Chargement...</div>';
-    
-    try {
-      const messagesRef = ref(db, `${userChatsRefPath}/${appState.currentUser.uid}/${sessionId}/messages`);
-      const snapshot = await get(messagesRef);
-      
-      chatWindow.innerHTML = '';
-      
-      if (snapshot.exists()) {
-        const messages = snapshot.val();
-        const sortedMessages = Object.values(messages).sort((a, b) => a.timestamp - b.timestamp);
+      async function loadChatHistorySidebar() {
+        if (!appState.currentUser || !db) return;
+        const historyList = el('chat-history-list');
+        if (!historyList) return;
         
-        sortedMessages.forEach(msg => {
-          const attachmentsMeta = msg.attachments || [];
-          appendChat('user', msg.user, false, attachmentsMeta);
-          appendChat('bot', msg.bot, false);
-        });
+        historyList.innerHTML = '<div style="text-align:center; padding:10px; color:var(--muted);"><i class="fas fa-spinner fa-spin"></i></div>';
+        
+        try {
+          const sessionsRef = getChatHistoryRef(appState.currentUser.uid);
+          const snapshot = await get(sessionsRef);
+          
+          historyList.innerHTML = '';
+          
+          if (snapshot.exists()) {
+            const sessions = snapshot.val();
+            const sortedSessions = Object.keys(sessions).sort((a, b) => {
+              return (sessions[b].lastUpdated || 0) - (sessions[a].lastUpdated || 0);
+            });
+            
+            sortedSessions.forEach(sessionId => {
+              const session = sessions[sessionId];
+              const title = session.title || `Chat du ${new Date(session.createdAt || Date.now()).toLocaleDateString()}`;
+              
+              const item = document.createElement('div');
+              item.className = 'chat-history-item';
+              item.dataset.sessionId = sessionId;
+
+              const titleSpan = document.createElement('span');
+              titleSpan.textContent = title;
+              titleSpan.className = 'chat-history-item-title';
+              titleSpan.onclick = () => loadChatSession(sessionId);
+              
+              const deleteBtn = document.createElement('button');
+              deleteBtn.innerHTML = '<i class="fas fa-trash"></i>';
+              deleteBtn.className = 'btn chat-history-delete';
+              deleteBtn.title = "Supprimer la discussion";
+              deleteBtn.onclick = (e) => {
+                e.stopPropagation();
+                deleteChatSession(sessionId, item);
+              };
+
+              item.appendChild(titleSpan);
+              item.appendChild(deleteBtn);
+              historyList.appendChild(item);
+            });
+          } else {
+            historyList.innerHTML = '<p style="text-align:center; padding:20px; color:var(--muted); font-size:13px;">Aucune discussion</p>';
+          }
+        } catch (error) {
+          console.error('Erreur chargement historique:', error);
+          historyList.innerHTML = '<p style="text-align:center; padding:20px; color:var(--danger);">Erreur de chargement</p>';
+        }
+      }
+
+      function createNewChatSession() {
+        const newSessionId = `chat_${Date.now()}`;
+        appState.currentSessionId = newSessionId;
+        
+        const chatWindow = el('chatFullWindow');
+        if (chatWindow) chatWindow.innerHTML = '';
+        
+        appendChat('bot', '### 👋 Bienvenue !\n\nJe suis prêt pour notre nouvelle discussion.');
         
         setTimeout(() => {
-          el('chatFullWindow').scrollTop = el('chatFullWindow').scrollHeight;
+          document.querySelectorAll('.chat-history-item').forEach(i => i.classList.remove('active'));
         }, 100);
-        
-      } else {
-        appendChat('bot', 'C\'est le début de notre conversation.');
       }
-      
-      document.querySelectorAll('.chat-history-item').forEach(i => i.classList.remove('active'));
-      document.querySelector(`.chat-history-item[data-session-id="${sessionId}"]`)?.classList.add('active');
-      
-      el('chat-sidebar').classList.remove('open');
-      el('sidebar-overlay').classList.remove('open');
-      
-    } catch (error) {
-      console.error("Erreur chargement chat:", error);
-      chatWindow.innerHTML = '<div class="card" style="text-align: center; color: var(--danger);"><i class="fas fa-exclamation-triangle"></i> Erreur de chargement</div>';
-    }
-  }
 
-  async function saveMessageToFirebase(userMsg, botMsg, attachments) {
-    if (!appState.currentUser || !db || !appState.currentSessionId) return;
+      el('new-chat-btn')?.addEventListener('click', createNewChatSession);
 
-    const sessionRef = ref(db, `${userChatsRefPath}/${appState.currentUser.uid}/${appState.currentSessionId}`);
-    const sessionSnapshot = await get(sessionRef);
-    
-    const isNewSession = !sessionSnapshot.exists();
-    
-    if (isNewSession) {
-      let newTitle = userMsg;
-      if (!newTitle && attachments.length > 0) {
-        newTitle = `📎 ${attachments[0].name}`;
-      }
-      if (!newTitle) newTitle = "Nouvelle discussion";
-      newTitle = newTitle.substring(0, 30) + (newTitle.length > 30 ? '...' : '');
-      
-      await set(sessionRef, {
-        title: newTitle,
-        createdAt: serverTimestamp(),
-        lastUpdated: serverTimestamp()
-      });
-    }
+      async function deleteChatSession(sessionId, itemElement) {
+        if (!appState.currentUser || !db) return;
+        if (!confirm("Voulez-vous vraiment supprimer cette discussion ?")) return;
 
-    const messagesRef = ref(db, `${userChatsRefPath}/${appState.currentUser.uid}/${appState.currentSessionId}/messages`);
-    const attachmentsMeta = attachments.map(att => ({
-      name: att.name,
-      type: att.type
-    }));
-
-    await push(messagesRef, {
-      user: userMsg,
-      bot: botMsg,
-      attachments: attachmentsMeta,
-      timestamp: serverTimestamp()
-    });
-
-    await set(ref(db, `${userChatsRefPath}/${appState.currentUser.uid}/${appState.currentSessionId}/lastUpdated`), serverTimestamp());
-    
-    if (isNewSession) {
-      loadChatHistorySidebar();
-      setTimeout(() => {
-        document.querySelectorAll('.chat-history-item').forEach(i => i.classList.remove('active'));
-        const item = document.querySelector(`.chat-history-item[data-session-id="${appState.currentSessionId}"]`);
-        if (item) item.classList.add('active');
-      }, 200);
-    }
-  }
-
-  // ============================================
-  // 📎 GESTION PIÈCES JOINTES
-  // ============================================
-  function renderAttachmentPreviews() {
-    const container = el('attachment-preview-container');
-    if (!container) return;
-    
-    container.innerHTML = '';
-    
-    appState.attachments.forEach((att, index) => {
-      const preview = document.createElement('div');
-      preview.className = 'attachment-preview';
-      
-      if (att.type === 'image') {
-        preview.innerHTML = `
-          <img src="${att.data}" alt="${att.name}">
-          <span>${att.name}</span>
-          <span class="remove-attachment" onclick="removeAttachment(${index})">
-            <i class="fas fa-times"></i>
-          </span>
-        `;
-      } else {
-        let iconClass = 'fa-file';
-        if (att.name.toLowerCase().endsWith('.pdf')) iconClass = 'fa-file-pdf';
-        else if (att.name.toLowerCase().endsWith('.docx') || att.name.toLowerCase().endsWith('.doc')) iconClass = 'fa-file-word';
-        else if (att.name.toLowerCase().endsWith('.xlsx') || att.name.toLowerCase().endsWith('.xls')) iconClass = 'fa-file-excel';
-        else if (att.name.toLowerCase().endsWith('.txt')) iconClass = 'fa-file-alt';
-        
-        preview.innerHTML = `
-          <i class="fas ${iconClass}"></i>
-          <span>${att.name}</span>
-          <span class="remove-attachment" onclick="removeAttachment(${index})">
-            <i class="fas fa-times"></i>
-          </span>
-        `;
-      }
-      
-      container.appendChild(preview);
-    });
-  }
-
-  window.removeAttachment = function(index) {
-    appState.attachments.splice(index, 1);
-    renderAttachmentPreviews();
-  };
-
-  el('attach-file-btn').addEventListener('click', () => {
-    el('file-input').click();
-  });
-
-  el('file-input').addEventListener('change', (event) => {
-    for (const file of event.target.files) {
-      if (appState.attachments.length >= 5) {
-        alert("Maximum 5 fichiers."); break;
-      }
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const dataUrl = e.target.result;
-        appState.attachments.push({
-          name: file.name,
-          type: file.type.startsWith('image/') ? 'image' : 'file',
-          data: dataUrl
-        });
-        renderAttachmentPreviews();
-      };
-      reader.readAsDataURL(file);
-    }
-    event.target.value = '';
-  });
-
-  // ============================================
-  // 🎯 ÉVÉNEMENTS PRINCIPAUX
-  // ============================================
-  el('chatFullSend')?.addEventListener('click', () => {
-    handleChatSubmit(el('chatFullInput').value, appState.attachments);
-  });
-  
-  el('chatFullInput')?.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') handleChatSubmit(el('chatFullInput').value, appState.attachments);
-  });
-  
-  el('stopAIBtn')?.addEventListener('click', () => {
-    console.log('🛑 ARRÊT DEMANDÉ');
-    appState.shouldStopResponse = true;
-    stopStreaming();
-  
-    if (window.speechSynthesis) {
-      window.speechSynthesis.cancel();
-    }
-    if (VoiceEngine && VoiceEngine.pauseRecognition) {
-      VoiceEngine.pauseRecognition();
-    }
-    appState.chatInProgress = false;
-  
-    el('chat-loading').style.display = 'none';
-    el('chatFullSend').style.display = 'flex';
-    el('stopAIBtn').style.display = 'none';
-    el('intelliaStatus').textContent = "Assistant: Interrompu";
-  
-    logActivity('⚠️ Réponse IA interrompue par l\'utilisateur');
-  });
-
-  // ============================================
-  // 📱 NAVIGATION ET INTERFACE
-  // ============================================
-  document.querySelectorAll('.btn-nav').forEach(btn => {
-    btn.addEventListener('click', function() {
-      const targetId = this.getAttribute('data-target');
-      
-      // Mettre à jour la navigation
-      document.querySelectorAll('.btn-nav').forEach(b => b.classList.remove('active'));
-      this.classList.add('active');
-      
-      // Afficher la section
-      document.querySelectorAll('.section').forEach(section => {
-        section.classList.remove('active');
-      });
-      document.getElementById(targetId).classList.add('active');
-      
-      // Mettre à jour le titre
-      const titles = {
-        'sec-domotique': 'Domotique',
-        'sec-intelligence': 'Assistant IA',
-        'sec-planning': 'Planning',
-        'sec-params': 'Paramètres'
-      };
-      el('section-header-title').textContent = titles[targetId] || 'SmartHome';
-    });
-  });
-
-  // ============================================
-  // ⚙️ GESTION DES PARAMÈTRES
-  // ============================================
-  el('darkModeToggle').addEventListener('change', function() {
-    appState.isNightMode = this.checked;
-    document.body.classList.toggle('night-mode', this.checked);
-    localStorage.setItem('nightMode', this.checked);
-  });
-
-  // Initialiser le mode sombre
-  document.body.classList.toggle('night-mode', appState.isNightMode);
-  el('darkModeToggle').checked = appState.isNightMode;
-
-  // ============================================
-  // 🔌 GESTION WEBSOCKET ESP32
-  // ============================================
-  el('btnConnectLocal').addEventListener('click', function() {
-    const ip = el('esp32IpInput').value.trim();
-    if (!ip) {
-      alert('Veuillez entrer une adresse IP');
-      return;
-    }
-    
-    appState.esp32Ip = ip;
-    localStorage.setItem('esp32Ip', ip);
-    connectWebSocket();
-    logActivity(`🔌 Connexion WebSocket à ${ip}`);
-  });
-
-  el('btnDisconnectLocal').addEventListener('click', function() {
-    disconnectWebSocket();
-  });
-
-  // Initialiser l'adresse IP sauvegardée
-  if (appState.esp32Ip) {
-    el('esp32IpInput').value = appState.esp32Ip;
-  }
-
-  // ============================================
-  // 🚀 INITIALISATION DE L'APPLICATION
-  // ============================================
-  function initApp() {
-    console.log('🚀 SmartHome Intelligence v11.0 initialisée');
-    
-    // Initialiser le moteur vocal
-    VoiceEngine.init();
-    
-    // Configurer l'interface de planning
-    setupPlanningInterface();
-    
-    // Afficher une suggestion proactive
-    displayNextSuggestion();
-    
-    // Tester la connexion à l'assistant
-    testIntelliaConnection();
-    
-    // Démarrer les vérifications périodiques
-    setInterval(displayNextSuggestion, 30000); // Toutes les 30 secondes
-    setInterval(testIntelliaConnection, 60000); // Toutes les minutes
-    setInterval(cleanupExecutedPlans, 300000); // Toutes les 5 minutes
-    
-    logActivity('✅ Application initialisée avec succès');
-  }
-
-  function displayNextSuggestion() {
-    const container = el('proactive-suggestion');
-    if (!container) return;
-    
-    container.textContent = proactiveSuggestions[suggestionIndex];
-    suggestionIndex = (suggestionIndex + 1) % proactiveSuggestions.length;
-  }
-
-  async function testIntelliaConnection() {
-    try {
-      const response = await fetch(`${RENDER_API}/api/health`);
-      if (response.ok) {
-        appState.intelliaOnline = true;
-        el('intelliaStatus').textContent = "Assistant: Connecté";
-        el('statusOnline').textContent = "Assistant : disponible";
-      } else {
-        throw new Error('Health check failed');
-      }
-    } catch (error) {
-      appState.intelliaOnline = false;
-      el('intelliaStatus').textContent = "Assistant: Hors ligne";
-      el('statusOnline').textContent = "Assistant : indisponible";
-    }
-  }
-
-  // ============================================
-  // 🔢 FONCTION: METTRE À JOUR LE COMPTEUR D'APPAREILS
-  // ============================================
-  function updateCount() {
-    try {
-      const countElement = document.getElementById('db-count');
-      if (!countElement) {
-        console.warn('⚠️ Élément db-count non trouvé');
-        return;
-      }
-      
-      const onCount = Object.values(appState.deviceStates).filter(state => 
-        state && state.etat === 'ON'
-      ).length;
-      
-      countElement.textContent = `on: ${onCount}`;
-      console.log(`🔢 ${onCount} appareil(s) allumé(s)`);
-      
-    } catch (error) {
-      console.error('❌ Erreur updateCount:', error);
-    }
-  }
-
-  // ============================================
-  // 💾 FONCTIONS DE SAUVEGARDE LOCALE
-  // ============================================
-  const saveDevicesToLocalStorage = () => localStorage.setItem('sh_devices', JSON.stringify(appState.devices));
-  const loadDevicesFromLocalStorage = () => { 
-    const saved = localStorage.getItem('sh_devices');
-    if (saved) {
-      appState.devices = JSON.parse(saved);
-    }
-  };
-  
-  const savePlansToLocalStorage = () => localStorage.setItem('sh_plans', JSON.stringify(appState.plans));
-  const loadPlansFromLocalStorage = () => { 
-    const saved = localStorage.getItem('sh_plans');
-    if (saved) {
-      appState.plans = JSON.parse(saved);
-    }
-  };
-
-  // ============================================
-  // 📅 FONCTIONS DE PLANNING (COMPATIBILITÉ)
-  // ============================================
-
-  function renderPlanningListUI(plans) {
-    const out = el('planningTable');
-    if (!out) return;
-    if (!plans || !plans.length) {
-      out.innerHTML = '<p style="text-align:center;color:var(--muted);padding:20px">🔭 Aucune tâche programmée</p>';
-      return;
-    }
-    
-    out.innerHTML = `<table style="width:100%;border-collapse:collapse">
-      <thead>
-        <tr style="background:rgba(0,0,0,0.03)">
-          <th style="padding:10px;text-align:left">Appareil</th>
-          <th style="padding:10px;text-align:left">Quand</th>
-          <th style="padding:10px;text-align:left">Action</th>
-          <th style="padding:10px;text-align:center">Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${plans.map(p => {
-          const deviceName = appState.devices.find(d => d.id === p.device)?.name || p.device;
-          let whenText = p.time;
-          const freq = p.schedule?.type || p.frequency || 'once';
+        try {
+          const sessionRef = getChatHistoryRef(appState.currentUser.uid, sessionId);
+          await set(sessionRef, null);
+          if (itemElement) itemElement.remove();
           
-          if (freq === 'daily') {
-            whenText += ' <span class="chip">📅 Quotidien</span>';
-          } else if (freq === 'monthly') {
-            whenText += ` <span class="chip">📅 Mensuel (jour ${p.schedule?.dayOfMonth || 1})</span>`;
-          } else if (freq === 'weekly' && p.schedule?.days) {
-            const dayNames = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
-            const daysText = p.schedule.days.map(d => dayNames[d]).join(', ');
-            whenText += ` <span class="chip">📅 ${daysText}</span>`;
-          } else if (freq === 'duration' && p.schedule?.startDate && p.schedule?.endDate) {
-            whenText += ` <span class="chip">📅 ${p.schedule.startDate} à ${p.schedule.endDate}</span>`;
-          } else if (freq === 'once' && p.schedule?.targetDate) {
-            const date = new Date(p.schedule.targetDate).toLocaleDateString('fr-FR');
-            whenText += ` <span class="chip">📅 ${date}</span>`;
+          if (appState.currentSessionId === sessionId) {
+            createNewChatSession();
+          }
+          logActivity(`🗑️ Discussion ${sessionId} supprimée.`);
+        } catch (error) {
+          console.error("Erreur suppression chat:", error);
+          logActivity("❌ Erreur de suppression du chat.", 'error');
+        }
+      }
+
+      async function loadChatSession(sessionId) {
+        if (!appState.currentUser || !db) return;
+        appState.currentSessionId = sessionId;
+        
+        const chatWindow = el('chatFullWindow');
+        if (!chatWindow) return;
+        
+        chatWindow.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--muted);"><i class="fas fa-spinner fa-spin"></i> Chargement...</div>';
+        
+        try {
+          const messagesRef = ref(db, `${userChatsRefPath}/${appState.currentUser.uid}/${sessionId}/messages`);
+          const snapshot = await get(messagesRef);
+          
+          chatWindow.innerHTML = '';
+          
+          if (snapshot.exists()) {
+            const messages = snapshot.val();
+            const sortedMessages = Object.values(messages).sort((a, b) => a.timestamp - b.timestamp);
+            
+            sortedMessages.forEach(msg => {
+              const attachmentsMeta = msg.attachments || [];
+              appendChat('user', msg.user, false, attachmentsMeta);
+              appendChat('bot', msg.bot, false);
+            });
+            
+            setTimeout(() => {
+              chatWindow.scrollTop = chatWindow.scrollHeight;
+            }, 100);
+            
+          } else {
+            appendChat('bot', 'C\'est le début de notre conversation.');
           }
           
-          const actionText = p.action === 'ON' ? '🟢 ON' : '🔴 OFF';
-          const powerText = p.power !== null ? ` ${p.power}%` : '';
-          const statusBadge = p.executed ? '<span class="chip" style="background: rgba(46, 213, 115, 0.3);">✅ Exécuté</span>' : '';
+          document.querySelectorAll('.chat-history-item').forEach(i => i.classList.remove('active'));
+          const activeItem = document.querySelector(`.chat-history-item[data-session-id="${sessionId}"]`);
+          if (activeItem) activeItem.classList.add('active');
           
-          return `<tr style="border-bottom:1px solid rgba(0,0,0,0.05)">
-            <td style="padding:10px"><strong>${deviceName}</strong></td>
-            <td style="padding:10px">${whenText}</td>
-            <td style="padding:10px">${actionText}${powerText} ${statusBadge}</td>
-            <td style="padding:10px;text-align:center">
-              <button class="btn warn" onclick="deletePlan('${p.firebaseId || p.createdAt}')" style="padding:6px 12px">
-                <i class="fas fa-trash"></i>
-              </button>
-            </td>
-          </tr>`;
-        }).join('')}
-      </tbody>
-    </table>`;
-  }
-
-  window.deletePlan = async (planId) => {
-    if (!confirm('🗑️ Supprimer cette planification ?')) return;
-    if (db) { 
-      await remove(ref(db, `${planningRefPath}/${planId}`)); 
-    } else {
-      appState.plans = appState.plans.filter(p => (p.firebaseId || p.createdAt) != planId);
-      savePlansToLocalStorage(); 
-      renderPlanningListUI(appState.plans);
-    }
-    logActivity(`🗑️ Planification supprimée.`);
-  };
-
-  const deleteAllPlans = async () => {
-    if (!confirm('🗑️ Supprimer TOUTES les planifications ?')) return;
-    if (db) await set(ref(db, planningRefPath), null);
-    else { appState.plans = []; savePlansToLocalStorage(); renderPlanningListUI([]); }
-    logActivity(`🗑️ Toutes les planifications supprimées.`);
-    speak('Toutes les planifications ont été supprimées.');
-  };
-  el('clearAllPlans')?.addEventListener('click', deleteAllPlans);
-
-  // ============================================
-  // ✅ NETTOYAGE AUTO DES TÂCHES EXÉCUTÉES
-  // ============================================
-  async function cleanupExecutedPlans() {
-    const oneTimePlans = appState.plans.filter(p => 
-      (p.schedule?.type === 'once' || p.frequency === 'once') && p.executed
-    );
-    
-    for (const plan of oneTimePlans) {
-      if (db) {
-        await remove(ref(db, `${planningRefPath}/${plan.firebaseId}`));
-      } else {
-        appState.plans = appState.plans.filter(p => p !== plan);
+          const sidebar = el('chat-sidebar');
+          const overlay = el('sidebar-overlay');
+          if (sidebar) sidebar.classList.remove('open');
+          if (overlay) overlay.classList.remove('open');
+          
+        } catch (error) {
+          console.error("Erreur chargement chat:", error);
+          chatWindow.innerHTML = '<div class="card" style="text-align: center; color: var(--danger);"><i class="fas fa-exclamation-triangle"></i> Erreur de chargement</div>';
+        }
       }
-      logActivity(`🧹 Tâche unique exécutée nettoyée: ${plan.device}`);
-    }
-    
-    if (!db) {
-      savePlansToLocalStorage();
-      renderPlanningListUI(appState.plans);
-    }
-  }
 
-  // ============================================
-  // 🚀 DÉMARRAGE DE L'APPLICATION
-  // ============================================
-  window.addEventListener('DOMContentLoaded', initApp);
+      async function saveMessageToFirebase(userMsg, botMsg, attachments) {
+        if (!appState.currentUser || !db || !appState.currentSessionId) return;
 
-  // ============================================
-  // 📱 PWA - SERVICE WORKER
-  // ============================================
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('/service-worker.js')
-        .then(registration => {
-          console.log('✅ Service Worker enregistré:', registration);
-        })
-        .catch(error => {
-          console.log('❌ Échec enregistrement Service Worker:', error);
+        const sessionRef = ref(db, `${userChatsRefPath}/${appState.currentUser.uid}/${appState.currentSessionId}`);
+        const sessionSnapshot = await get(sessionRef);
+        
+        const isNewSession = !sessionSnapshot.exists();
+        
+        if (isNewSession) {
+          let newTitle = userMsg;
+          if (!newTitle && attachments.length > 0) {
+            newTitle = `📎 ${attachments[0].name}`;
+          }
+          if (!newTitle) newTitle = "Nouvelle discussion";
+          newTitle = newTitle.substring(0, 30) + (newTitle.length > 30 ? '...' : '');
+          
+          await set(sessionRef, {
+            title: newTitle,
+            createdAt: serverTimestamp(),
+            lastUpdated: serverTimestamp()
+          });
+        }
+
+        const messagesRef = ref(db, `${userChatsRefPath}/${appState.currentUser.uid}/${appState.currentSessionId}/messages`);
+        const attachmentsMeta = attachments.map(att => ({
+          name: att.name,
+          type: att.type
+        }));
+
+        await push(messagesRef, {
+          user: userMsg,
+          bot: botMsg,
+          attachments: attachmentsMeta,
+          timestamp: serverTimestamp()
         });
-    });
-  }
+
+        await set(ref(db, `${userChatsRefPath}/${appState.currentUser.uid}/${appState.currentSessionId}/lastUpdated`), serverTimestamp());
+        
+        if (isNewSession) {
+          loadChatHistorySidebar();
+          setTimeout(() => {
+            document.querySelectorAll('.chat-history-item').forEach(i => i.classList.remove('active'));
+            const item = document.querySelector(`.chat-history-item[data-session-id="${appState.currentSessionId}"]`);
+            if (item) item.classList.add('active');
+          }, 200);
+        }
+      }
+
+      // =============================================
+      // 📎 GESTION PIÈCES JOINTES
+      // =============================================
+      el('attach-file-btn')?.addEventListener('click', () => {
+        el('file-input')?.click();
+      });
+
+      el('file-input')?.addEventListener('change', (event) => {
+        const files = event.target.files;
+        if (!files) return;
+        
+        for (const file of files) {
+          if (appState.attachments.length >= 15) {
+            alert("Maximum 15 fichiers."); 
+            break;
+          }
+          
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            const dataUrl = e.target.result;
+            appState.attachments.push({
+              name: file.name,
+              type: file.type.startsWith('image/') ? 'image' : 'file',
+              data: dataUrl
+            });
+            renderAttachmentPreviews();
+          };
+          
+          if (file.type.startsWith('image/')) {
+            reader.readAsDataURL(file);
+          } else {
+            reader.readAsDataURL(file);
+          }
+        }
+        event.target.value = '';
+      });
+
+      function renderAttachmentPreviews() {
+        const container = el('attachment-preview-container');
+        if (!container) return;
+        
+        container.innerHTML = '';
+        
+        appState.attachments.forEach((att, index) => {
+          const preview = document.createElement('div');
+          preview.className = 'attachment-preview';
+          
+          if (att.type === 'image') {
+            preview.innerHTML = `
+              <img src="${att.data}" alt="${att.name}">
+              <span>${att.name}</span>
+              <i class="fas fa-times remove-attachment" onclick="removeAttachment(${index})"></i>
+            `;
+          } else {
+            let iconClass = 'fa-file';
+            let iconColor = '#6c757d';
+            
+            const fileName = att.name.toLowerCase();
+            if (fileName.endsWith('.pdf')) { iconClass = 'fa-file-pdf'; iconColor = '#dc3545'; }
+            else if (fileName.endsWith('.docx') || fileName.endsWith('.doc')) { iconClass = 'fa-file-word'; iconColor = '#2b579a'; }
+            else if (fileName.endsWith('.xlsx') || fileName.endsWith('.xls')) { iconClass = 'fa-file-excel'; iconColor = '#217346'; }
+            else if (fileName.endsWith('.txt')) { iconClass = 'fa-file-alt'; }
+            else if (fileName.endsWith('.html') || fileName.endsWith('.htm')) { iconClass = 'fa-file-code'; iconColor = '#f06529'; }
+            else if (fileName.endsWith('.js')) { iconClass = 'fa-file-code'; iconColor = '#f7df1e'; }
+            else if (fileName.endsWith('.json')) { iconClass = 'fa-file-code'; iconColor = '#5a5a5a'; }
+            else if (fileName.endsWith('.css')) { iconClass = 'fa-file-code'; iconColor = '#264de4'; }
+            
+            preview.innerHTML = `
+              <i class="fas ${iconClass}" style="color: ${iconColor};"></i>
+              <span>${att.name}</span>
+              <i class="fas fa-times remove-attachment" onclick="removeAttachment(${index})"></i>
+            `;
+          }
+          
+          container.appendChild(preview);
+        });
+      }
+
+      window.removeAttachment = function(index) {
+        appState.attachments.splice(index, 1);
+        renderAttachmentPreviews();
+      };
+
+      // =============================================
+      // 🔐 AUTHENTIFICATION GOOGLE
+      // =============================================
+      const provider = new GoogleAuthProvider();
+      
+      onAuthStateChanged(auth, async (user) => {
+        if (user) {
+          appState.currentUser = user;
+          
+          el('user-name-display').textContent = user.displayName || 'Utilisateur';
+          el('user-email-display').textContent = user.email || '';
+          
+          const photoURL = user.photoURL || defaultAvatar;
+          el('user-photo').src = photoURL;
+          
+          el('login-overlay').style.display = 'none';
+          const mainApp = document.querySelector('.main-app');
+          if (mainApp) mainApp.style.display = 'flex';
+          
+          await loadChatHistorySidebar();
+          createNewChatSession();
+          
+          logActivity(`✅ Connecté: ${user.displayName}`);
+        } else {
+          appState.currentUser = null;
+          el('login-overlay').style.display = 'flex';
+          const mainApp = document.querySelector('.main-app');
+          if (mainApp) mainApp.style.display = 'none';
+        }
+      });
+
+      el('googleSignInOverlayBtn')?.addEventListener('click', () => {
+        signInWithPopup(auth, provider).catch(error => {
+          console.error("Erreur Google Sign-In:", error);
+          alert("Erreur de connexion. Veuillez réessayer.");
+        });
+      });
+
+      el('signOutBtn')?.addEventListener('click', () => {
+        if (confirm('Voulez-vous vraiment vous déconnecter ?')) {
+          signOut(auth);
+          logActivity('👋 Déconnexion réussie');
+        }
+      });
+
+      // =============================================
+      // 🌐 WEBSOCKET LOCAL (ESP32)
+      // =============================================
+      el('btnConnectLocal')?.addEventListener('click', () => {
+        const ip = el('esp32IpInput')?.value.trim();
+        if (!ip) return alert('⚠️ Veuillez entrer une adresse IP');
+        localStorage.setItem('esp32Ip', ip);
+        appState.esp32Ip = ip;
+        connectLocalWebSocket();
+        logActivity(`⚡ Tentative connexion WebSocket: ws://${ip}`);
+      });
+
+      function connectLocalWebSocket() {
+        if (appState.localWebSocket) {
+          appState.localWebSocket.close();
+        }
+        
+        if (!appState.esp32Ip) {
+          el('statusLocal').textContent = 'ESP32: Pas d\'IP';
+          return;
+        }
+
+        try {
+          appState.localWebSocket = new WebSocket(`ws://${appState.esp32Ip}/ws`);
+          
+          appState.localWebSocket.onopen = () => {
+            appState.isLocalConnected = true;
+            el('statusLocal').textContent = 'ESP32: 🟢 Connecté';
+            el('statusLocal').style.background = 'rgba(46, 213, 115, 0.3)';
+            logActivity('✅ WebSocket connecté', 'success');
+            speak('Connexion locale établie');
+          };
+
+          appState.localWebSocket.onmessage = (event) => {
+            try {
+              const data = JSON.parse(event.data);
+              if (data.device_id && data.etat) {
+                const deviceObj = appState.devices.find(d => d.id === data.device_id);
+                const deviceType = deviceTypes[deviceObj?.type] || { hasBrightness: false };
+                
+                const newState = { etat: data.etat };
+                if (deviceType.hasBrightness && data.luminosite !== undefined) {
+                  newState.luminosite = data.luminosite;
+                }
+                
+                appState.deviceStates[data.device_id] = newState;
+                renderDevices();
+                logActivity(`⚡[WS] Reçu: ${data.device_id} → ${data.etat}`);
+              }
+            } catch (e) {
+              console.warn('WS message parse error', e);
+            }
+          };
+
+          appState.localWebSocket.onerror = (error) => {
+            console.error('WebSocket error', error);
+            appState.isLocalConnected = false;
+            el('statusLocal').textContent = 'ESP32: ❌ Erreur';
+            el('statusLocal').style.background = 'rgba(231, 76, 60, 0.3)';
+            logActivity('❌ Erreur WebSocket', 'error');
+          };
+
+          appState.localWebSocket.onclose = () => {
+            appState.isLocalConnected = false;
+            el('statusLocal').textContent = 'ESP32: 🔴 Déconnecté';
+            el('statusLocal').style.background = 'rgba(231, 76, 60, 0.3)';
+            logActivity('⚠️ WebSocket déconnecté', 'warning');
+            
+            setTimeout(() => {
+              if (!appState.isLocalConnected && appState.esp32Ip) {
+                connectLocalWebSocket();
+              }
+            }, 5000);
+          };
+          
+        } catch (error) {
+          console.error('WebSocket connection error:', error);
+          appState.isLocalConnected = false;
+          el('statusLocal').textContent = 'ESP32: ❌ Erreur';
+        }
+      }
+
+      // =============================================
+      // 🎨 MODE SOMBRE
+      // =============================================
+      el('darkModeToggle')?.addEventListener('change', (e) => {
+        appState.isNightMode = e.target.checked;
+        localStorage.setItem('nightMode', appState.isNightMode);
+        document.body.classList.toggle('night-mode', appState.isNightMode);
+        logActivity(`🌙 Mode ${appState.isNightMode ? 'sombre' : 'clair'} activé`);
+      });
+
+      if (appState.isNightMode) {
+        document.body.classList.add('night-mode');
+        const darkToggle = el('darkModeToggle');
+        if (darkToggle) darkToggle.checked = true;
+      }
+
+      // =============================================
+      // 🔊 TOGGLE SYNTHÈSE VOCALE
+      // =============================================
+      el('toggleVoiceBtn')?.addEventListener('click', () => {
+        appState.voiceNotifications = !appState.voiceNotifications;
+        localStorage.setItem('voiceNotifications', appState.voiceNotifications);
+        const btn = el('toggleVoiceBtn');
+        
+        if (appState.voiceNotifications) {
+          btn.classList.add('primary');
+          btn.innerHTML = '<i class="fas fa-volume-up"></i>';
+          logActivity('🔊 Synthèse vocale activée');
+          speak('Synthèse vocale activée');
+        } else {
+          btn.classList.remove('primary');
+          btn.innerHTML = '<i class="fas fa-volume-mute"></i>';
+          logActivity('🔇 Synthèse vocale désactivée');
+        }
+      });
+
+      // =============================================
+      // 🏠 CONTRÔLES RAPIDES
+      // =============================================
+      el('dayModeBtn')?.addEventListener('click', () => {
+        appState.devices.forEach(d => sendCommand(d.id, 'OFF'));
+        logActivity('☀️ Mode jour activé - Tous les appareils éteints');
+        speak('Mode jour activé');
+      });
+
+      el('nightModeBtn')?.addEventListener('click', () => {
+        appState.devices.filter(d => d.type === 'lamp').forEach(d => sendCommand(d.id, 'ON', 30));
+        logActivity('🌙 Mode nuit activé - Lumières tamisées');
+        speak('Mode nuit activé');
+      });
+
+      el('allOnBtn')?.addEventListener('click', () => {
+        appState.devices.forEach(d => sendCommand(d.id, 'ON', 100));
+        logActivity('✅ Tous les appareils allumés');
+        speak('Tous les appareils sont maintenant allumés');
+      });
+
+      el('allOffBtn')?.addEventListener('click', () => {
+        appState.devices.forEach(d => sendCommand(d.id, 'OFF'));
+        logActivity('❌ Tous les appareils éteints');
+        speak('Tous les appareils sont maintenant éteints');
+      });
+
+      // =============================================
+      // 🔀 NAVIGATION ENTRE SECTIONS
+      // =============================================
+      document.querySelectorAll('.btn-nav').forEach(btn => {
+        btn.addEventListener('click', function() {
+          const target = this.getAttribute('data-target');
+          
+          document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+          const targetSection = document.getElementById(target);
+          if (targetSection) targetSection.classList.add('active');
+          
+          document.querySelectorAll('.btn-nav').forEach(b => b.classList.remove('active'));
+          this.classList.add('active');
+          
+          const titles = {
+            'sec-domotique': 'Domotique',
+            'sec-intelligence': 'Assistant Intelligent',
+            'sec-planning': 'Planification',
+            'sec-params': 'Paramètres'
+          };
+          const headerTitle = el('section-header-title');
+          if (headerTitle) headerTitle.textContent = titles[target] || 'SmartHome';
+        });
+      });
+
+      // =============================================
+      // 📱 SIDEBAR MOBILE
+      // =============================================
+      el('sidebar-toggle-btn')?.addEventListener('click', () => {
+        const sidebar = el('chat-sidebar');
+        const overlay = el('sidebar-overlay');
+        if (sidebar) sidebar.classList.add('open');
+        if (overlay) overlay.classList.add('open');
+      });
+
+      el('sidebar-overlay')?.addEventListener('click', () => {
+        const sidebar = el('chat-sidebar');
+        const overlay = el('sidebar-overlay');
+        if (sidebar) sidebar.classList.remove('open');
+        if (overlay) overlay.classList.remove('open');
+      });
+
+      // =============================================
+      // 💡 SUGGESTIONS PROACTIVES
+      // =============================================
+      setInterval(() => {
+        if (appState.intelliaOnline) {
+          const suggestionEl = el('proactive-suggestion');
+          if (suggestionEl) {
+            suggestionEl.textContent = proactiveSuggestions[suggestionIndex];
+            suggestionIndex = (suggestionIndex + 1) % proactiveSuggestions.length;
+          }
+        }
+      }, 20000);
+
+      // =============================================
+      // 🚀 INITIALISATION FINALE
+      // =============================================
+      if (appState.esp32Ip) {
+        const ipInput = el('esp32IpInput');
+        if (ipInput) ipInput.value = appState.esp32Ip;
+        setTimeout(connectLocalWebSocket, 2000);
+      }
+
+      VoiceEngine.init();
+      
+      setTimeout(() => {
+        const firstSuggestion = proactiveSuggestions[0];
+        const suggestionEl = el('proactive-suggestion');
+        if (suggestionEl) suggestionEl.textContent = firstSuggestion;
+      }, 1000);
+
+      logActivity('🚀 SmartHome Intelligence v13 démarré', 'success');
+      console.log('%c🚀 SmartHome Intelligence v13.0 - PRÊT', 'color: #4361ee; font-size: 20px; font-weight: bold;');
+      
+    } catch (e) {
+      console.error("Erreur Firebase:", e);
+      db = null;
+      el('statusFirebase').textContent = 'Firebase : Échec';
+      el('statusFirebase').style.background = 'rgba(231, 76, 60, 0.3)';
+      
+      loadDevicesFromLocalStorage();
+      loadPlansFromLocalStorage();
+      renderDevices();
+      renderPlanningListUI(appState.plans);
+      
+      VoiceEngine.init();
+      logActivity('⚠️ Mode local activé (Firebase indisponible)', 'warning');
+    }
+  })();
+
+  // =============================================
+  // 🔄 GESTION DES ERREURS GLOBALES
+  // =============================================
+  window.addEventListener('error', (event) => {
+    console.error('❌ Erreur globale:', event.error);
+    logActivity('❌ Erreur technique détectée', 'error');
+  });
+
+  window.addEventListener('unhandledrejection', (event) => {
+    console.error('❌ Promise rejetée:', event.reason);
+    logActivity('❌ Erreur de promesse détectée', 'error');
+  });
 
   </script>
 </body>
