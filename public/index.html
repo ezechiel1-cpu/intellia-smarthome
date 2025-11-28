@@ -913,7 +913,7 @@
      ✅ PWA complète
      ==================================================== */
 
-
+  
   // =============================================
   // 📋 CONFIGURATION GLOBALE
   // =============================================
@@ -2062,26 +2062,6 @@
     }
   }
 
-  function updateCount() {
-    try {
-      const countElement = document.getElementById('db-count');
-      if (!countElement) {
-        console.warn('⚠️ Élément db-count non trouvé');
-        return;
-      }
-      
-      const onCount = Object.values(appState.deviceStates).filter(state => 
-        state && state.etat === 'ON'
-      ).length;
-      
-      countElement.textContent = `on: ${onCount}`;
-      console.log(`🔢 ${onCount} appareil(s) allumé(s)`);
-      
-    } catch (error) {
-      console.error('❌ Erreur updateCount:', error);
-    }
-  }
-
   // ============================================
   // 🏠 FONCTION: AFFICHER APPAREILS VARIABLES/FIXES
   // ============================================
@@ -2749,8 +2729,8 @@
 
   el('file-input').addEventListener('change', (event) => {
     for (const file of event.target.files) {
-      if (appState.attachments.length >= 10) {
-        alert("Maximum 10 fichiers."); break;
+      if (appState.attachments.length >= 5) {
+        alert("Maximum 5 fichiers."); break;
       }
       const reader = new FileReader();
       reader.onload = (e) => {
@@ -2916,9 +2896,27 @@
     }
   }
 
+  // ============================================
+  // 🔢 FONCTION: METTRE À JOUR LE COMPTEUR D'APPAREILS
+  // ============================================
   function updateCount() {
-    const onCount = Object.values(appState.deviceStates).filter(s => s?.etat === 'ON').length;
-    el('db-count').textContent = `on: ${onCount}`;
+    try {
+      const countElement = document.getElementById('db-count');
+      if (!countElement) {
+        console.warn('⚠️ Élément db-count non trouvé');
+        return;
+      }
+      
+      const onCount = Object.values(appState.deviceStates).filter(state => 
+        state && state.etat === 'ON'
+      ).length;
+      
+      countElement.textContent = `on: ${onCount}`;
+      console.log(`🔢 ${onCount} appareil(s) allumé(s)`);
+      
+    } catch (error) {
+      console.error('❌ Erreur updateCount:', error);
+    }
   }
 
   // ============================================
@@ -2943,11 +2941,6 @@
   // ============================================
   // 📅 FONCTIONS DE PLANNING (COMPATIBILITÉ)
   // ============================================
-  function populatePlanDeviceSelect() {
-    const sel = el('plan-device');
-    if (!sel) return;
-    sel.innerHTML = appState.devices.map(d => `<option value="${d.id}">${d.name} (${d.room})</option>`).join('');
-  }
 
   function renderPlanningListUI(plans) {
     const out = el('planningTable');
@@ -3073,4 +3066,3 @@
   </script>
 </body>
 </html>
-  
