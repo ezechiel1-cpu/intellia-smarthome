@@ -1188,9 +1188,6 @@
                 <option value="ON">Allumer</option><option value="OFF">Éteindre</option>
               </select>
 
-              <label>Puissance (%)</label>
-              <input id="plan-power" type="number" min="0" max="100" value="100" style="width:100%;padding:8px;border-radius:8px;border:1px solid #ddd;margin-bottom:10px" />
-              
               <div style="display:flex;gap:8px">
                 <button class="btn primary" id="addPlan" style="flex:1"><i class="fas fa-plus"></i> Planifier</button>
                 <button class="btn warning" id="clearAllPlans" style="flex:1"><i class="fas fa-trash"></i> Effacer tout</button>
@@ -1341,10 +1338,10 @@
   
   const defaultAvatar = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iI2FlYWVhZSI+PHBhdGggZD0iTTEyIDJDNi44OCAyIDIgNi44OCAyIDEyczQuNDggMTQgMTAgMTBjNS41MiAwIDEwLTQuNDggMTAtMTBTMjcuNTIgMiAxMiAyem0wIDJjMS42NiAwIDMgMS4zNCAzIDNzLTEuMzQgMy0zIDMtMy0xLjM0LTMtM1MwLjM0IDQgMTIgNHptMCAxNmMtMi42NyAwLTUuNDMtMS4yOS03LTIuODguNTYtMS42NSAzLjU1LTIuNjIgNy0yLjYyczYuNDQgLjk3IDcgMi42MmMtMS41NyAxLjU5LTQuMzMgMi44OC03IDIuODh6Ii8+PC9zdmc+";
 
-  const deviceTypes = {
-    'lamp': { name: 'Lampe', hasBrightness: true, icon: 'lightbulb' },
+ const deviceTypes = {
+    'lamp': { name: 'Lampe', hasBrightness: false, icon: 'lightbulb' },
     'plug': { name: 'Prise', hasBrightness: false, icon: 'plug' },
-    'ventilateur': { name: 'Ventilateur', hasBrightness: true, icon: 'fan' },
+    'ventilateur': { name: 'Ventilateur', hasBrightness: false, icon: 'fan' },
     'thermostat': { name: 'Thermostat', hasBrightness: false, icon: 'temperature-low' },
     'volet': { name: 'Volet Roulant', hasBrightness: false, icon: 'window-maximize' }
   };
@@ -2166,19 +2163,19 @@ async function handleContinuation(context) {
   }
 
   // ======= Device Rendering =======
-  function renderDevices() {
+function renderDevices() {
     const grid = el('deviceGrid');
     if (!grid) return;
     grid.innerHTML = appState.devices.length === 0 ? '<div class="card"><p>Aucun appareil configuré.</p></div>' : '';
     
     for (const device of appState.devices) {
       const isOn = appState.deviceStates[device.id]?.etat === 'ON';
-      const power = appState.deviceStates[device.id]?.luminosite ?? appState.deviceStates[device.id]?.vitesse ?? 0;
       const deviceType = deviceTypes[device.type] || { name: 'Appareil', hasBrightness: false, icon: 'plug' };
       
       const card = document.createElement('div');
       card.className = 'device-card';
       card.dataset.deviceId = device.id;
+      // On retire l'affichage du pourcentage dans le header et le slider dans les controls
       card.innerHTML = `
         <div class="device-header">
           <div class="device-icon"><i class="fas fa-${deviceType.icon}"></i></div>
@@ -2186,7 +2183,7 @@ async function handleContinuation(context) {
             <div class="device-name">${device.name}</div>
             <div class="device-status">
               <span class="status-indicator ${isOn ? 'active' : ''}"></span>
-              <span>${isOn ? 'Allumé' : 'Éteint'}${deviceType.hasBrightness ? ` • ${power}%` : ''}</span>
+              <span>${isOn ? 'Allumé' : 'Éteint'}</span>
               <small style="display:block;margin-top:4px">${device.room || 'Non spécifié'}</small>
             </div>
           </div>
@@ -2198,11 +2195,7 @@ async function handleContinuation(context) {
               <span class="slider-3d"></span></label>
             </label>
           </div>
-          ${deviceType.hasBrightness ? `<div style="flex:1">
-            <label>Puissance : <span id="${device.id}-value">${power}%</span></label>
-            <input id="${device.id}-slider" type="range" min="0" max="100" value="${power}" oninput="adjustBrightness('${device.id}', this.value)"/>
-          </div>` : ''}
-          <div style="display:flex;gap:6px;width:100%">
+          <div style="display:flex;gap:6px;width:100%;margin-top:10px">
             <button class="btn" onclick="sendCommand('${device.id}','ON')">Allumer</button>
             <button class="btn" onclick="sendCommand('${device.id}','OFF')">Éteindre</button>
             <button class="btn warn" onclick="deleteDevicePrompt('${device.id}')"><i class="fas fa-trash"></i></button>
@@ -2398,25 +2391,23 @@ async function handleContinuation(context) {
 
   el('plan-frequency')?.addEventListener('change', togglePlanOptions);
   setTimeout(togglePlanOptions, 500);
-
-  el('addPlan')?.addEventListener('click', async () => {
+el('addPlan')?.addEventListener('click', async () => {
     const device = el('plan-device').value;
     const time = el('plan-time').value;
     const action = el('plan-action').value;
     const freq = el('plan-frequency').value;
-    let power = el('plan-power').value;
+    
+    // On force la puissance à null ou standard, on ne lit plus le champ input
+    const power = (action === "ON") ? 100 : 0;
     
     if (!device || !time) return alert('⚠️ Appareil et heure requis');
-    
-    const hasBrightness = appState.devices.find(d => d.id === device)?.hasBrightness ?? true;
-    power = hasBrightness ? (power || (action === "ON" ? 100 : 0)) : null;
     
     const payload = {
       device, 
       time, 
       action, 
       frequency: freq,
-      power: hasBrightness ? parseInt(power) : null,
+      power: null, // On met null pour ne pas gérer de progressivité
       createdAt: Date.now()
     };
     
@@ -2451,7 +2442,7 @@ async function handleContinuation(context) {
     document.querySelectorAll('.day-checkbox').forEach(cb => cb.checked = false);
   });
 
-  function renderPlanningListUI(plans) {
+ function renderPlanningListUI(plans) {
     const out = el('planningTable');
     if (!out) return;
     if (!plans || !plans.length) {
@@ -2472,7 +2463,6 @@ async function handleContinuation(context) {
         ${plans.map(p => {
           const deviceName = appState.devices.find(d => d.id === p.device)?.name || p.device;
           
-          // Construire la description "Quand"
           let whenText = p.time;
           const freq = p.frequency || 'once';
           
@@ -2490,12 +2480,12 @@ async function handleContinuation(context) {
           }
           
           const actionText = p.action === 'ON' ? '🟢 ON' : '🔴 OFF';
-          const powerText = p.power !== null ? ` ${p.power}%` : '';
+          // On retire powerText ici
           
           return `<tr style="border-bottom:1px solid rgba(0,0,0,0.05)">
             <td style="padding:10px"><strong>${deviceName}</strong></td>
             <td style="padding:10px">${whenText}</td>
-            <td style="padding:10px">${actionText}${powerText}</td>
+            <td style="padding:10px">${actionText}</td>
             <td style="padding:10px;text-align:center">
               <button class="btn warn" onclick="deletePlan('${p.firebaseId || p.createdAt}')" style="padding:6px 12px">
                 <i class="fas fa-trash"></i>
@@ -2506,7 +2496,6 @@ async function handleContinuation(context) {
       </tbody>
     </table>`;
   }
-
   window.deletePlan = async (planId) => {
     if (!confirm('🗑️ Supprimer cette planification ?')) return;
     if (db) { 
