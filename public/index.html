@@ -782,83 +782,67 @@
       margin-bottom: 30px;
     }
     body.night-mode .doc-contrat .meta { color: #94a3b8; }
+
+
+    /* Menu vocal mobile */
+.voice-btn-desktop {
+  display: flex; /* Visible sur desktop */
+}
+.voice-menu-btn-mobile {
+  display: none; /* Caché sur desktop */
+}
+
+#voice-dropdown-menu {
+  position: absolute;
+  bottom: 100%;
+  right: 60px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  padding: 8px;
+  min-width: 200px;
+}
+
+.voice-menu-item {
+  width: 100%;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-radius: 8px;
+}
+
+.voice-menu-item:hover {
+  background: rgba(67, 97, 238, 0.1);
+}
+
+.voice-menu-item.active {
+  background: rgba(67, 97, 238, 0.15);
+  color: #4361ee;
+}
+
     
     /* ========================================
        RESPONSIVE
        ======================================== */
-        /* --- Style du Menu Contextuel Vocal --- */
-
-/* Par défaut (PC/Tablette) : On affiche tout en ligne */
-.voice-menu-container {
-  display: flex;
-  gap: 8px;
-    }
     @media (max-width: 760px) {
-        /* 1. Afficher le bouton "..." */
-  #mobileMenuBtn {
-    display: flex !important;
-    min-width: 48px;
-    justify-content: center;
-    background: #f1f5f9; /* Gris clair pour le différencier */
-  }
-
-  /* 2. Transformer le conteneur en Pop-up flottant */
-  .voice-menu-container {
-    display: none; /* Caché par défaut */
-    position: absolute;
-    bottom: 80px; /* Juste au-dessus de la barre de saisie */
-    right: 60px;  /* Alignement approximatif au-dessus du bouton menu */
-    background: var(--card-bg);
-    padding: 10px;
-    border-radius: 12px;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-    flex-direction: column; /* Boutons l'un sur l'autre ou row selon préférence */
-    gap: 10px;
-    z-index: 2000;
-    border: 1px solid rgba(0,0,0,0.1);
-    animation: popIn 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    }
-      
-  /* Classe pour afficher le menu quand on clique */
-  .voice-menu-container.show {
-    display: flex;
-  }
-
-  /* Petite flèche en bas du pop-up (optionnel, pour le style) */
-  .voice-menu-container::after {
-    content: '';
-    position: absolute;
-    bottom: -6px;
-    right: 15px;
-    width: 12px;
-    height: 12px;
-    background: var(--card-bg);
-    transform: rotate(45deg);
-    border-bottom: 1px solid rgba(0,0,0,0.1);
-    border-right: 1px solid rgba(0,0,0,0.1);
-  }
-  
-  /* Mode Nuit pour le Pop-up */
-  body.night-mode .voice-menu-container {
-    background: #1e293b;
-    border: 1px solid rgba(255,255,255,0.1);
-  }
-  body.night-mode .voice-menu-container::after {
-    background: #1e293b;
-    border-bottom: 1px solid rgba(255,255,255,0.1);
-    border-right: 1px solid rgba(255,255,255,0.1);
-  }
-  
-  /* Animation d'apparition */
-  @keyframes popIn {
-    from { opacity: 0; transform: translateY(10px) scale(0.9); }
-    to { opacity: 1; transform: translateY(0) scale(1); }
       .grid { grid-template-columns: 1fr; }
       .controls { flex-direction: column; }
       .btn { width: 100%; justify-content: center; }
       .flex { flex-direction: column; align-items: stretch; }
       .two-column { grid-template-columns: 1fr; }
       .container { padding-bottom: 88px; }
+/* 🆕 AJOUT ICI - Cacher boutons vocaux desktop, montrer le menu mobile */
+  .voice-btn-desktop {
+    display: none !important;
+  }
+  .voice-menu-btn-mobile {
+    display: flex !important;
+  }
+  
+  #voice-dropdown-menu {
+    right: 10px;
+  }
 
       #sec-intelligence {
         height: 100%; 
@@ -1002,9 +986,7 @@
       .doc-facture .facture-table td {
         padding: 8px;
       }
-  }
-    
-    
+    }
     
     @media (min-width: 761px) {
       .two-column { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
@@ -1182,29 +1164,45 @@
               </button>
               
               <input id="chatFullInput" placeholder="Posez une question à l'Assistant..." />
+              
               <div id="chat-input-buttons">
-  <div id="voice-popup-menu" class="voice-menu-container">
-    <button class="btn" id="voiceContinuous" title="Mode conversation continue">
-    <i class="fa-solid fa-head-side-speech"></i> </button>
-    <button class="btn" id="toggleVoiceBtn" title="Activer/Désactiver la synthèse vocale">
-      <i class="fas fa-volume-up"></i>
-    </button>
-  </div>
-
-  <button class="btn" id="mobileMenuBtn" style="display:none;">
-    <i class="fas fa-ellipsis-v"></i>
-  </button>
-
-  <button class="btn" id="voicePushToTalk" title="Appuyer pour enregistrer">
+  <!-- Boutons vocaux version desktop -->
+  <button class="btn voice-btn-desktop" id="voicePushToTalk" title="Appuyer pour enregistrer">
     <i class="fas fa-microphone-alt"></i>
   </button>
+  <button class="btn voice-btn-desktop" id="voiceContinuous" title="Mode conversation continue">
+    <i class="fas fa-comment-dots"></i>
+  </button>
+  <button class="btn voice-btn-desktop" id="toggleVoiceBtn" title="Activer/Désactiver la synthèse vocale">
+    <i class="fas fa-volume-up"></i>
+  </button>
   
+  <!-- Bouton menu vocal version mobile -->
+  <button class="btn voice-menu-btn-mobile" id="voiceMenuBtn" title="Options vocales">
+    <i class="fas fa-ellipsis-v"></i>
+  </button>
+  
+  <!-- ✅ BOUTON ENVOYER (déjà présent) -->
   <button class="btn primary" id="chatFullSend">
     <i class="fas fa-paper-plane"></i>
   </button>
   
+  <!-- ✅ BOUTON STOP (déjà présent) -->
   <button class="btn warn" id="stopAIBtn" style="display: none; min-width: 56px; min-height: 48px;">
     <i class="fas fa-stop-circle" style="font-size: 20px;"></i>
+  </button>
+</div>
+
+<!-- Menu déroulant vocal (mobile uniquement) -->
+<div id="voice-dropdown-menu" style="display: none;">
+  <button class="voice-menu-item" data-action="push-to-talk">
+    <i class="fas fa-microphone-alt"></i> Enregistrer
+  </button>
+  <button class="voice-menu-item" data-action="continuous">
+    <i class="fas fa-comment-dots"></i> Mode continu
+  </button>
+  <button class="voice-menu-item" data-action="toggle-tts">
+    <i class="fas fa-volume-up"></i> Synthèse vocale
   </button>
 </div>
             </div>
@@ -1899,6 +1897,77 @@ function simulateTyping(element, text, enableVoice = true, needsContinuation = f
     resolve();
   });
 }
+// ======= Voice Menu Mobile =======
+
+function updateVoiceMenuState() {
+  const menu = el('voice-dropdown-menu');
+  
+  // Mise à jour des icônes selon l'état
+  const pushItem = menu.querySelector('[data-action="push-to-talk"]');
+  const continuousItem = menu.querySelector('[data-action="continuous"]');
+  const ttsItem = menu.querySelector('[data-action="toggle-tts"]');
+  
+  // Push-to-talk
+  if (VoiceEngine.isPushToTalkRecording) {
+    pushItem.classList.add('active');
+    pushItem.querySelector('i').className = 'fas fa-stop-circle';
+  }
+  
+  // Mode continu
+  if (VoiceEngine.isContinuousActive) {
+    continuousItem.classList.add('active');
+    continuousItem.innerHTML = '<i class="fas fa-stop-circle"></i> Arrêter conversation';
+  } else {
+    continuousItem.innerHTML = '<i class="fas fa-comment-dots"></i> Mode continu';
+  }
+  
+  // Synthèse vocale
+  if (appState.voiceNotifications) {
+    ttsItem.innerHTML = '<i class="fas fa-volume-up"></i> Synthèse ON';
+  } else {
+    ttsItem.innerHTML = '<i class="fas fa-volume-mute"></i> Synthèse OFF';
+  }
+}
+
+// Ouvrir/fermer le menu
+el('voiceMenuBtn')?.addEventListener('click', (e) => {
+  e.stopPropagation();
+  const menu = el('voice-dropdown-menu');
+  const isVisible = menu.style.display === 'block';
+  menu.style.display = isVisible ? 'none' : 'block';
+  if (!isVisible) updateVoiceMenuState();
+});
+
+// Fermer si clic ailleurs
+document.addEventListener('click', (e) => {
+  const menu = el('voice-dropdown-menu');
+  if (menu && !menu.contains(e.target)) {
+    menu.style.display = 'none';
+  }
+});
+
+// Gérer les clics dans le menu
+el('voice-dropdown-menu')?.addEventListener('click', (e) => {
+  const item = e.target.closest('.voice-menu-item');
+  if (!item) return;
+  
+  switch(item.dataset.action) {
+    case 'push-to-talk':
+      VoiceEngine.togglePushToTalk();
+      break;
+    case 'continuous':
+      VoiceEngine.toggleContinuousConversation();
+      el('voice-dropdown-menu').style.display = 'none';
+      break;
+    case 'toggle-tts':
+      appState.voiceNotifications = !appState.voiceNotifications;
+      localStorage.setItem('voiceNotifications', appState.voiceNotifications);
+      updateToggleVoiceBtnUI();
+      break;
+  }
+  
+  updateVoiceMenuState();
+});
 
 // ========================================
 // ✅ GESTION DE LA CONTINUATION
@@ -3508,60 +3577,7 @@ el('addPlan')?.addEventListener('click', async () => {
       }, 3000);
     }
   }
-// Fonction pour basculer le bouton principal entre Mode Poussoir et Mode Continu
-function setVoiceInputMode(mode, iconClass, titleText) {
-    
-    // --- VÉRIFICATION MOBILE ---
-    // Cette variable est VRAIE si l'écran est inférieur ou égal à 760px de large.
-    const isMobile = window.matchMedia('(max-width: 760px)').matches;
-    // ---------------------------
-    
-    const pttBtn = document.getElementById('voicePushToTalk');
-    
-    // Le code d'activation réel du mode vocal (votre logique d'application)
-    // doit se trouver ici (il s'exécute sur tous les écrans).
-    console.log(`Mode vocal activé : ${mode}`);
-    
-    // --- LOGIQUE VISUELLE (UX) : UNIQUEMENT SUR MOBILE ---
-    if (isMobile) {
-        
-        // 1. Mise à jour de l'icône et du titre du bouton principal
-        pttBtn.querySelector('i').className = iconClass;
-        pttBtn.setAttribute('title', titleText);
-        pttBtn.setAttribute('data-current-mode', mode); 
-        
-        // 2. Fermer le menu pop-up
-        const voiceMenu = document.getElementById('voice-popup-menu');
-        const mobileMenuBtn = document.getElementById('mobileMenuBtn');
-        if (voiceMenu) voiceMenu.classList.remove('show');
-        if (mobileMenuBtn) mobileMenuBtn.classList.remove('active');
-    }
-    // ----------------------------------------------------
-}
 
-// Écouteur pour le bouton 'Conversation Continue'
-document.addEventListener('DOMContentLoaded', () => {
-    const continuousBtn = document.getElementById('voiceContinuous');
-    const pttBtn = document.getElementById('voicePushToTalk');
-    
-    // ...
-if (continuousBtn) {
-    continuousBtn.addEventListener('click', (e) => {
-        e.stopPropagation(); 
-        setVoiceInputMode(
-            'continuous', 
-            'fa-solid fa-head-side-speech', // <-- NOUVELLE CLASSE ICI
-            'Mode vocal : Conversation continue (cliquez pour parler en continu)'
-        );
-    });
-}
-
-
-    // Initialisation (laisse le mode 'ptt' par défaut)
-    if (pttBtn) {
-        pttBtn.setAttribute('data-current-mode', 'ptt'); 
-    }
-});
   initUI(); 
 
   window.appState = appState;
