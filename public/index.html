@@ -1042,36 +1042,6 @@
     #proactive-suggestion { transition: opacity 0.5s ease-in-out; }
     #proactive-suggestion.fade-out { opacity: 0; }
 
-    /* ----- PATCH: bouton vocal unique mobile ----- */
-#mainVoiceActionBtn {
-  display: none;
-  min-width: 45px;
-  min-height: 45px;
-  justify-content: center;
-  align-items: center;
-  font-size: 18px;
-}
-
-/* Mobile */
-@media (max-width: 760px) {
-
-  /* cacher boutons desktop */
-  #voicePushToTalk,
-  #voiceContinuous,
-  #toggleVoiceBtn {
-    display: none !important;
-  }
-
-  /* montrer bouton vocal unique */
-  #mainVoiceActionBtn {
-    display: flex !important;
-  }
-
-  /* bouton envoyer caché tant que input vide */
-  #chatFullSend {
-    display: none;
-  }
-    }
   </style>
 </head>
 <body>
@@ -1182,9 +1152,6 @@
           </div>
           
           <div id="chat-input-container">
-            <button class="btn primary" id="mainVoiceActionBtn" title="Action vocale">
-  <i class="fas fa-microphone-alt"></i>
-            </button>
             <div id="chat-loading" style="display:none; padding-bottom: 8px; text-align:center; font-style:italic; color:var(--muted); font-size: 14px;">
               <i class="fas fa-spinner fa-spin"></i> Assistant en train de réfléchir...
             </div>
@@ -3610,47 +3577,7 @@ el('addPlan')?.addEventListener('click', async () => {
         });
       }, 3000);
     }
-  }
-          /* ===== PATCH – bouton vocal unique mobile ===== */
-
-let selectedVoiceMode = "push-to-talk"; // valeur par défaut
-
-function updateMainVoiceBtn() {
-  const btn = el("mainVoiceActionBtn");
-  if (!btn) return;
-
-  if (selectedVoiceMode === "push-to-talk") {
-    btn.innerHTML = '<i class="fas fa-microphone-alt"></i>';
-  } else if (selectedVoiceMode === "continuous") {
-    btn.innerHTML = '<i class="fas fa-comment-dots"></i>';
-  } else if (selectedVoiceMode === "toggle-tts") {
-    btn.innerHTML = '<i class="fas fa-volume-up"></i>';
-  }
-}
-
-/* Choix du mode vocal */
-document.querySelectorAll(".voice-menu-item").forEach(item => {
-  item.addEventListener("click", () => {
-    selectedVoiceMode = item.dataset.action;
-    updateMainVoiceBtn();
-    el("voice-dropdown-menu").style.display = "none";
-  });
-});
-
-/* Remplacement automatique par envoyer */
-const input = el("chatFullInput");
-const sendBtn = el("chatFullSend");
-const voiceBtn = el("mainVoiceActionBtn");
-
-input.addEventListener("input", () => {
-  if (input.value.trim() !== "") {
-    sendBtn.style.display = "flex";
-    voiceBtn.style.display = "none";
-  } else {
-    sendBtn.style.display = "none";
-    voiceBtn.style.display = "flex";
-  }
-});
+    }
 
   initUI(); 
 
