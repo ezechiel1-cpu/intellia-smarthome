@@ -286,7 +286,7 @@
       bottom: auto;
     }
     
-    #chat-input-flex { display: flex; gap: 8px; }
+   #chat-input-flex { display: flex; gap: 8px; position: relative; }
     #chatFullInput {
       flex: 1; padding: 12px; border-radius: 8px;
       border: 1px solid #ddd; font-size: 15px;
@@ -872,23 +872,31 @@
       #sidebar-overlay.open {
         display: block;
       }
-      
-      #sidebar-toggle-btn {
-        display: flex; 
-        position: absolute; 
-        top: 16px;
-        left: 16px;
-        z-index: 1000; 
-        background: var(--primary);
-        color: white;
-        border: 0;
-        border-radius: 8px;
-        width: 48px;
-        height: 48px;
-        align-items: center;
-        justify-content: center;
-        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-      }
+/* ✅ BOUTON MENU À L'INTÉRIEUR DU CHAMP DE TEXTE À DROITE */
+#sidebar-toggle-btn {
+  display: flex !important;
+  position: absolute !important;
+  top: 50% !important;
+  right: 12px !important;
+  transform: translateY(-50%) !important;
+  z-index: 10; 
+  background: var(--primary);
+  color: white;
+  border: 0;
+  border-radius: 6px;
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+}
+
+/* Ajuster le padding du champ pour éviter que le texte passe sous le bouton */
+#chatFullInput {
+  padding-right: 56px !important;
+}
       
       #chat-input-buttons button {
         min-width: 48px; min-height: 48px; font-size: 18px;
