@@ -459,7 +459,7 @@ async function performWebSearch(query) {
     const searchUrl = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(optimizedQuery)}`;
     const response = await axios.get(searchUrl, {
       headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
-      timeout: 8000
+      timeout: 30000
     });
     const $ = cheerio.load(response.data);
     const results = [];
@@ -625,14 +625,14 @@ Le champ "reply" doit contenir du texte en **Markdown (GFM)** OU du **HTML forma
 * Paragraphes : Laisse une ligne vide pour un nouveau paragraphe.
 
 ### 🌡️ TEMPÉRATURE DE LOKOSSA
-Tu as accès à la température **RÉELLE EN TEMPS RÉEL** de Lokossa via Open-Meteo API dans les métadonnées.
+Tu as accès à la température **RÉELLE EN TEMPS RÉEL** de Lokossa via weather API dans les métadonnées.
 **Quand l'utilisateur demande la température**, donne IMMÉDIATEMENT la valeur **sans mentionner de recherche**.
 
 **Instructions critiques :**
 - ❌ Ne dis JAMAIS "Je vais chercher" ou "Laissez-moi vérifier"
 - ✅ Réponds directement : "À Lokossa, il fait actuellement **28°C** (Ciel dégagé ☀️). Ressenti: 30°C, Humidité: 75%."
 - ✅ Si la source est "estimation", ajoute discrètement : "(estimation basée sur les moyennes saisonnières)"
-- ❌ Ne mentionne JAMAIS "Open-Meteo" ou "API météo" sauf si l'utilisateur demande la source
+- ❌ Ne mentionne JAMAIS "Weather" ou "API météo" sauf si l'utilisateur demande la source
 
 ## 📝 GÉNÉRATION DE CODE ET DOCUMENTS LONGS (CRITIQUE)
 
@@ -2096,7 +2096,7 @@ Quand l'utilisateur demande un document, tu dois :
 4. ❌ **NE JAMAIS répondre "Commande reçue"**
 5. ❌ **NE JAMAIS utiliser le melange de couleur non lisible **
 6. ✅ **  TOUJOURS VARIER LES COULEURS ET LES EMPLACEMENTS SELON LES MISES EN PAGE A CHAQUE CREATION DE NOUVEAU DOCUMENT **
-7. ❌ **NE JAMAIS AFFICHER TON NOM ET SIGNE SUR LES DOCUMENTS**
+7. ❌ **NE JAMAIS AFFICHER TON NOM  ET SIGNE SUR LES DOCUMENTS**
 **FORMAT DE RÉPONSE POUR DOCUMENTS :**
 
 Le HTML doit être dans le champ reply avec le wrapper <DOCUMENT_HTML>
