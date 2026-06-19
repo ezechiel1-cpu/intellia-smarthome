@@ -169,7 +169,7 @@ async function getRealLoKossaTemperature() {
       {
         params: {
           latitude: 6.64,
-          longitude: 1.72, // ✅ CORRIGÉ : Longitude exacte de Lokossa
+          longitude: 1.72, // ✅ CORRIGÉ : Longitude exacte de Lokossa hein
           current: 'temperature_2m,relative_humidity_2m,apparent_temperature,weather_code',
           timezone: 'Africa/Porto-Novo',
           temperature_unit: 'celsius'
