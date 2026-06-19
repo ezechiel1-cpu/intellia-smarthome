@@ -418,14 +418,39 @@ async function getHistoryFromFirebase(userId, sessionId) {
     return [];
   }
 }
-
 // ========================================
 // RECHERCHE WEB INTELLIGENTE
 // ========================================
-async function performWebSearch(query) {
-  console.log(`🔍 Recherche: "${query}"`);
+
+// Fonction interne pour transformer une longue phrase en mots-clés simples
+async function optimizeQueryWithLLM(userQuery) {
   try {
-    const searchUrl = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`;
+    const promptInterne = `Tu es un assistant de recherche. Transforme le message de l'utilisateur en un ou deux mots-clés optimisés pour Google ou DuckDuckGo (maximum 4 ou 5 mots, sans ponctuation).
+Exemple: "pardon je sais pas que nous sommes déjà en 2026 et je te dis que son mandat est terminé actuellement c'est romual Ouaga et qui est le président" -> "Président actuel Bénin 2026"
+Exemple: "qui est le premier ministre de la France en ce moment" -> "Premier ministre France 2026"
+
+Message: "${userQuery}"
+Mots-clés:`;
+
+    // Note : Cette fonction 'callLLM' doit correspondre à votre fonction existante 
+    // qui appelle votre modèle IA (Gemini, OpenAI, Grok...). Ajustez le nom si nécessaire.
+    const response = await callLLM(promptInterne); 
+    return response.trim().replace(/"/g, '');
+  } catch (error) {
+    // Si l'IA échoue, on nettoie grossièrement en prenant les 5 premiers mots
+    return userQuery.split(' ').slice(0, 5).join(' ');
+  }
+}
+
+async function performWebSearch(query) {
+  // ÉTAPE DE REFORMULATION : On transforme la phrase brute en mots-clés propres
+  const optimizedQuery = await optimizeQueryWithLLM(query);
+  console.log(`🔍 Recherche originale: "${query}"`);
+  console.log(`🎯 Recherche optimisée envoyée à DuckDuckGo: "${optimizedQuery}"`);
+
+  try {
+    // On utilise la requête optimisée pour l'URL
+    const searchUrl = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(optimizedQuery)}`;
     const response = await axios.get(searchUrl, {
       headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
       timeout: 8000
@@ -499,7 +524,7 @@ function analyzeContext(message, deviceStates, beninTime) {
   }
   
   return analysis;
-}
+                                     }
 
 // ========================================
 // 🎯 DÉTECTION DE TRONCATURE (CRITIQUE)
