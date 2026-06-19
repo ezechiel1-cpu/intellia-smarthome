@@ -417,7 +417,7 @@ async function getHistoryFromFirebase(userId, sessionId) {
     console.error("Erreur lecture historique Firebase:", error);
     return [];
   }
-}
+} 
 // ========================================
 // RECHERCHE WEB INTELLIGENTE
 // ========================================
@@ -432,11 +432,17 @@ Exemple: "qui est le premier ministre de la France en ce moment" -> "Premier min
 Message: "${userQuery}"
 Mots-clés:`;
 
-    // Note : Cette fonction 'callLLM' doit correspondre à votre fonction existante 
-    // qui appelle votre modèle IA (Gemini, OpenAI, Grok...). Ajustez le nom si nécessaire.
-    const response = await callLLM(promptInterne); 
-    return response.trim().replace(/"/g, '');
+    // Utilisation directe du modèle configuré pour une exécution rapide sans historique
+    const keyObj = getNextApiKey();
+    const genAI = new GoogleGenerativeAI(keyObj.key);
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+    
+    const result = await model.generateContent(promptInterne);
+    const responseText = result.response.text();
+    
+    return responseText.trim().replace(/"/g, '');
   } catch (error) {
+    console.error('⚠️ Échec de l\'optimisation LLM, utilisation du nettoyage brut:', error.message);
     // Si l'IA échoue, on nettoie grossièrement en prenant les 5 premiers mots
     return userQuery.split(' ').slice(0, 5).join(' ');
   }
@@ -463,7 +469,7 @@ async function performWebSearch(query) {
       const url = $(elem).find('.result__url').attr('href');
       if (title && snippet) results.push({ title, snippet, url });
     });
-    console.log(`✅ ${results.length} résultats`);
+    console.log(`✅ ${results.length} résultats récupérés pour le LLM.`);
     return results;
   } catch (error) {
     console.error('❌ Erreur recherche:', error.message);
@@ -484,12 +490,10 @@ function needsWebSearch(message) {
   if (noSearchPatterns.some(pattern => pattern.test(lowerMsg))) return false;
   const webKeywords = [
     'actualité', 'news', 'nouvelles', 'recherche', 'cherche', 'trouve',
-    'où se trouve', 'où est situé', 'combien coûte', 'prix de', 'qui est', 'c\'est qui'
+    'où se trouve', 'où est situé', 'combien coûte', 'prix de', 'qui est', 'c\'est qui', 'président'
   ];
-  if (lowerMsg.includes('qui est')) {
-    const words = message.split(' ');
-    const hasProperNoun = words.some(w => w.length > 2 && w[0] === w[0].toUpperCase());
-    return hasProperNoun;
+  if (lowerMsg.includes('qui est') || lowerMsg.includes('président')) {
+    return true;
   }
   return webKeywords.some(kw => lowerMsg.includes(kw));
 }
@@ -524,7 +528,8 @@ function analyzeContext(message, deviceStates, beninTime) {
   }
   
   return analysis;
-                                     }
+}
+
 
 // ========================================
 // 🎯 DÉTECTION DE TRONCATURE (CRITIQUE)
