@@ -160,7 +160,6 @@ function getWeatherDescription(code) {
   };
   return descriptions[code] || "Conditions variables";
 }
-
 async function getRealLoKossaTemperature() {
   try {
     console.log("🌡️ Appel Open-Meteo API...");
@@ -170,12 +169,12 @@ async function getRealLoKossaTemperature() {
       {
         params: {
           latitude: 6.64,
-          longitude: 1.97,
+          longitude: 1.72, // ✅ CORRIGÉ : Longitude exacte de Lokossa
           current: 'temperature_2m,relative_humidity_2m,apparent_temperature,weather_code',
           timezone: 'Africa/Porto-Novo',
           temperature_unit: 'celsius'
         },
-        timeout: 3000
+        timeout: 5000 // ✅ OPTIMISÉ : 5 secondes pour éviter les rejets sur connexion lente
       }
     );
     
