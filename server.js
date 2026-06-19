@@ -418,61 +418,85 @@ async function getHistoryFromFirebase(userId, sessionId) {
     return [];
   }
 } 
+
+
 // ========================================
 // RECHERCHE WEB INTELLIGENTE
 // ========================================
 
-// Fonction interne pour transformer une longue phrase en mots-clés simples
+if (!process.env.TAVILY_API_KEY) {
+  console.warn('⚠️ TAVILY_API_KEY manquante — la recherche web sera désactivée');
+}
+
+// Étape 1 : extraction intelligente de la vraie question via l'IA (plafonnée à 4s)
 async function optimizeQueryWithLLM(userQuery) {
   try {
-    const promptInterne = `Tu es un assistant de recherche. Transforme le message de l'utilisateur en un ou deux mots-clés optimisés pour Google ou DuckDuckGo (maximum 4 ou 5 mots, sans ponctuation).
-Exemple: "pardon je sais pas que nous sommes déjà en 2026 et je te dis que son mandat est terminé actuellement c'est romual Ouaga et qui est le président" -> "Président actuel Bénin 2026"
-Exemple: "qui est le premier ministre de la France en ce moment" -> "Premier ministre France 2026"
+    const promptInterne = `Tu es un assistant de recherche. Transforme le message ci-dessous en une requête de recherche courte et précise (maximum 12 mots, sans ponctuation inutile). Ignore le bavardage, les digressions, garde uniquement l'information nécessaire pour trouver la réponse.
+Exemple: "pardon je sais pas que nous sommes déjà en 2026 et je te dis que son mandat est terminé actuellement c'est romual Ouaga et qui est le président" -> "président actuel Bénin 2026"
+Exemple: "qui est le premier ministre de la France en ce moment" -> "premier ministre France 2026"
 
 Message: "${userQuery}"
-Mots-clés:`;
+Requête:`;
 
-    // Utilisation directe du modèle configuré pour une exécution rapide sans historique
     const keyObj = getNextApiKey();
     const genAI = new GoogleGenerativeAI(keyObj.key);
     const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-    
-    const result = await model.generateContent(promptInterne);
-    const responseText = result.response.text();
-    
-    return responseText.trim().replace(/"/g, '');
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 4000);
+
+    const result = await model.generateContent(promptInterne, { signal: controller.signal });
+    clearTimeout(timeoutId);
+
+    const responseText = result.response.text().trim().replace(/["']/g, '');
+    return responseText || null;
   } catch (error) {
-    console.error('⚠️ Échec de l\'optimisation LLM, utilisation du nettoyage brut:', error.message);
-    // Si l'IA échoue, on nettoie grossièrement en prenant les 5 premiers mots
-    return userQuery.split(' ').slice(0, 5).join(' ');
+    console.warn('⚠️ Optimisation LLM indisponible (timeout/erreur), bascule locale:', error.message);
+    return null;
   }
 }
 
+// Étape 2 (filet de sécurité) : nettoyage local instantané si l'IA échoue
+function extractCoreQuestionLocal(message) {
+  let text = message.trim();
+  const sentences = text.split(/(?<=[.?!])\s+/);
+  const questionWords = /\b(qui|quoi|quel|quelle|quels|quelles|comment|où|pourquoi|combien|quand|est-ce que)\b/i;
+  const questionSentence = sentences.find(s => questionWords.test(s));
+  if (questionSentence) text = questionSentence;
+  return text.length > 400 ? text.slice(0, 400) : text;
+}
+
 async function performWebSearch(query) {
-  // ÉTAPE DE REFORMULATION : On transforme la phrase brute en mots-clés propres
-  const optimizedQuery = await optimizeQueryWithLLM(query);
-  console.log(`🔍 Recherche originale: "${query}"`);
-  console.log(`🎯 Recherche optimisée envoyée à DuckDuckGo: "${optimizedQuery}"`);
+  let searchQuery = await optimizeQueryWithLLM(query);
+  if (!searchQuery) {
+    searchQuery = extractCoreQuestionLocal(query);
+  }
+  // Garde-fou absolu : Tavily refuse toute requête de plus de 400 caractères
+  if (searchQuery.length > 400) searchQuery = searchQuery.slice(0, 400);
+
+  console.log(`🔍 Recherche originale: "${query.slice(0, 80)}${query.length > 80 ? '...' : ''}"`);
+  console.log(`🎯 Requête envoyée à Tavily: "${searchQuery}"`);
 
   try {
-    // On utilise la requête optimisée pour l'URL
-    const searchUrl = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(optimizedQuery)}`;
-    const response = await axios.get(searchUrl, {
-      headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
-      timeout: 30000
+    const response = await axios.post('https://api.tavily.com/search', {
+      api_key: process.env.TAVILY_API_KEY,
+      query: searchQuery,
+      search_depth: 'basic',
+      max_results: 5
+    }, {
+      timeout: 8000
     });
-    const $ = cheerio.load(response.data);
-    const results = [];
-    $('.result').slice(0, 5).each((i, elem) => {
-      const title = $(elem).find('.result__title').text().trim();
-      const snippet = $(elem).find('.result__snippet').text().trim();
-      const url = $(elem).find('.result__url').attr('href');
-      if (title && snippet) results.push({ title, snippet, url });
-    });
+
+    const results = (response.data.results || []).map(r => ({
+      title: r.title,
+      snippet: r.content,
+      url: r.url
+    }));
+
     console.log(`✅ ${results.length} résultats récupérés pour le LLM.`);
     return results;
   } catch (error) {
-    console.error('❌ Erreur recherche:', error.message);
+    console.error('❌ Erreur recherche Tavily:', error.message);
     return [];
   }
 }
@@ -515,7 +539,7 @@ function analyzeContext(message, deviceStates, beninTime) {
       });
     }
   }
-  
+
   if (beninTime && (beninTime.hours >= 22 || beninTime.hours < 6)) {
     const brightDevices = Object.values(deviceStates).filter(d => d.etat === 'ON' && d.luminosite > 50);
     if (brightDevices.length > 0) {
@@ -526,10 +550,9 @@ function analyzeContext(message, deviceStates, beninTime) {
       });
     }
   }
-  
+
   return analysis;
 }
-
 
 // ========================================
 // 🎯 DÉTECTION DE TRONCATURE (CRITIQUE)
