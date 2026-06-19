@@ -162,42 +162,43 @@ function getWeatherDescription(code) {
 }
 async function getRealLoKossaTemperature() {
   try {
-    console.log("🌡️ Appel Open-Meteo API...");
+    console.log("🌡️ Appel WeatherAPI pour Lokossa...");
     
-    const response = await axios.get(
-      'https://api.open-meteo.com/v1/forecast',
-      {
-        params: {
-          latitude: 6.64,
-          longitude: 1.72, // ✅ CORRIGÉ : Longitude exacte de Lokossa hein
-          current: 'temperature_2m,relative_humidity_2m,apparent_temperature,weather_code',
-          timezone: 'Africa/Porto-Novo',
-          temperature_unit: 'celsius'
-        },
-        timeout: 5000 // ✅ OPTIMISÉ : 5 secondes pour éviter les rejets sur connexion lente
-      }
-    );
+    // Votre clé API personnelle récupérée sur WeatherAPI
+    const apiKey = '41c88a0121c8451284c194700261906'; 
+    
+    const response = await axios.get('https://api.weatherapi.com/v1/current.json', {
+      params: {
+        key: apiKey,
+        q: 'Lokossa',
+        lang: 'fr'
+      },
+      timeout: 5000 // Sécurité de 5 secondes en cas de réseau lent
+    });
     
     const current = response.data.current;
     
-    console.log(`✅ Température récupérée: ${Math.round(current.temperature_2m)}°C`);
+    console.log(`✅ Température réelle récupérée : ${Math.round(current.temp_c)}°C`);
     
     return {
-      temperature: Math.round(current.temperature_2m),
-      feels_like: Math.round(current.apparent_temperature),
-      humidity: current.relative_humidity_2m,
-      description: getWeatherDescription(current.weather_code),
-      source: 'open-meteo-api',
+      temperature: Math.round(current.temp_c),
+      feels_like: Math.round(current.feelslike_c),
+      humidity: current.humidity,
+      description: current.condition.text,
+      source: 'weatherapi',
       success: true
     };
     
   } catch (error) {
-    console.warn("⚠️ Open-Meteo API indisponible, utilisation estimation:", error.message);
+    console.warn("⚠️ WeatherAPI indisponible, utilisation de l'estimation :", error.message);
     const now = new Date();
     const month = now.getMonth() + 1;
     const hour = now.getHours();
+    
+    // Appel de votre fonction locale de secours
     const estimated = getLoKossaTemperatureEstimated(month, hour);
-    console.log(`📊 Température estimée: ${estimated.temperature}°C`);
+    console.log(`📊 Température estimée : ${estimated.temperature}°C`);
+    
     return { 
       ...estimated, 
       success: false 
