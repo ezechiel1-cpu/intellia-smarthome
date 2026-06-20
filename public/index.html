@@ -197,7 +197,6 @@
 
     /* ========================================
        ✅ IMPRESSION / TÉLÉCHARGEMENT PDF IN-PAGE
-       (fonction printDocument intégrée)
        ======================================== */
     #print-root { display: none; }
     @media print {
@@ -488,6 +487,69 @@
     }
     
     /* ========================================
+       CARTE DOCUMENT (STYLE CLAUDE)
+       ======================================== */
+    .doc-card {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 16px;
+      background: rgba(0,0,0,0.03);
+      border-radius: 12px;
+      border: 1px solid rgba(0,0,0,0.08);
+      transition: all 0.2s ease;
+    }
+    .doc-card:hover {
+      background: rgba(0,0,0,0.05);
+      border-color: rgba(0,0,0,0.12);
+    }
+    body.night-mode .doc-card {
+      background: rgba(255,255,255,0.05);
+      border-color: rgba(255,255,255,0.1);
+    }
+    body.night-mode .doc-card:hover {
+      background: rgba(255,255,255,0.08);
+    }
+    .doc-card-icon {
+      width: 48px;
+      height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 10px;
+      font-size: 24px;
+      flex-shrink: 0;
+    }
+    .doc-card-info {
+      flex: 1;
+      min-width: 0;
+    }
+    .doc-card-title {
+      font-weight: 600;
+      font-size: 16px;
+      word-break: break-word;
+    }
+    .doc-card-meta {
+      font-size: 13px;
+      color: var(--muted);
+    }
+    .doc-card-actions {
+      display: flex;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+    @media (max-width: 600px) {
+      .doc-card-actions {
+        flex-direction: column;
+        gap: 4px;
+      }
+      .doc-card-actions .btn {
+        padding: 6px 10px;
+        font-size: 12px;
+      }
+    }
+    
+    /* ========================================
        BOUTON CONTINUER (STYLE CLAUDE)
        ======================================== */
     .continue-btn {
@@ -506,30 +568,24 @@
       transition: all 0.3s ease;
       box-shadow: 0 4px 12px rgba(67, 97, 238, 0.3);
     }
-    
     .continue-btn:hover {
       transform: translateY(-2px);
       box-shadow: 0 6px 20px rgba(67, 97, 238, 0.4);
       background: linear-gradient(135deg, #3651de, #2941ce);
     }
-    
     .continue-btn:active {
       transform: translateY(0);
     }
-    
     .continue-btn i {
       animation: pulse-icon 1.5s ease-in-out infinite;
     }
-    
     @keyframes pulse-icon {
       0%, 100% { opacity: 1; }
       50% { opacity: 0.5; }
     }
-    
     .msg.bot.loading::after {
       content: '▋'; animation: blink 1s step-end infinite; color: var(--primary);
     }
-
     @keyframes blink { 50% { opacity: 0; } }
     
     /* ========================================
@@ -625,7 +681,6 @@
       70% { box-shadow: 0 0 0 10px rgba(231, 76, 60, 0); }
       100% { box-shadow: 0 0 0 0 rgba(231, 76, 60, 0); background-color: var(--danger); }
     }
-    
     .icon-pulse { animation: icon-pulse-anim 1.5s infinite ease-in-out; }
     @keyframes icon-pulse-anim {
       0% { transform: scale(1); opacity: 1; }
@@ -926,13 +981,12 @@
     }
     body.night-mode .doc-contrat .meta { color: #94a3b8; }
 
-
     /* Menu vocal mobile */
     .voice-btn-desktop {
-      display: flex; /* Visible sur desktop */
+      display: flex;
     }
     .voice-menu-btn-mobile {
-      display: none; /* Caché sur desktop */
+      display: none;
     }
 
     #voice-dropdown-menu {
@@ -964,7 +1018,6 @@
       color: #4361ee;
     }
 
-    
     /* ========================================
        RESPONSIVE
        ======================================== */
@@ -1096,7 +1149,6 @@
         width: auto;
       }
       
-      /* ✅ Documents générés (CV, lettre, rapport, facture, contrat) : adaptation mobile */
       .doc-cv, .doc-lettre, .doc-rapport, .doc-facture, .doc-contrat {
         padding: 20px 16px;
         line-height: 1.55;
@@ -1163,7 +1215,6 @@
     
     @media (min-width: 761px) {
       .two-column { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-      /* On ne cache plus #sidebar-toggle-btn ici, car on le gère via #chat-header */
       #sidebar-overlay { display: none; }
       
       #chat-section-container { overflow: hidden; }
@@ -1219,7 +1270,7 @@
 </head>
 <body>
 
-  <!-- ✅ Conteneur dédié à l'impression/téléchargement PDF in-page -->
+  <!-- Conteneur pour l'impression -->
   <div id="print-root"></div>
 
   <div id="login-overlay">
@@ -1307,7 +1358,6 @@
 
       <!-- SECTION INTELLIGENCE / CHAT -->
       <section id="sec-intelligence" class="section">
-        <!-- On supprime le bouton flottant #sidebar-toggle-btn qui était ici -->
         <div id="sidebar-overlay"></div>
         
         <div id="chat-sidebar">
@@ -1349,7 +1399,6 @@
               <input id="chatFullInput" placeholder="Posez une question à l'Assistant..." />
               
               <div id="chat-input-buttons">
-                <!-- ON SUPPRIME LE DEUXIÈME #sidebar-toggle-btn QUI ÉTAIT ICI -->
                 <button class="btn voice-btn-desktop" id="voicePushToTalk" title="Appuyer pour enregistrer">
                   <i class="fas fa-microphone-alt"></i>
                 </button>
@@ -1989,6 +2038,180 @@ function addCopyButtons(element) {
 }
 
 // ========================================
+// ✅ NOUVELLES FONCTIONS POUR DOCUMENTS (CARTES)
+// ========================================
+
+// Extraire les métadonnées du document HTML
+function extractDocumentMetadata(html) {
+  // Extraire le titre
+  const titleMatch = html.match(/<title>(.*?)<\/title>/i) || 
+                     html.match(/<h1[^>]*>(.*?)<\/h1>/i);
+  const title = titleMatch ? titleMatch[1].trim() : 'Document';
+  
+  // Déterminer le type
+  let type = 'document';
+  if (html.includes('doc-cv') || html.includes('CV')) type = 'cv';
+  else if (html.includes('doc-lettre') || html.includes('Lettre')) type = 'lettre';
+  else if (html.includes('doc-rapport') || html.includes('Rapport')) type = 'rapport';
+  else if (html.includes('doc-facture') || html.includes('Facture')) type = 'facture';
+  else if (html.includes('doc-contrat') || html.includes('Contrat')) type = 'contrat';
+  
+  return { title, type };
+}
+
+// Afficher une carte document (style Claude)
+function appendDocumentCard(htmlContent, metadata) {
+  const target = document.getElementById('chatFullWindow');
+  if (!target) return;
+  
+  const node = document.createElement('div');
+  node.className = 'msg bot';
+  
+  // Types et icônes
+  const typeMap = {
+    cv: { icon: 'fa-file-pdf', color: '#e74c3c', label: 'CV' },
+    lettre: { icon: 'fa-file-alt', color: '#3498db', label: 'Lettre' },
+    rapport: { icon: 'fa-file-chart-pie', color: '#2ecc71', label: 'Rapport' },
+    facture: { icon: 'fa-file-invoice', color: '#f39c12', label: 'Facture' },
+    contrat: { icon: 'fa-file-signature', color: '#9b59b6', label: 'Contrat' }
+  };
+  
+  const type = metadata.type || 'document';
+  const info = typeMap[type] || { icon: 'fa-file', color: '#6c757d', label: 'Document' };
+  const title = metadata.title || 'Document';
+  const size = Math.round(htmlContent.length / 1024);
+  
+  // Encoder le HTML pour le passer dans les onclick
+  const encodedHtml = encodeURIComponent(htmlContent);
+  
+  node.innerHTML = `
+    <div class="doc-card">
+      <div class="doc-card-icon" style="background: ${info.color}20; color: ${info.color};">
+        <i class="fas ${info.icon}"></i>
+      </div>
+      <div class="doc-card-info">
+        <div class="doc-card-title">${title}</div>
+        <div class="doc-card-meta">${info.label} · ${size} KB</div>
+      </div>
+      <div class="doc-card-actions">
+        <button class="btn primary" onclick="previewDocument(this, '${encodedHtml}')" style="padding: 8px 14px;">
+          <i class="fas fa-eye"></i> Aperçu
+        </button>
+        <button class="btn" onclick="downloadDocument(this, '${encodedHtml}', '${title}', '${type}')" style="padding: 8px 14px;">
+          <i class="fas fa-download"></i> Télécharger
+        </button>
+      </div>
+    </div>
+  `;
+  
+  target.appendChild(node);
+  scrollToBottom();
+}
+
+// Aperçu du document dans une modale
+window.previewDocument = function(btn, encodedHtml) {
+  const html = decodeURIComponent(encodedHtml);
+  
+  // Créer la modale
+  const modal = document.createElement('div');
+  modal.style.cssText = `
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.7); z-index: 99999;
+    display: flex; align-items: center; justify-content: center;
+    padding: 20px;
+  `;
+  
+  const content = document.createElement('div');
+  content.style.cssText = `
+    background: ${appState.isNightMode ? '#1a1a2e' : 'white'}; 
+    max-width: 900px; width: 100%; max-height: 90vh;
+    border-radius: 12px; overflow: auto; padding: 30px;
+    position: relative;
+  `;
+  
+  // Bouton fermer
+  const closeBtn = document.createElement('button');
+  closeBtn.innerHTML = '✕';
+  closeBtn.style.cssText = `
+    position: sticky; top: 0; float: right; background: ${appState.isNightMode ? '#2d2d44' : 'white'};
+    border: none; font-size: 24px; cursor: pointer; color: ${appState.isNightMode ? '#e2e8f0' : '#666'};
+    z-index: 1; padding: 4px 12px; border-radius: 6px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  `;
+  closeBtn.onclick = () => modal.remove();
+  
+  // Contenu du document
+  const docDiv = document.createElement('div');
+  docDiv.innerHTML = html;
+  
+  // Appliquer le mode nuit si actif
+  if (appState.isNightMode) {
+    applyNightModeToDoc(docDiv);
+  }
+  
+  content.appendChild(closeBtn);
+  content.appendChild(docDiv);
+  modal.appendChild(content);
+  
+  // Fermer en cliquant en dehors
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) modal.remove();
+  });
+  
+  // Fermer avec Echap
+  modal.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') modal.remove();
+  });
+  
+  document.body.appendChild(modal);
+  modal.focus();
+};
+
+// Téléchargement intelligent du document
+window.downloadDocument = function(btn, encodedHtml, title, type) {
+  const html = decodeURIComponent(encodedHtml);
+  
+  // Déterminer l'extension et le type MIME
+  let ext = 'html';
+  let mimeType = 'text/html';
+  
+  // Si c'est du code (détection basique)
+  const codeMatch = html.match(/<pre[^>]*>.*?<code[^>]*class="language-(\w+)/s);
+  if (codeMatch) {
+    const lang = codeMatch[1].toLowerCase();
+    const langMap = {
+      'javascript': 'js', 'python': 'py', 'java': 'java',
+      'cpp': 'cpp', 'c': 'c', 'html': 'html', 'css': 'css',
+      'json': 'json', 'bash': 'sh', 'sql': 'sql', 'xml': 'xml'
+    };
+    ext = langMap[lang] || 'txt';
+    mimeType = 'text/plain';
+  }
+  
+  // Pour les documents, on garde .html
+  const docTypes = ['cv', 'lettre', 'rapport', 'facture', 'contrat'];
+  if (docTypes.includes(type)) {
+    ext = 'html';
+    mimeType = 'text/html';
+  }
+  
+  // Créer le blob et télécharger
+  const blob = new Blob([html], { type: mimeType });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${title}.${ext}`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+};
+
+// ========================================
+// FIN NOUVELLES FONCTIONS
+// ========================================
+
+// ========================================
 // ✅ AFFICHAGE DES MESSAGES
 // ========================================
 function appendChat(role, text, returnElement = false, attachments = []) {
@@ -2001,26 +2224,13 @@ function appendChat(role, text, returnElement = false, attachments = []) {
   if (role === 'user') {
     if (text) node.textContent = text;
   } else {
-    // ✅ CAS : Document HTML Direct
+    // ✅ CAS : Document HTML Direct (avec carte)
     const documentHtmlMatch = text.match(/<DOCUMENT_HTML>([\s\S]*?)<\/DOCUMENT_HTML>/);
     if (documentHtmlMatch) {
       const documentHtml = documentHtmlMatch[1].trim();
-      
-      node.innerHTML = `
-        ${documentHtml}
-        <div class="doc-actions">
-          <button type="button" class="doc-action-btn" title="Télécharger / Imprimer" onclick="printDocument(this)">
-            <i class="fas fa-download"></i>
-          </button>
-          <button type="button" class="doc-action-btn" title="Copier le texte" onclick="copyDocumentText(this)">
-            <i class="fas fa-copy"></i>
-          </button>
-        </div>
-      `;
-
-      applyNightModeToDoc(node);
-      
-      target.appendChild(node);
+      const metadata = extractDocumentMetadata(documentHtml);
+      appendDocumentCard(documentHtml, metadata);
+      target.appendChild(node); // On ajoute quand même le conteneur vide pour la structure
       scrollToBottom();
       return node;
     }
@@ -2101,34 +2311,20 @@ function simulateTyping(element, text, enableVoice = true, needsContinuation = f
       return;
     }
     
-    // ✅ CAS : Document HTML Direct
+    // ✅ CAS : Document HTML Direct (avec carte)
     const documentHtmlMatch = text.match(/<DOCUMENT_HTML>([\s\S]*?)<\/DOCUMENT_HTML>/);
     if (documentHtmlMatch) {
       const documentHtml = documentHtmlMatch[1].trim();
+      const metadata = extractDocumentMetadata(documentHtml);
       
-      element.innerHTML = `
-        ${documentHtml}
-        <div class="doc-actions">
-          <button type="button" class="doc-action-btn" title="Télécharger / Imprimer" onclick="printDocument(this)">
-            <i class="fas fa-download"></i>
-          </button>
-          <button type="button" class="doc-action-btn" title="Copier le texte" onclick="copyDocumentText(this)">
-            <i class="fas fa-copy"></i>
-          </button>
-        </div>
-      `;
-
-      applyNightModeToDoc(element);
+      // Afficher la carte
+      appendDocumentCard(documentHtml, metadata);
       
       element.classList.remove('loading');
       scrollToBottom();
       
       if (enableVoice && appState.voiceNotifications) {
-        const readableText = extractReadableText(documentHtml);
-        if (readableText) {
-          console.log('📢 Lecture vocale (document) :', readableText.substring(0, 100) + '...');
-          speak(readableText);
-        }
+        speak(`Document généré : ${metadata.title}`);
       }
       
       resolve();
