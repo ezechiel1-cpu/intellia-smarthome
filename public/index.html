@@ -197,41 +197,41 @@
 
     /* ========================================
        ✅ IMPRESSION / TÉLÉCHARGEMENT PDF IN-PAGE
-       Remplace l'ancienne fenêtre pop-up (window.open + document.write),
-       peu fiable sur mobile (bloqueurs de pop-up, PWA installée, écran
-       blanc). Ici, on imprime directement la page courante : on copie le
-       document dans #print-root, on masque tout le reste via CSS pendant
-       l'impression, puis window.print() ouvre la boîte de dialogue native
-       (qui permet "Enregistrer en PDF" = le "téléchargement"). Aucune
-       fenêtre, aucun pop-up, aucun document.write : ça ne peut pas planter
-       pour les mêmes raisons que l'ancienne méthode.
+       (fonction printDocument intégrée)
        ======================================== */
     #print-root { display: none; }
     @media print {
-      body.printing-mode > *:not(#print-root) { display: none !important; }
+      body.printing-mode * { visibility: hidden !important; }
+      body.printing-mode #print-root,
+      body.printing-mode #print-root * { visibility: visible !important; }
+
       body.printing-mode #print-root {
         display: block !important;
-        position: static;
-        width: 100%;
-      }
-      #print-root, #print-root * {
+        position: fixed !important;
+        top: 0 !important; left: 0 !important;
+        width: 100% !important; height: auto !important;
+        z-index: 99999 !important;
+        background: white !important;
+        overflow: visible !important;
         -webkit-print-color-adjust: exact;
         print-color-adjust: exact;
-        visibility: visible;
       }
-      #print-root {
-        background: white !important;
-      }
+
       #print-root .doc-cv, #print-root .doc-facture, #print-root .doc-lettre,
       #print-root .doc-rapport, #print-root .doc-contrat {
-        width: 100%; max-width: 100%; margin: 0; box-shadow: none !important;
+        width: 100% !important; max-width: 100% !important;
+        margin: 0 !important; padding: 20px !important;
+        box-shadow: none !important; border: none !important;
         background: white !important; color: #111 !important;
       }
+
       #print-root button, #print-root .doc-actions, #print-root .msg-actions,
       #print-root .code-actions, #print-root .continue-btn {
         display: none !important;
+        visibility: hidden !important;
       }
-      @page { margin: 1cm; size: A4; }
+
+      @page { margin: 1.5cm; size: A4; }
     }
 
     .container { 
@@ -350,6 +350,58 @@
       background: linear-gradient(135deg, #0e0f13, #0f1724);
     }
     
+    /* ========================================
+       NOUVEL EN-TÊTE DE CHAT (avec bouton menu à gauche)
+       ======================================== */
+    #chat-header {
+      display: flex;
+      align-items: center;
+      padding: 10px 16px;
+      background: rgba(255,255,255,0.7);
+      backdrop-filter: blur(6px);
+      border-bottom: 1px solid rgba(0,0,0,0.08);
+      flex-shrink: 0;
+    }
+    body.night-mode #chat-header {
+      background: rgba(30, 41, 59, 0.8);
+      border-bottom-color: rgba(255,255,255,0.1);
+    }
+    #chat-header #sidebar-toggle-btn {
+      background: transparent;
+      border: none;
+      font-size: 22px;
+      color: var(--dark);
+      padding: 4px 8px;
+      cursor: pointer;
+      margin-right: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    body.night-mode #chat-header #sidebar-toggle-btn {
+      color: #e2e8f0;
+    }
+    #chat-header #chat-title {
+      font-weight: 600;
+      font-size: 18px;
+      color: var(--dark);
+    }
+    body.night-mode #chat-header #chat-title {
+      color: #e2e8f0;
+    }
+    /* Sur desktop, on cache le bouton car la sidebar est déjà visible */
+    @media (min-width: 761px) {
+      #chat-header #sidebar-toggle-btn {
+        display: none;
+      }
+    }
+    /* Sur mobile, on le laisse visible */
+    @media (max-width: 760px) {
+      #chat-header #sidebar-toggle-btn {
+        display: flex;
+      }
+    }
+    
     #chatFullWindow {
       flex: 1; 
       overflow-y: auto;
@@ -377,8 +429,7 @@
       bottom: auto;
     }
     
-   #chat-input-flex { display: flex; gap: 8px; position: relative; }
-    #chat-input-wrap { position: relative; flex: 1; display: flex; }
+    #chat-input-flex { display: flex; gap: 8px; position: relative; }
     #chatFullInput {
       flex: 1; padding: 12px; border-radius: 8px;
       border: 1px solid #ddd; font-size: 15px;
@@ -877,41 +928,41 @@
 
 
     /* Menu vocal mobile */
-.voice-btn-desktop {
-  display: flex; /* Visible sur desktop */
-}
-.voice-menu-btn-mobile {
-  display: none; /* Caché sur desktop */
-}
+    .voice-btn-desktop {
+      display: flex; /* Visible sur desktop */
+    }
+    .voice-menu-btn-mobile {
+      display: none; /* Caché sur desktop */
+    }
 
-#voice-dropdown-menu {
-  position: absolute;
-  bottom: 100%;
-  right: 60px;
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-  padding: 8px;
-  min-width: 200px;
-}
+    #voice-dropdown-menu {
+      position: absolute;
+      bottom: 100%;
+      right: 60px;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      padding: 8px;
+      min-width: 200px;
+    }
 
-.voice-menu-item {
-  width: 100%;
-  padding: 12px 16px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  border-radius: 8px;
-}
+    .voice-menu-item {
+      width: 100%;
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      border-radius: 8px;
+    }
 
-.voice-menu-item:hover {
-  background: rgba(67, 97, 238, 0.1);
-}
+    .voice-menu-item:hover {
+      background: rgba(67, 97, 238, 0.1);
+    }
 
-.voice-menu-item.active {
-  background: rgba(67, 97, 238, 0.15);
-  color: #4361ee;
-}
+    .voice-menu-item.active {
+      background: rgba(67, 97, 238, 0.15);
+      color: #4361ee;
+    }
 
     
     /* ========================================
@@ -924,17 +975,17 @@
       .flex { flex-direction: column; align-items: stretch; }
       .two-column { grid-template-columns: 1fr; }
       .container { padding-bottom: 88px; }
-/* 🆕 AJOUT ICI - Cacher boutons vocaux desktop, montrer le menu mobile */
-  .voice-btn-desktop {
-    display: none !important;
-  }
-  .voice-menu-btn-mobile {
-    display: flex !important;
-  }
-  
-  #voice-dropdown-menu {
-    right: 10px;
-  }
+      
+      .voice-btn-desktop {
+        display: none !important;
+      }
+      .voice-menu-btn-mobile {
+        display: flex !important;
+      }
+      
+      #voice-dropdown-menu {
+        right: 10px;
+      }
 
       #sec-intelligence {
         height: 100%; 
@@ -964,15 +1015,6 @@
       #sidebar-overlay.open {
         display: block;
       }
-/* ✅ BOUTON MENU (☰) — bouton normal dans la barre d'actions de l'input,
-   au lieu d'un positionnement absolu fragile par-dessus le champ de texte
-   (cause du bouton qui flottait au milieu de l'écran). Il hérite de
-   #chat-input-buttons button (min 48x48, voir plus bas) et de la classe
-   .btn.primary (couleur) pour rester cohérent avec ses voisins (⋮, envoyer). */
-#sidebar-toggle-btn {
-  display: flex !important;
-  flex-shrink: 0;
-}
       
       #chat-input-buttons button {
         min-width: 48px; min-height: 48px; font-size: 18px;
@@ -1054,11 +1096,7 @@
         width: auto;
       }
       
-      /* ✅ Documents générés (CV, lettre, rapport, facture, contrat) :
-         avant, seul le padding était réduit sur mobile — les titres restaient
-         à leur taille desktop (28-32px) et débordaient/se cassaient mal sur
-         un écran de ~360px (cf. capture). On adapte ici toute la typographie
-         et les espacements internes pour un rendu lisible sur téléphone. */
+      /* ✅ Documents générés (CV, lettre, rapport, facture, contrat) : adaptation mobile */
       .doc-cv, .doc-lettre, .doc-rapport, .doc-facture, .doc-contrat {
         padding: 20px 16px;
         line-height: 1.55;
@@ -1125,7 +1163,7 @@
     
     @media (min-width: 761px) {
       .two-column { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-      #sidebar-toggle-btn { display: none; }
+      /* On ne cache plus #sidebar-toggle-btn ici, car on le gère via #chat-header */
       #sidebar-overlay { display: none; }
       
       #chat-section-container { overflow: hidden; }
@@ -1181,7 +1219,7 @@
 </head>
 <body>
 
-  <!-- ✅ Conteneur dédié à l'impression/téléchargement PDF in-page (voir #print-root dans le CSS) -->
+  <!-- ✅ Conteneur dédié à l'impression/téléchargement PDF in-page -->
   <div id="print-root"></div>
 
   <div id="login-overlay">
@@ -1269,6 +1307,7 @@
 
       <!-- SECTION INTELLIGENCE / CHAT -->
       <section id="sec-intelligence" class="section">
+        <!-- On supprime le bouton flottant #sidebar-toggle-btn qui était ici -->
         <div id="sidebar-overlay"></div>
         
         <div id="chat-sidebar">
@@ -1285,6 +1324,12 @@
         </div>
         
         <div id="chat-section-container">
+          <!-- NOUVEL EN-TÊTE AVEC BOUTON MENU À GAUCHE -->
+          <div id="chat-header">
+            <button id="sidebar-toggle-btn"><i class="fas fa-bars"></i></button>
+            <span id="chat-title">💬 Assistant IA</span>
+          </div>
+          
           <div id="chatFullWindow">
           </div>
           
@@ -1301,57 +1346,47 @@
                 <i class="fas fa-paperclip"></i>
               </button>
               
-              <div id="chat-input-wrap">
-                <input id="chatFullInput" placeholder="Posez une question à l'Assistant..." />
-              </div>
+              <input id="chatFullInput" placeholder="Posez une question à l'Assistant..." />
               
               <div id="chat-input-buttons">
-  <!-- ✅ Bouton menu (historique des discussions) — bouton normal de la barre,
-       plus de positionnement absolu par-dessus le champ de texte. -->
-  <button class="btn primary" id="sidebar-toggle-btn" title="Discussions">
-    <i class="fas fa-bars"></i>
-  </button>
-
-  <!-- Boutons vocaux version desktop -->
-  <button class="btn voice-btn-desktop" id="voicePushToTalk" title="Appuyer pour enregistrer">
-    <i class="fas fa-microphone-alt"></i>
-  </button>
-  <button class="btn voice-btn-desktop" id="voiceContinuous" title="Mode conversation continue">
-    <i class="fas fa-comment-dots"></i>
-  </button>
-  <button class="btn voice-btn-desktop" id="toggleVoiceBtn" title="Activer/Désactiver la synthèse vocale">
-    <i class="fas fa-volume-up"></i>
-  </button>
-  
-  <!-- Bouton menu vocal version mobile -->
-  <button class="btn voice-menu-btn-mobile" id="voiceMenuBtn" title="Options vocales">
-    <i class="fas fa-ellipsis-v"></i>
-  </button>
-  
-  <!-- ✅ BOUTON ENVOYER (déjà présent) -->
-  <button class="btn primary" id="chatFullSend">
-    <i class="fas fa-paper-plane"></i>
-  </button>
-  
-  <!-- ✅ BOUTON STOP (déjà présent) -->
-  <button class="btn warn" id="stopAIBtn" style="display: none; min-width: 56px; min-height: 48px;">
-    <i class="fas fa-stop-circle" style="font-size: 20px;"></i>
-  </button>
-</div>
-
-<!-- Menu déroulant vocal (mobile uniquement) -->
-<div id="voice-dropdown-menu" style="display: none;">
-  <button class="voice-menu-item" data-action="push-to-talk">
-    <i class="fas fa-microphone-alt"></i> Enregistrer
-  </button>
-  <button class="voice-menu-item" data-action="continuous">
-    <i class="fas fa-comment-dots"></i> Mode continu
-  </button>
-  <button class="voice-menu-item" data-action="toggle-tts">
-    <i class="fas fa-volume-up"></i> Synthèse vocale
-  </button>
-</div>
+                <!-- ON SUPPRIME LE DEUXIÈME #sidebar-toggle-btn QUI ÉTAIT ICI -->
+                <button class="btn voice-btn-desktop" id="voicePushToTalk" title="Appuyer pour enregistrer">
+                  <i class="fas fa-microphone-alt"></i>
+                </button>
+                <button class="btn voice-btn-desktop" id="voiceContinuous" title="Mode conversation continue">
+                  <i class="fas fa-comment-dots"></i>
+                </button>
+                <button class="btn voice-btn-desktop" id="toggleVoiceBtn" title="Activer/Désactiver la synthèse vocale">
+                  <i class="fas fa-volume-up"></i>
+                </button>
+                
+                <button class="btn voice-menu-btn-mobile" id="voiceMenuBtn" title="Options vocales">
+                  <i class="fas fa-ellipsis-v"></i>
+                </button>
+                
+                <button class="btn primary" id="chatFullSend">
+                  <i class="fas fa-paper-plane"></i>
+                </button>
+                
+                <button class="btn warn" id="stopAIBtn" style="display: none; min-width: 56px; min-height: 48px;">
+                  <i class="fas fa-stop-circle" style="font-size: 20px;"></i>
+                </button>
+              </div>
             </div>
+
+            <!-- Menu déroulant vocal (mobile uniquement) -->
+            <div id="voice-dropdown-menu" style="display: none;">
+              <button class="voice-menu-item" data-action="push-to-talk">
+                <i class="fas fa-microphone-alt"></i> Enregistrer
+              </button>
+              <button class="voice-menu-item" data-action="continuous">
+                <i class="fas fa-comment-dots"></i> Mode continu
+              </button>
+              <button class="voice-menu-item" data-action="toggle-tts">
+                <i class="fas fa-volume-up"></i> Synthèse vocale
+              </button>
+            </div>
+
             <div style="margin-top:8px; display:flex; flex-wrap:wrap; gap: 8px;">
               <span class="chip">Mode Conversation: <span id="continuousStatus">Désactivé</span></span>
               <span class="chip" id="intelliaStatus">Assistant: Non connecté</span>
@@ -1621,12 +1656,10 @@ function extractReadableText(content) {
 
 // ========================================
 // ✅ UTILITAIRES PARTAGÉS : copie presse-papier + retour visuel
-// (icône qui se change brièvement en ✓, pas d'alert() bloquante)
 // ========================================
 function copyTextToClipboard(text, btnElement) {
   const onSuccess = () => { if (btnElement) flashButtonSuccess(btnElement); };
   const onFail = () => {
-    // Fallback pour navigateurs sans Clipboard API (ou contexte non sécurisé)
     const textarea = document.createElement('textarea');
     textarea.value = text;
     textarea.style.position = 'fixed';
@@ -1662,11 +1695,7 @@ function flashButtonSuccess(btn, duration = 1500) {
 }
 
 // ========================================
-// ✅ COPIER LA RÉPONSE D'UN MESSAGE (texte, comme dans une interface de chat)
-// Volontairement distinct de extractReadableText() : cette dernière est
-// pensée pour la lecture vocale et retire les blocs de code. Ici on veut
-// copier tout ce qui est affiché, code compris, comme on copierait
-// n'importe quelle réponse de chat.
+// ✅ COPIER LA RÉPONSE D'UN MESSAGE
 // ========================================
 function getMessagePlainText(node) {
   const clone = node.cloneNode(true);
@@ -1682,7 +1711,7 @@ function getMessagePlainText(node) {
 }
 
 function addMessageCopyAction(node) {
-  if (!node || node.querySelector('.msg-actions')) return; // jamais deux fois sur le même message
+  if (!node || node.querySelector('.msg-actions')) return;
   const actions = document.createElement('div');
   actions.className = 'msg-actions';
   actions.innerHTML = `
@@ -1702,22 +1731,57 @@ window.copyMessageText = function(btnElement) {
 };
 
 // ========================================
-// ✅ FONCTION IMPRESSION / TÉLÉCHARGEMENT (PDF) — IN-PAGE
-// Remplace l'ancienne fenêtre pop-up (window.open + document.write), peu
-// fiable sur mobile : bloqueurs de pop-up, écran blanc, PWA installée où
-// window.open est restreint. Ici, AUCUNE fenêtre n'est ouverte : on copie
-// le document dans #print-root, on masque tout le reste de l'interface
-// via CSS (@media print), puis window.print() ouvre directement la boîte
-// de dialogue native du navigateur — qui propose "Enregistrer en PDF",
-// d'où le bouton "Télécharger". Cette méthode ne peut pas être bloquée
-// par un bloqueur de pop-up puisqu'il n'y a pas de pop-up.
+// ✅ ADAPTATION MODE NUIT POUR DOCUMENTS
+// ========================================
+function applyNightModeToDoc(container) {
+  const isNight = appState.isNightMode;
+  const docEl = container.querySelector(
+    '.doc-cv, .doc-lettre, .doc-rapport, .doc-facture, .doc-contrat'
+  );
+  if (!docEl) return;
+
+  if (isNight) {
+    docEl.style.background = 'rgba(30, 41, 59, 0.95)';
+    docEl.style.color = '#e2e8f0';
+    docEl.style.border = '1px solid rgba(255,255,255,0.1)';
+    docEl.querySelectorAll('h1, h2, h3, h4').forEach(h => {
+      if (!h.getAttribute('data-orig-color')) h.setAttribute('data-orig-color', h.style.color || '');
+      h.style.color = 'var(--accent-cyan)';
+    });
+    docEl.querySelectorAll('p, li, td, th, span, div').forEach(el2 => {
+      const c = window.getComputedStyle(el2).color;
+      if (!el2.style.color || el2.style.color === 'rgb(51, 51, 51)' || el2.style.color === '#333' || el2.style.color === 'rgb(102, 102, 102)') {
+        if (!el2.getAttribute('data-orig-color')) el2.setAttribute('data-orig-color', el2.style.color || '');
+        el2.style.color = '#e2e8f0';
+      }
+    });
+    docEl.querySelectorAll('[style*="background"]').forEach(el2 => {
+      if (!el2.getAttribute('data-orig-bg')) el2.setAttribute('data-orig-bg', el2.style.background || '');
+      el2.style.background = 'rgba(51, 65, 85, 0.4)';
+    });
+  } else {
+    docEl.style.background = '';
+    docEl.style.color = '';
+    docEl.style.border = '';
+    docEl.querySelectorAll('[data-orig-color]').forEach(el2 => {
+      el2.style.color = el2.getAttribute('data-orig-color') || '';
+      el2.removeAttribute('data-orig-color');
+    });
+    docEl.querySelectorAll('[data-orig-bg]').forEach(el2 => {
+      el2.style.background = el2.getAttribute('data-orig-bg') || '';
+      el2.removeAttribute('data-orig-bg');
+    });
+  }
+}
+
+// ========================================
+// ✅ IMPRESSION / TÉLÉCHARGEMENT PDF IN-PAGE
 // ========================================
 window.printDocument = function(btnElement) {
   let restoreFn = null;
   try {
     let docElement = null;
 
-    // ✅ MÉTHODE 1 : Recherche relative (le document est proche du bouton)
     if (btnElement && btnElement.closest) {
       const messageContainer = btnElement.closest('.msg.bot');
       if (messageContainer) {
@@ -1732,7 +1796,6 @@ window.printDocument = function(btnElement) {
       }
     }
 
-    // ✅ MÉTHODE 2 : Secours
     if (!docElement) {
       const allDocs = document.querySelectorAll('.doc-cv, .doc-lettre, .doc-rapport, .doc-facture, .doc-contrat');
       if (allDocs.length > 0) docElement = allDocs[allDocs.length - 1];
@@ -1755,15 +1818,6 @@ window.printDocument = function(btnElement) {
 
     document.body.classList.add('printing-mode');
 
-    // ✅ Restauration robuste de l'interface après impression : on combine
-    // plusieurs signaux pour ne JAMAIS rester bloqué en mode impression,
-    // quel que soit le navigateur :
-    //  1) window.matchMedia('print') — le plus largement supporté (Chrome,
-    //     Firefox, Safari, Samsung Internet...) ; MDN/caniuse le recommandent
-    //     car plus fiable que l'événement "afterprint" seul.
-    //  2) l'événement "afterprint" classique, en doublon.
-    //  3) un filet de sécurité à 60s si aucun des deux ne se déclenche
-    //     (très anciens navigateurs).
     let restored = false;
     const mql = window.matchMedia ? window.matchMedia('print') : null;
     const onMqlChange = (e) => { if (!e.matches) restore(); };
@@ -1784,12 +1838,10 @@ window.printDocument = function(btnElement) {
     window.addEventListener('afterprint', restore);
     if (mql) {
       if (mql.addEventListener) mql.addEventListener('change', onMqlChange);
-      else if (mql.addListener) mql.addListener(onMqlChange); // anciens navigateurs
+      else if (mql.addListener) mql.addListener(onMqlChange);
     }
     setTimeout(restore, 60000);
 
-    // ✅ On laisse le navigateur peindre le contenu inséré avant d'imprimer
-    // (sinon certains navigateurs capturent une page encore vide).
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
         try {
@@ -1811,7 +1863,7 @@ window.printDocument = function(btnElement) {
 };
 
 // ========================================
-// ✅ FONCTION COPIE TEXTE DOCUMENT (texte lisible uniquement, jamais le HTML)
+// ✅ FONCTION COPIE TEXTE DOCUMENT
 // ========================================
 window.copyDocumentText = function(btnElement) {
   try {
@@ -1852,7 +1904,7 @@ window.copyDocumentText = function(btnElement) {
 };
 
 // ========================================
-// ✅ FONCTION TÉLÉCHARGEMENT IMAGE
+// ✅ TÉLÉCHARGEMENT IMAGE
 // ========================================
 window.downloadImage = function(imageUrl, filename = null) {
   if (!filename) {
@@ -1965,6 +2017,8 @@ function appendChat(role, text, returnElement = false, attachments = []) {
           </button>
         </div>
       `;
+
+      applyNightModeToDoc(node);
       
       target.appendChild(node);
       scrollToBottom();
@@ -2063,11 +2117,12 @@ function simulateTyping(element, text, enableVoice = true, needsContinuation = f
           </button>
         </div>
       `;
+
+      applyNightModeToDoc(element);
       
       element.classList.remove('loading');
       scrollToBottom();
       
-      // ✅ Synthèse vocale pour documents (texte UNIQUEMENT)
       if (enableVoice && appState.voiceNotifications) {
         const readableText = extractReadableText(documentHtml);
         if (readableText) {
@@ -2080,7 +2135,7 @@ function simulateTyping(element, text, enableVoice = true, needsContinuation = f
       return;
     }
     
-    // ✅ CAS : Markdown normal (code, texte, etc.)
+    // ✅ CAS : Markdown normal
     if (enableVoice && appState.voiceNotifications) {
       const readableText = extractReadableText(text);
       if (readableText) {
@@ -2099,7 +2154,6 @@ function simulateTyping(element, text, enableVoice = true, needsContinuation = f
     addCopyButtons(element);
     addMessageCopyAction(element);
     
-    // ✅ BOUTON CONTINUER (si nécessaire)
     if (needsContinuation) {
       const continueBtn = document.createElement('button');
       continueBtn.className = 'continue-btn';
@@ -2113,23 +2167,22 @@ function simulateTyping(element, text, enableVoice = true, needsContinuation = f
     resolve();
   });
 }
+
 // ======= Voice Menu Mobile =======
 
 function updateVoiceMenuState() {
   const menu = el('voice-dropdown-menu');
+  if (!menu) return;
   
-  // Mise à jour des icônes selon l'état
   const pushItem = menu.querySelector('[data-action="push-to-talk"]');
   const continuousItem = menu.querySelector('[data-action="continuous"]');
   const ttsItem = menu.querySelector('[data-action="toggle-tts"]');
   
-  // Push-to-talk
   if (VoiceEngine.isPushToTalkRecording) {
     pushItem.classList.add('active');
     pushItem.querySelector('i').className = 'fas fa-stop-circle';
   }
   
-  // Mode continu
   if (VoiceEngine.isContinuousActive) {
     continuousItem.classList.add('active');
     continuousItem.innerHTML = '<i class="fas fa-stop-circle"></i> Arrêter conversation';
@@ -2137,7 +2190,6 @@ function updateVoiceMenuState() {
     continuousItem.innerHTML = '<i class="fas fa-comment-dots"></i> Mode continu';
   }
   
-  // Synthèse vocale
   if (appState.voiceNotifications) {
     ttsItem.innerHTML = '<i class="fas fa-volume-up"></i> Synthèse ON';
   } else {
@@ -2145,7 +2197,6 @@ function updateVoiceMenuState() {
   }
 }
 
-// Ouvrir/fermer le menu
 el('voiceMenuBtn')?.addEventListener('click', (e) => {
   e.stopPropagation();
   const menu = el('voice-dropdown-menu');
@@ -2154,7 +2205,6 @@ el('voiceMenuBtn')?.addEventListener('click', (e) => {
   if (!isVisible) updateVoiceMenuState();
 });
 
-// Fermer si clic ailleurs
 document.addEventListener('click', (e) => {
   const menu = el('voice-dropdown-menu');
   if (menu && !menu.contains(e.target)) {
@@ -2162,7 +2212,6 @@ document.addEventListener('click', (e) => {
   }
 });
 
-// Gérer les clics dans le menu
 el('voice-dropdown-menu')?.addEventListener('click', (e) => {
   const item = e.target.closest('.voice-menu-item');
   if (!item) return;
@@ -2257,7 +2306,6 @@ async function handleContinuation(context) {
       if (!appState.shouldStopResponse) {
         const botMsgElement = appendChat('bot', '', true);
         try {
-          // ✅ Vérifier si continuation nécessaire
           const needsContinuation = reply.includes('[SUITE DANS LA PROCHAINE RÉPONSE]') || 
                                      reply.includes('[À suivre...]') || 
                                      reply.includes('<!-- CONTINUATION NÉCESSAIRE -->');
@@ -2373,10 +2421,8 @@ async function handleContinuation(context) {
           return "Interrompu.";
       }
       
-      // ✅ Sauvegarder dans Firebase
       await saveMessageToFirebase(message, j.reply, attachments);
       
-      // ✅ Gérer les suggestions, planning, exécution
       if (j.suggestions && j.suggestions.length > 0) displaySuggestions(j.suggestions);
       if (j.planning_commands) handlePlanningCommands(j.planning_commands);
       if (j.execute) handleExecuteCommands(j.execute);
@@ -2386,7 +2432,6 @@ async function handleContinuation(context) {
       el('statusOnline').textContent = "Assistant : disponible";
       logActivity(`Assistant a répondu.`);
       
-      // ✅ RETOURNER LA RÉPONSE (avec needs_continuation si présent)
       return j.reply || "OK";
       
     } catch (e) {
@@ -2532,7 +2577,6 @@ function renderDevices() {
       const card = document.createElement('div');
       card.className = 'device-card';
       card.dataset.deviceId = device.id;
-      // On retire l'affichage du pourcentage dans le header et le slider dans les controls
       card.innerHTML = `
         <div class="device-header">
           <div class="device-icon"><i class="fas fa-${deviceType.icon}"></i></div>
@@ -2734,13 +2778,11 @@ function renderDevices() {
     sel.innerHTML = appState.devices.map(d => `<option value="${d.id}">${d.name} (${d.room})</option>`).join('');
   }
 
-  // ✅ Toggle affichage options planning
   function togglePlanOptions() {
     const freq = el('plan-frequency').value;
     el('opt-date').style.display = (freq === 'once') ? 'block' : 'none';
     el('opt-days').style.display = (freq === 'weekly') ? 'block' : 'none';
     
-    // Si "une fois", définir la date du jour par défaut
     if (freq === 'once' && !el('plan-date').value) {
       el('plan-date').valueAsDate = new Date();
     }
@@ -2754,6 +2796,8 @@ el('addPlan')?.addEventListener('click', async () => {
     const action = el('plan-action').value;
     const freq = el('plan-frequency').value;
     
+    const power = (action === "ON") ? 100 : 0;
+    
     if (!device || !time) return alert('⚠️ Appareil et heure requis');
     
     const payload = {
@@ -2761,17 +2805,16 @@ el('addPlan')?.addEventListener('click', async () => {
       time, 
       action, 
       frequency: freq,
+      power: null,
       createdAt: Date.now()
     };
     
-    // Gestion date spécifique
     if (freq === 'once') {
       const dateValue = el('plan-date').value;
       if (!dateValue) return alert('⚠️ Veuillez sélectionner une date');
       payload.targetDate = dateValue;
     }
     
-    // Gestion jours hebdomadaires
     if (freq === 'weekly') {
       const checkedDays = Array.from(document.querySelectorAll('.day-checkbox:checked')).map(cb => parseInt(cb.value));
       if (checkedDays.length === 0) return alert('⚠️ Sélectionnez au moins un jour de la semaine');
@@ -2789,7 +2832,6 @@ el('addPlan')?.addEventListener('click', async () => {
     logActivity(`✅ Plan ajouté: ${device} à ${time} (${freq})`);
     alert('✅ Planification ajoutée avec succès !');
     
-    // Réinitialiser le formulaire
     el('plan-time').value = '';
     el('plan-date').value = '';
     document.querySelectorAll('.day-checkbox').forEach(cb => cb.checked = false);
@@ -2833,7 +2875,6 @@ el('addPlan')?.addEventListener('click', async () => {
           }
           
           const actionText = p.action === 'ON' ? '🟢 ON' : '🔴 OFF';
-          // On retire powerText ici
           
           return `<tr style="border-bottom:1px solid rgba(0,0,0,0.05)">
             <td style="padding:10px"><strong>${deviceName}</strong></td>
@@ -2982,9 +3023,6 @@ el('addPlan')?.addEventListener('click', async () => {
         });
       }
     } catch (e) {
-      // ✅ Sur certains navigateurs mobiles (ex. Chrome Android), `new Notification()`
-      // est interdit hors Service Worker et lève une exception. On l'ignore proprement
-      // pour ne jamais interrompre l'appelant (ex. la boucle d'exécution du planning).
       console.warn('Notification non supportée sur ce navigateur:', e.message);
     }
   }
@@ -3364,8 +3402,18 @@ el('addPlan')?.addEventListener('click', async () => {
   }
 
   // ======= Quick Controls =======
-  el('dayModeBtn')?.addEventListener('click', () => { document.body.classList.remove('night-mode'); localStorage.setItem('nightMode', false); });
-  el('nightModeBtn')?.addEventListener('click', () => { document.body.classList.add('night-mode'); localStorage.setItem('nightMode', true); });
+  el('dayModeBtn')?.addEventListener('click', () => {
+    appState.isNightMode = false;
+    document.body.classList.remove('night-mode');
+    localStorage.setItem('nightMode', false);
+    document.querySelectorAll('#chatFullWindow .msg.bot').forEach(msg => applyNightModeToDoc(msg));
+  });
+  el('nightModeBtn')?.addEventListener('click', () => {
+    appState.isNightMode = true;
+    document.body.classList.add('night-mode');
+    localStorage.setItem('nightMode', true);
+    document.querySelectorAll('#chatFullWindow .msg.bot').forEach(msg => applyNightModeToDoc(msg));
+  });
   el('allOnBtn')?.addEventListener('click', () => appState.devices.forEach(d => sendCommand(d.id, 'ON', 100)));
   el('allOffBtn')?.addEventListener('click', () => appState.devices.forEach(d => sendCommand(d.id, 'OFF', 0)));
 
@@ -3391,6 +3439,7 @@ el('addPlan')?.addEventListener('click', async () => {
     el('darkModeToggle').addEventListener('change', (e) => {
       appState.isNightMode = e.target.checked; localStorage.setItem('nightMode', e.target.checked);
       document.body.classList.toggle('night-mode', e.target.checked);
+      document.querySelectorAll('#chatFullWindow .msg.bot').forEach(msg => applyNightModeToDoc(msg));
     });
     el('notificationsToggle').checked = appState.notificationsEnabled;
     el('notificationsToggle').addEventListener('change', (e) => {
@@ -3471,7 +3520,6 @@ el('addPlan')?.addEventListener('click', async () => {
   let executedTasksClient = new Map();
   let lastCheckedMinuteClient = '';
 
-  // Nettoyage des anciennes exécutions (toutes les heures)
   setInterval(() => {
     const now = Date.now();
     const oneHourAgo = now - (60 * 60 * 1000);
@@ -3483,65 +3531,59 @@ el('addPlan')?.addEventListener('click', async () => {
     }
   }, 3600000);
 
-  // ✅ Vérification des planifications, alignée sur le début de chaque minute
-  // (voir le scheduler plus bas : on ne dépend plus d'un setInterval(...,60000)
-  // qui pouvait déclencher la vérification jusqu'à 59s après l'heure prévue).
+  function scheduleNextPlanCheck() {
+    const now = new Date();
+    const msUntilNextMinute = 60000 - (now.getSeconds() * 1000 + now.getMilliseconds());
+    setTimeout(async () => {
+      try {
+        await checkAndExecutePlans();
+      } catch (e) {
+        console.error('❌ Client: Erreur boucle de planning:', e);
+      }
+      scheduleNextPlanCheck();
+    }, msUntilNextMinute);
+  }
+  scheduleNextPlanCheck();
+
   async function checkAndExecutePlans() {
     const now = new Date();
     const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
     const todayDate = now.toISOString().split('T')[0];
-    const currentDay = now.getDay(); // 0=Dimanche, 1=Lundi, ..., 6=Samedi
+    const currentDay = now.getDay();
     
-    // Réinitialiser le cache si on change de minute
     if (currentTime !== lastCheckedMinuteClient) {
       console.log(`⏰ Client: Nouvelle minute détectée: ${currentTime}`);
       lastCheckedMinuteClient = currentTime;
     }
     
-    // Si pas de base de données, utiliser les plans locaux
     if (!db) {
       const duePlans = appState.plans.filter(p => {
         if (p.time !== currentTime) return false;
-        
         const freq = p.frequency || 'once';
-        
         if (freq === 'daily') return true;
         if (freq === 'monthly') return true;
         if (freq === 'weekly') return p.daysOfWeek && p.daysOfWeek.includes(currentDay);
         if (freq === 'once') return !p.targetDate || p.targetDate === todayDate;
-        
         return false;
       });
       
       if (duePlans.length > 0) {
         duePlans.forEach(plan => {
           const taskKey = `${plan.device}-${plan.time}-${plan.createdAt}`;
-          
           if (executedTasksClient.has(taskKey)) {
             const lastExecution = executedTasksClient.get(taskKey);
             if (Date.now() - lastExecution < 120000) return;
           }
-          
           executedTasksClient.set(taskKey, Date.now());
-          
           const deviceName = appState.devices.find(d => d.id === plan.device)?.name || plan.device;
           const action = plan.actionType ? (plan.actionType === "allumer" ? "ON" : "OFF") : plan.action;
           const actionText = action === 'ON' ? 'allumé' : 'éteint';
-          
           logActivity(`⏰ Exécution : ${deviceName} ${actionText}`);
           sendCommand(plan.device, action);
-          
           const chatMessage = `⏰ Tâche planifiée : **${deviceName}** ${actionText}`;
           if (el('chatFullWindow')) appendChat("bot", chatMessage);
           if (appState.voiceNotifications) speak(`Exécution planifiée. ${deviceName} ${actionText}.`);
-          
-          sendBrowserNotification(
-            '⏰ Tâche Planifiée Exécutée',
-            `${deviceName} a été ${actionText}`,
-            { tag: `schedule-${plan.device}-${Date.now()}` }
-          );
-          
-          // Supprimer si fréquence "une fois"
+          sendBrowserNotification('⏰ Tâche Planifiée Exécutée', `${deviceName} a été ${actionText}`, { tag: `schedule-${plan.device}-${Date.now()}` });
           if (plan.frequency === 'once') {
             appState.plans = appState.plans.filter(p => p.createdAt !== plan.createdAt);
             savePlansToLocalStorage();
@@ -3552,75 +3594,39 @@ el('addPlan')?.addEventListener('click', async () => {
       return;
     }
     
-    // ✅ Si Firebase disponible, récupérer les plans directement
     try {
       const planningSnapshot = await get(ref(db, planningRefPath));
-      
       if (!planningSnapshot.exists()) return;
-      
       const allPlans = planningSnapshot.val();
       const planEntries = Object.entries(allPlans);
-      
-      // Filtrer les plans qui doivent s'exécuter maintenant
       const duePlans = planEntries.filter(([id, plan]) => {
         if (plan.time !== currentTime) return false;
-        
         const freq = plan.frequency || 'once';
-        
         if (freq === 'daily') return true;
         if (freq === 'monthly') return true;
         if (freq === 'weekly') return plan.daysOfWeek && plan.daysOfWeek.includes(currentDay);
         if (freq === 'once') return !plan.targetDate || plan.targetDate === todayDate;
-        
         return false;
       });
-      
       if (duePlans.length === 0) return;
-      
       console.log(`⏰ Client: ${duePlans.length} tâche(s) à exécuter à ${currentTime}`);
-      
       for (const [firebaseId, plan] of duePlans) {
         const taskKey = `${plan.device}-${plan.time}-${firebaseId}`;
-        
-        // Vérifier si déjà exécutée
         if (executedTasksClient.has(taskKey)) {
           const lastExecution = executedTasksClient.get(taskKey);
-          const timeSinceExecution = Date.now() - lastExecution;
-          
-          if (timeSinceExecution < 120000) {
-            console.log(`⏭️ Client: Tâche ${taskKey} déjà exécutée`);
-            continue;
-          }
+          if (Date.now() - lastExecution < 120000) continue;
         }
-        
-        // Marquer comme exécutée
         executedTasksClient.set(taskKey, Date.now());
-        
         const deviceName = appState.devices.find(d => d.id === plan.device)?.name || plan.device;
-        
-        const action = plan.actionType 
-          ? (plan.actionType === "allumer" ? "ON" : "OFF") 
-          : plan.action;
+        const action = plan.actionType ? (plan.actionType === "allumer" ? "ON" : "OFF") : plan.action;
         const actionText = action === 'ON' ? 'allumé' : 'éteint';
-        
         console.log(`🚀 Client: Exécution ${deviceName} ${actionText}`);
-        
-        // Exécuter la commande
         sendCommand(plan.device, action);
-        
         logActivity(`⏰ Exécution : ${deviceName} ${actionText}`);
-        
         const chatMessage = `⏰ Tâche planifiée : **${deviceName}** ${actionText}`;
         if (el('chatFullWindow')) appendChat("bot", chatMessage);
         if (appState.voiceNotifications) speak(`Exécution planifiée. ${deviceName} ${actionText}.`);
-        
-        sendBrowserNotification(
-          '⏰ Tâche Planifiée Exécutée',
-          `${deviceName} a été ${actionText}`,
-          { tag: `schedule-${plan.device}-${Date.now()}` }
-        );
-        
-        // ✅ Supprimer la tâche si fréquence "une fois"
+        sendBrowserNotification('⏰ Tâche Planifiée Exécutée', `${deviceName} a été ${actionText}`, { tag: `schedule-${plan.device}-${Date.now()}` });
         const freq = plan.frequency || 'once';
         if (freq === 'once') {
           try {
@@ -3631,61 +3637,29 @@ el('addPlan')?.addEventListener('click', async () => {
           }
         }
       }
-      
     } catch (error) {
       console.error('❌ Client: Erreur système de planning:', error);
     }
   }
 
-  // ✅ Scheduler auto-aligné sur le début de chaque minute (HH:MM:00).
-  // Avant : setInterval(fn, 60000) démarrait son décompte au chargement de la
-  // page, sans rapport avec l'horloge. Si la page était ouverte à HH:MM:45,
-  // la vérification suivante ne tombait qu'à HH:MM+1:45 → jusqu'à 59s de
-  // retard avant qu'une tâche prévue à HH:MM+1:00 soit détectée.
-  // Ici, on recalcule à chaque cycle le délai exact jusqu'à la prochaine
-  // seconde 0 de l'horloge, puis on exécute la vérification. Résultat :
-  // l'exécution démarre en pratique sous la seconde (au lieu de jusqu'à 60s),
-  // sans changer la logique métier ni la fréquence (toujours ~1x/minute).
-  function scheduleNextPlanCheck() {
-    const now = new Date();
-    const msUntilNextMinute = 60000 - (now.getSeconds() * 1000 + now.getMilliseconds());
-    setTimeout(async () => {
-      try {
-        await checkAndExecutePlans();
-      } catch (e) {
-        console.error('❌ Client: Erreur boucle de planning:', e);
-      }
-      scheduleNextPlanCheck(); // se recale à chaque fois, pas de dérive cumulative
-    }, msUntilNextMinute);
-  }
-  scheduleNextPlanCheck();
-
   // ======= Fonction de Nettoyage Client =======
   
   async function cleanExpiredPlansClient() {
-    // ✅ Une tâche n'est "expirée" que si elle est ponctuelle ("once") ET que sa
-    // date/heure cible est bel et bien passée. Les tâches récurrentes (daily,
-    // weekly, monthly) ne doivent JAMAIS être supprimées ici : elles sont censées
-    // se redéclencher au prochain jour/semaine/mois correspondant.
     function isPlanExpired(plan, todayDate, currentTime) {
       const freq = plan.frequency || 'once';
       if (freq !== 'once') return false;
       if (plan.targetDate) {
         return plan.targetDate < todayDate || (plan.targetDate === todayDate && plan.time < currentTime);
       }
-      // Anciennes tâches "once" sans targetDate : comportement historique (heure dépassée = expirée)
       return plan.time < currentTime;
     }
 
     if (!db) {
-      // Mode local
       const now = new Date();
       const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
       const todayDate = now.toISOString().split('T')[0];
-      
       const validPlans = appState.plans.filter(plan => !isPlanExpired(plan, todayDate, currentTime));
       const deletedCount = appState.plans.length - validPlans.length;
-      
       if (deletedCount > 0) {
         appState.plans = validPlans;
         savePlansToLocalStorage();
@@ -3695,39 +3669,29 @@ el('addPlan')?.addEventListener('click', async () => {
       return;
     }
     
-    // Mode Firebase
     try {
       const planningSnapshot = await get(ref(db, planningRefPath));
-      
       if (!planningSnapshot.exists()) return;
-      
       const allPlans = planningSnapshot.val();
       const now = new Date();
       const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
       const todayDate = now.toISOString().split('T')[0];
-      
       let deletedCount = 0;
-      
       for (const [id, plan] of Object.entries(allPlans)) {
         if (isPlanExpired(plan, todayDate, currentTime)) {
           await remove(ref(db, `${planningRefPath}/${id}`));
           deletedCount++;
         }
       }
-      
       if (deletedCount > 0) {
         logActivity(`🗑️ ${deletedCount} tâche(s) expirée(s) supprimée(s)`);
       }
-      
     } catch (error) {
       console.error('❌ Erreur nettoyage tâches expirées (client):', error);
     }
   }
 
-  // Nettoyer toutes les 10 minutes
   setInterval(cleanExpiredPlansClient, 600000);
-
-  // Nettoyage au chargement de la page
   setTimeout(cleanExpiredPlansClient, 5000);
 
   // ======= Auth State Change Listener =======
