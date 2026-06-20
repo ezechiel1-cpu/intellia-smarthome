@@ -1257,6 +1257,7 @@ async function handleDeviceCommands(commands, userId) {
           createdAt: Date.now(),
           createdBy: userId
         };
+        
         📌 RÈGLES GÉNÉRALES
 
 1. Vérification: Vérifie [États] et [Planifications] AVANT toute réponse.
