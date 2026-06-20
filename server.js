@@ -1320,6 +1320,49 @@ Si la réponse dépasse la limite disponible :
 et continuer proprement lors de la reprise.
 `;
         
+        // ========================================
+// ✅ GESTION DES COMMANDES D'APPAREILS
+// ========================================
+async function handleDeviceCommands(commands, userId) {
+  if (!db) {
+    console.warn("⚠️ Firebase non disponible, impossible de gérer les appareils");
+    return;
+  }
+
+  for (const cmd of commands) {
+    // ✅ AJOUT D'APPAREIL
+    if (cmd.action === 'add') {
+      try {
+        const deviceName = cmd.name || 'Nouvel Appareil';
+        const deviceType = cmd.type || 'lamp';
+        const deviceRoom = cmd.room || 'Non spécifié';
+        
+        const deviceId = deviceName.toLowerCase()
+          .replace(/\s+/g, '_')
+          .replace(/[^\w\-]/g, '')
+          .substring(0, 30) + '_' + Date.now().toString().slice(-4);
+        
+        const deviceTypes = {
+          'lamp': { hasBrightness: true, icon: 'lightbulb' },
+          'plug': { hasBrightness: false, icon: 'plug' },
+          'ventilateur': { hasBrightness: true, icon: 'fan' },
+          'thermostat': { hasBrightness: false, icon: 'temperature-low' },
+          'volet': { hasBrightness: false, icon: 'window-maximize' }
+        };
+        
+        const typeInfo = deviceTypes[deviceType] || deviceTypes['lamp'];
+        
+        const newDevice = {
+          id: deviceId,
+          name: deviceName,
+          type: deviceType,
+          room: deviceRoom,
+          hasBrightness: typeInfo.hasBrightness,
+          icon: typeInfo.icon,
+          createdAt: Date.now(),
+          createdBy: userId
+        };
+        
         await set(ref(db, `${DEVICES_META_REF}/${deviceId}`), newDevice);
         
         await set(ref(db, `${DEVICES_STATES_REF}/${deviceId}`), {
