@@ -143,6 +143,97 @@
       color: white;
     }
 
+    /* ========================================
+       ✅ BOUTONS D'ACTION COMPACTS (icône seule)
+       Documents (télécharger/copier) + messages (copier la réponse)
+       ======================================== */
+    .doc-actions {
+      margin-top: 24px;
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .doc-action-btn {
+      width: 40px; height: 40px;
+      display: inline-flex; align-items: center; justify-content: center;
+      border-radius: 50%;
+      border: 1px solid rgba(0,0,0,0.12);
+      background: #fff;
+      color: var(--dark);
+      cursor: pointer;
+      font-size: 15px;
+      transition: background 0.15s ease, transform 0.1s ease, color 0.15s ease, border-color 0.15s ease;
+    }
+    .doc-action-btn:hover { background: rgba(0,0,0,0.06); }
+    .doc-action-btn:active { transform: scale(0.93); }
+    .doc-action-btn.is-success { color: var(--success); border-color: var(--success); }
+    body.night-mode .doc-action-btn {
+      background: rgba(255,255,255,0.07);
+      border-color: rgba(255,255,255,0.15);
+      color: #e2e8f0;
+    }
+    body.night-mode .doc-action-btn:hover { background: rgba(255,255,255,0.14); }
+
+    .msg-actions {
+      margin-top: 8px;
+      display: flex;
+      gap: 2px;
+    }
+    .msg-action-btn {
+      width: 30px; height: 30px;
+      display: inline-flex; align-items: center; justify-content: center;
+      border-radius: 6px;
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 13px;
+      transition: background 0.15s ease, color 0.15s ease;
+    }
+    .msg-action-btn:hover { background: rgba(0,0,0,0.06); color: var(--dark); }
+    .msg-action-btn.is-success { color: var(--success); }
+    body.night-mode .msg-action-btn:hover { background: rgba(255,255,255,0.12); color: #fff; }
+
+    /* ========================================
+       ✅ IMPRESSION / TÉLÉCHARGEMENT PDF IN-PAGE
+       Remplace l'ancienne fenêtre pop-up (window.open + document.write),
+       peu fiable sur mobile (bloqueurs de pop-up, PWA installée, écran
+       blanc). Ici, on imprime directement la page courante : on copie le
+       document dans #print-root, on masque tout le reste via CSS pendant
+       l'impression, puis window.print() ouvre la boîte de dialogue native
+       (qui permet "Enregistrer en PDF" = le "téléchargement"). Aucune
+       fenêtre, aucun pop-up, aucun document.write : ça ne peut pas planter
+       pour les mêmes raisons que l'ancienne méthode.
+       ======================================== */
+    #print-root { display: none; }
+    @media print {
+      body.printing-mode > *:not(#print-root) { display: none !important; }
+      body.printing-mode #print-root {
+        display: block !important;
+        position: static;
+        width: 100%;
+      }
+      #print-root, #print-root * {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+        visibility: visible;
+      }
+      #print-root {
+        background: white !important;
+      }
+      #print-root .doc-cv, #print-root .doc-facture, #print-root .doc-lettre,
+      #print-root .doc-rapport, #print-root .doc-contrat {
+        width: 100%; max-width: 100%; margin: 0; box-shadow: none !important;
+        background: white !important; color: #111 !important;
+      }
+      #print-root button, #print-root .doc-actions, #print-root .msg-actions,
+      #print-root .code-actions, #print-root .continue-btn {
+        display: none !important;
+      }
+      @page { margin: 1cm; size: A4; }
+    }
+
     .container { 
       max-width: 1200px; margin: 0 auto; 
       padding: 16px 12px 100px;
@@ -873,30 +964,14 @@
       #sidebar-overlay.open {
         display: block;
       }
-/* ✅ BOUTON MENU À L'INTÉRIEUR DU CHAMP DE TEXTE À DROITE */
+/* ✅ BOUTON MENU (☰) — bouton normal dans la barre d'actions de l'input,
+   au lieu d'un positionnement absolu fragile par-dessus le champ de texte
+   (cause du bouton qui flottait au milieu de l'écran). Il hérite de
+   #chat-input-buttons button (min 48x48, voir plus bas) et de la classe
+   .btn.primary (couleur) pour rester cohérent avec ses voisins (⋮, envoyer). */
 #sidebar-toggle-btn {
   display: flex !important;
-  position: absolute !important;
-  top: 50% !important;
-  right: 12px !important;
-  transform: translateY(-50%) !important;
-  z-index: 10; 
-  background: var(--primary);
-  color: white;
-  border: 0;
-  border-radius: 6px;
-  width: 40px;
-  height: 40px;
-  min-width: 40px;
   flex-shrink: 0;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-}
-
-/* Ajuster le padding du champ pour éviter que le texte passe sous le bouton */
-#chatFullInput {
-  padding-right: 56px !important;
 }
       
       #chat-input-buttons button {
@@ -979,10 +1054,61 @@
         width: auto;
       }
       
+      /* ✅ Documents générés (CV, lettre, rapport, facture, contrat) :
+         avant, seul le padding était réduit sur mobile — les titres restaient
+         à leur taille desktop (28-32px) et débordaient/se cassaient mal sur
+         un écran de ~360px (cf. capture). On adapte ici toute la typographie
+         et les espacements internes pour un rendu lisible sur téléphone. */
       .doc-cv, .doc-lettre, .doc-rapport, .doc-facture, .doc-contrat {
-        padding: 20px;
+        padding: 20px 16px;
+        line-height: 1.55;
       }
-      
+
+      .doc-cv h1, .doc-rapport h1, .doc-contrat h1,
+      .doc-facture .facture-header h1 {
+        font-size: 22px;
+      }
+      .doc-cv .subtitle, .doc-rapport .subtitle {
+        font-size: 14px;
+        margin-bottom: 8px;
+      }
+      .doc-cv .contact {
+        font-size: 12.5px;
+        margin-bottom: 20px;
+        padding-bottom: 14px;
+      }
+      .doc-cv h2 {
+        font-size: 16px;
+        margin-top: 18px;
+        padding-left: 10px;
+      }
+      .doc-cv .experience, .doc-cv .formation {
+        margin: 14px 0;
+        padding-left: 10px;
+      }
+      .doc-cv .skills { gap: 6px; }
+      .doc-cv .skill {
+        padding: 5px 12px;
+        font-size: 12.5px;
+      }
+
+      .doc-rapport .meta { font-size: 12.5px; margin-bottom: 20px; }
+      .doc-rapport .resume { padding: 14px; }
+      .doc-rapport h2 { font-size: 16px; margin-top: 22px; }
+
+      .doc-contrat h2 { font-size: 15px; margin-top: 22px; }
+      .doc-contrat .partie { padding-left: 10px; }
+      .doc-contrat .meta { font-size: 12.5px; margin-bottom: 20px; }
+
+      .doc-facture .facture-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+        margin-bottom: 20px;
+      }
+      .doc-facture .emetteur, .doc-facture .client { padding: 10px; }
+      .doc-facture .facture-table tfoot { font-size: 15px; }
+
       .doc-facture .facture-parties {
         flex-direction: column;
       }
@@ -1054,6 +1180,9 @@
   </style>
 </head>
 <body>
+
+  <!-- ✅ Conteneur dédié à l'impression/téléchargement PDF in-page (voir #print-root dans le CSS) -->
+  <div id="print-root"></div>
 
   <div id="login-overlay">
     <div class="login-box">
@@ -1174,10 +1303,15 @@
               
               <div id="chat-input-wrap">
                 <input id="chatFullInput" placeholder="Posez une question à l'Assistant..." />
-                <button id="sidebar-toggle-btn"><i class="fas fa-bars"></i></button>
               </div>
               
               <div id="chat-input-buttons">
+  <!-- ✅ Bouton menu (historique des discussions) — bouton normal de la barre,
+       plus de positionnement absolu par-dessus le champ de texte. -->
+  <button class="btn primary" id="sidebar-toggle-btn" title="Discussions">
+    <i class="fas fa-bars"></i>
+  </button>
+
   <!-- Boutons vocaux version desktop -->
   <button class="btn voice-btn-desktop" id="voicePushToTalk" title="Appuyer pour enregistrer">
     <i class="fas fa-microphone-alt"></i>
@@ -1486,25 +1620,113 @@ function extractReadableText(content) {
 }
 
 // ========================================
-// ✅ FONCTION IMPRESSION (CIBLAGE PRÉCIS)
+// ✅ UTILITAIRES PARTAGÉS : copie presse-papier + retour visuel
+// (icône qui se change brièvement en ✓, pas d'alert() bloquante)
+// ========================================
+function copyTextToClipboard(text, btnElement) {
+  const onSuccess = () => { if (btnElement) flashButtonSuccess(btnElement); };
+  const onFail = () => {
+    // Fallback pour navigateurs sans Clipboard API (ou contexte non sécurisé)
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.style.position = 'fixed';
+    textarea.style.opacity = '0';
+    document.body.appendChild(textarea);
+    textarea.select();
+    try {
+      document.execCommand('copy');
+      onSuccess();
+    } catch (e) {
+      alert('❌ Impossible de copier automatiquement. Sélectionnez le texte manuellement.');
+    }
+    document.body.removeChild(textarea);
+  };
+
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(onSuccess).catch(onFail);
+  } else {
+    onFail();
+  }
+}
+
+function flashButtonSuccess(btn, duration = 1500) {
+  const icon = btn.querySelector('i');
+  if (!icon) return;
+  const original = icon.className;
+  icon.className = 'fas fa-check';
+  btn.classList.add('is-success');
+  setTimeout(() => {
+    icon.className = original;
+    btn.classList.remove('is-success');
+  }, duration);
+}
+
+// ========================================
+// ✅ COPIER LA RÉPONSE D'UN MESSAGE (texte, comme dans une interface de chat)
+// Volontairement distinct de extractReadableText() : cette dernière est
+// pensée pour la lecture vocale et retire les blocs de code. Ici on veut
+// copier tout ce qui est affiché, code compris, comme on copierait
+// n'importe quelle réponse de chat.
+// ========================================
+function getMessagePlainText(node) {
+  const clone = node.cloneNode(true);
+  clone.querySelectorAll('button, .msg-actions, .doc-actions, .code-actions, .continue-btn').forEach(el => el.remove());
+  clone.querySelectorAll('pre').forEach(pre => {
+    const code = pre.querySelector('code');
+    const codeText = (code ? code.innerText : pre.innerText) || '';
+    pre.replaceWith(document.createTextNode('\n' + codeText + '\n'));
+  });
+  return (clone.innerText || clone.textContent || '')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
+function addMessageCopyAction(node) {
+  if (!node || node.querySelector('.msg-actions')) return; // jamais deux fois sur le même message
+  const actions = document.createElement('div');
+  actions.className = 'msg-actions';
+  actions.innerHTML = `
+    <button type="button" class="msg-action-btn" title="Copier" aria-label="Copier la réponse" onclick="copyMessageText(this)">
+      <i class="fas fa-copy"></i>
+    </button>
+  `;
+  node.appendChild(actions);
+}
+
+window.copyMessageText = function(btnElement) {
+  const node = btnElement.closest('.msg');
+  if (!node) return;
+  const text = getMessagePlainText(node);
+  if (!text) return;
+  copyTextToClipboard(text, btnElement);
+};
+
+// ========================================
+// ✅ FONCTION IMPRESSION / TÉLÉCHARGEMENT (PDF) — IN-PAGE
+// Remplace l'ancienne fenêtre pop-up (window.open + document.write), peu
+// fiable sur mobile : bloqueurs de pop-up, écran blanc, PWA installée où
+// window.open est restreint. Ici, AUCUNE fenêtre n'est ouverte : on copie
+// le document dans #print-root, on masque tout le reste de l'interface
+// via CSS (@media print), puis window.print() ouvre directement la boîte
+// de dialogue native du navigateur — qui propose "Enregistrer en PDF",
+// d'où le bouton "Télécharger". Cette méthode ne peut pas être bloquée
+// par un bloqueur de pop-up puisqu'il n'y a pas de pop-up.
 // ========================================
 window.printDocument = function(btnElement) {
+  let restoreFn = null;
   try {
-    console.log('🖨️ Impression lancée...');
     let docElement = null;
 
-    // ✅ MÉTHODE 1 : Recherche relative (Le document est proche du bouton)
+    // ✅ MÉTHODE 1 : Recherche relative (le document est proche du bouton)
     if (btnElement && btnElement.closest) {
       const messageContainer = btnElement.closest('.msg.bot');
-      
       if (messageContainer) {
         docElement = messageContainer.querySelector(
           '.doc-cv, .doc-lettre, .doc-rapport, .doc-facture, .doc-contrat'
         );
-        
         if (!docElement) {
           const clone = messageContainer.cloneNode(true);
-          clone.querySelectorAll('button, .copy-code-btn, .continue-btn, .flex-btns, .code-actions').forEach(b => b.remove());
+          clone.querySelectorAll('button, .copy-code-btn, .continue-btn, .flex-btns, .code-actions, .msg-actions, .doc-actions').forEach(b => b.remove());
           docElement = clone;
         }
       }
@@ -1513,96 +1735,92 @@ window.printDocument = function(btnElement) {
     // ✅ MÉTHODE 2 : Secours
     if (!docElement) {
       const allDocs = document.querySelectorAll('.doc-cv, .doc-lettre, .doc-rapport, .doc-facture, .doc-contrat');
-      if (allDocs.length > 0) {
-        docElement = allDocs[allDocs.length - 1];
-        console.log('✅ Document trouvé via méthode 2');
-      }
+      if (allDocs.length > 0) docElement = allDocs[allDocs.length - 1];
     }
 
     if (!docElement) {
-      alert('❌ Erreur : Impossible de localiser le document à imprimer.');
+      alert('❌ Impossible de localiser le document à télécharger.');
       return;
     }
 
-    // Ouverture fenêtre d'impression
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) {
-      alert('❌ Pop-up bloqué. Veuillez autoriser les pop-ups pour imprimer.');
-      return;
+    let printRoot = document.getElementById('print-root');
+    if (!printRoot) {
+      printRoot = document.createElement('div');
+      printRoot.id = 'print-root';
+      document.body.appendChild(printRoot);
     }
+    printRoot.innerHTML = docElement.outerHTML || docElement.innerHTML;
+    printRoot.querySelectorAll('button, .copy-code-btn, .continue-btn, .flex-btns, .code-actions, .msg-actions, .doc-actions')
+      .forEach(b => b.remove());
 
-    // CSS pour l'impression
-    // ✅ On reprend le style COMPLET de la page (celui qui définit .doc-cv h1,
-    // .skill, .contact, etc.) au lieu d'un CSS minimal maison qui ne couvrait que
-    // les règles génériques. Le rendu imprimé est ainsi identique à celui du chat.
-    const fullStylesheet = Array.from(document.querySelectorAll('style'))
-      .map(s => s.textContent)
-      .join('\n');
+    document.body.classList.add('printing-mode');
 
-    // Surcharges propres à l'impression, appliquées APRÈS la feuille de style
-    // complète : on force un rendu clair et sans boutons, même si le mode nuit
-    // est actif côté écran (le <body> de la fenêtre d'impression n'a de toute
-    // façon pas la classe "night-mode", mais on sécurise quand même les couleurs).
-    const css = `
-      <style>${fullStylesheet}</style>
-      <style>
-        * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-        body { margin: 0; padding: 20px; background: white !important; }
-        .doc-cv, .doc-facture, .doc-lettre, .doc-rapport, .doc-contrat {
-          width: 100%;
-          max-width: 100%;
-          margin: 0;
-          box-shadow: none !important;
-        }
-        button, .copy-code-btn, .continue-btn, .code-actions, .flex-btns {
-          display: none !important;
-        }
-        @page { 
-          margin: 1cm; 
-          size: A4;
-        }
-      </style>
-    `;
+    // ✅ Restauration robuste de l'interface après impression : on combine
+    // plusieurs signaux pour ne JAMAIS rester bloqué en mode impression,
+    // quel que soit le navigateur :
+    //  1) window.matchMedia('print') — le plus largement supporté (Chrome,
+    //     Firefox, Safari, Samsung Internet...) ; MDN/caniuse le recommandent
+    //     car plus fiable que l'événement "afterprint" seul.
+    //  2) l'événement "afterprint" classique, en doublon.
+    //  3) un filet de sécurité à 60s si aucun des deux ne se déclenche
+    //     (très anciens navigateurs).
+    let restored = false;
+    const mql = window.matchMedia ? window.matchMedia('print') : null;
+    const onMqlChange = (e) => { if (!e.matches) restore(); };
 
-    const htmlContent = docElement.outerHTML || docElement.innerHTML;
-    printWindow.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Impression</title>${css}</head><body>${htmlContent}</body></html>`);
-    printWindow.document.close();
-    
-    // ✅ On ferme la fenêtre quand le navigateur signale que l'impression est
-    // terminée (impression lancée OU annulée), au lieu d'un délai fixe de 500ms
-    // qui pouvait couper la boîte de dialogue système avant qu'elle ait fini de
-    // s'afficher/se fermer sur mobile. Un filet de sécurité referme quand même
-    // la fenêtre après 60s si "onafterprint" ne se déclenche pas (anciens navigateurs).
-    let printWindowClosed = false;
-    const closePrintWindow = () => {
-      if (printWindowClosed) return;
-      printWindowClosed = true;
-      try { printWindow.close(); } catch (e) {}
+    const restore = () => {
+      if (restored) return;
+      restored = true;
+      document.body.classList.remove('printing-mode');
+      printRoot.innerHTML = '';
+      window.removeEventListener('afterprint', restore);
+      if (mql) {
+        if (mql.removeEventListener) mql.removeEventListener('change', onMqlChange);
+        else if (mql.removeListener) mql.removeListener(onMqlChange);
+      }
     };
-    printWindow.onafterprint = closePrintWindow;
+    restoreFn = restore;
 
-    printWindow.onload = function() {
-      setTimeout(() => {
-        printWindow.focus();
-        printWindow.print();
-        setTimeout(closePrintWindow, 60000);
-      }, 500);
-    };
+    window.addEventListener('afterprint', restore);
+    if (mql) {
+      if (mql.addEventListener) mql.addEventListener('change', onMqlChange);
+      else if (mql.addListener) mql.addListener(onMqlChange); // anciens navigateurs
+    }
+    setTimeout(restore, 60000);
+
+    // ✅ On laisse le navigateur peindre le contenu inséré avant d'imprimer
+    // (sinon certains navigateurs capturent une page encore vide).
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        try {
+          window.print();
+        } catch (e) {
+          console.error('❌ Erreur impression:', e);
+          alert('Impossible de lancer le téléchargement sur cet appareil.');
+          restore();
+        }
+      });
+    });
 
   } catch (error) {
     console.error('❌ Erreur impression:', error);
-    alert('Erreur technique lors de l\'impression : ' + error.message);
+    alert('Erreur technique : ' + error.message);
+    document.body.classList.remove('printing-mode');
+    if (restoreFn) restoreFn();
   }
 };
 
 // ========================================
-// ✅ FONCTION COPIE HTML DOCUMENT
+// ✅ FONCTION COPIE TEXTE DOCUMENT (texte lisible uniquement, jamais le HTML)
 // ========================================
-window.copyDocumentHtml = function() {
+window.copyDocumentText = function(btnElement) {
   try {
     let docElement = null;
 
-    const messageContainer = document.querySelector('.msg.bot:last-of-type');
+    const messageContainer = (btnElement && btnElement.closest)
+      ? btnElement.closest('.msg.bot')
+      : document.querySelector('.msg.bot:last-of-type');
+
     if (messageContainer) {
       docElement = messageContainer.querySelector(
         '.doc-cv, .doc-lettre, .doc-rapport, .doc-facture, .doc-contrat'
@@ -1619,35 +1837,16 @@ window.copyDocumentHtml = function() {
       return;
     }
 
-    const html = docElement.outerHTML || docElement.innerHTML;
+    const text = extractReadableText(docElement.outerHTML);
+    if (!text) {
+      alert('❌ Le document ne contient pas de texte lisible.');
+      return;
+    }
 
-    navigator.clipboard.writeText(html).then(() => {
-      console.log('✅ HTML copié dans le presse-papier');
-      alert('✅ HTML copié dans le presse-papier !');
-        
-    }).catch(err => {
-      console.error('❌ Erreur copie:', err);
-      
-      // Fallback
-      const textarea = document.createElement('textarea');
-      textarea.value = html;
-      textarea.style.position = 'fixed';
-      textarea.style.opacity = '0';
-      document.body.appendChild(textarea);
-      textarea.select();
-      
-      try {
-        document.execCommand('copy');
-        alert('✅ HTML copié dans le presse-papier !');
-      } catch (e) {
-        alert('❌ Impossible de copier. Utilisez Ctrl+C manuellement.');
-      }
-      
-      document.body.removeChild(textarea);
-    });
-      
+    copyTextToClipboard(text, btnElement);
+
   } catch (error) {
-    console.error('❌ Erreur copie HTML:', error);
+    console.error('❌ Erreur copie texte document:', error);
     alert('❌ Erreur lors de la copie. Veuillez réessayer.');
   }
 };
@@ -1757,12 +1956,12 @@ function appendChat(role, text, returnElement = false, attachments = []) {
       
       node.innerHTML = `
         ${documentHtml}
-        <div style="margin-top: 30px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
-          <button class="btn primary" onclick="printDocument(this)">
-            <i class="fas fa-print"></i> Imprimer
+        <div class="doc-actions">
+          <button type="button" class="doc-action-btn" title="Télécharger / Imprimer" aria-label="Télécharger le document" onclick="printDocument(this)">
+            <i class="fas fa-download"></i>
           </button>
-          <button class="btn success" onclick="copyDocumentHtml()">
-            <i class="fas fa-copy"></i> Copier le HTML
+          <button type="button" class="doc-action-btn" title="Copier le texte" aria-label="Copier le texte du document" onclick="copyDocumentText(this)">
+            <i class="fas fa-copy"></i>
           </button>
         </div>
       `;
@@ -1782,6 +1981,7 @@ function appendChat(role, text, returnElement = false, attachments = []) {
       });
       
       addCopyButtons(node);
+      addMessageCopyAction(node);
       
     } else if (returnElement) {
       node.classList.add('loading');
@@ -1854,12 +2054,12 @@ function simulateTyping(element, text, enableVoice = true, needsContinuation = f
       
       element.innerHTML = `
         ${documentHtml}
-        <div style="margin-top: 30px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
-          <button class="btn primary" onclick="printDocument(this)">
-            <i class="fas fa-print"></i> Imprimer
+        <div class="doc-actions">
+          <button type="button" class="doc-action-btn" title="Télécharger / Imprimer" aria-label="Télécharger le document" onclick="printDocument(this)">
+            <i class="fas fa-download"></i>
           </button>
-          <button class="btn success" onclick="copyDocumentHtml()">
-            <i class="fas fa-copy"></i> Copier le HTML
+          <button type="button" class="doc-action-btn" title="Copier le texte" aria-label="Copier le texte du document" onclick="copyDocumentText(this)">
+            <i class="fas fa-copy"></i>
           </button>
         </div>
       `;
@@ -1897,6 +2097,7 @@ function simulateTyping(element, text, enableVoice = true, needsContinuation = f
     });
     
     addCopyButtons(element);
+    addMessageCopyAction(element);
     
     // ✅ BOUTON CONTINUER (si nécessaire)
     if (needsContinuation) {
@@ -3282,8 +3483,10 @@ el('addPlan')?.addEventListener('click', async () => {
     }
   }, 3600000);
 
-  // ✅ Vérification des planifications toutes les 60 secondes
-  setInterval(async () => {
+  // ✅ Vérification des planifications, alignée sur le début de chaque minute
+  // (voir le scheduler plus bas : on ne dépend plus d'un setInterval(...,60000)
+  // qui pouvait déclencher la vérification jusqu'à 59s après l'heure prévue).
+  async function checkAndExecutePlans() {
     const now = new Date();
     const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
     const todayDate = now.toISOString().split('T')[0];
@@ -3432,8 +3635,30 @@ el('addPlan')?.addEventListener('click', async () => {
     } catch (error) {
       console.error('❌ Client: Erreur système de planning:', error);
     }
-    
-  }, 60000); // Toutes les 60 secondes
+  }
+
+  // ✅ Scheduler auto-aligné sur le début de chaque minute (HH:MM:00).
+  // Avant : setInterval(fn, 60000) démarrait son décompte au chargement de la
+  // page, sans rapport avec l'horloge. Si la page était ouverte à HH:MM:45,
+  // la vérification suivante ne tombait qu'à HH:MM+1:45 → jusqu'à 59s de
+  // retard avant qu'une tâche prévue à HH:MM+1:00 soit détectée.
+  // Ici, on recalcule à chaque cycle le délai exact jusqu'à la prochaine
+  // seconde 0 de l'horloge, puis on exécute la vérification. Résultat :
+  // l'exécution démarre en pratique sous la seconde (au lieu de jusqu'à 60s),
+  // sans changer la logique métier ni la fréquence (toujours ~1x/minute).
+  function scheduleNextPlanCheck() {
+    const now = new Date();
+    const msUntilNextMinute = 60000 - (now.getSeconds() * 1000 + now.getMilliseconds());
+    setTimeout(async () => {
+      try {
+        await checkAndExecutePlans();
+      } catch (e) {
+        console.error('❌ Client: Erreur boucle de planning:', e);
+      }
+      scheduleNextPlanCheck(); // se recale à chaque fois, pas de dérive cumulative
+    }, msUntilNextMinute);
+  }
+  scheduleNextPlanCheck();
 
   // ======= Fonction de Nettoyage Client =======
   
