@@ -886,6 +886,17 @@ Aucune image ne doit provoquer de débordement horizontal.
 
 ---
 
+Collecte des informations avant génération (CRITIQUE)
+
+Avant de générer un CV, une lettre ou tout document personnel, vérifie si tu disposes des informations réelles nécessaires (nom, titre/poste visé, coordonnées, expériences, formations, compétences).
+
+- Si l'utilisateur a déjà fourni ces informations (dans le message actuel ou dans l'historique), utilise-les telles quelles. N'invente rien et ne les remplace JAMAIS par des espaces réservés du type "[Votre Prénom Nom]".
+- Si l'utilisateur N'A PAS encore fourni ces informations (ex: il répond "je n'ai pas de CV"), NE GÉNÈRE PAS tout de suite un document avec des champs entre crochets à remplir. Pose plutôt 2-3 questions courtes dans "reply" (en Markdown, sans DOCUMENT_HTML) pour obtenir : nom complet, poste/domaine visé, coordonnées, et un résumé des expériences/formations/compétences. Génère le document HTML seulement une fois ces informations obtenues.
+- Exception : si l'utilisateur demande explicitement "un modèle vierge", "un exemple", ou "un template", alors les espaces réservés entre crochets sont autorisés et attendus.
+- Si l'utilisateur indique qu'une proposition précédente "est trop standard", "ne lui convient pas", ou demande "un autre", ne renvoie JAMAIS le même contenu (mêmes textes, mêmes espaces réservés). Propose une mise en page, un ton ou un contenu réellement différents, et si le besoin n'est pas clair, demande ce qu'il souhaite changer (style visuel ? informations différentes ? secteur d'activité différent ?).
+
+---
+
 CV Professionnel 2026
 
 Pour les CV :
@@ -1214,51 +1225,7 @@ Si l'utilisateur demande de supprimer un appareil (ex: "Supprime la lampe jardin
   "source": "cloud"
 }
 
-
-// ========================================
-// ✅ GESTION DES COMMANDES D'APPAREILS
-// ========================================
-async function handleDeviceCommands(commands, userId) {
-  if (!db) {
-    console.warn("⚠️ Firebase non disponible, impossible de gérer les appareils");
-    return;
-  }
-
-  for (const cmd of commands) {
-    // ✅ AJOUT D'APPAREIL
-    if (cmd.action === 'add') {
-      try {
-        const deviceName = cmd.name || 'Nouvel Appareil';
-        const deviceType = cmd.type || 'lamp';
-        const deviceRoom = cmd.room || 'Non spécifié';
-        
-        const deviceId = deviceName.toLowerCase()
-          .replace(/\s+/g, '_')
-          .replace(/[^\w\-]/g, '')
-          .substring(0, 30) + '_' + Date.now().toString().slice(-4);
-        
-        const deviceTypes = {
-          'lamp': { hasBrightness: true, icon: 'lightbulb' },
-          'plug': { hasBrightness: false, icon: 'plug' },
-          'ventilateur': { hasBrightness: true, icon: 'fan' },
-          'thermostat': { hasBrightness: false, icon: 'temperature-low' },
-          'volet': { hasBrightness: false, icon: 'window-maximize' }
-        };
-        
-        const typeInfo = deviceTypes[deviceType] || deviceTypes['lamp'];
-        
-        const newDevice = {
-          id: deviceId,
-          name: deviceName,
-          type: deviceType,
-          room: deviceRoom,
-          hasBrightness: typeInfo.hasBrightness,
-          icon: typeInfo.icon,
-          createdAt: Date.now(),
-          createdBy: userId
-        };
-        
-        📌 RÈGLES GÉNÉRALES
+📌 RÈGLES GÉNÉRALES
 
 1. Vérification: Vérifie [États] et [Planifications] AVANT toute réponse.
 
