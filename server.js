@@ -1264,10 +1264,20 @@ async function handleDeviceCommands(commands, userId) {
         const deviceName = cmd.name || 'Nouvel Appareil';
         const deviceType = cmd.type || 'lamp';
         const deviceRoom = cmd.room || 'Non spécifié';
-        const deviceId = deviceName.toLowerCase()
+
+        const baseId = deviceName.toLowerCase()
           .replace(/\s+/g, '_')
           .replace(/[^\w\-]/g, '')
-          .substring(0, 30) + '_' + Date.now().toString().slice(-4);
+          .substring(0, 30);
+
+        // ✅ ID propre par défaut (ex: "lampe_1"), pour correspondre
+        // à ce que le firmware ESP32 attend. On n'ajoute un suffixe
+        // que s'il y a une vraie collision avec un appareil existant.
+        let deviceId = baseId;
+        const existingSnapshot = await get(ref(db, `${DEVICES_META_REF}/${baseId}`));
+        if (existingSnapshot.exists()) {
+          deviceId = baseId + '_' + Date.now().toString().slice(-4);
+        }
         const deviceTypes = {
           'lamp': { hasBrightness: true, icon: 'lightbulb' },
           'plug': { hasBrightness: false, icon: 'plug' },
