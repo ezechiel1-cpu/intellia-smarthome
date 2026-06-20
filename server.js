@@ -1317,7 +1317,7 @@ Si la réponse dépasse la limite disponible :
 }
 
 et continuer proprement lors de la reprise.
-';
+`;
         
         await set(ref(db, `${DEVICES_META_REF}/${deviceId}`), newDevice);
         
