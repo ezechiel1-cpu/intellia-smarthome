@@ -466,15 +466,10 @@ function extractCoreQuestionLocal(message) {
   return text.length > 400 ? text.slice(0, 400) : text;
 }
 
-async function performWebSearch(query) {
-  let searchQuery = await optimizeQueryWithLLM(query);
-  if (!searchQuery) {
-    searchQuery = extractCoreQuestionLocal(query);
-  }
+async function searchTavily(searchQuery) {
   // Garde-fou absolu : Tavily refuse toute requête de plus de 400 caractères
   if (searchQuery.length > 400) searchQuery = searchQuery.slice(0, 400);
 
-  console.log(`🔍 Recherche originale: "${query.slice(0, 80)}${query.length > 80 ? '...' : ''}"`);
   console.log(`🎯 Requête envoyée à Tavily: "${searchQuery}"`);
 
   try {
@@ -501,6 +496,79 @@ async function performWebSearch(query) {
   }
 }
 
+async function performWebSearch(query) {
+  let searchQuery = await optimizeQueryWithLLM(query);
+  if (!searchQuery) {
+    searchQuery = extractCoreQuestionLocal(query);
+  }
+  console.log(`🔍 Recherche originale: "${query.slice(0, 80)}${query.length > 80 ? '...' : ''}"`);
+  return searchTavily(searchQuery);
+}
+
+// ========================================
+// 🧠 DÉCISION DE RECHERCHE PILOTÉE PAR LE MODÈLE
+// ========================================
+// Au lieu d'une liste de mots-clés (fragile, facilement contournée par une
+// reformulation), on demande au modèle lui-même de juger, avec le contexte
+// complet de la conversation, s'il a besoin d'une recherche web à jour.
+async function decideIfSearchNeeded(userMessage, historyFromFirebase) {
+  try {
+    const recentHistory = (historyFromFirebase || []).slice(-4).map(h =>
+      `Utilisateur: ${h.user}\nAssistant: ${h.bot}`
+    ).join('\n\n');
+
+    const decisionPrompt = `Tu es un module de décision pour un assistant IA. Ta SEULE tâche : déterminer si une recherche web en temps réel est nécessaire pour répondre correctement et de façon à jour au MESSAGE ACTUEL ci-dessous.
+
+CONTEXTE RÉCENT DE LA CONVERSATION :
+${recentHistory || "(aucun historique)"}
+
+MESSAGE ACTUEL DE L'UTILISATEUR :
+"${userMessage}"
+
+Une recherche est NÉCESSAIRE si la question porte sur :
+- des personnes/postes qui peuvent changer (présidents, ministres, dirigeants, PDG, etc.)
+- des actualités, événements récents, résultats (élections, sport, etc.)
+- des prix, taux de change, ou toute donnée qui évolue
+- une information que tes connaissances internes pourraient ne plus avoir à jour
+- le cas où l'utilisateur conteste, doute, ou redemande une info déjà donnée plus haut dans la conversation (il faut alors revérifier plutôt que répéter)
+
+Une recherche n'est PAS nécessaire pour : domotique, code, calculs, conversation générale, génération de documents/CV, salutations, ou des faits intemporels (mathématiques, définitions, histoire ancienne...).
+
+Réponds UNIQUEMENT avec ce JSON, rien d'autre :
+{"needs_search": true ou false, "query": "requête de recherche concise et précise en français, vide si needs_search est false"}`;
+
+    const keyObj = getNextApiKey();
+    const genAI = new GoogleGenerativeAI(keyObj.key);
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 4000);
+
+    const result = await model.generateContent({
+      contents: [{ role: "user", parts: [{ text: decisionPrompt }] }],
+      generationConfig: {
+        responseMimeType: "application/json",
+        temperature: 0.1,
+        maxOutputTokens: 200,
+      },
+    }, { signal: controller.signal });
+    clearTimeout(timeoutId);
+
+    const decision = JSON.parse(result.response.text());
+    console.log(`🧠 Décision recherche: ${decision.needs_search ? 'OUI' : 'NON'}${decision.query ? ` (requête: "${decision.query}")` : ''}`);
+    return {
+      needsSearch: !!decision.needs_search,
+      query: decision.query || userMessage
+    };
+
+  } catch (error) {
+    console.warn('⚠️ Décision de recherche indisponible, repli sur les mots-clés:', error.message);
+    // Filet de sécurité : si l'appel échoue (timeout, erreur de parsing...), on
+    // retombe sur l'ancienne méthode par mots-clés plutôt que de ne jamais chercher.
+    return { needsSearch: needsWebSearch(userMessage), query: userMessage };
+  }
+}
+
 function needsWebSearch(message) {
   const lowerMsg = message.toLowerCase().trim();
   const noSearchPatterns = [
@@ -512,14 +580,26 @@ function needsWebSearch(message) {
     /génère.*pdf/i, /génère.*lettre/i, /crée.*document/i, /fais.*rapport/i, /génère.*cv/i
   ];
   if (noSearchPatterns.some(pattern => pattern.test(lowerMsg))) return false;
+
+  // ✅ Sujets factuels sensibles au temps (personnes, postes, actualité)
   const webKeywords = [
     'actualité', 'news', 'nouvelles', 'recherche', 'cherche', 'trouve',
-    'où se trouve', 'où est situé', 'combien coûte', 'prix de', 'qui est', 'c\'est qui', 'président'
+    'où se trouve', 'où est situé', 'combien coûte', 'prix de',
+    'qui est', 'c\'est qui', 'qui sont', 'qui dirige', 'qui gouverne',
+    'président', 'premier ministre', 'ministre', 'ministres', 'gouvernement',
+    'chef d\'état', 'dirigeant', 'élection', 'élu', 'nommé', 'nomination'
   ];
-  if (lowerMsg.includes('qui est') || lowerMsg.includes('président')) {
-    return true;
-  }
-  return webKeywords.some(kw => lowerMsg.includes(kw));
+
+  // ✅ L'utilisateur conteste, doute ou redemande une réponse précédente :
+  // on doit revérifier plutôt que de retomber sur les connaissances internes (potentiellement obsolètes)
+  const challengePatterns = [
+    /tu mens/i, /c'est faux/i, /tu te trompes/i, /tu es sûr/i, /es-tu sûr/i,
+    /vérifie/i, /pas vrai/i, /erreur/i, /tu as dit/i, /pour la dernière fois/i,
+    /actuel(le|lement)?\b/i, /en ce moment/i, /aujourd'hui/i, /désormais/i, /maintenant/i
+  ];
+
+  return webKeywords.some(kw => lowerMsg.includes(kw)) ||
+         challengePatterns.some(pattern => pattern.test(lowerMsg));
 }
 
 // ========================================
@@ -1259,6 +1339,11 @@ en appliquant les règles du Moteur Documentaire Responsive 2026.
 
 13. CONTINUATION: Si tu atteins la limite de tokens, ajoute "needs_continuation: true" et le client affichera un bouton "Continuer".
 
+14. Fiabilité des faits sensibles au temps (CRITIQUE) : Pour tout fait qui peut changer avec le temps (chef d'état, ministres, gouvernement, prix, actualités, résultats d'élections, etc.), tes connaissances internes peuvent être dépassées. 
+- Si un bloc [Web: ...] est présent dans le message, considère-le comme la vérité la plus à jour et fais-le PRIMER sur tes connaissances internes en cas de contradiction. 
+- Si [Web] est absent et que la question porte sur un fait potentiellement périmé, dis clairement que l'information pourrait avoir changé plutôt que d'affirmer avec une fausse certitude une réponse issue uniquement de tes connaissances internes. 
+- Ne contredis JAMAIS silencieusement une information que TU as toi-même donnée plus tôt dans la même conversation (visible dans l'historique) sans expliquer pourquoi tu corriges (nouvelle recherche, information plus récente, etc.). Si tu n'es pas sûr de laquelle de tes deux réponses précédentes est correcte, dis-le honnêtement au lieu de trancher au hasard.
+
 ---
 
 FORMAT DE RÉPONSE
@@ -1561,10 +1646,16 @@ async function chatWithGemini(userMessage, devices, userId, sessionId, attachmen
 
   const beninTime = await getBeninTime();
   const contextAnalysis = analyzeContext(userMessage, realDeviceStates, beninTime);
-  
+
+  // ✅ Historique récupéré une seule fois (réutilisé pour la décision de recherche ET pour le chat)
+  const historyFromFirebase = await getHistoryFromFirebase(userId, sessionId);
+
   let webResults = [];
-  if (needsWebSearch(userMessage) && !continuationMode) {
-    webResults = await performWebSearch(userMessage);
+  if (!continuationMode) {
+    const searchDecision = await decideIfSearchNeeded(userMessage, historyFromFirebase);
+    if (searchDecision.needsSearch) {
+      webResults = await searchTavily(searchDecision.query);
+    }
   }
 
   let lastError = null;
@@ -1574,8 +1665,6 @@ async function chatWithGemini(userMessage, devices, userId, sessionId, attachmen
       const keyObj = getNextApiKey();
       const genAI = new GoogleGenerativeAI(keyObj.key);
       const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-
-      const historyFromFirebase = await getHistoryFromFirebase(userId, sessionId);
 
       const historyParts = await Promise.all(
         historyFromFirebase.flatMap(async (h) => [
