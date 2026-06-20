@@ -10,6 +10,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/arduino.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/13.0.0/marked.min.js"></script>
   
   <style>
@@ -1900,7 +1901,9 @@ function addCopyButtons(element) {
         'CSS': 'css', 'JSON': 'json', 'JAVA': 'java',
         'CPP': 'cpp', 'C': 'c', 'PHP': 'php', 'RUBY': 'rb',
         'GO': 'go', 'RUST': 'rs', 'TYPESCRIPT': 'ts',
-        'BASH': 'sh', 'SQL': 'sql', 'XML': 'xml'
+        'BASH': 'sh', 'SQL': 'sql', 'XML': 'xml',
+        'ARDUINO': 'ino', 'MATLAB': 'm', 'SCILAB': 'sce',
+        'VHDL': 'vhd', 'CSHARP': 'cs'
       };
       extension = langMap[language] || language.toLowerCase();
     }
@@ -2050,14 +2053,6 @@ function appendDocumentCard(htmlContent, metadata) {
 }
 
 function previewDocument(html) {
-  let finalHtml = html;
-  if (appState.isNightMode) {
-    const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = html;
-    applyNightModeToDoc(tempDiv);
-    finalHtml = tempDiv.innerHTML;
-  }
-  
   const modal = document.createElement('div');
   modal.style.cssText = `
     position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -2068,31 +2063,33 @@ function previewDocument(html) {
   
   const content = document.createElement('div');
   content.style.cssText = `
-    background: ${appState.isNightMode ? '#1a1a2e' : 'white'}; 
-    max-width: 900px; width: 100%; max-height: 90vh;
-    border-radius: 12px; overflow: auto; padding: 30px;
+    background: white;
+    max-width: 900px; width: 100%; height: 90vh;
+    border-radius: 12px; overflow: hidden; padding: 0;
     position: relative;
   `;
   
   const closeBtn = document.createElement('button');
   closeBtn.innerHTML = '✕';
   closeBtn.style.cssText = `
-    position: sticky; top: 0; float: right; background: ${appState.isNightMode ? '#2d2d44' : 'white'};
-    border: none; font-size: 24px; cursor: pointer; color: ${appState.isNightMode ? '#e2e8f0' : '#666'};
+    position: absolute; top: 10px; right: 10px; background: white;
+    border: none; font-size: 24px; cursor: pointer; color: #666;
     z-index: 1; padding: 4px 12px; border-radius: 6px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
   `;
   closeBtn.onclick = () => modal.remove();
   
-  const docDiv = document.createElement('div');
-  docDiv.innerHTML = finalHtml;
+  // ✅ Rendu dans un iframe isolé : le document s'affiche
+  // exactement comme le fichier téléchargé (sa propre mise en
+  // page, ses propres styles), avec un défilement natif.
+  const iframe = document.createElement('iframe');
+  iframe.style.cssText = `
+    width: 100%; height: 100%; border: none; display: block;
+  `;
+  iframe.srcdoc = html;
   
-  if (appState.isNightMode) {
-    applyNightModeToDoc(docDiv);
-  }
-  
+  content.appendChild(iframe);
   content.appendChild(closeBtn);
-  content.appendChild(docDiv);
   modal.appendChild(content);
   
   modal.addEventListener('click', (e) => {
@@ -2104,6 +2101,7 @@ function previewDocument(html) {
   });
   
   document.body.appendChild(modal);
+  modal.tabIndex = -1;
   modal.focus();
 }
 
@@ -2111,15 +2109,19 @@ function downloadDocument(html, title, type) {
   let ext = 'html';
   let mimeType = 'text/html';
   
-  const codeMatch = html.match(/<pre[^>]*>.*?<code[^>]*class="language-(\w+)/s);
+  const codeMatch = html.match(/<code[^>]*class="[^"]*language-([\w+-]+)/);
   if (codeMatch) {
     const lang = codeMatch[1].toLowerCase();
     const langMap = {
-      'javascript': 'js', 'python': 'py', 'java': 'java',
-      'cpp': 'cpp', 'c': 'c', 'html': 'html', 'css': 'css',
-      'json': 'json', 'bash': 'sh', 'sql': 'sql', 'xml': 'xml'
+      'javascript': 'js', 'js': 'js', 'python': 'py', 'py': 'py', 'java': 'java',
+      'cpp': 'cpp', 'c++': 'cpp', 'c': 'c', 'arduino': 'ino', 'ino': 'ino',
+      'html': 'html', 'css': 'css', 'json': 'json', 'xml': 'xml',
+      'bash': 'sh', 'sh': 'sh', 'shell': 'sh', 'sql': 'sql',
+      'php': 'php', 'ruby': 'rb', 'go': 'go', 'rust': 'rs',
+      'typescript': 'ts', 'ts': 'ts', 'matlab': 'm', 'scilab': 'sce',
+      'vhdl': 'vhd', 'csharp': 'cs', 'cs': 'cs'
     };
-    ext = langMap[lang] || 'txt';
+    ext = langMap[lang] || lang || 'txt';
     mimeType = 'text/plain';
   }
   
