@@ -1,11 +1,9 @@
 // ========================================
-// INTELLIA v10.0 - SYSTÈME ARTIFACTS COMPLET
-// ✅ Génération de documents/code LONGS (3000+ lignes)
-// ✅ Continuation automatique comme Claude
-// ✅ Détection de troncature intelligente
-// ✅ Pas de génération d'images (retiré)
-// ✅ Modèle : gemini-2.5-flash (65536 tokens)
-// ✅ Gestion Planning Avancée (Routines + Correction ON/OFF)
+// INTELLIA v10.1 - SYSTÈME ARTIFACTS + DOCX
+// ✅ Génération de documents/code LONGS
+// ✅ Continuation automatique
+// ✅ Détection de troncature
+// ✅ Téléchargement DOCX (document)
 // ========================================
 const express = require('express');
 const cors = require('cors');
@@ -163,23 +161,13 @@ function getWeatherDescription(code) {
 async function getRealLoKossaTemperature() {
   try {
     console.log("🌡️ Appel WeatherAPI pour Lokossa...");
-    
-    // Votre clé API personnelle récupérée sur WeatherAPI
-    const apiKey = '41c88a0121c8451284c194700261906'; 
-    
+    const apiKey = '41c88a0121c8451284c194700261906';
     const response = await axios.get('https://api.weatherapi.com/v1/current.json', {
-      params: {
-        key: apiKey,
-        q: 'Lokossa',
-        lang: 'fr'
-      },
-      timeout: 5000 // Sécurité de 5 secondes en cas de réseau lent
+      params: { key: apiKey, q: 'Lokossa', lang: 'fr' },
+      timeout: 5000
     });
-    
     const current = response.data.current;
-    
     console.log(`✅ Température réelle récupérée : ${Math.round(current.temp_c)}°C`);
-    
     return {
       temperature: Math.round(current.temp_c),
       feels_like: Math.round(current.feelslike_c),
@@ -188,21 +176,14 @@ async function getRealLoKossaTemperature() {
       source: 'weatherapi',
       success: true
     };
-    
   } catch (error) {
     console.warn("⚠️ WeatherAPI indisponible, utilisation de l'estimation :", error.message);
     const now = new Date();
     const month = now.getMonth() + 1;
     const hour = now.getHours();
-    
-    // Appel de votre fonction locale de secours
     const estimated = getLoKossaTemperatureEstimated(month, hour);
     console.log(`📊 Température estimée : ${estimated.temperature}°C`);
-    
-    return { 
-      ...estimated, 
-      success: false 
-    };
+    return { ...estimated, success: false };
   }
 }
 
@@ -258,83 +239,56 @@ async function parseFileAttachment(attachment) {
   try {
     const parsedData = parseDataUri(attachment.data);
     if (!parsedData) throw new Error("Invalid Data URI");
-    
     const buffer = Buffer.from(parsedData.data, 'base64');
     let text = "";
     const MAX_CHARS = 500000;
-    
     console.log(`📄 Parsing: ${attachment.name}, MIME: ${parsedData.mimeType}, Size: ${buffer.length} bytes`);
-    
     const fileName = attachment.name.toLowerCase();
     const ext = fileName.split('.').pop();
     
     switch (true) {
       case parsedData.mimeType.startsWith('text/'):
-      case ext === 'txt':
-      case ext === 'log':
-      case ext === 'md':
-      case ext === 'csv':
+      case ext === 'txt': case ext === 'log': case ext === 'md': case ext === 'csv':
         text = buffer.toString('utf-8');
         break;
-      
-      case ext === 'html':
-      case ext === 'htm':
-      case ext === 'xml':
-      case parsedData.mimeType.includes('html'):
-      case parsedData.mimeType.includes('xml'):
+      case ext === 'html': case ext === 'htm': case ext === 'xml':
+      case parsedData.mimeType.includes('html'): case parsedData.mimeType.includes('xml'):
         text = buffer.toString('utf-8');
         break;
-      
-      case ext === 'js':
-      case ext === 'json':
-      case ext === 'css':
-      case ext === 'py':
-      case ext === 'java':
-      case ext === 'c':
-      case ext === 'cpp':
-      case ext === 'h':
-      case parsedData.mimeType.includes('javascript'):
-      case parsedData.mimeType.includes('json'):
+      case ext === 'js': case ext === 'json': case ext === 'css': case ext === 'py':
+      case ext === 'java': case ext === 'c': case ext === 'cpp': case ext === 'h':
+      case parsedData.mimeType.includes('javascript'): case parsedData.mimeType.includes('json'):
         text = buffer.toString('utf-8');
         break;
-      
-      case parsedData.mimeType === 'application/pdf':
-      case ext === 'pdf':
+      case parsedData.mimeType === 'application/pdf': case ext === 'pdf':
         const pdfData = await pdf(buffer);
         text = pdfData.text;
         console.log(`✅ PDF extrait: ${pdfData.numpages} pages, ${text.length} caractères`);
         break;
-      
       case parsedData.mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
       case ext === 'docx':
         try {
           console.log(`📄 Tentative d'extraction DOCX...`);
           const docxResult = await mammoth.extractRawText({ buffer });
           text = docxResult.value;
-          
           if (!text || text.trim().length === 0) {
             console.warn(`⚠️ DOCX vide, tentative avec convertToHtml...`);
             const htmlResult = await mammoth.convertToHtml({ buffer });
             const $ = cheerio.load(htmlResult.value);
             text = $.text();
           }
-          
           if (!text || text.trim().length === 0) {
             return `[Fichier DOCX détecté mais le contenu est vide ou illisible.]`;
           }
-          
           console.log(`✅ DOCX extrait: ${text.length} caractères`);
         } catch (docxError) {
           console.error(`❌ Erreur DOCX:`, docxError.message);
           return `[Erreur lors de la lecture du fichier DOCX "${attachment.name}".]`;
         }
         break;
-      
       case ext === 'doc':
         return `[Fichier .DOC ancien format détecté: ${attachment.name}. Veuillez le convertir en .DOCX.]`;
-      
-      case ext === 'xlsx':
-      case ext === 'xls':
+      case ext === 'xlsx': case ext === 'xls':
       case parsedData.mimeType.includes('spreadsheet'):
         try {
           const XLSX = require('xlsx');
@@ -349,16 +303,10 @@ async function parseFileAttachment(attachment) {
           return `[Fichier Excel détecté mais module 'xlsx' non installé.]`;
         }
         break;
-      
-      case ext === 'pptx':
-      case ext === 'ppt':
+      case ext === 'pptx': case ext === 'ppt':
         return `[Fichier PowerPoint détecté: ${attachment.name}. Extraction non supportée.]`;
-      
-      case ext === 'zip':
-      case ext === 'rar':
-      case ext === '7z':
+      case ext === 'zip': case ext === 'rar': case ext === '7z':
         return `[Archive détectée: ${attachment.name}. Extraction non supportée.]`;
-      
       default:
         try {
           const textAttempt = buffer.toString('utf-8');
@@ -377,9 +325,7 @@ async function parseFileAttachment(attachment) {
       console.log(`⚠️ Fichier tronqué: ${text.length} -> ${MAX_CHARS} caractères`);
       text = text.substring(0, MAX_CHARS) + `\n\n... [Contenu tronqué. Total: ${text.length} caractères]`;
     }
-    
     return text;
-    
   } catch (error) {
     console.error(`❌ Erreur parsing ${attachment.name}:`, error.message);
     return `[Erreur lors de la lecture du fichier '${attachment.name}': ${error.message}]`;
@@ -402,23 +348,62 @@ async function createHistoryEntry(role, text, attachments = []) {
 
 async function getHistoryFromFirebase(userId, sessionId) {
   if (!db || !userId || !sessionId) return [];
-  
   try {
     const messagesRef = ref(db, `${USER_CHATS_REF}/${userId}/${sessionId}/messages`);
     const snapshot = await get(messagesRef);
     if (!snapshot.exists()) return [];
-    
     const messages = snapshot.val();
     const sortedMessages = Object.values(messages).sort((a, b) => a.timestamp - b.timestamp);
     const recentMessages = sortedMessages.slice(-10);
-    
     return recentMessages;
   } catch (error) {
     console.error("Erreur lecture historique Firebase:", error);
     return [];
   }
-} 
+}
 
+// ========================================
+// 📄 GESTION DES DOCUMENTS (AJOUT v10.1)
+// ========================================
+
+// Extraire les métadonnées du HTML d'un document
+function extractDocumentMetadata(html) {
+  const titleMatch = html.match(/<title>(.*?)<\/title>/i) || 
+                     html.match(/<h1[^>]*>(.*?)<\/h1>/i);
+  const title = titleMatch ? titleMatch[1].trim() : 'Document';
+  
+  let type = 'document';
+  if (html.includes('doc-cv') || html.includes('CV')) type = 'cv';
+  else if (html.includes('doc-lettre') || html.includes('Lettre')) type = 'lettre';
+  else if (html.includes('doc-rapport') || html.includes('Rapport')) type = 'rapport';
+  else if (html.includes('doc-facture') || html.includes('Facture')) type = 'facture';
+  else if (html.includes('doc-contrat') || html.includes('Contrat')) type = 'contrat';
+  
+  return { title, type };
+}
+
+// Convertir un HTML en DOCX (avec la librairie 'docx')
+async function convertHtmlToDocx(html) {
+  const { Document, Packer, Paragraph, TextRun } = require('docx');
+  
+  const $ = cheerio.load(html);
+  $('script, style, .no-print, .code-actions, .doc-actions, button').remove();
+  const text = $('body').text().trim() || $('html').text().trim();
+  
+  const doc = new Document({
+    sections: [{
+      properties: {},
+      children: text.split('\n').filter(line => line.trim().length > 0).map(line => 
+        new Paragraph({
+          children: [new TextRun({ text: line.trim(), size: 24 })],
+        })
+      ),
+    }],
+  });
+  
+  const buffer = await Packer.toBuffer(doc);
+  return buffer;
+}
 
 // ========================================
 // RECHERCHE WEB INTELLIGENTE
@@ -428,7 +413,6 @@ if (!process.env.TAVILY_API_KEY) {
   console.warn('⚠️ TAVILY_API_KEY manquante — la recherche web sera désactivée');
 }
 
-// Étape 1 : extraction intelligente de la vraie question via l'IA (plafonnée à 4s)
 async function optimizeQueryWithLLM(userQuery) {
   try {
     const promptInterne = `Tu es un assistant de recherche. Transforme le message ci-dessous en une requête de recherche courte et précise (maximum 12 mots, sans ponctuation inutile). Ignore le bavardage, les digressions, garde uniquement l'information nécessaire pour trouver la réponse.
@@ -456,7 +440,6 @@ Requête:`;
   }
 }
 
-// Étape 2 (filet de sécurité) : nettoyage local instantané si l'IA échoue
 function extractCoreQuestionLocal(message) {
   let text = message.trim();
   const sentences = text.split(/(?<=[.?!])\s+/);
@@ -467,27 +450,20 @@ function extractCoreQuestionLocal(message) {
 }
 
 async function searchTavily(searchQuery) {
-  // Garde-fou absolu : Tavily refuse toute requête de plus de 400 caractères
   if (searchQuery.length > 400) searchQuery = searchQuery.slice(0, 400);
-
   console.log(`🎯 Requête envoyée à Tavily: "${searchQuery}"`);
-
   try {
     const response = await axios.post('https://api.tavily.com/search', {
       api_key: process.env.TAVILY_API_KEY,
       query: searchQuery,
       search_depth: 'basic',
       max_results: 5
-    }, {
-      timeout: 8000
-    });
-
+    }, { timeout: 8000 });
     const results = (response.data.results || []).map(r => ({
       title: r.title,
       snippet: r.content,
       url: r.url
     }));
-
     console.log(`✅ ${results.length} résultats récupérés pour le LLM.`);
     return results;
   } catch (error) {
@@ -505,12 +481,6 @@ async function performWebSearch(query) {
   return searchTavily(searchQuery);
 }
 
-// ========================================
-// 🧠 DÉCISION DE RECHERCHE PILOTÉE PAR LE MODÈLE
-// ========================================
-// Au lieu d'une liste de mots-clés (fragile, facilement contournée par une
-// reformulation), on demande au modèle lui-même de juger, avec le contexte
-// complet de la conversation, s'il a besoin d'une recherche web à jour.
 async function decideIfSearchNeeded(userMessage, historyFromFirebase) {
   try {
     const recentHistory = (historyFromFirebase || []).slice(-4).map(h =>
@@ -560,11 +530,8 @@ Réponds UNIQUEMENT avec ce JSON, rien d'autre :
       needsSearch: !!decision.needs_search,
       query: decision.query || userMessage
     };
-
   } catch (error) {
     console.warn('⚠️ Décision de recherche indisponible, repli sur les mots-clés:', error.message);
-    // Filet de sécurité : si l'appel échoue (timeout, erreur de parsing...), on
-    // retombe sur l'ancienne méthode par mots-clés plutôt que de ne jamais chercher.
     return { needsSearch: needsWebSearch(userMessage), query: userMessage };
   }
 }
@@ -580,8 +547,6 @@ function needsWebSearch(message) {
     /génère.*pdf/i, /génère.*lettre/i, /crée.*document/i, /fais.*rapport/i, /génère.*cv/i
   ];
   if (noSearchPatterns.some(pattern => pattern.test(lowerMsg))) return false;
-
-  // ✅ Sujets factuels sensibles au temps (personnes, postes, actualité)
   const webKeywords = [
     'actualité', 'news', 'nouvelles', 'recherche', 'cherche', 'trouve',
     'où se trouve', 'où est situé', 'combien coûte', 'prix de',
@@ -589,15 +554,11 @@ function needsWebSearch(message) {
     'président', 'premier ministre', 'ministre', 'ministres', 'gouvernement',
     'chef d\'état', 'dirigeant', 'élection', 'élu', 'nommé', 'nomination'
   ];
-
-  // ✅ L'utilisateur conteste, doute ou redemande une réponse précédente :
-  // on doit revérifier plutôt que de retomber sur les connaissances internes (potentiellement obsolètes)
   const challengePatterns = [
     /tu mens/i, /c'est faux/i, /tu te trompes/i, /tu es sûr/i, /es-tu sûr/i,
     /vérifie/i, /pas vrai/i, /erreur/i, /tu as dit/i, /pour la dernière fois/i,
     /actuel(le|lement)?\b/i, /en ce moment/i, /aujourd'hui/i, /désormais/i, /maintenant/i
   ];
-
   return webKeywords.some(kw => lowerMsg.includes(kw)) ||
          challengePatterns.some(pattern => pattern.test(lowerMsg));
 }
@@ -635,58 +596,47 @@ function analyzeContext(message, deviceStates, beninTime) {
 }
 
 // ========================================
-// 🎯 DÉTECTION DE TRONCATURE (CRITIQUE)
+// 🎯 DÉTECTION DE TRONCATURE
 // ========================================
 function detectTruncation(content) {
-  // Indicateurs de contenu incomplet
   const truncationIndicators = [
-    /\.\.\.\s*$/,                    // Se termine par ...
-    /\[suite\]$/i,                   // [Suite] à la fin
-    /\[à suivre\]$/i,                // [À suivre]
-    /^\s*\/\/\s*\.\.\./m,            // Commentaires ...
-    /\/\*.*\*\/\s*$/,                // Commentaire bloc à la fin
-    /,\s*$/,                         // Virgule finale
-    /;\s*$/,                         // Point-virgule final (suspect en fin de doc)
-    /<\/DOCUMENT_HTML>\s*\.\.\./,   // Document HTML tronqué
+    /\.\.\.\s*$/,
+    /\[suite\]$/i,
+    /\[à suivre\]$/i,
+    /^\s*\/\/\s*\.\.\./m,
+    /\/\*.*\*\/\s*$/,
+    /,\s*$/,
+    /;\s*$/,
+    /<\/DOCUMENT_HTML>\s*\.\.\./,
   ];
-  
-  // Vérifier les indicateurs
   for (const pattern of truncationIndicators) {
     if (pattern.test(content)) {
       console.log(`⚠️ Troncature détectée via pattern: ${pattern}`);
       return true;
     }
   }
-  
-  // Vérifier si c'est du code avec accolades non fermées
   const openBraces = (content.match(/{/g) || []).length;
   const closeBraces = (content.match(/}/g) || []).length;
   if (openBraces > closeBraces && openBraces - closeBraces > 2) {
     console.log(`⚠️ Troncature détectée: accolades non fermées (${openBraces} vs ${closeBraces})`);
     return true;
   }
-  
-  // Vérifier balises HTML non fermées
   const openTags = (content.match(/<(?!\/)[^>]+>/g) || []).length;
   const closeTags = (content.match(/<\/[^>]+>/g) || []).length;
   if (openTags > closeTags && openTags - closeTags > 3) {
     console.log(`⚠️ Troncature détectée: balises HTML non fermées`);
     return true;
   }
-  
-  // Vérifier si le dernier caractère est suspect
   const lastChars = content.trim().slice(-20);
   if (/^[^.!?}\]]*$/.test(lastChars) && content.length > 500) {
     console.log(`⚠️ Troncature possible: fin de contenu suspecte`);
     return true;
   }
-  
   return false;
 }
 
-
 // ========================================
-// ✅ PROMPT SYSTÈME v10.0 - CONTINUATION
+// PROMPT SYSTÈME (identique à votre version)
 // ========================================
 const systemPrompt = `Tu es Intellia, assistant universel ultra-intelligent.
 
@@ -785,8 +735,6 @@ Tu as accès à la température **RÉELLE EN TEMPS RÉEL** de Lokossa via weathe
 - ❌ Dire "je ne peux pas générer tout"
 - ❌ Tronquer sans needs_continuation: true
 
-
-
 MOTEUR DOCUMENTAIRE RESPONSIVE 2026
 
 Lorsqu'un utilisateur demande un document (CV, rapport, contrat, facture, devis, lettre, attestation, document administratif, document professionnel ou tout autre document), l'assistant doit générer un document HTML5 moderne, professionnel, robuste et entièrement responsive.
@@ -794,14 +742,12 @@ Lorsqu'un utilisateur demande un document (CV, rapport, contrat, facture, devis,
 Objectif principal
 
 Le document doit être parfaitement lisible sur :
-
 - Smartphone
 - Tablette
 - Ordinateur portable
 - Écran de bureau
 
 Aucun document ne doit nécessiter un défilement horizontal global.
-
 La compatibilité mobile est prioritaire.
 
 ---
@@ -809,12 +755,10 @@ La compatibilité mobile est prioritaire.
 Règles HTML obligatoires
 
 Toujours générer :
-
 <!DOCTYPE html>
 <html lang="fr">
 
 Utiliser :
-
 - header
 - main
 - section
@@ -830,38 +774,24 @@ Respecter les bonnes pratiques HTML5.
 Règles CSS obligatoires
 
 Inclure systématiquement :
-
 *{
   box-sizing:border-box;
 }
-
-html,
-body{
+html, body{
   margin:0;
   padding:0;
   max-width:100%;
   overflow-x:hidden;
 }
-
 img{
   max-width:100%;
   height:auto;
   display:block;
 }
-
-svg,
-canvas,
-iframe{
+svg, canvas, iframe{
   max-width:100%;
 }
-
-p,
-span,
-div,
-td,
-th,
-a,
-li{
+p, span, div, td, th, a, li{
   overflow-wrap:anywhere;
   word-break:break-word;
 }
@@ -871,27 +801,21 @@ li{
 Responsive Mobile First
 
 La conception doit être mobile-first.
-
 Commencer par la version smartphone.
-
 Ajouter ensuite des media queries pour :
-
 - tablette
 - ordinateur
 
 Exemple :
-
 .container{
   width:100%;
   padding:16px;
 }
-
 @media(min-width:768px){
   .container{
     padding:24px;
   }
 }
-
 @media(min-width:1200px){
   .container{
     max-width:1200px;
@@ -904,15 +828,10 @@ Exemple :
 Colonnes
 
 Sur smartphone :
-
 - 1 seule colonne
-
 Sur tablette :
-
 - 1 ou 2 colonnes
-
 Sur ordinateur :
-
 - maximum 2 colonnes pour les CV et documents classiques
 
 Éviter les structures complexes à plusieurs colonnes.
@@ -922,7 +841,6 @@ Sur ordinateur :
 Gestion des emails et téléphones
 
 Les éléments suivants ne doivent jamais être coupés ou masqués :
-
 - emails
 - numéros de téléphone
 - URL
@@ -937,9 +855,7 @@ Ils doivent automatiquement revenir à la ligne proprement.
 Tableaux
 
 Tous les tableaux doivent être responsives.
-
 Toujours utiliser :
-
 <div class="table-wrapper">
   <table>
   </table>
@@ -957,7 +873,6 @@ Les tableaux ne doivent jamais casser la mise en page globale.
 Images
 
 Les images doivent :
-
 - rester visibles
 - conserver leurs proportions
 - s'adapter automatiquement à l'écran
@@ -980,7 +895,6 @@ Avant de générer un CV, une lettre ou tout document personnel, vérifie si tu 
 CV Professionnel 2026
 
 Pour les CV :
-
 - Design moderne 2026
 - Très lisible
 - Aspect premium
@@ -991,7 +905,6 @@ Pour les CV :
 - Hiérarchie visuelle claire
 
 Structure recommandée :
-
 - Profil
 - Coordonnées
 - Expériences
@@ -1002,11 +915,8 @@ Structure recommandée :
 - Références (si demandé)
 
 Sur mobile :
-
 - une seule colonne
-
 Sur desktop :
-
 - deux colonnes maximum
 
 ---
@@ -1014,7 +924,6 @@ Sur desktop :
 Rapports Professionnels
 
 Les rapports doivent :
-
 - utiliser une structure hiérarchique claire
 - inclure un sommaire lorsque pertinent
 - être agréables à lire sur téléphone
@@ -1025,7 +934,6 @@ Les rapports doivent :
 Contrats
 
 Les contrats doivent :
-
 - être juridiquement présentables
 - conserver une structure claire
 - utiliser des sections numérotées
@@ -1036,7 +944,6 @@ Les contrats doivent :
 Factures et Devis
 
 Les factures et devis doivent :
-
 - présenter clairement les montants
 - rester lisibles sur smartphone
 - utiliser des tableaux responsives
@@ -1047,15 +954,12 @@ Les factures et devis doivent :
 Design
 
 Interdiction de générer des styles incohérents.
-
 Ne jamais appliquer une variation graphique qui réduit :
-
 - la lisibilité
 - la stabilité
 - le responsive
 
 Les variations visuelles sont autorisées uniquement si elles restent :
-
 - professionnelles
 - cohérentes
 - élégantes
@@ -1065,7 +969,6 @@ Les variations visuelles sont autorisées uniquement si elles restent :
 Accessibilité
 
 Toujours privilégier :
-
 - contraste élevé
 - titres hiérarchisés
 - HTML sémantique
@@ -1076,16 +979,13 @@ Toujours privilégier :
 Robustesse
 
 Le document final doit :
-
 - fonctionner sur smartphone Android
 - fonctionner sur iPhone
 - fonctionner sur tablette
 - fonctionner sur ordinateur
 
 Aucun contenu ne doit être caché.
-
 Aucun texte ne doit sortir de l'écran.
-
 Aucun élément ne doit dépasser du viewport.
 
 La stabilité d'affichage est prioritaire sur les effets visuels.
@@ -1308,37 +1208,18 @@ Si l'utilisateur demande de supprimer un appareil (ex: "Supprime la lampe jardin
 📌 RÈGLES GÉNÉRALES
 
 1. Vérification: Vérifie [États] et [Planifications] AVANT toute réponse.
-
 2. Recherche: Ne recherche PAS pour code/domotique/température Lokossa/documents.
-
 3. Heure: Mentionne SEULEMENT si demandé ou pertinent.
-
 4. Naturalité: Réponses NATURELLES et CONVERSATIONNELLES.
-
 5. CONTEXTE: Si message court ("les", "tout", "oui"), analyse l'historique.
-
 6. Fichiers: Base ta réponse sur le contenu fourni.
-
 7. PRÉSENTATION: Utilise la structure Markdown (titres, listes, gras) SAUF pour documents (HTML avec "<DOCUMENT_HTML>").
-
 8. Température Lokossa: Toujours disponible dans les métadonnées. Ne jamais effectuer de recherche web pour l'obtenir. Ne la mentionner que lorsqu'elle est explicitement demandée ou lorsqu'elle est réellement pertinente pour la réponse en cours.
-
-9. Documents: Lorsqu'un document est demandé, retourner directement un document HTML complet encapsulé dans :
-
-<DOCUMENT_HTML>
-...
-</DOCUMENT_HTML>
-
-en appliquant les règles du Moteur Documentaire Responsive 2026.
-
+9. Documents: Lorsqu'un document est demandé, retourner directement un document HTML complet encapsulé dans <DOCUMENT_HTML> ... </DOCUMENT_HTML> en appliquant les règles du Moteur Documentaire Responsive 2026.
 10. Suppression: Utilise "device_commands" avec "action: "delete"" pour supprimer des appareils.
-
 11. Suppression planning: Utilise "planning_commands" avec les bonnes actions.
-
 12. Intelligence: Détecte les incohérences (ex : planifier l'allumage d'une lampe déjà allumée).
-
 13. CONTINUATION: Si tu atteins la limite de tokens, ajoute "needs_continuation: true" et le client affichera un bouton "Continuer".
-
 14. Fiabilité des faits sensibles au temps (CRITIQUE) : Pour tout fait qui peut changer avec le temps (chef d'état, ministres, gouvernement, prix, actualités, résultats d'élections, etc.), tes connaissances internes peuvent être dépassées. 
 - Si un bloc [Web: ...] est présent dans le message, considère-le comme la vérité la plus à jour et fais-le PRIMER sur tes connaissances internes en cas de contradiction. 
 - Si [Web] est absent et que la question porte sur un fait potentiellement périmé, dis clairement que l'information pourrait avoir changé plutôt que d'affirmer avec une fausse certitude une réponse issue uniquement de tes connaissances internes. 
@@ -1354,7 +1235,6 @@ Réponds toujours en JSON valide.
 - Documents : HTML complet dans "<DOCUMENT_HTML>...</DOCUMENT_HTML>" dans "reply".
 
 Ne jamais répondre uniquement :
-
 - "Commande reçue"
 - "Traitement en cours"
 - "Document généré"
@@ -1364,36 +1244,30 @@ Toujours fournir une réponse utile, complète et contextualisée.
 Toujours vérifier les états et les planifications avant de répondre afin d'être intelligent, cohérent et contextuel.
 
 Si la réponse dépasse la limite disponible :
-
 {
   "needs_continuation": true
 }
-
 et continuer proprement lors de la reprise.
 `;
-        
-        // ========================================
-// ✅ GESTION DES COMMANDES D'APPAREILS
+
+// ========================================
+// GESTION DES COMMANDES D'APPAREILS
 // ========================================
 async function handleDeviceCommands(commands, userId) {
   if (!db) {
     console.warn("⚠️ Firebase non disponible, impossible de gérer les appareils");
     return;
   }
-
   for (const cmd of commands) {
-    // ✅ AJOUT D'APPAREIL
     if (cmd.action === 'add') {
       try {
         const deviceName = cmd.name || 'Nouvel Appareil';
         const deviceType = cmd.type || 'lamp';
         const deviceRoom = cmd.room || 'Non spécifié';
-        
         const deviceId = deviceName.toLowerCase()
           .replace(/\s+/g, '_')
           .replace(/[^\w\-]/g, '')
           .substring(0, 30) + '_' + Date.now().toString().slice(-4);
-        
         const deviceTypes = {
           'lamp': { hasBrightness: true, icon: 'lightbulb' },
           'plug': { hasBrightness: false, icon: 'plug' },
@@ -1401,9 +1275,7 @@ async function handleDeviceCommands(commands, userId) {
           'thermostat': { hasBrightness: false, icon: 'temperature-low' },
           'volet': { hasBrightness: false, icon: 'window-maximize' }
         };
-        
         const typeInfo = deviceTypes[deviceType] || deviceTypes['lamp'];
-        
         const newDevice = {
           id: deviceId,
           name: deviceName,
@@ -1414,54 +1286,36 @@ async function handleDeviceCommands(commands, userId) {
           createdAt: Date.now(),
           createdBy: userId
         };
-        
         await set(ref(db, `${DEVICES_META_REF}/${deviceId}`), newDevice);
-        
         await set(ref(db, `${DEVICES_STATES_REF}/${deviceId}`), {
           etat: 'OFF',
           luminosite: 0
         });
-        
         console.log(`✅ Appareil ajouté: ${deviceName} (${deviceId})`);
-        
       } catch (error) {
         console.error(`❌ Erreur ajout appareil:`, error.message);
       }
-    }
-    
-    // ✅ SUPPRESSION D'APPAREIL
-    else if (cmd.action === 'delete' || cmd.action === 'remove') {
+    } else if (cmd.action === 'delete' || cmd.action === 'remove') {
       try {
         const deviceToDelete = cmd.device || cmd.deviceId || cmd.id;
-        
         if (!deviceToDelete) {
           console.warn("⚠️ Aucun appareil spécifié pour la suppression");
           continue;
         }
-        
-        // Supprimer de devicesMeta
         await set(ref(db, `${DEVICES_META_REF}/${deviceToDelete}`), null);
-        
-        // Supprimer de devices (états)
         await set(ref(db, `${DEVICES_STATES_REF}/${deviceToDelete}`), null);
-        
-        // Supprimer du planning si existant
         const planningSnapshot = await get(ref(db, PLANNING_REF));
         if (planningSnapshot.exists()) {
           const planning = planningSnapshot.val();
           const updatedPlanning = {};
-          
           Object.keys(planning).forEach(key => {
             if (planning[key].device !== deviceToDelete) {
               updatedPlanning[key] = planning[key];
             }
           });
-          
           await set(ref(db, PLANNING_REF), updatedPlanning);
         }
-        
         console.log(`✅ Appareil supprimé: ${deviceToDelete}`);
-        
       } catch (error) {
         console.error(`❌ Erreur suppression appareil:`, error.message);
       }
@@ -1470,52 +1324,38 @@ async function handleDeviceCommands(commands, userId) {
 }
 
 // ========================================
-// ✅ GESTION INTELLIGENTE DES PLANIFICATIONS (V12)
+// GESTION INTELLIGENTE DES PLANIFICATIONS
 // ========================================
 async function handlePlanningCommands(commands) {
   if (!commands || commands.length === 0) return;
-  
-  // ✅ Anti-duplication basique
   const uniqueCommands = [];
   const seen = new Set();
-  
   for (const cmd of commands) {
-    // On crée une clé unique incluant la fréquence pour éviter les doublons
     let key = `${cmd.action}-${cmd.device}-${cmd.time}`;
     if (cmd.frequency) key += `-${cmd.frequency}`;
     if (cmd.daysOfWeek) key += `-${cmd.daysOfWeek.join(',')}`;
-    
     if (!seen.has(key)) {
       seen.add(key);
       uniqueCommands.push(cmd);
     }
   }
-  
   for (const cmd of uniqueCommands) {
-    
-    // 1. SUPPRESSION DE TOUTES LES TÂCHES
     if (cmd.action === 'delete_all') {
       console.log('🗑️ Suppression de TOUTES les planifications');
       if (db) await set(ref(db, PLANNING_REF), null);
       continue;
     }
-    
-    // 2. SUPPRESSION SPÉCIFIQUE
     if (cmd.action === 'delete_specific') {
       console.log(`🗑️ Suppression spécifique: ${cmd.device}`);
       if (!db) continue;
-      
       try {
         const snapshot = await get(ref(db, PLANNING_REF));
         if (snapshot.exists()) {
           const plans = snapshot.val();
           for (const [id, p] of Object.entries(plans)) {
-            // Si une heure est précisée, on supprime seulement cette heure
             if (cmd.time && p.device === cmd.device && p.time === cmd.time) {
               await remove(ref(db, `${PLANNING_REF}/${id}`));
-            } 
-            // Sinon on supprime tout pour cet appareil
-            else if (!cmd.time && p.device === cmd.device) {
+            } else if (!cmd.time && p.device === cmd.device) {
               await remove(ref(db, `${PLANNING_REF}/${id}`));
             }
           }
@@ -1523,40 +1363,28 @@ async function handlePlanningCommands(commands) {
       } catch (e) { console.error(e); }
       continue;
     }
-    
-    // 3. AJOUT D'UNE TÂCHE (ROUTINE OU UNIQUE)
     if (cmd.action === 'add') {
       console.log(`📅 Ajout Planification: ${cmd.device} à ${cmd.time} (${cmd.frequency || 'once'})`);
-      
-      // ✅ CORRECTION : On détermine l'état ON/OFF ici
       let finalState = 'OFF';
       if (cmd.actionType && cmd.actionType.toLowerCase() === 'allumer') finalState = 'ON';
-      if (cmd.action === 'ON') finalState = 'ON'; // Sécurité
-
-      // Construction de l'objet selon le format du frontend
-      const payload = { 
-        device: cmd.device, 
-        time: cmd.time, 
-        action: finalState, // ✅ Sera "ON" ou "OFF", jamais "add"
+      if (cmd.action === 'ON') finalState = 'ON';
+      const payload = {
+        device: cmd.device,
+        time: cmd.time,
+        action: finalState,
         actionType: cmd.actionType || (finalState === 'ON' ? 'allumer' : 'éteindre'),
         power: cmd.power !== null && cmd.power !== undefined ? parseInt(cmd.power) : 100,
-        frequency: cmd.frequency || 'once', // daily, weekly, monthly, once
-        createdAt: Date.now() 
+        frequency: cmd.frequency || 'once',
+        createdAt: Date.now()
       };
-
-      // Gestion des jours spécifiques (Hebdo)
       if (payload.frequency === 'weekly' && Array.isArray(cmd.daysOfWeek)) {
-        payload.daysOfWeek = cmd.daysOfWeek; // ex: [1, 3, 5]
+        payload.daysOfWeek = cmd.daysOfWeek;
       }
-
-      // Gestion de la date cible (Une fois)
       if (payload.frequency === 'once' && cmd.targetDate) {
-        payload.targetDate = cmd.targetDate; // YYYY-MM-DD
+        payload.targetDate = cmd.targetDate;
       } else if (payload.frequency === 'once' && !cmd.targetDate) {
-        // Si l'IA n'a pas mis de date, on met la date du jour par défaut
         payload.targetDate = new Date().toISOString().split('T')[0];
       }
-      
       if (db) {
         try {
           await push(ref(db, PLANNING_REF), payload);
@@ -1596,14 +1424,14 @@ function deduplicatePlanning(plans) {
 }
 
 function jsonErrorDefaults() {
-  return { 
-    execute: [], 
-    planning_commands: [], 
-    device_commands: [], 
+  return {
+    execute: [],
+    planning_commands: [],
+    device_commands: [],
     needs_continuation: false,
     continuation_context: null,
-    suggestions: [], 
-    source: "error" 
+    suggestions: [],
+    source: "error"
   };
 }
 
@@ -1617,13 +1445,9 @@ async function chatWithGemini(userMessage, devices, userId, sessionId, attachmen
   
   try {
       if (!db) throw new Error("DB non initialisée");
-      
-      // ✅ Récupérer les états des appareils
       const statesSnapshot = await get(ref(db, DEVICES_STATES_REF));
       realDeviceStates = statesSnapshot.val() || {};
       console.log(`🔥 États réels récupérés: ${Object.keys(realDeviceStates).length} appareils`);
-      
-      // ✅ Récupérer les planifications actuelles
       const planningSnapshot = await get(ref(db, PLANNING_REF));
       if (planningSnapshot.exists()) {
         const planningObj = planningSnapshot.val();
@@ -1633,7 +1457,6 @@ async function chatWithGemini(userMessage, devices, userId, sessionId, attachmen
         }));
         console.log(`📅 Planifications actuelles: ${currentPlanning.length}`);
       }
-      
   } catch (e) {
       console.error("❌ ERREUR FIREBASE:", e.message);
       realDeviceStates = {};
@@ -1646,8 +1469,6 @@ async function chatWithGemini(userMessage, devices, userId, sessionId, attachmen
 
   const beninTime = await getBeninTime();
   const contextAnalysis = analyzeContext(userMessage, realDeviceStates, beninTime);
-
-  // ✅ Historique récupéré une seule fois (réutilisé pour la décision de recherche ET pour le chat)
   const historyFromFirebase = await getHistoryFromFirebase(userId, sessionId);
 
   let webResults = [];
@@ -1680,10 +1501,10 @@ async function chatWithGemini(userMessage, devices, userId, sessionId, attachmen
                 reply: "### 👋 Recevez mes chaleureuses salutations !\n\nJe suis **Intellia**, votre assistant universel. Comment puis-je vous aider aujourd'hui ?",
                 needs_continuation: false,
                 continuation_context: null,
-                execute: [], 
-                planning_commands: [], 
-                device_commands: [], 
-                suggestions: [], 
+                execute: [],
+                planning_commands: [],
+                device_commands: [],
+                suggestions: [],
                 source: "cloud"
               })}] 
           },
@@ -1696,7 +1517,6 @@ async function chatWithGemini(userMessage, devices, userId, sessionId, attachmen
         },
       });
       
-      // ✅ Préparer la liste des planifications pour l'IA
       let planningsText = "Aucune planification actuellement.";
       if (currentPlanning.length > 0) {
         planningsText = currentPlanning.map(p => {
@@ -1710,7 +1530,6 @@ async function chatWithGemini(userMessage, devices, userId, sessionId, attachmen
       
       let metadataPrompt;
       
-      // ✅ MODE CONTINUATION
       if (continuationMode) {
         metadataPrompt = `
 [MODE: CONTINUATION]
@@ -1720,7 +1539,6 @@ async function chatWithGemini(userMessage, devices, userId, sessionId, attachmen
 MESSAGE: "${userMessage}"
 `;
       } else {
-        // ✅ MODE NORMAL
         metadataPrompt = `
 [Heure: ${beninTime.formatted}]
 [Température Lokossa TEMPS RÉEL: ${beninTime.temperature.temperature}°C (${beninTime.temperature.description}), Ressenti: ${beninTime.temperature.feels_like}°C, Humidité: ${beninTime.temperature.humidity}%, Source: ${beninTime.temperature.source}]
@@ -1740,14 +1558,12 @@ MESSAGE: "${userMessage}"
 
       const promptParts = [ { text: metadataPrompt } ];
       
-      // ✅ Ajouter les pièces jointes seulement en mode normal
       if (!continuationMode) {
         for (const att of attachments) {
           if (att.type === 'image') {
             const parsed = parseDataUri(att.data);
             if (parsed) promptParts.push({ inlineData: { mimeType: parsed.mimeType, data: parsed.data } });
-          } 
-          else if (att.type === 'file') {
+          } else if (att.type === 'file') {
             const fileContent = await parseFileAttachment(att);
             promptParts.push({ text: `\n[DEBUT FICHIER: ${att.name}]\n${fileContent}\n[FIN FICHIER]\n` });
           }
@@ -1759,9 +1575,33 @@ MESSAGE: "${userMessage}"
       const result = await chat.sendMessage(promptParts, { signal: controller.signal });
       clearTimeout(timeout);
 
-      return { 
-        success: true, 
-        data: result.response.text(), 
+      // ✅ AJOUT v10.1 : Traitement des métadonnées de document
+      let aiText = result.response.text();
+      try {
+        // Essayer de parser le JSON pour détecter un document
+        let parsed = JSON.parse(aiText);
+        if (parsed.reply) {
+          const docMatch = parsed.reply.match(/<DOCUMENT_HTML>([\s\S]*?)<\/DOCUMENT_HTML>/);
+          if (docMatch) {
+            const htmlContent = docMatch[1].trim();
+            const metadata = extractDocumentMetadata(htmlContent);
+            parsed.document = {
+              html: htmlContent,
+              title: metadata.title,
+              type: metadata.type,
+              docx_url: '/api/download/docx'
+            };
+            // On garde le reply tel quel, on ajoute juste le champ document
+            aiText = JSON.stringify(parsed);
+          }
+        }
+      } catch (e) {
+        // Si ce n'est pas du JSON, on ne fait rien
+      }
+
+      return {
+        success: true,
+        data: aiText,
         hadWebResults: webResults.length > 0,
       };
 
@@ -1782,14 +1622,14 @@ MESSAGE: "${userMessage}"
 // ========================================
 app.post('/api/chat', async (req, res) => {
   try {
-    let { 
-      message, 
-      key, 
+    let {
+      message,
+      key,
       devices = [],
       deviceStates = {},
-      userId, 
-      sessionId, 
-      attachments = [], 
+      userId,
+      sessionId,
+      attachments = [],
       preferences = {},
       continuationMode = false
     } = req.body;
@@ -1812,15 +1652,14 @@ app.post('/api/chat', async (req, res) => {
     console.log(`📡 APPAREILS: ${devices.length}`);
     console.log(`🔄 MODE: ${continuationMode ? 'CONTINUATION' : 'NORMAL'}`);
 
-    // ✅ TRAITEMENT NORMAL
     const startTime = Date.now();
     const result = await chatWithGemini(message, devices, userId, sessionId, attachments, preferences, continuationMode);
 
     if (!result.success) {
       console.log('⚠️ Gemini indisponible');
-      return res.json({ 
-        reply: "### ❌ Service temporairement indisponible\n\nVeuillez réessayer dans quelques instants.", 
-        ...jsonErrorDefaults() 
+      return res.json({
+        reply: "### ❌ Service temporairement indisponible\n\nVeuillez réessayer dans quelques instants.",
+        ...jsonErrorDefaults()
       });
     }
 
@@ -1833,18 +1672,17 @@ app.post('/api/chat', async (req, res) => {
     } catch (parseError) {
       console.warn('⚠️ Première tentative de parsing JSON échouée, nettoyage...');
       const cleaned = aiText.replace(/^```json\s*\n?/, '').replace(/\n?```\s*$/, '').trim();
-      try { 
-        aiJson = JSON.parse(cleaned); 
-      } catch (secondError) { 
+      try {
+        aiJson = JSON.parse(cleaned);
+      } catch (secondError) {
         console.error('❌ Parsing JSON impossible:', secondError.message);
-        return res.json({ 
-          reply: "Désolé, je n'ai pas pu formuler ma réponse correctement. Pouvez-vous reformuler votre demande ?", 
-          ...jsonErrorDefaults() 
+        return res.json({
+          reply: "Désolé, je n'ai pas pu formuler ma réponse correctement. Pouvez-vous reformuler votre demande ?",
+          ...jsonErrorDefaults()
         });
       }
     }
 
-    // ✅ Valeurs par défaut et nettoyage
     aiJson.reply = aiJson.reply || "Commande reçue.";
     aiJson.execute = aiJson.execute || [];
     aiJson.planning_commands = aiJson.planning_commands || [];
@@ -1853,25 +1691,17 @@ app.post('/api/chat', async (req, res) => {
     aiJson.needs_continuation = aiJson.needs_continuation || false;
     aiJson.continuation_context = aiJson.continuation_context || null;
     
-    // ✅ Déduplication des planifications
     aiJson.planning_commands = deduplicatePlanning(aiJson.planning_commands);
     
-    // ✅ Traiter les commandes d'appareils (AJOUT + SUPPRESSION)
     if (aiJson.device_commands && aiJson.device_commands.length > 0) {
       await handleDeviceCommands(aiJson.device_commands, userId);
     }
     
-    // ✅ Traiter les commandes de planning (AJOUT + SUPPRESSION INTELLIGENTE)
     if (aiJson.planning_commands && aiJson.planning_commands.length > 0) {
-      // 1. Le serveur exécute l'ajout PROPREMENT (avec ON/OFF)
       await handlePlanningCommands(aiJson.planning_commands);
-      
-      // 2. 🛑 ON VIDE LA LISTE pour que le client ne fasse RIEN
-      // (Cela empêche le bug "ADD" du côté client)
-      aiJson.planning_commands = []; 
+      aiJson.planning_commands = [];
     }
     
-    // ✅ Détection automatique de troncature si l'IA n'a pas mis needs_continuation
     if (!aiJson.needs_continuation && aiJson.reply && detectTruncation(aiJson.reply)) {
       console.log('🔍 Troncature automatique détectée par le serveur');
       aiJson.needs_continuation = true;
@@ -1892,6 +1722,9 @@ app.post('/api/chat', async (req, res) => {
     console.log(`💡 Suggestions: ${aiJson.suggestions.length}`);
     console.log(`📏 Reply Length: ${aiJson.reply.length} chars`);
     console.log(`🔄 Needs Continuation: ${aiJson.needs_continuation}`);
+    if (aiJson.document) {
+      console.log(`📄 Document: ${aiJson.document.title} (${aiJson.document.type})`);
+    }
     console.log('└────────────────────────────────────────\n');
 
     res.json(aiJson);
@@ -1899,10 +1732,29 @@ app.post('/api/chat', async (req, res) => {
   } catch (error) {
     console.error('💥 ERREUR:', error.message);
     console.error(error.stack);
-    res.status(500).json({ 
-      reply: "### ❌ Erreur interne\n\nUne erreur s'est produite. Veuillez réessayer.", 
-      ...jsonErrorDefaults() 
+    res.status(500).json({
+      reply: "### ❌ Erreur interne\n\nUne erreur s'est produite. Veuillez réessayer.",
+      ...jsonErrorDefaults()
     });
+  }
+});
+
+// ========================================
+// 📥 TÉLÉCHARGEMENT DOCX (AJOUT v10.1)
+// ========================================
+app.post('/api/download/docx', async (req, res) => {
+  try {
+    const { html } = req.body;
+    if (!html) {
+      return res.status(400).json({ error: 'HTML manquant' });
+    }
+    const buffer = await convertHtmlToDocx(html);
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+    res.setHeader('Content-Disposition', 'attachment; filename=document.docx');
+    res.send(buffer);
+  } catch (error) {
+    console.error('❌ Erreur génération DOCX:', error.message);
+    res.status(500).json({ error: 'Erreur lors de la génération du DOCX' });
   }
 });
 
@@ -1913,9 +1765,9 @@ app.get('/api/health', async (req, res) => {
   const availableKeys = API_KEYS.filter(k => !k.quotaExceeded).length;
   const beninTime = await getBeninTime();
   
-  res.json({ 
-    status: 'ok', 
-    version: '10.0-continuation',
+  res.json({
+    status: 'ok',
+    version: '10.1-docx',
     features: {
       gemini: API_KEYS.length > 0,
       imageGeneration: false,
@@ -1935,10 +1787,13 @@ app.get('/api/health', async (req, res) => {
       autoDeleteDevices: true,
       intelligentPlanningDeletion: true,
       lokossaTemperature: true,
+      // ✅ AJOUT v10.1
+      documentDownload: "HTML + DOCX",
+      documentMetadata: true,
       supportedFiles: "PDF, DOCX, TXT, HTML, JS, JSON, CSS, XLSX, CSV, Images",
       maxTokens: 65536
     },
-    keys: { 
+    keys: {
       gemini: { total: API_KEYS.length, available: availableKeys }
     },
     time: {
@@ -1946,13 +1801,11 @@ app.get('/api/health', async (req, res) => {
       formatted: beninTime.formatted,
       temperature: beninTime.temperature
     },
-    improvements_v10: {
-      long_content_generation: "✅ Documents et code jusqu'à 3000+ lignes",
-      continuation_system: "✅ Système de continuation automatique (comme Claude)",
-      truncation_detection: "✅ Détection intelligente de contenu incomplet",
-      continue_button: "✅ Bouton 'Continuer' automatique côté client",
-      no_restart: "✅ L'IA continue exactement où elle s'est arrêtée",
-      model: "gemini-2.0-flash-exp (experimental, 65536 tokens)"
+    improvements_v10_1: {
+      document_cards: "✅ Affichage en carte dans le frontend",
+      docx_generation: "✅ Téléchargement en DOCX",
+      metadata_extraction: "✅ Titre et type du document",
+      preview_modal: "✅ Aperçu en modale avec mode nuit"
     }
   });
 });
@@ -1962,7 +1815,7 @@ app.get('/api/health', async (req, res) => {
 // ========================================
 app.listen(PORT, () => {
   console.log('\n🏠 ╔═══════════════════════════════════════╗');
-  console.log('   ║  INTELLIA v10.0 - SYSTÈME ARTIFACTS  ║');
+  console.log('   ║  INTELLIA v10.1 - SYSTÈME ARTIFACTS  ║');
   console.log('   ╚═══════════════════════════════════════╝');
   console.log(`\n   🚀 Serveur: http://localhost:${PORT}`);
   console.log(`   🔑 Clés Gemini: ${API_KEYS.length}`);
@@ -1975,17 +1828,18 @@ app.listen(PORT, () => {
   console.log(`   ➕ Auto Add Devices: Activé`);
   console.log(`   🗑️ Auto Delete Devices: Activé`);
   console.log(`   🌡️ Température Lokossa: Temps réel`);
-  console.log(`   📄 Génération de documents: ✅ ACTIVÉE`);
+  console.log(`   📄 Génération de documents: ✅ ACTIVÉE (HTML)`);
+  console.log(`   📥 Téléchargement DOCX: ✅ ACTIVÉ`);
+  console.log(`   📋 Métadonnées documents: ✅ ACTIVÉES`);
   console.log(`   💻 Génération de code long: ✅ ACTIVÉE`);
   console.log(`   🔄 Système de continuation: ✅ ACTIVÉ`);
   console.log(`   🎯 Détection troncature: ✅ AUTOMATIQUE`);
   console.log(`   📏 Capacité: ILLIMITÉE (avec continuation)`);
   console.log(`   ✅ Output Markdown: Activé`);
   console.log(`   🎯 MaxTokens: 65536 (MAXIMUM)`);
-  console.log(`\n   ✅ NOUVEAUTÉS v10.0:`);
-  console.log(`   • Routines (Daily/Weekly): SUPPORTÉ`);
-  console.log(`   • Correction Doublons Planning: ✅ ACTIVÉE`);
-  console.log(`   • Correction Action ADD -> ON/OFF: ✅ ACTIVÉE`);
+  console.log(`\n   ✅ NOUVEAUTÉS v10.1:`);
+  console.log(`   • Cartes documents dans le chat`);
+  console.log(`   • Téléchargement DOCX`);
+  console.log(`   • Métadonnées (titre, type)`);
+  console.log(`   • Aperçu en modale avec mode nuit`);
 });
-
-
