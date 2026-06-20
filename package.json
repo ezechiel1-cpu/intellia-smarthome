@@ -19,6 +19,7 @@
     "@google/generative-ai": "^0.21.0",
     "firebase": "^10.12.2",
     "pdf-parse": "^1.1.1",
+    "docx": "^8.0.0",
     "mammoth": "^1.7.2"
   },
   "devDependencies": {
