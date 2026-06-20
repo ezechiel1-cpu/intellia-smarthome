@@ -1957,10 +1957,10 @@ function appendChat(role, text, returnElement = false, attachments = []) {
       node.innerHTML = `
         ${documentHtml}
         <div class="doc-actions">
-          <button type="button" class="doc-action-btn" title="Télécharger / Imprimer" aria-label="Télécharger le document" onclick="printDocument(this)">
+          <button type="button" class="doc-action-btn" title="Télécharger / Imprimer" onclick="printDocument(this)">
             <i class="fas fa-download"></i>
           </button>
-          <button type="button" class="doc-action-btn" title="Copier le texte" aria-label="Copier le texte du document" onclick="copyDocumentText(this)">
+          <button type="button" class="doc-action-btn" title="Copier le texte" onclick="copyDocumentText(this)">
             <i class="fas fa-copy"></i>
           </button>
         </div>
@@ -2055,10 +2055,10 @@ function simulateTyping(element, text, enableVoice = true, needsContinuation = f
       element.innerHTML = `
         ${documentHtml}
         <div class="doc-actions">
-          <button type="button" class="doc-action-btn" title="Télécharger / Imprimer" aria-label="Télécharger le document" onclick="printDocument(this)">
+          <button type="button" class="doc-action-btn" title="Télécharger / Imprimer" onclick="printDocument(this)">
             <i class="fas fa-download"></i>
           </button>
-          <button type="button" class="doc-action-btn" title="Copier le texte" aria-label="Copier le texte du document" onclick="copyDocumentText(this)">
+          <button type="button" class="doc-action-btn" title="Copier le texte" onclick="copyDocumentText(this)">
             <i class="fas fa-copy"></i>
           </button>
         </div>
