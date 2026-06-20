@@ -31,9 +31,6 @@
       transition: background 0.3s ease, color 0.3s ease;
     }
     
-    /* ========================================
-       MODE NUIT COMPLET
-       ======================================== */
     body.night-mode {
       background: linear-gradient(135deg, #0e0f13, #0f1724); color: #e2e8f0;
     }
@@ -80,9 +77,6 @@
       background: rgba(255,255,255,0.1);
     }
     
-    /* ========================================
-       BLOCS DE CODE - FOND NOIR (STYLE GEMINI)
-       ======================================== */
     .msg.bot pre {
       background: var(--code-bg) !important;
       color: var(--code-text) !important;
@@ -108,7 +102,6 @@
       border: 1px solid rgba(255, 255, 255, 0.15);
     }
 
-    /* Barre d'actions code */
     .code-actions {
       display: flex;
       justify-content: space-between;
@@ -143,10 +136,6 @@
       color: white;
     }
 
-    /* ========================================
-       ✅ BOUTONS D'ACTION COMPACTS (icône seule)
-       Documents (télécharger/copier) + messages (copier la réponse)
-       ======================================== */
     .doc-actions {
       margin-top: 24px;
       display: flex;
@@ -195,9 +184,6 @@
     .msg-action-btn.is-success { color: var(--success); }
     body.night-mode .msg-action-btn:hover { background: rgba(255,255,255,0.12); color: #fff; }
 
-    /* ========================================
-       ✅ IMPRESSION / TÉLÉCHARGEMENT PDF IN-PAGE
-       ======================================== */
     #print-root { display: none; }
     @media print {
       body.printing-mode * { visibility: hidden !important; }
@@ -251,9 +237,6 @@
     .section { display: none; }
     .section.active { display: block; }
     
-    /* ========================================
-       SECTION CHAT - LAYOUT PRINCIPAL
-       ======================================== */
     #sec-intelligence {
       height: 100%; 
       padding-top: 0; 
@@ -349,9 +332,6 @@
       background: linear-gradient(135deg, #0e0f13, #0f1724);
     }
     
-    /* ========================================
-       NOUVEL EN-TÊTE DE CHAT (avec bouton menu à gauche)
-       ======================================== */
     #chat-header {
       display: flex;
       align-items: center;
@@ -388,13 +368,11 @@
     body.night-mode #chat-header #chat-title {
       color: #e2e8f0;
     }
-    /* Sur desktop, on cache le bouton car la sidebar est déjà visible */
     @media (min-width: 761px) {
       #chat-header #sidebar-toggle-btn {
         display: none;
       }
     }
-    /* Sur mobile, on le laisse visible */
     @media (max-width: 760px) {
       #chat-header #sidebar-toggle-btn {
         display: flex;
@@ -447,9 +425,6 @@
     .remove-attachment { cursor: pointer; font-size: 14px; color: var(--danger); }
     #file-input { display: none; }
 
-    /* ========================================
-       MESSAGES
-       ======================================== */
     .msg { 
       padding: 10px 14px; border-radius: 12px; max-width: 90%; 
       margin-bottom: 10px; word-wrap: break-word; line-height: 1.6;
@@ -486,9 +461,6 @@
       font-family: monospace;
     }
     
-    /* ========================================
-       CARTE DOCUMENT (STYLE CLAUDE)
-       ======================================== */
     .doc-card {
       display: flex;
       align-items: center;
@@ -549,9 +521,6 @@
       }
     }
     
-    /* ========================================
-       BOUTON CONTINUER (STYLE CLAUDE)
-       ======================================== */
     .continue-btn {
       display: inline-flex;
       align-items: center;
@@ -588,9 +557,6 @@
     }
     @keyframes blink { 50% { opacity: 0; } }
     
-    /* ========================================
-       STYLES DOMOTIQUE
-       ======================================== */
     .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
     .card { background: var(--card-bg); border-radius: 12px; padding: 14px; box-shadow: var(--shadow); }
     .chip { display: inline-block; padding: 6px 10px; border-radius: 999px; background: rgba(0,0,0,0.05); margin-right: 8px; font-size: 13px; }
@@ -653,9 +619,6 @@
     }
     .btn-nav.active { color: var(--accent-cyan); }
     
-    /* ========================================
-       SWITCH 3D
-       ======================================== */
     .switch-3d { position: relative; display: inline-block; width: 50px; height: 24px; }
     .switch-3d input { opacity: 0; width: 0; height: 0; }
     .slider-3d {
@@ -688,9 +651,6 @@
       100% { transform: scale(1); opacity: 1; }
     }
     
-    /* ========================================
-       DOCUMENTS HTML GÉNÉRÉS (COMPLETS)
-       ======================================== */
     .doc-cv, .doc-lettre, .doc-rapport, .doc-facture, .doc-contrat {
       background: white;
       padding: 40px;
@@ -713,7 +673,6 @@
       border: 1px solid rgba(255, 255, 255, 0.1);
     }
 
-    /* CV */
     .doc-cv h1 {
       color: #4361ee;
       font-size: 32px;
@@ -797,7 +756,6 @@
       color: #e2e8f0;
     }
 
-    /* Lettre */
     .doc-lettre .expediteur,
     .doc-lettre .destinataire,
     .doc-lettre .lieu-date,
@@ -813,7 +771,6 @@
     .doc-lettre .corps p { text-align: justify; margin-bottom: 15px; }
     .doc-lettre .formule { margin-top: 40px; }
 
-    /* Rapport */
     .doc-rapport h1 {
       text-align: center;
       color: #4361ee;
@@ -860,7 +817,6 @@
       border-bottom-color: var(--accent-cyan);
     }
 
-    /* Facture */
     .doc-facture .facture-header {
       display: flex;
       justify-content: space-between;
@@ -945,7 +901,6 @@
       border-left-color: #ffc107;
     }
 
-    /* Contrat */
     .doc-contrat h1 {
       text-align: center;
       color: #4361ee;
@@ -981,7 +936,6 @@
     }
     body.night-mode .doc-contrat .meta { color: #94a3b8; }
 
-    /* Menu vocal mobile */
     .voice-btn-desktop {
       display: flex;
     }
@@ -1018,9 +972,6 @@
       color: #4361ee;
     }
 
-    /* ========================================
-       RESPONSIVE
-       ======================================== */
     @media (max-width: 760px) {
       .grid { grid-template-columns: 1fr; }
       .controls { flex-direction: column; }
@@ -1229,9 +1180,6 @@
       }
     }
 
-    /* ========================================
-       LOGIN OVERLAY
-       ======================================== */
     #login-overlay {
       position: fixed; top: 0; left: 0; right: 0; bottom: 0;
       background: linear-gradient(135deg, #f5f7fa, #c3cfe2);
@@ -1270,7 +1218,6 @@
 </head>
 <body>
 
-  <!-- Conteneur pour l'impression -->
   <div id="print-root"></div>
 
   <div id="login-overlay">
@@ -1299,7 +1246,6 @@
         </div>
       </header>
 
-      <!-- SECTION DOMOTIQUE -->
       <section id="sec-domotique" class="section active">
         <div class="grid" style="grid-template-columns:1fr">
           <div>
@@ -1356,7 +1302,6 @@
         </div>
       </section>
 
-      <!-- SECTION INTELLIGENCE / CHAT -->
       <section id="sec-intelligence" class="section">
         <div id="sidebar-overlay"></div>
         
@@ -1374,7 +1319,6 @@
         </div>
         
         <div id="chat-section-container">
-          <!-- NOUVEL EN-TÊTE AVEC BOUTON MENU À GAUCHE -->
           <div id="chat-header">
             <button id="sidebar-toggle-btn"><i class="fas fa-bars"></i></button>
             <span id="chat-title">💬 Assistant IA</span>
@@ -1423,7 +1367,6 @@
               </div>
             </div>
 
-            <!-- Menu déroulant vocal (mobile uniquement) -->
             <div id="voice-dropdown-menu" style="display: none;">
               <button class="voice-menu-item" data-action="push-to-talk">
                 <i class="fas fa-microphone-alt"></i> Enregistrer
@@ -1445,7 +1388,6 @@
         </div>
       </section>
 
-      <!-- SECTION PLANNING -->
       <section id="sec-planning" class="section">
         <div class="two-column">
           <div class="card">
@@ -1502,7 +1444,6 @@
         </div>
       </section>
 
-      <!-- SECTION PARAMÈTRES -->
       <section id="sec-params" class="section">
         <div class="card">
           <h2>Paramètres du Système</h2>
@@ -1579,17 +1520,8 @@
   /*************************************************
    * SmartHome Intelligence - Version 12.0 COMPLET
    * 🎯 ~3500 lignes - Toutes fonctionnalités incluses
-   * ✅ Documents HTML complets (CV, Lettre, Rapport, Facture, Contrat)
-   * ✅ Gestion fichiers avancée (icônes par type)
-   * ✅ Planification avec nettoyage auto
-   * ✅ VoiceEngine complet (push-to-talk + continu)
-   * ✅ Chat multi-sessions Firebase
-   * ✅ Notifications complètes
-   * ✅ Code highlighting avec download
-   * ✅ WebSocket local ESP32
    *************************************************/
 
-  // ======= CONFIG =======
   let RENDER_API;
 
   if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
@@ -1611,14 +1543,12 @@
     appId: "1:197281963087:web:da680779479391d91f1e3a"
   };
 
-  // ======= IMPORT FIREBASE =======
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
   import { getDatabase, ref, set, push, onValue, remove, get, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
   import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
   const el = id => document.getElementById(id);
 
-  // ======= APP STATE =======
   const appState = {
     devices: [], deviceStates: {},
     isNightMode: localStorage.getItem('nightMode') === 'true',
@@ -1653,12 +1583,8 @@
     "Une nouvelle journée commence ! Je suis prêt à vous aider à automatiser vos tâches."
   ];
   let suggestionIndex = 0;
-// ========================================
-// ✅ FONCTION POUR EXTRAIRE TEXTE LISIBLE
-// (Ignore HTML/CSS/Code pour la lecture vocale)
-// ========================================
+
 function extractReadableText(content) {
-  // 1. Si c'est un document généré (CV, Facture, etc.)
   if (content.includes('class="doc-cv"') || 
       content.includes('class="doc-facture"') ||
       content.includes('class="doc-lettre"') ||
@@ -1668,28 +1594,23 @@ function extractReadableText(content) {
     const tempDiv = document.createElement('div');
     tempDiv.innerHTML = content;
     
-    // ✅ ÉTAPE 1 : Supprimer les éléments non lisibles
     tempDiv.querySelectorAll('style, script, button, .no-print, .code-actions, pre, code, .code-action-btn').forEach(el => el.remove());
     
-    // ✅ ÉTAPE 2 : Récupérer le texte brut
     let text = tempDiv.innerText || tempDiv.textContent || '';
     
-    // ✅ ÉTAPE 3 : Nettoyage
     text = text
-      .replace(/\s+/g, ' ')           // Espaces multiples
-      .replace(/[\n\r]+/g, ' ')       // Sauts de ligne
+      .replace(/\s+/g, ' ')
+      .replace(/[\n\r]+/g, ' ')
       .trim();
     
     return text.substring(0, 100000);
   }
 
-  // 2. Si c'est du Markdown avec blocs de code (```)
   if (content.includes('```')) {
     const withoutCode = content.replace(/```[\s\S]*?```/g, ' ');
     return extractReadableText(withoutCode);
   }
 
-  // 3. Contenu Markdown standard
   const html = marked.parse(content);
   const tempDiv = document.createElement('div');
   tempDiv.innerHTML = html;
@@ -1703,9 +1624,6 @@ function extractReadableText(content) {
   return text.substring(0, 100000);
 }
 
-// ========================================
-// ✅ UTILITAIRES PARTAGÉS : copie presse-papier + retour visuel
-// ========================================
 function copyTextToClipboard(text, btnElement) {
   const onSuccess = () => { if (btnElement) flashButtonSuccess(btnElement); };
   const onFail = () => {
@@ -1743,9 +1661,6 @@ function flashButtonSuccess(btn, duration = 1500) {
   }, duration);
 }
 
-// ========================================
-// ✅ COPIER LA RÉPONSE D'UN MESSAGE
-// ========================================
 function getMessagePlainText(node) {
   const clone = node.cloneNode(true);
   clone.querySelectorAll('button, .msg-actions, .doc-actions, .code-actions, .continue-btn').forEach(el => el.remove());
@@ -1764,24 +1679,21 @@ function addMessageCopyAction(node) {
   const actions = document.createElement('div');
   actions.className = 'msg-actions';
   actions.innerHTML = `
-    <button type="button" class="msg-action-btn" title="Copier" aria-label="Copier la réponse" onclick="copyMessageText(this)">
+    <button type="button" class="msg-action-btn" title="Copier" aria-label="Copier la réponse">
       <i class="fas fa-copy"></i>
     </button>
   `;
+  const copyBtn = actions.querySelector('.msg-action-btn');
+  copyBtn.addEventListener('click', function() {
+    const node = this.closest('.msg');
+    if (!node) return;
+    const text = getMessagePlainText(node);
+    if (!text) return;
+    copyTextToClipboard(text, this);
+  });
   node.appendChild(actions);
 }
 
-window.copyMessageText = function(btnElement) {
-  const node = btnElement.closest('.msg');
-  if (!node) return;
-  const text = getMessagePlainText(node);
-  if (!text) return;
-  copyTextToClipboard(text, btnElement);
-};
-
-// ========================================
-// ✅ ADAPTATION MODE NUIT POUR DOCUMENTS
-// ========================================
 function applyNightModeToDoc(container) {
   const isNight = appState.isNightMode;
   const docEl = container.querySelector(
@@ -1823,9 +1735,6 @@ function applyNightModeToDoc(container) {
   }
 }
 
-// ========================================
-// ✅ IMPRESSION / TÉLÉCHARGEMENT PDF IN-PAGE
-// ========================================
 window.printDocument = function(btnElement) {
   let restoreFn = null;
   try {
@@ -1911,9 +1820,6 @@ window.printDocument = function(btnElement) {
   }
 };
 
-// ========================================
-// ✅ FONCTION COPIE TEXTE DOCUMENT
-// ========================================
 window.copyDocumentText = function(btnElement) {
   try {
     let docElement = null;
@@ -1952,9 +1858,6 @@ window.copyDocumentText = function(btnElement) {
   }
 };
 
-// ========================================
-// ✅ TÉLÉCHARGEMENT IMAGE
-// ========================================
 window.downloadImage = function(imageUrl, filename = null) {
   if (!filename) {
     filename = `intellia_image_${Date.now()}.png`;
@@ -1979,9 +1882,6 @@ window.downloadImage = function(imageUrl, filename = null) {
     });
 };
 
-// ========================================
-// ✅ AJOUT BOUTONS COPIER SUR CODE
-// ========================================
 function addCopyButtons(element) {
   const codeBlocks = element.querySelectorAll('pre');
   codeBlocks.forEach(block => {
@@ -2007,48 +1907,69 @@ function addCopyButtons(element) {
     
     const actions = document.createElement('div');
     actions.className = 'code-actions';
-    actions.innerHTML = `
-      <span>${language}</span>
-      <div class="code-actions-buttons">
-        <button class="code-action-btn" onclick="
-          navigator.clipboard.writeText(this.closest('pre').querySelector('code').innerText)
-            .then(() => { this.innerHTML = '<i class=\\'fas fa-check\\'></i> Copié'; setTimeout(() => { this.innerHTML = '<i class=\\'fas fa-copy\\'></i> Copier'; }, 2000); });
-        ">
-          <i class="fas fa-copy"></i> Copier
-        </button>
-        <button class="code-action-btn" onclick="
-          const code = this.closest('pre').querySelector('code').innerText;
-          const blob = new Blob([code], { type: 'text/plain' });
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = 'code.${extension}';
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-          URL.revokeObjectURL(url);
-        ">
-          <i class="fas fa-download"></i> Télécharger
-        </button>
-      </div>
-    `;
+    
+    const langSpan = document.createElement('span');
+    langSpan.textContent = language;
+    
+    const buttonsDiv = document.createElement('div');
+    buttonsDiv.className = 'code-actions-buttons';
+    
+    const copyBtn = document.createElement('button');
+    copyBtn.className = 'code-action-btn';
+    copyBtn.innerHTML = '<i class="fas fa-copy"></i> Copier';
+    copyBtn.addEventListener('click', function() {
+      const codeText = this.closest('pre').querySelector('code').innerText;
+      navigator.clipboard.writeText(codeText)
+        .then(() => {
+          this.innerHTML = '<i class="fas fa-check"></i> Copié';
+          setTimeout(() => {
+            this.innerHTML = '<i class="fas fa-copy"></i> Copier';
+          }, 2000);
+        })
+        .catch(() => {
+          const textarea = document.createElement('textarea');
+          textarea.value = codeText;
+          document.body.appendChild(textarea);
+          textarea.select();
+          document.execCommand('copy');
+          document.body.removeChild(textarea);
+          this.innerHTML = '<i class="fas fa-check"></i> Copié';
+          setTimeout(() => {
+            this.innerHTML = '<i class="fas fa-copy"></i> Copier';
+          }, 2000);
+        });
+    });
+    
+    const downloadBtn = document.createElement('button');
+    downloadBtn.className = 'code-action-btn';
+    downloadBtn.innerHTML = '<i class="fas fa-download"></i> Télécharger';
+    downloadBtn.addEventListener('click', function() {
+      const codeText = this.closest('pre').querySelector('code').innerText;
+      const blob = new Blob([codeText], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `code.${extension}`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    });
+    
+    buttonsDiv.appendChild(copyBtn);
+    buttonsDiv.appendChild(downloadBtn);
+    actions.appendChild(langSpan);
+    actions.appendChild(buttonsDiv);
     
     block.insertBefore(actions, block.firstChild);
   });
 }
 
-// ========================================
-// ✅ NOUVELLES FONCTIONS POUR DOCUMENTS (CARTES)
-// ========================================
-
-// Extraire les métadonnées du document HTML
 function extractDocumentMetadata(html) {
-  // Extraire le titre
   const titleMatch = html.match(/<title>(.*?)<\/title>/i) || 
                      html.match(/<h1[^>]*>(.*?)<\/h1>/i);
   const title = titleMatch ? titleMatch[1].trim() : 'Document';
   
-  // Déterminer le type
   let type = 'document';
   if (html.includes('doc-cv') || html.includes('CV')) type = 'cv';
   else if (html.includes('doc-lettre') || html.includes('Lettre')) type = 'lettre';
@@ -2059,7 +1980,12 @@ function extractDocumentMetadata(html) {
   return { title, type };
 }
 
-// Afficher une carte document (style Claude)
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML.replace(/"/g, '&quot;');
+}
+
 function appendDocumentCard(htmlContent, metadata) {
   const target = document.getElementById('chatFullWindow');
   if (!target) return;
@@ -2067,11 +1993,10 @@ function appendDocumentCard(htmlContent, metadata) {
   const node = document.createElement('div');
   node.className = 'msg bot';
   
-  // Types et icônes
   const typeMap = {
     cv: { icon: 'fa-file-pdf', color: '#e74c3c', label: 'CV' },
     lettre: { icon: 'fa-file-alt', color: '#3498db', label: 'Lettre' },
-    rapport: { icon: 'fa-file-chart-pie', color: '#2ecc71', label: 'Rapport' },
+    rapport: { icon: 'fa-file-lines', color: '#2ecc71', label: 'Rapport' },
     facture: { icon: 'fa-file-invoice', color: '#f39c12', label: 'Facture' },
     contrat: { icon: 'fa-file-signature', color: '#9b59b6', label: 'Contrat' }
   };
@@ -2081,38 +2006,58 @@ function appendDocumentCard(htmlContent, metadata) {
   const title = metadata.title || 'Document';
   const size = Math.round(htmlContent.length / 1024);
   
-  // Encoder le HTML pour le passer dans les onclick
   const encodedHtml = encodeURIComponent(htmlContent);
+  const safeTitle = escapeHtml(title);
   
   node.innerHTML = `
-    <div class="doc-card">
+    <div class="doc-card" data-html="${encodedHtml}" data-title="${safeTitle}" data-type="${type}">
       <div class="doc-card-icon" style="background: ${info.color}20; color: ${info.color};">
         <i class="fas ${info.icon}"></i>
       </div>
       <div class="doc-card-info">
-        <div class="doc-card-title">${title}</div>
+        <div class="doc-card-title">${safeTitle}</div>
         <div class="doc-card-meta">${info.label} · ${size} KB</div>
       </div>
       <div class="doc-card-actions">
-        <button class="btn primary" onclick="previewDocument(this, '${encodedHtml}')" style="padding: 8px 14px;">
+        <button class="btn primary preview-btn">
           <i class="fas fa-eye"></i> Aperçu
         </button>
-        <button class="btn" onclick="downloadDocument(this, '${encodedHtml}', '${title}', '${type}')" style="padding: 8px 14px;">
+        <button class="btn download-btn">
           <i class="fas fa-download"></i> Télécharger
         </button>
       </div>
     </div>
   `;
   
+  const card = node.querySelector('.doc-card');
+  const previewBtn = card.querySelector('.preview-btn');
+  const downloadBtn = card.querySelector('.download-btn');
+  
+  previewBtn.addEventListener('click', function() {
+    const html = decodeURIComponent(card.dataset.html);
+    previewDocument(html);
+  });
+  
+  downloadBtn.addEventListener('click', function() {
+    const html = decodeURIComponent(card.dataset.html);
+    const title = card.dataset.title;
+    const type = card.dataset.type;
+    downloadDocument(html, title, type);
+  });
+  
   target.appendChild(node);
   scrollToBottom();
 }
 
-// Aperçu du document dans une modale
-window.previewDocument = function(btn, encodedHtml) {
-  const html = decodeURIComponent(encodedHtml);
+function previewDocument(html) {
+  let finalHtml = html;
+  if (appState.isNightMode) {
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = html;
+    applyNightModeToDoc(tempDiv);
+    finalHtml = tempDiv.innerHTML;
+  }
   
-  // Créer la modale
   const modal = document.createElement('div');
   modal.style.cssText = `
     position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -2129,7 +2074,6 @@ window.previewDocument = function(btn, encodedHtml) {
     position: relative;
   `;
   
-  // Bouton fermer
   const closeBtn = document.createElement('button');
   closeBtn.innerHTML = '✕';
   closeBtn.style.cssText = `
@@ -2140,11 +2084,9 @@ window.previewDocument = function(btn, encodedHtml) {
   `;
   closeBtn.onclick = () => modal.remove();
   
-  // Contenu du document
   const docDiv = document.createElement('div');
-  docDiv.innerHTML = html;
+  docDiv.innerHTML = finalHtml;
   
-  // Appliquer le mode nuit si actif
   if (appState.isNightMode) {
     applyNightModeToDoc(docDiv);
   }
@@ -2153,29 +2095,22 @@ window.previewDocument = function(btn, encodedHtml) {
   content.appendChild(docDiv);
   modal.appendChild(content);
   
-  // Fermer en cliquant en dehors
   modal.addEventListener('click', (e) => {
     if (e.target === modal) modal.remove();
   });
   
-  // Fermer avec Echap
   modal.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') modal.remove();
   });
   
   document.body.appendChild(modal);
   modal.focus();
-};
+}
 
-// Téléchargement intelligent du document
-window.downloadDocument = function(btn, encodedHtml, title, type) {
-  const html = decodeURIComponent(encodedHtml);
-  
-  // Déterminer l'extension et le type MIME
+function downloadDocument(html, title, type) {
   let ext = 'html';
   let mimeType = 'text/html';
   
-  // Si c'est du code (détection basique)
   const codeMatch = html.match(/<pre[^>]*>.*?<code[^>]*class="language-(\w+)/s);
   if (codeMatch) {
     const lang = codeMatch[1].toLowerCase();
@@ -2188,14 +2123,12 @@ window.downloadDocument = function(btn, encodedHtml, title, type) {
     mimeType = 'text/plain';
   }
   
-  // Pour les documents, on garde .html
   const docTypes = ['cv', 'lettre', 'rapport', 'facture', 'contrat'];
   if (docTypes.includes(type)) {
     ext = 'html';
     mimeType = 'text/html';
   }
   
-  // Créer le blob et télécharger
   const blob = new Blob([html], { type: mimeType });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -2205,15 +2138,8 @@ window.downloadDocument = function(btn, encodedHtml, title, type) {
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
-};
+}
 
-// ========================================
-// FIN NOUVELLES FONCTIONS
-// ========================================
-
-// ========================================
-// ✅ AFFICHAGE DES MESSAGES
-// ========================================
 function appendChat(role, text, returnElement = false, attachments = []) {
   const target = document.getElementById('chatFullWindow');
   if (!target) return;
@@ -2224,18 +2150,16 @@ function appendChat(role, text, returnElement = false, attachments = []) {
   if (role === 'user') {
     if (text) node.textContent = text;
   } else {
-    // ✅ CAS : Document HTML Direct (avec carte)
     const documentHtmlMatch = text.match(/<DOCUMENT_HTML>([\s\S]*?)<\/DOCUMENT_HTML>/);
     if (documentHtmlMatch) {
       const documentHtml = documentHtmlMatch[1].trim();
       const metadata = extractDocumentMetadata(documentHtml);
       appendDocumentCard(documentHtml, metadata);
-      target.appendChild(node); // On ajoute quand même le conteneur vide pour la structure
+      target.appendChild(node);
       scrollToBottom();
       return node;
     }
     
-    // ✅ CAS : Markdown normal
     if (text) {
       const renderedHtml = marked.parse(text, { sanitize: false, gfm: true });
       node.innerHTML = renderedHtml;
@@ -2252,7 +2176,6 @@ function appendChat(role, text, returnElement = false, attachments = []) {
     }
   }
   
-  // Gestion des pièces jointes
   if (attachments && attachments.length > 0) {
     const attachmentsDiv = document.createElement('div');
     attachmentsDiv.style.cssText = 'margin-top: 8px; display: flex; flex-wrap: wrap; gap: 8px;';
@@ -2299,9 +2222,6 @@ function scrollToBottom() {
   }
 }
 
-// ========================================
-// ✅ SIMULATION TYPING AVEC DOCUMENTS
-// ========================================
 function simulateTyping(element, text, enableVoice = true, needsContinuation = false, continuationContext = null) {
   return new Promise((resolve, reject) => {
     
@@ -2311,13 +2231,11 @@ function simulateTyping(element, text, enableVoice = true, needsContinuation = f
       return;
     }
     
-    // ✅ CAS : Document HTML Direct (avec carte)
     const documentHtmlMatch = text.match(/<DOCUMENT_HTML>([\s\S]*?)<\/DOCUMENT_HTML>/);
     if (documentHtmlMatch) {
       const documentHtml = documentHtmlMatch[1].trim();
       const metadata = extractDocumentMetadata(documentHtml);
       
-      // Afficher la carte
       appendDocumentCard(documentHtml, metadata);
       
       element.classList.remove('loading');
@@ -2331,7 +2249,6 @@ function simulateTyping(element, text, enableVoice = true, needsContinuation = f
       return;
     }
     
-    // ✅ CAS : Markdown normal
     if (enableVoice && appState.voiceNotifications) {
       const readableText = extractReadableText(text);
       if (readableText) {
@@ -2363,8 +2280,6 @@ function simulateTyping(element, text, enableVoice = true, needsContinuation = f
     resolve();
   });
 }
-
-// ======= Voice Menu Mobile =======
 
 function updateVoiceMenuState() {
   const menu = el('voice-dropdown-menu');
@@ -2430,9 +2345,6 @@ el('voice-dropdown-menu')?.addEventListener('click', (e) => {
   updateVoiceMenuState();
 });
 
-// ========================================
-// ✅ GESTION DE LA CONTINUATION
-// ========================================
 async function handleContinuation(context) {
   console.log('🔄 Continuation demandée', context);
   
@@ -2473,1546 +2385,1501 @@ async function handleContinuation(context) {
     el('stopAIBtn').style.display = 'none';
   }
 }
-  // ========================================
-  // ✅ FONCTION PRINCIPALE CHAT
-  // ========================================
-  async function handleChatSubmit(message, attachments = []) {
-    if (appState.chatInProgress) return;
-    if (!message && attachments.length === 0) return;
 
-    if (!appState.currentSessionId) {
-      createNewChatSession();
-    }
+async function handleChatSubmit(message, attachments = []) {
+  if (appState.chatInProgress) return;
+  if (!message && attachments.length === 0) return;
+
+  if (!appState.currentSessionId) {
+    createNewChatSession();
+  }
+
+  appState.shouldStopResponse = false; 
+  appState.chatInProgress = true;
+  el('intelliaStatus').textContent = "Assistant: En cours...";
+  el('chat-loading').style.display = 'block';
+  el('chatFullSend').style.display = 'none';
+  el('stopAIBtn').style.display = 'flex'; 
+
+  appendChat('user', message, false, attachments); 
+  el('chatFullInput').value = '';
+  appState.attachments = [];
+  renderAttachmentPreviews();
   
-    appState.shouldStopResponse = false; 
-    appState.chatInProgress = true;
-    el('intelliaStatus').textContent = "Assistant: En cours...";
-    el('chat-loading').style.display = 'block';
-    el('chatFullSend').style.display = 'none';
-    el('stopAIBtn').style.display = 'flex'; 
-  
-    appendChat('user', message, false, attachments); 
-    el('chatFullInput').value = '';
-    appState.attachments = [];
-    renderAttachmentPreviews();
+  try {
+    const reply = await sendToOnline(message, attachments, false);
     
-    try {
-      const reply = await sendToOnline(message, attachments, false);
-      
-      if (!appState.shouldStopResponse) {
-        const botMsgElement = appendChat('bot', '', true);
-        try {
-          const needsContinuation = reply.includes('[SUITE DANS LA PROCHAINE RÉPONSE]') || 
-                                     reply.includes('[À suivre...]') || 
-                                     reply.includes('<!-- CONTINUATION NÉCESSAIRE -->');
-          
-          await simulateTyping(botMsgElement, reply, true, needsContinuation, null);
-        } catch (interruptError) {
-          console.log('⚠️ Typing interrompu');
-        }
-      } else {
-        appendChat('bot', '<em style="color: #e74c3c;">⚠️ Réponse interrompue par l\'utilisateur</em>');
+    if (!appState.shouldStopResponse) {
+      const botMsgElement = appendChat('bot', '', true);
+      try {
+        const needsContinuation = reply.includes('[SUITE DANS LA PROCHAINE RÉPONSE]') || 
+                                   reply.includes('[À suivre...]') || 
+                                   reply.includes('<!-- CONTINUATION NÉCESSAIRE -->');
+        
+        await simulateTyping(botMsgElement, reply, true, needsContinuation, null);
+      } catch (interruptError) {
+        console.log('⚠️ Typing interrompu');
       }
-    } catch (error) {
-      if (!appState.shouldStopResponse) {
-        console.error("Erreur chat:", error);
-        appendChat('bot', "Désolé, une erreur s'est produite.");
-      }
-    } finally {
-      appState.chatInProgress = false;
-      appState.shouldStopResponse = false; 
-      el('chat-loading').style.display = 'none';
-      el('chatFullSend').style.display = 'flex';
-      el('stopAIBtn').style.display = 'none';
+    } else {
+      appendChat('bot', '<em style="color: #e74c3c;">⚠️ Réponse interrompue par l\'utilisateur</em>');
     }
-  }
-  
-  // ========================================
-  // ✅ GESTION VOCALE
-  // ========================================
-  async function handleVoiceSubmit(command) {
-    if (!command) return;
-    if (appState.chatInProgress) {
-      logActivity(`Voix ignorée (chat en cours): "${command}"`);
-      return;
+  } catch (error) {
+    if (!appState.shouldStopResponse) {
+      console.error("Erreur chat:", error);
+      appendChat('bot', "Désolé, une erreur s'est produite.");
     }
-
-    if (!appState.currentSessionId) {
-      createNewChatSession();
-    }
-  
-    appState.shouldStopResponse = false; 
-    appState.chatInProgress = true;
-    el('intelliaStatus').textContent = "Assistant: En cours...";
-    el('chat-loading').style.display = 'block';
-    el('stopAIBtn').style.display = 'flex'; 
-    el('chatFullSend').style.display = 'none'; 
-  
-    appendChat('user', command);
-    logActivity(`Commande vocale: "${command}"`);
-    
-    try {
-      const reply = await sendToOnline(command, [], false);
-      
-      if (!appState.shouldStopResponse) {
-        const botMsgElement = appendChat('bot', '', true);
-        try {
-          const needsContinuation = reply.includes('[SUITE DANS LA PROCHAINE RÉPONSE]') || 
-                                     reply.includes('[À suivre...]');
-          await simulateTyping(botMsgElement, reply, true, needsContinuation, null);
-        } catch (interruptError) {
-          console.log('⚠️ Typing interrompu (voix)');
-        }
-      } else {
-        appendChat('bot', '<em style="color: #e74c3c;">⚠️ Réponse interrompue</em>');
-      }
-    } catch (error) {
-      if (!appState.shouldStopResponse) {
-        console.error("Erreur voix:", error);
-        appendChat('bot', "Désolé, une erreur s'est produite.");
-      }
-    } finally {
-      appState.chatInProgress = false;
-      appState.shouldStopResponse = false;
-      el('chat-loading').style.display = 'none';
-      el('chatFullSend').style.display = 'flex';
-      el('stopAIBtn').style.display = 'none';
-    }
-  }
-
-  // ========================================
-  // ✅ ENVOI API
-  // ========================================
-  async function sendToOnline(message, attachments = [], continuationMode = false) {
-    if (!appState.currentUser) {
-        alert("Erreur: Utilisateur non connecté. Veuillez rafraîchir.");
-        return "Erreur d'authentification.";
-    }
-    
-    const t0 = Date.now();
-    
-    try {
-      const response = await fetch(`${RENDER_API}/api/chat`, {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          message,
-          attachments: attachments,
-          key: AUTH_KEY,
-          devices: appState.devices.map(d => ({ id: d.id, name: d.name, type: d.type, room: d.room })),
-          deviceStates: appState.deviceStates,
-          sessionId: appState.currentSessionId,
-          userId: appState.currentUser.uid,
-          continuationMode: continuationMode,
-          preferences: {
-            voiceNotifications: appState.voiceNotifications
-          }
-        }),
-      });
-      
-      el('intelliaLatency').textContent = `latence: ${Date.now() - t0}ms`;
-      if (!response.ok) throw new Error(`Server error ${response.status}`);
-      const j = await response.json();
-      
-      if (appState.shouldStopResponse) {
-          return "Interrompu.";
-      }
-      
-      await saveMessageToFirebase(message, j.reply, attachments);
-      
-      if (j.suggestions && j.suggestions.length > 0) displaySuggestions(j.suggestions);
-      if (j.planning_commands) handlePlanningCommands(j.planning_commands);
-      if (j.execute) handleExecuteCommands(j.execute);
-      
-      appState.intelliaOnline = true; 
-      el('intelliaStatus').textContent = "Assistant: Connecté";
-      el('statusOnline').textContent = "Assistant : disponible";
-      logActivity(`Assistant a répondu.`);
-      
-      return j.reply || "OK";
-      
-    } catch (e) {
-      if (appState.shouldStopResponse) {
-          return "Interrompu.";
-      }
-      console.warn("sendToOnline error", e);
-      appState.intelliaOnline = false;
-      el('intelliaStatus').textContent = "Assistant: Hors ligne";
-      el('statusOnline').textContent = "Assistant : indisponible";
-      logActivity(`Erreur de connexion Assistant.`);
-      return "Erreur de connexion avec l'Assistant.";
-    }
-  }
-
-  // ========================================
-  // GESTION COMMANDES EXECUTION & PLANNING
-  // ========================================
-  async function handlePlanningCommands(commands) {
-    for (const cmd of commands) {
-      if (cmd.action === 'add') {
-        const p = { device: cmd.device, time: cmd.time, action: cmd.action, power: cmd.power, createdAt: Date.now() };
-        if (db) await push(ref(db, planningRefPath), p);
-      } else if (cmd.action === 'delete_all') {
-        await deleteAllPlans();
-      }
-    }
-  }
-  
-  function handleExecuteCommands(commands) {
-    for (const exec of (Array.isArray(commands) ? commands : [commands])) {
-      const [devId, action, value] = exec.split('|');
-      if (appState.devices.some(d => d.id === devId)) {
-        sendCommand(devId, action, value ? parseInt(value) : null);
-      }
-    }
-  }
-  
-  function displaySuggestions(suggestions) {
-    const container = el('proactive-suggestion');
-    if (!container || !suggestions.length > 0) return;
-    container.textContent = suggestions[0].message;
-  }
-
-  el('chatFullSend')?.addEventListener('click', () => {
-    handleChatSubmit(el('chatFullInput').value, appState.attachments);
-  });
-  el('chatFullInput')?.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') handleChatSubmit(el('chatFullInput').value, appState.attachments);
-  });
-  
-  el('stopAIBtn')?.addEventListener('click', () => {
-    console.log('🛑 ARRÊT DEMANDÉ');
-    appState.shouldStopResponse = true;
-  
-    if (window.speechSynthesis) {
-      window.speechSynthesis.cancel();
-    }
-    if (VoiceEngine && VoiceEngine.pauseRecognition) {
-      VoiceEngine.pauseRecognition();
-    }
+  } finally {
     appState.chatInProgress = false;
-  
+    appState.shouldStopResponse = false; 
     el('chat-loading').style.display = 'none';
     el('chatFullSend').style.display = 'flex';
     el('stopAIBtn').style.display = 'none';
-    el('intelliaStatus').textContent = "Assistant: Interrompu";
-  
-    logActivity('⚠️ Réponse IA interrompue par l\'utilisateur');
-  });
-  
-  el('close-sidebar-btn')?.addEventListener('click', () => {
-    el('chat-sidebar').classList.remove('open');
-    el('sidebar-overlay').classList.remove('open');
-  });
+  }
+}
 
-  // ======= Firebase & Listeners =======
-  let db = null;
-  let auth = null;
+async function handleVoiceSubmit(command) {
+  if (!command) return;
+  if (appState.chatInProgress) {
+    logActivity(`Voix ignorée (chat en cours): "${command}"`);
+    return;
+  }
+
+  if (!appState.currentSessionId) {
+    createNewChatSession();
+  }
+
+  appState.shouldStopResponse = false; 
+  appState.chatInProgress = true;
+  el('intelliaStatus').textContent = "Assistant: En cours...";
+  el('chat-loading').style.display = 'block';
+  el('stopAIBtn').style.display = 'flex'; 
+  el('chatFullSend').style.display = 'none'; 
+
+  appendChat('user', command);
+  logActivity(`Commande vocale: "${command}"`);
   
   try {
-    const app = initializeApp(firebaseConfig);
-    db = getDatabase(app);
-    auth = getAuth(app);
-    el('statusFirebase').textContent = 'Firebase : OK';
-    el('statusFirebase').style.background = 'rgba(46, 213, 115, 0.3)';
-  } catch (e) {
-    db = null;
-    el('statusFirebase').textContent = 'Firebase : Échec';
-    el('statusFirebase').style.background = 'rgba(231, 76, 60, 0.3)';
-    console.error("Erreur d'initialisation de Firebase:", e);
-  }
-
-  const metaRefPath = "devicesMeta";
-  const devicesRefPath = "devices";
-  const planningRefPath = "planning";
-  const userChatsRefPath = "userChats";
-
-  if (db) {
-    onValue(ref(db, metaRefPath), snap => { appState.devices = Object.values(snap.val() || {}); renderDevices(); });
-    onValue(ref(db, devicesRefPath), snap => { 
-        appState.deviceStates = snap.val() || {}; 
-        renderDevices(); 
-        logActivity('☁️ États Firebase synchronisés.');
-    });
-    onValue(ref(db, planningRefPath), snap => { 
-        const plansObj = snap.val() || {};
-        appState.plans = Object.entries(plansObj).map(([id, p]) => ({ ...p, firebaseId: id }));
-        renderPlanningListUI(appState.plans);
-    });
-  } else {
-    loadDevicesFromLocalStorage(); loadPlansFromLocalStorage();
-    renderDevices(); renderPlanningListUI(appState.plans);
-  }
-  
-  // ======= Activity Log =======
-  function logActivity(message, type = 'info') {
-      const logContainer = el('activityLog');
-      if (!logContainer) return;
-      const time = new Date().toLocaleTimeString();
-      const entry = document.createElement('div');
-      let icon = 'ℹ️';
-      if (type === 'success') icon = '✅';
-      else if (type === 'error') icon = '❌';
-      else if (type === 'warning') icon = '⚠️';
-      entry.innerHTML = `<span style="color:var(--muted)">[${time}]</span> ${icon} ${message}`;
-      logContainer.prepend(entry);
-      if (logContainer.children.length > 50) {
-          logContainer.removeChild(logContainer.lastChild);
-      }
-  }
-
-  // ======= Device Rendering =======
-function renderDevices() {
-    const grid = el('deviceGrid');
-    if (!grid) return;
-    grid.innerHTML = appState.devices.length === 0 ? '<div class="card"><p>Aucun appareil configuré.</p></div>' : '';
+    const reply = await sendToOnline(command, [], false);
     
-    for (const device of appState.devices) {
-      const isOn = appState.deviceStates[device.id]?.etat === 'ON';
-      const deviceType = deviceTypes[device.type] || { name: 'Appareil', hasBrightness: false, icon: 'plug' };
-      
-      const card = document.createElement('div');
-      card.className = 'device-card';
-      card.dataset.deviceId = device.id;
-      card.innerHTML = `
-        <div class="device-header">
-          <div class="device-icon"><i class="fas fa-${deviceType.icon}"></i></div>
-          <div style="flex:1">
-            <div class="device-name">${device.name}</div>
-            <div class="device-status">
-              <span class="status-indicator ${isOn ? 'active' : ''}"></span>
-              <span>${isOn ? 'Allumé' : 'Éteint'}</span>
-              <small style="display:block;margin-top:4px">${device.room || 'Non spécifié'}</small>
-            </div>
-          </div>
-        </div>
-        <div class="controls">
-          <div style="flex:1">
-            <label>État : <label class="switch-3d" style="float:right">
-              <input type="checkbox" ${isOn ? 'checked' : ''} onchange="toggleDevice('${device.id}')"/>
-              <span class="slider-3d"></span></label>
-            </label>
-          </div>
-          <div style="display:flex;gap:6px;width:100%;margin-top:10px">
-            <button class="btn" onclick="sendCommand('${device.id}','ON')">Allumer</button>
-            <button class="btn" onclick="sendCommand('${device.id}','OFF')">Éteindre</button>
-            <button class="btn warn" onclick="deleteDevicePrompt('${device.id}')"><i class="fas fa-trash"></i></button>
-          </div>
-        </div>`;
-      grid.appendChild(card);
-    }
-    populatePlanDeviceSelect(); updateCount();
-  }
-
-  // ======= Device Management =======
-  el('btnAddDevice')?.addEventListener('click', async () => {
-    const name = el('newDeviceName').value.trim();
-    const type = el('newDeviceType').value;
-    const room = el('newDeviceRoom').value.trim();
-    if (!name || !room) {
-        el('addDeviceResult').textContent = 'Nom et pièce requis';
-        el('addDeviceResult').style.color = 'var(--danger)';
-        setTimeout(() => { el('addDeviceResult').textContent = ''; }, 3000);
-        return;
-    }
-    const id = name.toLowerCase().replace(/\s+/g, '_').replace(/[^\w\-]/g, '');
-    const deviceType = deviceTypes[type] || {};
-    const meta = { id, name, type, room, hasBrightness: deviceType.hasBrightness, icon: deviceType.icon };
-    if (db) await set(ref(db, `${metaRefPath}/${id}`), meta);
-    else { appState.devices.push(meta); saveDevicesToLocalStorage(); renderDevices(); }
-    el('newDeviceName').value = ''; el('newDeviceRoom').value = '';
-    logActivity(`Appareil ajouté: ${name}`);
-    el('addDeviceFormContainer').style.display = 'none';
-    el('toggleAddDeviceForm').textContent = '➕ Ajouter un appareil';
-    el('addDeviceResult').textContent = 'Appareil ajouté avec succès !';
-    el('addDeviceResult').style.color = 'var(--success)';
-    setTimeout(() => { el('addDeviceResult').textContent = ''; }, 3000);
-  });
-
-  window.deleteDevicePrompt = async function(id) {
-    if (!confirm(`Supprimer l'appareil ${id} ?`)) return;
-    if (db) {
-      await set(ref(db, `${metaRefPath}/${id}`), null); 
-      await set(ref(db, `${devicesRefPath}/${id}`), null);
-    } else {
-      appState.devices = appState.devices.filter(d => d.id !== id);
-      delete appState.deviceStates[id];
-      saveDevicesToLocalStorage(); renderDevices();
-    }
-    logActivity(`Appareil supprimé: ${id}`);
-  };
-
-  el('btnRefreshDevices')?.addEventListener('click', () => { if(db) onValue(ref(db, metaRefPath), s => {}, { onlyOnce: true }); });
-
-  // ======= Device Control =======
-  async function writeDeviceStateToBackend(deviceId, etat, value = null) {
-    const payload = { etat };
-    if (value !== null) payload.luminosite = parseInt(value, 10);
-    if (!db) { 
-      appState.deviceStates[deviceId] = payload; 
-      renderDevices(); 
-      return; 
-    }
-    await set(ref(db, `${devicesRefPath}/${deviceId}`), payload);
-  }
-
-  // ======= WebSocket Local Logic =======
-  function updateStatusUI(type, connected) {
-    const element = el(type === 'local' ? 'statusLocal' : 'statusFirebase');
-    if (!element) return;
-    
-    if (connected) {
-      element.textContent = type === 'local' ? 'ESP32: Connecté ✔' : 'Firebase: Connecté ✔';
-      element.style.background = 'rgba(46, 213, 115, 0.3)';
-    } else {
-      element.textContent = type === 'local' ? 'ESP32: Déconnecté ✗' : 'Firebase: Déconnecté ✗';
-      element.style.background = 'rgba(231, 76, 60, 0.3)';
-    }
-  }
-  
-  function connectToESP32() {
-    const ip = appState.esp32Ip;
-    if (!ip) {
-      logActivity("Connexion locale ignorée (pas d'IP)");
-      updateStatusUI('local', false);
-      return;
-    }
-
-    const wsUrl = `ws://${ip}/ws`;
-    logActivity(`📡 Tentative de connexion locale à ${wsUrl}...`);
-
-    if (appState.localWebSocket) {
-      appState.localWebSocket.close();
-    }
-
-    appState.localWebSocket = new WebSocket(wsUrl);
-
-    appState.localWebSocket.onopen = () => {
-      appState.isLocalConnected = true;
-      logActivity("✅ WebSocket LOCAL connecté !", 'success');
-      updateStatusUI('local', true);
-      appState.localWebSocket.send(JSON.stringify({ type: "hello", message: "Interface Web connectée" }));
-    };
-
-    appState.localWebSocket.onmessage = (event) => {
+    if (!appState.shouldStopResponse) {
+      const botMsgElement = appendChat('bot', '', true);
       try {
-        const data = JSON.parse(event.data);
-        if (data.type === "state_update") {
-          const device = data.device_id;
-          const state = data.state === "ON";
-          const power = data.power || 0;
-          
-          if (appState.deviceStates[device]) {
-            appState.deviceStates[device].etat = state ? "ON" : "OFF";
-            appState.deviceStates[device].luminosite = power;
-            logActivity(`⚡[WS] ${device} mis à jour : ${state ? 'ON' : 'OFF'} (${power}%)`);
-            renderDevices(); 
-          }
-        }
-      } catch (e) {
-        logActivity(`❌ Erreur parsing WS: ${e.message}`, 'error');
+        const needsContinuation = reply.includes('[SUITE DANS LA PROCHAINE RÉPONSE]') || 
+                                   reply.includes('[À suivre...]');
+        await simulateTyping(botMsgElement, reply, true, needsContinuation, null);
+      } catch (interruptError) {
+        console.log('⚠️ Typing interrompu (voix)');
       }
-    };
+    } else {
+      appendChat('bot', '<em style="color: #e74c3c;">⚠️ Réponse interrompue</em>');
+    }
+  } catch (error) {
+    if (!appState.shouldStopResponse) {
+      console.error("Erreur voix:", error);
+      appendChat('bot', "Désolé, une erreur s'est produite.");
+    }
+  } finally {
+    appState.chatInProgress = false;
+    appState.shouldStopResponse = false;
+    el('chat-loading').style.display = 'none';
+    el('chatFullSend').style.display = 'flex';
+    el('stopAIBtn').style.display = 'none';
+  }
+}
 
-    appState.localWebSocket.onerror = (error) => {
-      logActivity("❌ Erreur WebSocket Locale", 'error');
-      appState.isLocalConnected = false;
-      updateStatusUI('local', false);
-    };
-
-    appState.localWebSocket.onclose = () => {
-      logActivity("🔌 WebSocket LOCAL déconnecté", 'warning');
-      appState.isLocalConnected = false;
-      updateStatusUI('local', false);
-      setTimeout(() => {
-        if (appState.currentUser && appState.esp32Ip) { 
-          connectToESP32();
+async function sendToOnline(message, attachments = [], continuationMode = false) {
+  if (!appState.currentUser) {
+      alert("Erreur: Utilisateur non connecté. Veuillez rafraîchir.");
+      return "Erreur d'authentification.";
+  }
+  
+  const t0 = Date.now();
+  
+  try {
+    const response = await fetch(`${RENDER_API}/api/chat`, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        message,
+        attachments: attachments,
+        key: AUTH_KEY,
+        devices: appState.devices.map(d => ({ id: d.id, name: d.name, type: d.type, room: d.room })),
+        deviceStates: appState.deviceStates,
+        sessionId: appState.currentSessionId,
+        userId: appState.currentUser.uid,
+        continuationMode: continuationMode,
+        preferences: {
+          voiceNotifications: appState.voiceNotifications
         }
-      }, 5000);
-    };
-  }
-
-  window.toggleDevice = (deviceId) => {
-    const current = appState.deviceStates[deviceId] || { etat: "OFF" };
-    const newEtat = current.etat === "ON" ? "OFF" : "ON";
-    sendCommand(deviceId, newEtat, newEtat === "ON" ? 100 : 0);
-  };
-
-  window.adjustBrightness = (deviceId, value) => {
-    const v = parseInt(value, 10);
-    el(`${deviceId}-value`).textContent = v + '%';
-    sendCommand(deviceId, v > 0 ? "ON" : "OFF", v);
-  };
-
-  window.sendCommand = (deviceId, action, value = null) => {
-    const val = (value !== null) ? parseInt(value) : (action === "ON" ? 100 : 0);
+      }),
+    });
     
-    if (appState.isLocalConnected && appState.localWebSocket && appState.localWebSocket.readyState === 1) {
-      logActivity(`⚡[WS] Envoi: ${deviceId} → ${action} (${val}%)`);
-      appState.localWebSocket.send(JSON.stringify({
-        type: "control",
-        device_id: deviceId,
-        action: action,
-        value: val
-      }));
-      
-      appState.deviceStates[deviceId] = { etat: action, luminosite: val };
-      renderDevices();
-      
-    } else {
-      logActivity(`☁️ [Firebase] Envoi: ${deviceId} → ${action} (${val}%)`);
-      writeDeviceStateToBackend(deviceId, action, val);
-      
-      appState.deviceStates[deviceId] = { etat: action, luminosite: val };
-      renderDevices();
-    }
-  };
-
-  // ======= Planning =======
-  function populatePlanDeviceSelect() {
-    const sel = el('plan-device');
-    if (!sel) return;
-    sel.innerHTML = appState.devices.map(d => `<option value="${d.id}">${d.name} (${d.room})</option>`).join('');
-  }
-
-  function togglePlanOptions() {
-    const freq = el('plan-frequency').value;
-    el('opt-date').style.display = (freq === 'once') ? 'block' : 'none';
-    el('opt-days').style.display = (freq === 'weekly') ? 'block' : 'none';
-    
-    if (freq === 'once' && !el('plan-date').value) {
-      el('plan-date').valueAsDate = new Date();
-    }
-  }
-
-  el('plan-frequency')?.addEventListener('change', togglePlanOptions);
-  setTimeout(togglePlanOptions, 500);
-el('addPlan')?.addEventListener('click', async () => {
-    const device = el('plan-device').value;
-    const time = el('plan-time').value;
-    const action = el('plan-action').value;
-    const freq = el('plan-frequency').value;
-    
-    const power = (action === "ON") ? 100 : 0;
-    
-    if (!device || !time) return alert('⚠️ Appareil et heure requis');
-    
-    const payload = {
-      device, 
-      time, 
-      action, 
-      frequency: freq,
-      power: null,
-      createdAt: Date.now()
-    };
-    
-    if (freq === 'once') {
-      const dateValue = el('plan-date').value;
-      if (!dateValue) return alert('⚠️ Veuillez sélectionner une date');
-      payload.targetDate = dateValue;
-    }
-    
-    if (freq === 'weekly') {
-      const checkedDays = Array.from(document.querySelectorAll('.day-checkbox:checked')).map(cb => parseInt(cb.value));
-      if (checkedDays.length === 0) return alert('⚠️ Sélectionnez au moins un jour de la semaine');
-      payload.daysOfWeek = checkedDays;
-    }
-    
-    if (db) {
-      await push(ref(db, planningRefPath), payload);
-    } else {
-      appState.plans.push(payload);
-      savePlansToLocalStorage();
-      renderPlanningListUI(appState.plans);
-    }
-    
-    logActivity(`✅ Plan ajouté: ${device} à ${time} (${freq})`);
-    alert('✅ Planification ajoutée avec succès !');
-    
-    el('plan-time').value = '';
-    el('plan-date').value = '';
-    document.querySelectorAll('.day-checkbox').forEach(cb => cb.checked = false);
-  });
-
- function renderPlanningListUI(plans) {
-    const out = el('planningTable');
-    if (!out) return;
-    if (!plans || !plans.length) {
-      out.innerHTML = '<p style="text-align:center;color:var(--muted);padding:20px">📭 Aucune tâche programmée</p>';
-      return;
-    }
-    
-    out.innerHTML = `<table style="width:100%;border-collapse:collapse">
-      <thead>
-        <tr style="background:rgba(0,0,0,0.03)">
-          <th style="padding:10px;text-align:left">Appareil</th>
-          <th style="padding:10px;text-align:left">Quand</th>
-          <th style="padding:10px;text-align:left">Action</th>
-          <th style="padding:10px;text-align:center">Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${plans.map(p => {
-          const deviceName = appState.devices.find(d => d.id === p.device)?.name || p.device;
-          
-          let whenText = p.time;
-          const freq = p.frequency || 'once';
-          
-          if (freq === 'daily') {
-            whenText += ' <span class="chip">📅 Quotidien</span>';
-          } else if (freq === 'weekly' && p.daysOfWeek) {
-            const dayNames = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
-            const days = p.daysOfWeek.map(d => dayNames[d]).join(', ');
-            whenText += ` <span class="chip">📆 ${days}</span>`;
-          } else if (freq === 'monthly') {
-            whenText += ' <span class="chip">📆 Mensuel</span>';
-          } else if (freq === 'once' && p.targetDate) {
-            const date = new Date(p.targetDate).toLocaleDateString('fr-FR');
-            whenText += ` <span class="chip">📅 ${date}</span>`;
-          }
-          
-          const actionText = p.action === 'ON' ? '🟢 ON' : '🔴 OFF';
-          
-          return `<tr style="border-bottom:1px solid rgba(0,0,0,0.05)">
-            <td style="padding:10px"><strong>${deviceName}</strong></td>
-            <td style="padding:10px">${whenText}</td>
-            <td style="padding:10px">${actionText}</td>
-            <td style="padding:10px;text-align:center">
-              <button class="btn warn" onclick="deletePlan('${p.firebaseId || p.createdAt}')" style="padding:6px 12px">
-                <i class="fas fa-trash"></i>
-              </button>
-            </td>
-          </tr>`;
-        }).join('')}
-      </tbody>
-    </table>`;
-  }
-  window.deletePlan = async (planId) => {
-    if (!confirm('🗑️ Supprimer cette planification ?')) return;
-    if (db) { 
-      await remove(ref(db, `${planningRefPath}/${planId}`)); 
-    } else {
-      appState.plans = appState.plans.filter(p => (p.firebaseId || p.createdAt) != planId);
-      savePlansToLocalStorage(); 
-      renderPlanningListUI(appState.plans);
-    }
-    logActivity(`🗑️ Planification supprimée.`);
-  };
-
-  const deleteAllPlans = async () => {
-    if (!confirm('🗑️ Supprimer TOUTES les planifications ?')) return;
-    if (db) await set(ref(db, planningRefPath), null);
-    else { appState.plans = []; savePlansToLocalStorage(); renderPlanningListUI([]); }
-    logActivity(`🗑️ Toutes les planifications supprimées.`);
-    speak('Toutes les planifications ont été supprimées.');
-  };
-  el('clearAllPlans')?.addEventListener('click', deleteAllPlans);
-
-  function updateCount() {
-    const onCount = Object.values(appState.deviceStates).filter(s => s?.etat === 'ON').length;
-    el('db-count').textContent = `on: ${onCount}`;
-  }
-
-  // ======= Local Persistence =======
-  const saveDevicesToLocalStorage = () => localStorage.setItem('sh_devices', JSON.stringify(appState.devices));
-  const loadDevicesFromLocalStorage = () => { appState.devices = JSON.parse(localStorage.getItem('sh_devices') || '[]'); };
-  const savePlansToLocalStorage = () => localStorage.setItem('sh_plans', JSON.stringify(appState.plans));
-  const loadPlansFromLocalStorage = () => { appState.plans = JSON.parse(localStorage.getItem('sh_plans') || '[]'); };
-
-  // ======= Voice Synthesis & Recognition =======
-  let preferredVoice = null;
-  const choosePreferredVoice = () => {
-    const voices = window.speechSynthesis.getVoices() || [];
-    return voices.find(x => /fr[-_]?FR/i.test(x.lang) && /Google/.test(x.name)) || voices.find(x => /fr[-_]?FR/i.test(x.lang)) || voices[0];
-  };
-  if ('speechSynthesis' in window) window.speechSynthesis.onvoiceschanged = () => { preferredVoice = choosePreferredVoice(); };
-
-  function speak(text, isStreaming = false) {
-    if (!appState.voiceNotifications || !text || !('speechSynthesis' in window)) {
-      VoiceEngine.resumeRecognition();
-      return;
-    }
+    el('intelliaLatency').textContent = `latence: ${Date.now() - t0}ms`;
+    if (!response.ok) throw new Error(`Server error ${response.status}`);
+    const j = await response.json();
     
     if (appState.shouldStopResponse) {
-      window.speechSynthesis.cancel();
-      VoiceEngine.resumeRecognition();
-      return;
+        return "Interrompu.";
     }
-  
-    VoiceEngine.pauseRecognition();
-    window.speechSynthesis.cancel();
     
-    if (isStreaming) {
-      const sentences = text.match(/[^.!?]+[.!?]+/g) || [text];
-      let currentIndex = 0;
-      
-      function speakNextSentence() {
-        if (appState.shouldStopResponse) {
-          window.speechSynthesis.cancel();
-          VoiceEngine.resumeRecognition();
-          return;
-        }
-            
-        if (currentIndex >= sentences.length) {
-          setTimeout(() => VoiceEngine.resumeRecognition(), 150);
-          return;
-        }
-            
-        const sentence = sentences[currentIndex].trim();
-        if (sentence) {
-          const u = new SpeechSynthesisUtterance(sentence);
-          u.lang = 'fr-FR';
-          if (!preferredVoice) preferredVoice = choosePreferredVoice();
-          if (preferredVoice) u.voice = preferredVoice;
-          u.rate = 1.1; 
-          
-          u.onend = () => {
-            currentIndex++;
-            speakNextSentence();
-          };
-          
-          u.onerror = () => {
-            if (appState.shouldStopResponse) {
-              window.speechSynthesis.cancel();
-            }
-          };
-          
-          window.speechSynthesis.speak(u);
-        } else {
-          currentIndex++;
-          speakNextSentence();
-        }
-      }
-      speakNextSentence();
-    } else {
-      const u = new SpeechSynthesisUtterance(text);
-      u.lang = 'fr-FR';
-      if (!preferredVoice) preferredVoice = choosePreferredVoice();
-      if (preferredVoice) u.voice = preferredVoice;
-      u.onend = () => {
-        setTimeout(() => VoiceEngine.resumeRecognition(), 150);
-      };
-      window.speechSynthesis.speak(u);
+    await saveMessageToFirebase(message, j.reply, attachments);
+    
+    if (j.suggestions && j.suggestions.length > 0) displaySuggestions(j.suggestions);
+    if (j.planning_commands) handlePlanningCommands(j.planning_commands);
+    if (j.execute) handleExecuteCommands(j.execute);
+    
+    appState.intelliaOnline = true; 
+    el('intelliaStatus').textContent = "Assistant: Connecté";
+    el('statusOnline').textContent = "Assistant : disponible";
+    logActivity(`Assistant a répondu.`);
+    
+    return j.reply || "OK";
+    
+  } catch (e) {
+    if (appState.shouldStopResponse) {
+        return "Interrompu.";
+    }
+    console.warn("sendToOnline error", e);
+    appState.intelliaOnline = false;
+    el('intelliaStatus').textContent = "Assistant: Hors ligne";
+    el('statusOnline').textContent = "Assistant : indisponible";
+    logActivity(`Erreur de connexion Assistant.`);
+    return "Erreur de connexion avec l'Assistant.";
+  }
+}
+
+async function handlePlanningCommands(commands) {
+  for (const cmd of commands) {
+    if (cmd.action === 'add') {
+      const p = { device: cmd.device, time: cmd.time, action: cmd.action, power: cmd.power, createdAt: Date.now() };
+      if (db) await push(ref(db, planningRefPath), p);
+    } else if (cmd.action === 'delete_all') {
+      await deleteAllPlans();
     }
   }
+}
 
-  // ======= Notification de Bureau =======
-  function sendBrowserNotification(title, body, options = {}) {
-    if (!appState.notificationsEnabled) { logActivity('Notification ignorée (désactivée).'); return; }
-    if (!('Notification' in window)) return;
-    const notificationOptions = {
-      body: body, icon: './favicon.ico', badge: './favicon.ico',
-      tag: options.tag || 'smarthome-notification',
-      requireInteraction: options.requireInteraction || false,
-      vibrate: options.vibrate || [200, 100, 200],
-      timestamp: Date.now(), ...options
-    };
+function handleExecuteCommands(commands) {
+  for (const exec of (Array.isArray(commands) ? commands : [commands])) {
+    const [devId, action, value] = exec.split('|');
+    if (appState.devices.some(d => d.id === devId)) {
+      sendCommand(devId, action, value ? parseInt(value) : null);
+    }
+  }
+}
+
+function displaySuggestions(suggestions) {
+  const container = el('proactive-suggestion');
+  if (!container || !suggestions.length > 0) return;
+  container.textContent = suggestions[0].message;
+}
+
+el('chatFullSend')?.addEventListener('click', () => {
+  handleChatSubmit(el('chatFullInput').value, appState.attachments);
+});
+el('chatFullInput')?.addEventListener('keypress', (e) => {
+  if (e.key === 'Enter') handleChatSubmit(el('chatFullInput').value, appState.attachments);
+});
+
+el('stopAIBtn')?.addEventListener('click', () => {
+  console.log('🛑 ARRÊT DEMANDÉ');
+  appState.shouldStopResponse = true;
+
+  if (window.speechSynthesis) {
+    window.speechSynthesis.cancel();
+  }
+  if (VoiceEngine && VoiceEngine.pauseRecognition) {
+    VoiceEngine.pauseRecognition();
+  }
+  appState.chatInProgress = false;
+
+  el('chat-loading').style.display = 'none';
+  el('chatFullSend').style.display = 'flex';
+  el('stopAIBtn').style.display = 'none';
+  el('intelliaStatus').textContent = "Assistant: Interrompu";
+
+  logActivity('⚠️ Réponse IA interrompue par l\'utilisateur');
+});
+
+el('close-sidebar-btn')?.addEventListener('click', () => {
+  el('chat-sidebar').classList.remove('open');
+  el('sidebar-overlay').classList.remove('open');
+});
+
+let db = null;
+let auth = null;
+
+try {
+  const app = initializeApp(firebaseConfig);
+  db = getDatabase(app);
+  auth = getAuth(app);
+  el('statusFirebase').textContent = 'Firebase : OK';
+  el('statusFirebase').style.background = 'rgba(46, 213, 115, 0.3)';
+} catch (e) {
+  db = null;
+  el('statusFirebase').textContent = 'Firebase : Échec';
+  el('statusFirebase').style.background = 'rgba(231, 76, 60, 0.3)';
+  console.error("Erreur d'initialisation de Firebase:", e);
+}
+
+const metaRefPath = "devicesMeta";
+const devicesRefPath = "devices";
+const planningRefPath = "planning";
+const userChatsRefPath = "userChats";
+
+if (db) {
+  onValue(ref(db, metaRefPath), snap => { appState.devices = Object.values(snap.val() || {}); renderDevices(); });
+  onValue(ref(db, devicesRefPath), snap => { 
+      appState.deviceStates = snap.val() || {}; 
+      renderDevices(); 
+      logActivity('☁️ États Firebase synchronisés.');
+  });
+  onValue(ref(db, planningRefPath), snap => { 
+      const plansObj = snap.val() || {};
+      appState.plans = Object.entries(plansObj).map(([id, p]) => ({ ...p, firebaseId: id }));
+      renderPlanningListUI(appState.plans);
+  });
+} else {
+  loadDevicesFromLocalStorage(); loadPlansFromLocalStorage();
+  renderDevices(); renderPlanningListUI(appState.plans);
+}
+
+function logActivity(message, type = 'info') {
+    const logContainer = el('activityLog');
+    if (!logContainer) return;
+    const time = new Date().toLocaleTimeString();
+    const entry = document.createElement('div');
+    let icon = 'ℹ️';
+    if (type === 'success') icon = '✅';
+    else if (type === 'error') icon = '❌';
+    else if (type === 'warning') icon = '⚠️';
+    entry.innerHTML = `<span style="color:var(--muted)">[${time}]</span> ${icon} ${message}`;
+    logContainer.prepend(entry);
+    if (logContainer.children.length > 50) {
+        logContainer.removeChild(logContainer.lastChild);
+    }
+}
+
+function renderDevices() {
+  const grid = el('deviceGrid');
+  if (!grid) return;
+  grid.innerHTML = appState.devices.length === 0 ? '<div class="card"><p>Aucun appareil configuré.</p></div>' : '';
+  
+  for (const device of appState.devices) {
+    const isOn = appState.deviceStates[device.id]?.etat === 'ON';
+    const deviceType = deviceTypes[device.type] || { name: 'Appareil', hasBrightness: false, icon: 'plug' };
+    
+    const card = document.createElement('div');
+    card.className = 'device-card';
+    card.dataset.deviceId = device.id;
+    card.innerHTML = `
+      <div class="device-header">
+        <div class="device-icon"><i class="fas fa-${deviceType.icon}"></i></div>
+        <div style="flex:1">
+          <div class="device-name">${device.name}</div>
+          <div class="device-status">
+            <span class="status-indicator ${isOn ? 'active' : ''}"></span>
+            <span>${isOn ? 'Allumé' : 'Éteint'}</span>
+            <small style="display:block;margin-top:4px">${device.room || 'Non spécifié'}</small>
+          </div>
+        </div>
+      </div>
+      <div class="controls">
+        <div style="flex:1">
+          <label>État : <label class="switch-3d" style="float:right">
+            <input type="checkbox" ${isOn ? 'checked' : ''} onchange="toggleDevice('${device.id}')"/>
+            <span class="slider-3d"></span></label>
+          </label>
+        </div>
+        <div style="display:flex;gap:6px;width:100%;margin-top:10px">
+          <button class="btn" onclick="sendCommand('${device.id}','ON')">Allumer</button>
+          <button class="btn" onclick="sendCommand('${device.id}','OFF')">Éteindre</button>
+          <button class="btn warn" onclick="deleteDevicePrompt('${device.id}')"><i class="fas fa-trash"></i></button>
+        </div>
+      </div>`;
+    grid.appendChild(card);
+  }
+  populatePlanDeviceSelect(); updateCount();
+}
+
+el('btnAddDevice')?.addEventListener('click', async () => {
+  const name = el('newDeviceName').value.trim();
+  const type = el('newDeviceType').value;
+  const room = el('newDeviceRoom').value.trim();
+  if (!name || !room) {
+      el('addDeviceResult').textContent = 'Nom et pièce requis';
+      el('addDeviceResult').style.color = 'var(--danger)';
+      setTimeout(() => { el('addDeviceResult').textContent = ''; }, 3000);
+      return;
+  }
+  const id = name.toLowerCase().replace(/\s+/g, '_').replace(/[^\w\-]/g, '');
+  const deviceType = deviceTypes[type] || {};
+  const meta = { id, name, type, room, hasBrightness: deviceType.hasBrightness, icon: deviceType.icon };
+  if (db) await set(ref(db, `${metaRefPath}/${id}`), meta);
+  else { appState.devices.push(meta); saveDevicesToLocalStorage(); renderDevices(); }
+  el('newDeviceName').value = ''; el('newDeviceRoom').value = '';
+  logActivity(`Appareil ajouté: ${name}`);
+  el('addDeviceFormContainer').style.display = 'none';
+  el('toggleAddDeviceForm').textContent = '➕ Ajouter un appareil';
+  el('addDeviceResult').textContent = 'Appareil ajouté avec succès !';
+  el('addDeviceResult').style.color = 'var(--success)';
+  setTimeout(() => { el('addDeviceResult').textContent = ''; }, 3000);
+});
+
+window.deleteDevicePrompt = async function(id) {
+  if (!confirm(`Supprimer l'appareil ${id} ?`)) return;
+  if (db) {
+    await set(ref(db, `${metaRefPath}/${id}`), null); 
+    await set(ref(db, `${devicesRefPath}/${id}`), null);
+  } else {
+    appState.devices = appState.devices.filter(d => d.id !== id);
+    delete appState.deviceStates[id];
+    saveDevicesToLocalStorage(); renderDevices();
+  }
+  logActivity(`Appareil supprimé: ${id}`);
+};
+
+el('btnRefreshDevices')?.addEventListener('click', () => { if(db) onValue(ref(db, metaRefPath), s => {}, { onlyOnce: true }); });
+
+async function writeDeviceStateToBackend(deviceId, etat, value = null) {
+  const payload = { etat };
+  if (value !== null) payload.luminosite = parseInt(value, 10);
+  if (!db) { 
+    appState.deviceStates[deviceId] = payload; 
+    renderDevices(); 
+    return; 
+  }
+  await set(ref(db, `${devicesRefPath}/${deviceId}`), payload);
+}
+
+function updateStatusUI(type, connected) {
+  const element = el(type === 'local' ? 'statusLocal' : 'statusFirebase');
+  if (!element) return;
+  
+  if (connected) {
+    element.textContent = type === 'local' ? 'ESP32: Connecté ✔' : 'Firebase: Connecté ✔';
+    element.style.background = 'rgba(46, 213, 115, 0.3)';
+  } else {
+    element.textContent = type === 'local' ? 'ESP32: Déconnecté ✗' : 'Firebase: Déconnecté ✗';
+    element.style.background = 'rgba(231, 76, 60, 0.3)';
+  }
+}
+
+function connectToESP32() {
+  const ip = appState.esp32Ip;
+  if (!ip) {
+    logActivity("Connexion locale ignorée (pas d'IP)");
+    updateStatusUI('local', false);
+    return;
+  }
+
+  const wsUrl = `ws://${ip}/ws`;
+  logActivity(`📡 Tentative de connexion locale à ${wsUrl}...`);
+
+  if (appState.localWebSocket) {
+    appState.localWebSocket.close();
+  }
+
+  appState.localWebSocket = new WebSocket(wsUrl);
+
+  appState.localWebSocket.onopen = () => {
+    appState.isLocalConnected = true;
+    logActivity("✅ WebSocket LOCAL connecté !", 'success');
+    updateStatusUI('local', true);
+    appState.localWebSocket.send(JSON.stringify({ type: "hello", message: "Interface Web connectée" }));
+  };
+
+  appState.localWebSocket.onmessage = (event) => {
     try {
-      if (Notification.permission === 'granted') {
-        const notification = new Notification(title, notificationOptions);
-        setTimeout(() => notification.close(), 5000);
-        notification.onclick = () => { window.focus(); notification.close(); };
-      } else if (Notification.permission !== 'denied') {
-        Notification.requestPermission().then(permission => {
-          if (permission === 'granted') {
-            try { new Notification(title, notificationOptions); } catch (e) { console.warn('Notification indisponible:', e.message); }
-          }
-        });
+      const data = JSON.parse(event.data);
+      if (data.type === "state_update") {
+        const device = data.device_id;
+        const state = data.state === "ON";
+        const power = data.power || 0;
+        
+        if (appState.deviceStates[device]) {
+          appState.deviceStates[device].etat = state ? "ON" : "OFF";
+          appState.deviceStates[device].luminosite = power;
+          logActivity(`⚡[WS] ${device} mis à jour : ${state ? 'ON' : 'OFF'} (${power}%)`);
+          renderDevices(); 
+        }
       }
     } catch (e) {
-      console.warn('Notification non supportée sur ce navigateur:', e.message);
-    }
-  }
-
-  // ======= Voice Engine =======
-  const VoiceEngine = {
-    recognition: null, isPushToTalkRecording: false,
-    isContinuousActive: false, isPausedForSpeech: false,
-    
-    init() {
-      if (!("webkitSpeechRecognition" in window || "SpeechRecognition" in window)) {
-        el('voicePushToTalk').disabled = true; el('voiceContinuous').disabled = true;
-        el('quickVoiceToggleBtn').disabled = true; el('quickVoiceToggleBtn').textContent = 'Voix non supportée';
-        el('voiceStatus').textContent = 'Voix: Non supportée';
-        return;
-      }
-      this.requestMicrophonePermission();
-      const pushBtn = el('voicePushToTalk');
-      const continuousBtn = el('voiceContinuous');
-      const quickBtn = el('quickVoiceToggleBtn');
-      pushBtn.addEventListener('touchstart', (e) => { e.preventDefault(); this.togglePushToTalk(); });
-      pushBtn.addEventListener('click', () => this.togglePushToTalk());
-      continuousBtn.addEventListener('touchstart', (e) => { e.preventDefault(); this.toggleContinuousConversation(); });
-      continuousBtn.addEventListener('click', () => this.toggleContinuousConversation());
-      quickBtn.addEventListener('touchstart', (e) => { e.preventDefault(); this.toggleContinuousConversation(); });
-      quickBtn.addEventListener('click', () => this.toggleContinuousConversation());
-    },
-    requestMicrophonePermission() {
-      navigator.mediaDevices.getUserMedia({ audio: true })
-        .then(stream => { stream.getTracks().forEach(track => track.stop()); })
-        .catch(err => { console.error("Permission micro:", err); el('voiceStatus').textContent = 'Voix: Permission requise'; });
-    },
-    createRecognitionInstance(continuous = false) {
-      const Rec = window.SpeechRecognition || window.webkitSpeechRecognition;
-      const rec = new Rec();
-      rec.lang = 'fr-FR'; rec.continuous = continuous; rec.interimResults = false;
-      return rec;
-    },
-    updateContinuousUI() {
-        const btn1 = el('voiceContinuous');
-        const btn2 = el('quickVoiceToggleBtn');
-        const status = el('continuousStatus');
-        const isActive = this.isContinuousActive;
-        if (status) status.textContent = isActive ? 'Activé' : 'Désactivé';
-        if (btn1) {
-          btn1.classList.toggle('active', isActive); btn1.classList.toggle('warn', isActive);
-          const icon1 = btn1.querySelector('i');
-          if (icon1) {
-            icon1.classList.toggle('icon-pulse', isActive);
-            icon1.classList.toggle('fa-waveform', !isActive);
-            icon1.classList.toggle('fa-stop-circle', isActive);
-          }
-        }
-        if (btn2) {
-          btn2.classList.toggle('primary', !isActive); btn2.classList.toggle('warn', isActive);
-          btn2.innerHTML = isActive ? 
-            '<i class="fas fa-stop-circle icon-pulse"></i> Conversation active' : 
-            '<i class="fas fa-waveform"></i> Lancer la conversation';
-        }
-    },
-    togglePushToTalk() {
-      if (this.isContinuousActive) this.toggleContinuousConversation();
-      const btn = el('voicePushToTalk');
-      if (this.isPushToTalkRecording) {
-        this.isPushToTalkRecording = false;
-        if (this.recognition) this.recognition.stop();
-        btn.classList.remove('pulse');
-        el('voiceStatus').textContent = 'Voix: Traitement...';
-      } else {
-        this.isPushToTalkRecording = true;
-        this.recognition = this.createRecognitionInstance(false);
-        btn.classList.add('pulse');
-        el('voiceStatus').textContent = 'Voix: Enregistrement...';
-        this.recognition.onresult = (e) => { handleVoiceSubmit(e.results[0][0].transcript); };
-        this.recognition.onend = () => {
-          this.isPushToTalkRecording = false;
-          btn.classList.remove('pulse');
-          el('voiceStatus').textContent = 'Voix: Inactive';
-          this.recognition = null;
-        };
-        this.recognition.start();
-      }
-    },
-    toggleContinuousConversation() {
-        this.isContinuousActive = !this.isContinuousActive;
-        this.updateContinuousUI();
-        if (this.isContinuousActive) { 
-          if (this.isPushToTalkRecording) this.togglePushToTalk();
-          this.startContinuousLoop(); 
-        } else { 
-          this.stopRecognition(); 
-        }
-    },
-    startContinuousLoop() {
-        if (!this.isContinuousActive || this.isPausedForSpeech) return;
-        this.recognition = this.createRecognitionInstance(false);
-        el('voiceStatus').textContent = 'Voix: Écoute...';
-        this.recognition.onresult = (e) => { handleVoiceSubmit(e.results[0][0].transcript); };
-        this.recognition.onerror = (e) => { if (e.error !== 'no-speech' && e.error !== 'aborted') console.warn('Voice error:', e.error); };
-        this.recognition.onend = () => { 
-          if (this.isContinuousActive && !this.isPausedForSpeech) {
-            setTimeout(() => this.startContinuousLoop(), 100);
-          } else {
-            el('voiceStatus').textContent = 'Voix: Inactive';
-          }
-        };
-        try { this.recognition.start(); } catch(e) {}
-    },
-    stopRecognition() {
-      if (this.recognition) { try { this.recognition.stop(); } catch(e) {} }
-      this.recognition = null; this.isPushToTalkRecording = false; this.isContinuousActive = false;
-      el('voicePushToTalk').classList.remove('pulse');
-      this.updateContinuousUI();
-      el('voiceStatus').textContent = 'Voix: Inactive';
-    },
-    pauseRecognition() {
-      if (this.isContinuousActive && !this.isPausedForSpeech) {
-        this.isPausedForSpeech = true;
-        if (this.recognition) {
-          this.recognition.onend = null;
-          try { this.recognition.stop(); } catch(e){}
-        }
-        el('voiceStatus').textContent = 'Voix: En pause';
-      }
-    },
-    resumeRecognition() {
-      if (this.isContinuousActive && this.isPausedForSpeech) { 
-        this.isPausedForSpeech = false; 
-        this.startContinuousLoop();
-      }
+      logActivity(`❌ Erreur parsing WS: ${e.message}`, 'error');
     }
   };
-  
-  // ======= Multi-Session & Historique Firebase =======
-  
-  function getChatHistoryRef(userId, sessionId = null) {
-    let path = `${userChatsRefPath}/${userId}`;
-    if (sessionId) path += `/${sessionId}`;
-    return ref(db, path);
-  }
 
-  async function loadChatHistorySidebar() {
-    if (!appState.currentUser || !db) return;
-    const historyList = el('chat-history-list');
-    historyList.innerHTML = '';
-    const sessionsRef = getChatHistoryRef(appState.currentUser.uid);
-    const snapshot = await get(sessionsRef);
-    if (snapshot.exists()) {
-      const sessions = snapshot.val();
-      const sortedSessions = Object.keys(sessions).sort((a, b) => {
-        return (sessions[b].lastUpdated || 0) - (sessions[a].lastUpdated || 0);
-      });
-      
-      sortedSessions.forEach(sessionId => {
-        const session = sessions[sessionId];
-        const title = session.title || `Chat du ${new Date(session.createdAt || Date.now()).toLocaleDateString()}`;
-        
-        const item = document.createElement('div');
-        item.className = 'chat-history-item';
-        item.dataset.sessionId = sessionId;
+  appState.localWebSocket.onerror = (error) => {
+    logActivity("❌ Erreur WebSocket Locale", 'error');
+    appState.isLocalConnected = false;
+    updateStatusUI('local', false);
+  };
 
-        const titleSpan = document.createElement('span');
-        titleSpan.textContent = title;
-        titleSpan.className = 'chat-history-item-title';
-        titleSpan.onclick = () => loadChatSession(sessionId);
-        
-        const deleteBtn = document.createElement('button');
-        deleteBtn.innerHTML = '<i class="fas fa-ellipsis-v"></i>';
-        deleteBtn.className = 'btn chat-history-delete';
-        deleteBtn.title = "Supprimer la discussion";
-        deleteBtn.onclick = (e) => {
-          e.stopPropagation();
-          deleteChatSession(sessionId, item);
-        };
-
-        item.appendChild(titleSpan);
-        item.appendChild(deleteBtn);
-        historyList.appendChild(item);
-      });
-    }
-  }
-  
-  function createNewChatSession() {
-    const newSessionId = `chat_${Date.now()}`;
-    appState.currentSessionId = newSessionId;
-    
-    el('chatFullWindow').innerHTML = '';
-    appendChat('bot', '### 👋 Bienvenue !\n\nJe suis prêt pour notre nouvelle discussion.');
-    
+  appState.localWebSocket.onclose = () => {
+    logActivity("🔌 WebSocket LOCAL déconnecté", 'warning');
+    appState.isLocalConnected = false;
+    updateStatusUI('local', false);
     setTimeout(() => {
-      document.querySelectorAll('.chat-history-item').forEach(i => i.classList.remove('active'));
-    }, 100);
-  }
-  el('new-chat-btn').addEventListener('click', createNewChatSession);
+      if (appState.currentUser && appState.esp32Ip) { 
+        connectToESP32();
+      }
+    }, 5000);
+  };
+}
 
-  async function deleteChatSession(sessionId, itemElement) {
-    if (!appState.currentUser || !db) return;
-    if (!confirm("Voulez-vous vraiment supprimer cette discussion ? L'action est irréversible.")) return;
+window.toggleDevice = (deviceId) => {
+  const current = appState.deviceStates[deviceId] || { etat: "OFF" };
+  const newEtat = current.etat === "ON" ? "OFF" : "ON";
+  sendCommand(deviceId, newEtat, newEtat === "ON" ? 100 : 0);
+};
 
-    try {
-      const sessionRef = getChatHistoryRef(appState.currentUser.uid, sessionId);
-      await set(sessionRef, null);
-      itemElement.remove();
-      if (appState.currentSessionId === sessionId) {
-        createNewChatSession();
-      }
-      logActivity(`Discussion ${sessionId} supprimée.`);
-    } catch (error) {
-      console.error("Erreur lors de la suppression du chat:", error);
-      logActivity("Erreur de suppression du chat.");
-    }
-  }
+window.adjustBrightness = (deviceId, value) => {
+  const v = parseInt(value, 10);
+  el(`${deviceId}-value`).textContent = v + '%';
+  sendCommand(deviceId, v > 0 ? "ON" : "OFF", v);
+};
+
+window.sendCommand = (deviceId, action, value = null) => {
+  const val = (value !== null) ? parseInt(value) : (action === "ON" ? 100 : 0);
   
-  async function loadChatSession(sessionId) {
-    if (!appState.currentUser || !db) return;
-    appState.currentSessionId = sessionId;
-    const chatWindow = el('chatFullWindow');
-    chatWindow.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--muted);"><i class="fas fa-spinner fa-spin"></i> Chargement...</div>';
-    
-    try {
-      const messagesRef = ref(db, `${userChatsRefPath}/${appState.currentUser.uid}/${sessionId}/messages`);
-      const snapshot = await get(messagesRef);
-      
-      chatWindow.innerHTML = '';
-      
-      if (snapshot.exists()) {
-        const messages = snapshot.val();
-        const sortedMessages = Object.values(messages).sort((a, b) => a.timestamp - b.timestamp);
-        
-        sortedMessages.forEach(msg => {
-          const attachmentsMeta = msg.attachments || [];
-          appendChat('user', msg.user, false, attachmentsMeta);
-          appendChat('bot', msg.bot, false);
-        });
-        
-        setTimeout(() => {
-          el('chatFullWindow').scrollTop = el('chatFullWindow').scrollHeight;
-        }, 100);
-        
-      } else {
-        appendChat('bot', 'C\'est le début de notre conversation.');
-      }
-      
-      document.querySelectorAll('.chat-history-item').forEach(i => i.classList.remove('active'));
-      document.querySelector(`.chat-history-item[data-session-id="${sessionId}"]`)?.classList.add('active');
-      
-      el('chat-sidebar').classList.remove('open');
-      el('sidebar-overlay').classList.remove('open');
-      
-    } catch (error) {
-      console.error("Erreur chargement chat:", error);
-      chatWindow.innerHTML = '<div class="card" style="text-align: center; color: var(--danger);"><i class="fas fa-exclamation-triangle"></i> Erreur de chargement</div>';
-    }
-  }
-  
-  async function saveMessageToFirebase(userMsg, botMsg, attachments) {
-    if (!appState.currentUser || !db || !appState.currentSessionId) return;
-  
-    const sessionRef = ref(db, `${userChatsRefPath}/${appState.currentUser.uid}/${appState.currentSessionId}`);
-    const sessionSnapshot = await get(sessionRef);
-    
-    const isNewSession = !sessionSnapshot.exists();
-    
-    if (isNewSession) {
-      let newTitle = userMsg;
-      if (!newTitle && attachments.length > 0) {
-        newTitle = `📎 ${attachments[0].name}`;
-      }
-      if (!newTitle) newTitle = "Nouvelle discussion";
-      newTitle = newTitle.substring(0, 30) + (newTitle.length > 30 ? '...' : '');
-      
-      await set(sessionRef, {
-        title: newTitle,
-        createdAt: serverTimestamp(),
-        lastUpdated: serverTimestamp()
-      });
-    }
-  
-    const messagesRef = ref(db, `${userChatsRefPath}/${appState.currentUser.uid}/${appState.currentSessionId}/messages`);
-    const attachmentsMeta = attachments.map(att => ({
-      name: att.name,
-      type: att.type
+  if (appState.isLocalConnected && appState.localWebSocket && appState.localWebSocket.readyState === 1) {
+    logActivity(`⚡[WS] Envoi: ${deviceId} → ${action} (${val}%)`);
+    appState.localWebSocket.send(JSON.stringify({
+      type: "control",
+      device_id: deviceId,
+      action: action,
+      value: val
     }));
-  
-    await push(messagesRef, {
-      user: userMsg,
-      bot: botMsg,
-      attachments: attachmentsMeta,
-      timestamp: serverTimestamp()
-    });
-  
-    await set(ref(db, `${userChatsRefPath}/${appState.currentUser.uid}/${appState.currentSessionId}/lastUpdated`), serverTimestamp());
     
-    if (isNewSession) {
-      loadChatHistorySidebar();
-      setTimeout(() => {
-        document.querySelectorAll('.chat-history-item').forEach(i => i.classList.remove('active'));
-        const item = document.querySelector(`.chat-history-item[data-session-id="${appState.currentSessionId}"]`);
-        if (item) item.classList.add('active');
-      }, 200);
-    }
+    appState.deviceStates[deviceId] = { etat: action, luminosite: val };
+    renderDevices();
+    
+  } else {
+    logActivity(`☁️ [Firebase] Envoi: ${deviceId} → ${action} (${val}%)`);
+    writeDeviceStateToBackend(deviceId, action, val);
+    
+    appState.deviceStates[deviceId] = { etat: action, luminosite: val };
+    renderDevices();
+  }
+};
+
+function populatePlanDeviceSelect() {
+  const sel = el('plan-device');
+  if (!sel) return;
+  sel.innerHTML = appState.devices.map(d => `<option value="${d.id}">${d.name} (${d.room})</option>`).join('');
+}
+
+function togglePlanOptions() {
+  const freq = el('plan-frequency').value;
+  el('opt-date').style.display = (freq === 'once') ? 'block' : 'none';
+  el('opt-days').style.display = (freq === 'weekly') ? 'block' : 'none';
+  
+  if (freq === 'once' && !el('plan-date').value) {
+    el('plan-date').valueAsDate = new Date();
+  }
+}
+
+el('plan-frequency')?.addEventListener('change', togglePlanOptions);
+setTimeout(togglePlanOptions, 500);
+
+el('addPlan')?.addEventListener('click', async () => {
+  const device = el('plan-device').value;
+  const time = el('plan-time').value;
+  const action = el('plan-action').value;
+  const freq = el('plan-frequency').value;
+  
+  const power = (action === "ON") ? 100 : 0;
+  
+  if (!device || !time) return alert('⚠️ Appareil et heure requis');
+  
+  const payload = {
+    device, 
+    time, 
+    action, 
+    frequency: freq,
+    power: null,
+    createdAt: Date.now()
+  };
+  
+  if (freq === 'once') {
+    const dateValue = el('plan-date').value;
+    if (!dateValue) return alert('⚠️ Veuillez sélectionner une date');
+    payload.targetDate = dateValue;
   }
   
-  // ======= Gestion des Pièces Jointes =======
-  
-  el('attach-file-btn').addEventListener('click', () => {
-    el('file-input').click();
-  });
-  
-  el('file-input').addEventListener('change', (event) => {
-    for (const file of event.target.files) {
-      if (appState.attachments.length >= 5) {
-        alert("Vous ne pouvez joindre que 5 fichiers maximum."); break;
-      }
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const dataUrl = e.target.result;
-        appState.attachments.push({
-          name: file.name,
-          type: file.type.startsWith('image/') ? 'image' : 'file',
-          data: dataUrl
-        });
-        renderAttachmentPreviews();
-      };
-      reader.readAsDataURL(file);
-    }
-    event.target.value = null;
-  });
-  
-  function renderAttachmentPreviews() {
-    const container = el('attachment-preview-container');
-    container.innerHTML = '';
-    appState.attachments.forEach((file, index) => {
-      const preview = document.createElement('div');
-      preview.className = 'attachment-preview';
-      let iconHtml = '';
-      if (file.type === 'image') {
-        iconHtml = `<img src="${file.data}" alt="${file.name}">`;
-      } else {
-        let iconClass = 'fa-file';
-        let iconColor = '#6c757d';
-        const fileName = file.name.toLowerCase();
-
-        if (fileName.endsWith('.pdf')) {
-          iconClass = 'fa-file-pdf'; iconColor = '#dc3545';
-        } else if (fileName.endsWith('.docx') || fileName.endsWith('.doc')) {
-          iconClass = 'fa-file-word'; iconColor = '#2b579a';
-        } else if (fileName.endsWith('.xlsx') || fileName.endsWith('.xls')) {
-          iconClass = 'fa-file-excel'; iconColor = '#217346';
-        } else if (fileName.endsWith('.txt') || fileName.endsWith('.log')) {
-          iconClass = 'fa-file-alt'; iconColor = '#6c757d';
-        } else if (fileName.endsWith('.html') || fileName.endsWith('.htm')) {
-          iconClass = 'fa-file-code'; iconColor = '#f06529';
-        } else if (fileName.endsWith('.js')) {
-          iconClass = 'fa-file-code'; iconColor = '#f7df1e';
-        } else if (fileName.endsWith('.json')) {
-          iconClass = 'fa-file-code'; iconColor = '#5a5a5a';
-        } else if (fileName.endsWith('.css')) {
-          iconClass = 'fa-file-code'; iconColor = '#264de4';
-        }
-        iconHtml = `<i class="fas ${iconClass}" style="font-size: 24px; color: ${iconColor};"></i>`;
-      }
-      preview.innerHTML = `
-        ${iconHtml}
-        <span style="flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${file.name}</span>
-        <i class="fas fa-times-circle remove-attachment" data-index="${index}"></i>
-      `;
-      container.appendChild(preview);
-    });
-    container.querySelectorAll('.remove-attachment').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        const indexToRemove = parseInt(e.target.dataset.index, 10);
-        appState.attachments.splice(indexToRemove, 1);
-        renderAttachmentPreviews();
-      });
-    });
+  if (freq === 'weekly') {
+    const checkedDays = Array.from(document.querySelectorAll('.day-checkbox:checked')).map(cb => parseInt(cb.value));
+    if (checkedDays.length === 0) return alert('⚠️ Sélectionnez au moins un jour de la semaine');
+    payload.daysOfWeek = checkedDays;
   }
-
-  // ======= Quick Controls =======
-  el('dayModeBtn')?.addEventListener('click', () => {
-    appState.isNightMode = false;
-    document.body.classList.remove('night-mode');
-    localStorage.setItem('nightMode', false);
-    document.querySelectorAll('#chatFullWindow .msg.bot').forEach(msg => applyNightModeToDoc(msg));
-  });
-  el('nightModeBtn')?.addEventListener('click', () => {
-    appState.isNightMode = true;
-    document.body.classList.add('night-mode');
-    localStorage.setItem('nightMode', true);
-    document.querySelectorAll('#chatFullWindow .msg.bot').forEach(msg => applyNightModeToDoc(msg));
-  });
-  el('allOnBtn')?.addEventListener('click', () => appState.devices.forEach(d => sendCommand(d.id, 'ON', 100)));
-  el('allOffBtn')?.addEventListener('click', () => appState.devices.forEach(d => sendCommand(d.id, 'OFF', 0)));
-
-  // ======= Settings Management =======
   
-  function updateToggleVoiceBtnUI() {
-    const btn = el('toggleVoiceBtn');
-    if (!btn) return;
-    const icon = btn.querySelector('i');
-    if (appState.voiceNotifications) {
-      btn.classList.remove('muted');
-      icon.className = 'fas fa-volume-up';
-      btn.title = "Désactiver la synthèse vocale";
-    } else {
-      btn.classList.add('muted');
-      icon.className = 'fas fa-volume-mute';
-      btn.title = "Activer la synthèse vocale";
-    }
+  if (db) {
+    await push(ref(db, planningRefPath), payload);
+  } else {
+    appState.plans.push(payload);
+    savePlansToLocalStorage();
+    renderPlanningListUI(appState.plans);
   }
-    
-  function setupSettings() {
-    el('darkModeToggle').checked = appState.isNightMode;
-    el('darkModeToggle').addEventListener('change', (e) => {
-      appState.isNightMode = e.target.checked; localStorage.setItem('nightMode', e.target.checked);
-      document.body.classList.toggle('night-mode', e.target.checked);
-      document.querySelectorAll('#chatFullWindow .msg.bot').forEach(msg => applyNightModeToDoc(msg));
-    });
-    el('notificationsToggle').checked = appState.notificationsEnabled;
-    el('notificationsToggle').addEventListener('change', (e) => {
-        appState.notificationsEnabled = e.target.checked;
-        localStorage.setItem('notifications', e.target.checked);
-        if (e.target.checked) requestNotificationPermission();
-    });
-    el('voiceNotificationsToggle').checked = appState.voiceNotifications;
-    el('voiceNotificationsToggle').addEventListener('change', (e) => {
-        appState.voiceNotifications = e.target.checked;
-        localStorage.setItem('voiceNotifications', e.target.checked);
-        updateToggleVoiceBtnUI();
-    });
-    el('testNotificationBtn')?.addEventListener('click', () => {
-      if (!appState.notificationsEnabled) { alert('❌ Activez d\'abord les notifications.'); return; }
-      sendBrowserNotification('🔔 Test de Notification', 'Si vous voyez ce message, tout fonctionne !');
-      logActivity('Test de notification envoyé.');
-    });
-    el('resetBtn').addEventListener('click', () => { if (confirm("Réinitialiser l'application ?")) { localStorage.clear(); location.reload(); } });
-    el('googleSignInOverlayBtn').addEventListener('click', handleGoogleSignIn);
-    el('signOutBtn').addEventListener('click', handleSignOut);
-    
-    el('toggleVoiceBtn').addEventListener('click', () => {
-      appState.voiceNotifications = !appState.voiceNotifications;
-      localStorage.setItem('voiceNotifications', appState.voiceNotifications);
-      el('voiceNotificationsToggle').checked = appState.voiceNotifications;
-      updateToggleVoiceBtnUI();
-      if (!appState.voiceNotifications && window.speechSynthesis) {
-        window.speechSynthesis.cancel();
-      }
-    });
-  }
-
-  // ======= User Profile Functions =======
-  function handleGoogleSignIn() {
-    if (!auth) return;
-    const provider = new GoogleAuthProvider();
-    signInWithPopup(auth, provider).catch((error) => { console.error("Erreur Auth:", error); logActivity(`Erreur: ${error.message}`); });
-  }
-  function handleSignOut() { if (auth) signOut(auth).catch((error) => console.error("Erreur Déco:", error)); }
   
-  // ======= Navigation =======
-  function navigateTo(targetSection) {
-    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-    const targetEl = el(targetSection);
-    if (targetEl) targetEl.classList.add('active');
-    
-    document.querySelectorAll('.btn-nav').forEach(b => b.classList.remove('active'));
-    document.querySelectorAll(`[data-target="${targetSection}"]`).forEach(b => b.classList.add('active'));
-    
-    const titleMap = {
-      'sec-domotique': 'Domotique',
-      'sec-planning': 'Planning',
-      'sec-params': 'Paramètres',
-      'sec-intelligence': 'Assistant IA'
-    };
-    el('section-header-title').textContent = titleMap[targetSection] || 'Domotique';
-  }
-
-  document.querySelectorAll('.btn-nav').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const target = btn.dataset.target;
-      navigateTo(target);
-    });
-  });
-
-  el('sidebar-toggle-btn').addEventListener('click', () => {
-    el('chat-sidebar').classList.toggle('open');
-    el('sidebar-overlay').classList.toggle('open');
-  });
-  el('sidebar-overlay').addEventListener('click', () => {
-    el('chat-sidebar').classList.remove('open');
-    el('sidebar-overlay').classList.remove('open');
-  });
- 
-  // ======= Exécution Automatique des Planifications =======
+  logActivity(`✅ Plan ajouté: ${device} à ${time} (${freq})`);
+  alert('✅ Planification ajoutée avec succès !');
   
-  let executedTasksClient = new Map();
-  let lastCheckedMinuteClient = '';
+  el('plan-time').value = '';
+  el('plan-date').value = '';
+  document.querySelectorAll('.day-checkbox').forEach(cb => cb.checked = false);
+});
 
-  setInterval(() => {
-    const now = Date.now();
-    const oneHourAgo = now - (60 * 60 * 1000);
-    
-    for (const [key, timestamp] of executedTasksClient.entries()) {
-      if (timestamp < oneHourAgo) {
-        executedTasksClient.delete(key);
-      }
-    }
-  }, 3600000);
-
-  function scheduleNextPlanCheck() {
-    const now = new Date();
-    const msUntilNextMinute = 60000 - (now.getSeconds() * 1000 + now.getMilliseconds());
-    setTimeout(async () => {
-      try {
-        await checkAndExecutePlans();
-      } catch (e) {
-        console.error('❌ Client: Erreur boucle de planning:', e);
-      }
-      scheduleNextPlanCheck();
-    }, msUntilNextMinute);
+function renderPlanningListUI(plans) {
+  const out = el('planningTable');
+  if (!out) return;
+  if (!plans || !plans.length) {
+    out.innerHTML = '<p style="text-align:center;color:var(--muted);padding:20px">📭 Aucune tâche programmée</p>';
+    return;
   }
-  scheduleNextPlanCheck();
-
-  async function checkAndExecutePlans() {
-    const now = new Date();
-    const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-    const todayDate = now.toISOString().split('T')[0];
-    const currentDay = now.getDay();
-    
-    if (currentTime !== lastCheckedMinuteClient) {
-      console.log(`⏰ Client: Nouvelle minute détectée: ${currentTime}`);
-      lastCheckedMinuteClient = currentTime;
-    }
-    
-    if (!db) {
-      const duePlans = appState.plans.filter(p => {
-        if (p.time !== currentTime) return false;
+  
+  out.innerHTML = `<table style="width:100%;border-collapse:collapse">
+    <thead>
+      <tr style="background:rgba(0,0,0,0.03)">
+        <th style="padding:10px;text-align:left">Appareil</th>
+        <th style="padding:10px;text-align:left">Quand</th>
+        <th style="padding:10px;text-align:left">Action</th>
+        <th style="padding:10px;text-align:center">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${plans.map(p => {
+        const deviceName = appState.devices.find(d => d.id === p.device)?.name || p.device;
+        
+        let whenText = p.time;
         const freq = p.frequency || 'once';
-        if (freq === 'daily') return true;
-        if (freq === 'monthly') return true;
-        if (freq === 'weekly') return p.daysOfWeek && p.daysOfWeek.includes(currentDay);
-        if (freq === 'once') return !p.targetDate || p.targetDate === todayDate;
-        return false;
-      });
-      
-      if (duePlans.length > 0) {
-        duePlans.forEach(plan => {
-          const taskKey = `${plan.device}-${plan.time}-${plan.createdAt}`;
-          if (executedTasksClient.has(taskKey)) {
-            const lastExecution = executedTasksClient.get(taskKey);
-            if (Date.now() - lastExecution < 120000) return;
-          }
-          executedTasksClient.set(taskKey, Date.now());
-          const deviceName = appState.devices.find(d => d.id === plan.device)?.name || plan.device;
-          const action = plan.actionType ? (plan.actionType === "allumer" ? "ON" : "OFF") : plan.action;
-          const actionText = action === 'ON' ? 'allumé' : 'éteint';
-          logActivity(`⏰ Exécution : ${deviceName} ${actionText}`);
-          sendCommand(plan.device, action);
-          const chatMessage = `⏰ Tâche planifiée : **${deviceName}** ${actionText}`;
-          if (el('chatFullWindow')) appendChat("bot", chatMessage);
-          if (appState.voiceNotifications) speak(`Exécution planifiée. ${deviceName} ${actionText}.`);
-          sendBrowserNotification('⏰ Tâche Planifiée Exécutée', `${deviceName} a été ${actionText}`, { tag: `schedule-${plan.device}-${Date.now()}` });
-          if (plan.frequency === 'once') {
-            appState.plans = appState.plans.filter(p => p.createdAt !== plan.createdAt);
-            savePlansToLocalStorage();
-            renderPlanningListUI(appState.plans);
-          }
-        });
+        
+        if (freq === 'daily') {
+          whenText += ' <span class="chip">📅 Quotidien</span>';
+        } else if (freq === 'weekly' && p.daysOfWeek) {
+          const dayNames = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
+          const days = p.daysOfWeek.map(d => dayNames[d]).join(', ');
+          whenText += ` <span class="chip">📆 ${days}</span>`;
+        } else if (freq === 'monthly') {
+          whenText += ' <span class="chip">📆 Mensuel</span>';
+        } else if (freq === 'once' && p.targetDate) {
+          const date = new Date(p.targetDate).toLocaleDateString('fr-FR');
+          whenText += ` <span class="chip">📅 ${date}</span>`;
+        }
+        
+        const actionText = p.action === 'ON' ? '🟢 ON' : '🔴 OFF';
+        
+        return `<tr style="border-bottom:1px solid rgba(0,0,0,0.05)">
+          <td style="padding:10px"><strong>${deviceName}</strong></td>
+          <td style="padding:10px">${whenText}</td>
+          <td style="padding:10px">${actionText}</td>
+          <td style="padding:10px;text-align:center">
+            <button class="btn warn" onclick="deletePlan('${p.firebaseId || p.createdAt}')" style="padding:6px 12px">
+              <i class="fas fa-trash"></i>
+            </button>
+          </td>
+        </tr>`;
+      }).join('')}
+    </tbody>
+  </table>`;
+}
+
+window.deletePlan = async (planId) => {
+  if (!confirm('🗑️ Supprimer cette planification ?')) return;
+  if (db) { 
+    await remove(ref(db, `${planningRefPath}/${planId}`)); 
+  } else {
+    appState.plans = appState.plans.filter(p => (p.firebaseId || p.createdAt) != planId);
+    savePlansToLocalStorage(); 
+    renderPlanningListUI(appState.plans);
+  }
+  logActivity(`🗑️ Planification supprimée.`);
+};
+
+const deleteAllPlans = async () => {
+  if (!confirm('🗑️ Supprimer TOUTES les planifications ?')) return;
+  if (db) await set(ref(db, planningRefPath), null);
+  else { appState.plans = []; savePlansToLocalStorage(); renderPlanningListUI([]); }
+  logActivity(`🗑️ Toutes les planifications supprimées.`);
+  speak('Toutes les planifications ont été supprimées.');
+};
+el('clearAllPlans')?.addEventListener('click', deleteAllPlans);
+
+function updateCount() {
+  const onCount = Object.values(appState.deviceStates).filter(s => s?.etat === 'ON').length;
+  el('db-count').textContent = `on: ${onCount}`;
+}
+
+const saveDevicesToLocalStorage = () => localStorage.setItem('sh_devices', JSON.stringify(appState.devices));
+const loadDevicesFromLocalStorage = () => { appState.devices = JSON.parse(localStorage.getItem('sh_devices') || '[]'); };
+const savePlansToLocalStorage = () => localStorage.setItem('sh_plans', JSON.stringify(appState.plans));
+const loadPlansFromLocalStorage = () => { appState.plans = JSON.parse(localStorage.getItem('sh_plans') || '[]'); };
+
+let preferredVoice = null;
+const choosePreferredVoice = () => {
+  const voices = window.speechSynthesis.getVoices() || [];
+  return voices.find(x => /fr[-_]?FR/i.test(x.lang) && /Google/.test(x.name)) || voices.find(x => /fr[-_]?FR/i.test(x.lang)) || voices[0];
+};
+if ('speechSynthesis' in window) window.speechSynthesis.onvoiceschanged = () => { preferredVoice = choosePreferredVoice(); };
+
+function speak(text, isStreaming = false) {
+  if (!appState.voiceNotifications || !text || !('speechSynthesis' in window)) {
+    VoiceEngine.resumeRecognition();
+    return;
+  }
+  
+  if (appState.shouldStopResponse) {
+    window.speechSynthesis.cancel();
+    VoiceEngine.resumeRecognition();
+    return;
+  }
+
+  VoiceEngine.pauseRecognition();
+  window.speechSynthesis.cancel();
+  
+  if (isStreaming) {
+    const sentences = text.match(/[^.!?]+[.!?]+/g) || [text];
+    let currentIndex = 0;
+    
+    function speakNextSentence() {
+      if (appState.shouldStopResponse) {
+        window.speechSynthesis.cancel();
+        VoiceEngine.resumeRecognition();
+        return;
       }
+          
+      if (currentIndex >= sentences.length) {
+        setTimeout(() => VoiceEngine.resumeRecognition(), 150);
+        return;
+      }
+          
+      const sentence = sentences[currentIndex].trim();
+      if (sentence) {
+        const u = new SpeechSynthesisUtterance(sentence);
+        u.lang = 'fr-FR';
+        if (!preferredVoice) preferredVoice = choosePreferredVoice();
+        if (preferredVoice) u.voice = preferredVoice;
+        u.rate = 1.1; 
+        
+        u.onend = () => {
+          currentIndex++;
+          speakNextSentence();
+        };
+        
+        u.onerror = () => {
+          if (appState.shouldStopResponse) {
+            window.speechSynthesis.cancel();
+          }
+        };
+        
+        window.speechSynthesis.speak(u);
+      } else {
+        currentIndex++;
+        speakNextSentence();
+      }
+    }
+    speakNextSentence();
+  } else {
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = 'fr-FR';
+    if (!preferredVoice) preferredVoice = choosePreferredVoice();
+    if (preferredVoice) u.voice = preferredVoice;
+    u.onend = () => {
+      setTimeout(() => VoiceEngine.resumeRecognition(), 150);
+    };
+    window.speechSynthesis.speak(u);
+  }
+}
+
+function sendBrowserNotification(title, body, options = {}) {
+  if (!appState.notificationsEnabled) { logActivity('Notification ignorée (désactivée).'); return; }
+  if (!('Notification' in window)) return;
+  const notificationOptions = {
+    body: body, icon: './favicon.ico', badge: './favicon.ico',
+    tag: options.tag || 'smarthome-notification',
+    requireInteraction: options.requireInteraction || false,
+    vibrate: options.vibrate || [200, 100, 200],
+    timestamp: Date.now(), ...options
+  };
+  try {
+    if (Notification.permission === 'granted') {
+      const notification = new Notification(title, notificationOptions);
+      setTimeout(() => notification.close(), 5000);
+      notification.onclick = () => { window.focus(); notification.close(); };
+    } else if (Notification.permission !== 'denied') {
+      Notification.requestPermission().then(permission => {
+        if (permission === 'granted') {
+          try { new Notification(title, notificationOptions); } catch (e) { console.warn('Notification indisponible:', e.message); }
+        }
+      });
+    }
+  } catch (e) {
+    console.warn('Notification non supportée sur ce navigateur:', e.message);
+  }
+}
+
+const VoiceEngine = {
+  recognition: null, isPushToTalkRecording: false,
+  isContinuousActive: false, isPausedForSpeech: false,
+  
+  init() {
+    if (!("webkitSpeechRecognition" in window || "SpeechRecognition" in window)) {
+      el('voicePushToTalk').disabled = true; el('voiceContinuous').disabled = true;
+      el('quickVoiceToggleBtn').disabled = true; el('quickVoiceToggleBtn').textContent = 'Voix non supportée';
+      el('voiceStatus').textContent = 'Voix: Non supportée';
       return;
     }
+    this.requestMicrophonePermission();
+    const pushBtn = el('voicePushToTalk');
+    const continuousBtn = el('voiceContinuous');
+    const quickBtn = el('quickVoiceToggleBtn');
+    pushBtn.addEventListener('touchstart', (e) => { e.preventDefault(); this.togglePushToTalk(); });
+    pushBtn.addEventListener('click', () => this.togglePushToTalk());
+    continuousBtn.addEventListener('touchstart', (e) => { e.preventDefault(); this.toggleContinuousConversation(); });
+    continuousBtn.addEventListener('click', () => this.toggleContinuousConversation());
+    quickBtn.addEventListener('touchstart', (e) => { e.preventDefault(); this.toggleContinuousConversation(); });
+    quickBtn.addEventListener('click', () => this.toggleContinuousConversation());
+  },
+  requestMicrophonePermission() {
+    navigator.mediaDevices.getUserMedia({ audio: true })
+      .then(stream => { stream.getTracks().forEach(track => track.stop()); })
+      .catch(err => { console.error("Permission micro:", err); el('voiceStatus').textContent = 'Voix: Permission requise'; });
+  },
+  createRecognitionInstance(continuous = false) {
+    const Rec = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const rec = new Rec();
+    rec.lang = 'fr-FR'; rec.continuous = continuous; rec.interimResults = false;
+    return rec;
+  },
+  updateContinuousUI() {
+      const btn1 = el('voiceContinuous');
+      const btn2 = el('quickVoiceToggleBtn');
+      const status = el('continuousStatus');
+      const isActive = this.isContinuousActive;
+      if (status) status.textContent = isActive ? 'Activé' : 'Désactivé';
+      if (btn1) {
+        btn1.classList.toggle('active', isActive); btn1.classList.toggle('warn', isActive);
+        const icon1 = btn1.querySelector('i');
+        if (icon1) {
+          icon1.classList.toggle('icon-pulse', isActive);
+          icon1.classList.toggle('fa-waveform', !isActive);
+          icon1.classList.toggle('fa-stop-circle', isActive);
+        }
+      }
+      if (btn2) {
+        btn2.classList.toggle('primary', !isActive); btn2.classList.toggle('warn', isActive);
+        btn2.innerHTML = isActive ? 
+          '<i class="fas fa-stop-circle icon-pulse"></i> Conversation active' : 
+          '<i class="fas fa-waveform"></i> Lancer la conversation';
+      }
+  },
+  togglePushToTalk() {
+    if (this.isContinuousActive) this.toggleContinuousConversation();
+    const btn = el('voicePushToTalk');
+    if (this.isPushToTalkRecording) {
+      this.isPushToTalkRecording = false;
+      if (this.recognition) this.recognition.stop();
+      btn.classList.remove('pulse');
+      el('voiceStatus').textContent = 'Voix: Traitement...';
+    } else {
+      this.isPushToTalkRecording = true;
+      this.recognition = this.createRecognitionInstance(false);
+      btn.classList.add('pulse');
+      el('voiceStatus').textContent = 'Voix: Enregistrement...';
+      this.recognition.onresult = (e) => { handleVoiceSubmit(e.results[0][0].transcript); };
+      this.recognition.onend = () => {
+        this.isPushToTalkRecording = false;
+        btn.classList.remove('pulse');
+        el('voiceStatus').textContent = 'Voix: Inactive';
+        this.recognition = null;
+      };
+      this.recognition.start();
+    }
+  },
+  toggleContinuousConversation() {
+      this.isContinuousActive = !this.isContinuousActive;
+      this.updateContinuousUI();
+      if (this.isContinuousActive) { 
+        if (this.isPushToTalkRecording) this.togglePushToTalk();
+        this.startContinuousLoop(); 
+      } else { 
+        this.stopRecognition(); 
+      }
+  },
+  startContinuousLoop() {
+      if (!this.isContinuousActive || this.isPausedForSpeech) return;
+      this.recognition = this.createRecognitionInstance(false);
+      el('voiceStatus').textContent = 'Voix: Écoute...';
+      this.recognition.onresult = (e) => { handleVoiceSubmit(e.results[0][0].transcript); };
+      this.recognition.onerror = (e) => { if (e.error !== 'no-speech' && e.error !== 'aborted') console.warn('Voice error:', e.error); };
+      this.recognition.onend = () => { 
+        if (this.isContinuousActive && !this.isPausedForSpeech) {
+          setTimeout(() => this.startContinuousLoop(), 100);
+        } else {
+          el('voiceStatus').textContent = 'Voix: Inactive';
+        }
+      };
+      try { this.recognition.start(); } catch(e) {}
+  },
+  stopRecognition() {
+    if (this.recognition) { try { this.recognition.stop(); } catch(e) {} }
+    this.recognition = null; this.isPushToTalkRecording = false; this.isContinuousActive = false;
+    el('voicePushToTalk').classList.remove('pulse');
+    this.updateContinuousUI();
+    el('voiceStatus').textContent = 'Voix: Inactive';
+  },
+  pauseRecognition() {
+    if (this.isContinuousActive && !this.isPausedForSpeech) {
+      this.isPausedForSpeech = true;
+      if (this.recognition) {
+        this.recognition.onend = null;
+        try { this.recognition.stop(); } catch(e){}
+      }
+      el('voiceStatus').textContent = 'Voix: En pause';
+    }
+  },
+  resumeRecognition() {
+    if (this.isContinuousActive && this.isPausedForSpeech) { 
+      this.isPausedForSpeech = false; 
+      this.startContinuousLoop();
+    }
+  }
+};
+
+function getChatHistoryRef(userId, sessionId = null) {
+  let path = `${userChatsRefPath}/${userId}`;
+  if (sessionId) path += `/${sessionId}`;
+  return ref(db, path);
+}
+
+async function loadChatHistorySidebar() {
+  if (!appState.currentUser || !db) return;
+  const historyList = el('chat-history-list');
+  historyList.innerHTML = '';
+  const sessionsRef = getChatHistoryRef(appState.currentUser.uid);
+  const snapshot = await get(sessionsRef);
+  if (snapshot.exists()) {
+    const sessions = snapshot.val();
+    const sortedSessions = Object.keys(sessions).sort((a, b) => {
+      return (sessions[b].lastUpdated || 0) - (sessions[a].lastUpdated || 0);
+    });
     
-    try {
-      const planningSnapshot = await get(ref(db, planningRefPath));
-      if (!planningSnapshot.exists()) return;
-      const allPlans = planningSnapshot.val();
-      const planEntries = Object.entries(allPlans);
-      const duePlans = planEntries.filter(([id, plan]) => {
-        if (plan.time !== currentTime) return false;
-        const freq = plan.frequency || 'once';
-        if (freq === 'daily') return true;
-        if (freq === 'monthly') return true;
-        if (freq === 'weekly') return plan.daysOfWeek && plan.daysOfWeek.includes(currentDay);
-        if (freq === 'once') return !plan.targetDate || plan.targetDate === todayDate;
-        return false;
+    sortedSessions.forEach(sessionId => {
+      const session = sessions[sessionId];
+      const title = session.title || `Chat du ${new Date(session.createdAt || Date.now()).toLocaleDateString()}`;
+      
+      const item = document.createElement('div');
+      item.className = 'chat-history-item';
+      item.dataset.sessionId = sessionId;
+
+      const titleSpan = document.createElement('span');
+      titleSpan.textContent = title;
+      titleSpan.className = 'chat-history-item-title';
+      titleSpan.onclick = () => loadChatSession(sessionId);
+      
+      const deleteBtn = document.createElement('button');
+      deleteBtn.innerHTML = '<i class="fas fa-ellipsis-v"></i>';
+      deleteBtn.className = 'btn chat-history-delete';
+      deleteBtn.title = "Supprimer la discussion";
+      deleteBtn.onclick = (e) => {
+        e.stopPropagation();
+        deleteChatSession(sessionId, item);
+      };
+
+      item.appendChild(titleSpan);
+      item.appendChild(deleteBtn);
+      historyList.appendChild(item);
+    });
+  }
+}
+
+function createNewChatSession() {
+  const newSessionId = `chat_${Date.now()}`;
+  appState.currentSessionId = newSessionId;
+  
+  el('chatFullWindow').innerHTML = '';
+  appendChat('bot', '### 👋 Bienvenue !\n\nJe suis prêt pour notre nouvelle discussion.');
+  
+  setTimeout(() => {
+    document.querySelectorAll('.chat-history-item').forEach(i => i.classList.remove('active'));
+  }, 100);
+}
+el('new-chat-btn').addEventListener('click', createNewChatSession);
+
+async function deleteChatSession(sessionId, itemElement) {
+  if (!appState.currentUser || !db) return;
+  if (!confirm("Voulez-vous vraiment supprimer cette discussion ? L'action est irréversible.")) return;
+
+  try {
+    const sessionRef = getChatHistoryRef(appState.currentUser.uid, sessionId);
+    await set(sessionRef, null);
+    itemElement.remove();
+    if (appState.currentSessionId === sessionId) {
+      createNewChatSession();
+    }
+    logActivity(`Discussion ${sessionId} supprimée.`);
+  } catch (error) {
+    console.error("Erreur lors de la suppression du chat:", error);
+    logActivity("Erreur de suppression du chat.");
+  }
+}
+
+async function loadChatSession(sessionId) {
+  if (!appState.currentUser || !db) return;
+  appState.currentSessionId = sessionId;
+  const chatWindow = el('chatFullWindow');
+  chatWindow.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--muted);"><i class="fas fa-spinner fa-spin"></i> Chargement...</div>';
+  
+  try {
+    const messagesRef = ref(db, `${userChatsRefPath}/${appState.currentUser.uid}/${sessionId}/messages`);
+    const snapshot = await get(messagesRef);
+    
+    chatWindow.innerHTML = '';
+    
+    if (snapshot.exists()) {
+      const messages = snapshot.val();
+      const sortedMessages = Object.values(messages).sort((a, b) => a.timestamp - b.timestamp);
+      
+      sortedMessages.forEach(msg => {
+        const attachmentsMeta = msg.attachments || [];
+        appendChat('user', msg.user, false, attachmentsMeta);
+        appendChat('bot', msg.bot, false);
       });
-      if (duePlans.length === 0) return;
-      console.log(`⏰ Client: ${duePlans.length} tâche(s) à exécuter à ${currentTime}`);
-      for (const [firebaseId, plan] of duePlans) {
-        const taskKey = `${plan.device}-${plan.time}-${firebaseId}`;
+      
+      setTimeout(() => {
+        el('chatFullWindow').scrollTop = el('chatFullWindow').scrollHeight;
+      }, 100);
+      
+    } else {
+      appendChat('bot', 'C\'est le début de notre conversation.');
+    }
+    
+    document.querySelectorAll('.chat-history-item').forEach(i => i.classList.remove('active'));
+    document.querySelector(`.chat-history-item[data-session-id="${sessionId}"]`)?.classList.add('active');
+    
+    el('chat-sidebar').classList.remove('open');
+    el('sidebar-overlay').classList.remove('open');
+    
+  } catch (error) {
+    console.error("Erreur chargement chat:", error);
+    chatWindow.innerHTML = '<div class="card" style="text-align: center; color: var(--danger);"><i class="fas fa-exclamation-triangle"></i> Erreur de chargement</div>';
+  }
+}
+
+async function saveMessageToFirebase(userMsg, botMsg, attachments) {
+  if (!appState.currentUser || !db || !appState.currentSessionId) return;
+
+  const sessionRef = ref(db, `${userChatsRefPath}/${appState.currentUser.uid}/${appState.currentSessionId}`);
+  const sessionSnapshot = await get(sessionRef);
+  
+  const isNewSession = !sessionSnapshot.exists();
+  
+  if (isNewSession) {
+    let newTitle = userMsg;
+    if (!newTitle && attachments.length > 0) {
+      newTitle = `📎 ${attachments[0].name}`;
+    }
+    if (!newTitle) newTitle = "Nouvelle discussion";
+    newTitle = newTitle.substring(0, 30) + (newTitle.length > 30 ? '...' : '');
+    
+    await set(sessionRef, {
+      title: newTitle,
+      createdAt: serverTimestamp(),
+      lastUpdated: serverTimestamp()
+    });
+  }
+
+  const messagesRef = ref(db, `${userChatsRefPath}/${appState.currentUser.uid}/${appState.currentSessionId}/messages`);
+  const attachmentsMeta = attachments.map(att => ({
+    name: att.name,
+    type: att.type
+  }));
+
+  await push(messagesRef, {
+    user: userMsg,
+    bot: botMsg,
+    attachments: attachmentsMeta,
+    timestamp: serverTimestamp()
+  });
+
+  await set(ref(db, `${userChatsRefPath}/${appState.currentUser.uid}/${appState.currentSessionId}/lastUpdated`), serverTimestamp());
+  
+  if (isNewSession) {
+    loadChatHistorySidebar();
+    setTimeout(() => {
+      document.querySelectorAll('.chat-history-item').forEach(i => i.classList.remove('active'));
+      const item = document.querySelector(`.chat-history-item[data-session-id="${appState.currentSessionId}"]`);
+      if (item) item.classList.add('active');
+    }, 200);
+  }
+}
+
+el('attach-file-btn').addEventListener('click', () => {
+  el('file-input').click();
+});
+
+el('file-input').addEventListener('change', (event) => {
+  for (const file of event.target.files) {
+    if (appState.attachments.length >= 5) {
+      alert("Vous ne pouvez joindre que 5 fichiers maximum."); break;
+    }
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const dataUrl = e.target.result;
+      appState.attachments.push({
+        name: file.name,
+        type: file.type.startsWith('image/') ? 'image' : 'file',
+        data: dataUrl
+      });
+      renderAttachmentPreviews();
+    };
+    reader.readAsDataURL(file);
+  }
+  event.target.value = null;
+});
+
+function renderAttachmentPreviews() {
+  const container = el('attachment-preview-container');
+  container.innerHTML = '';
+  appState.attachments.forEach((file, index) => {
+    const preview = document.createElement('div');
+    preview.className = 'attachment-preview';
+    let iconHtml = '';
+    if (file.type === 'image') {
+      iconHtml = `<img src="${file.data}" alt="${file.name}">`;
+    } else {
+      let iconClass = 'fa-file';
+      let iconColor = '#6c757d';
+      const fileName = file.name.toLowerCase();
+
+      if (fileName.endsWith('.pdf')) {
+        iconClass = 'fa-file-pdf'; iconColor = '#dc3545';
+      } else if (fileName.endsWith('.docx') || fileName.endsWith('.doc')) {
+        iconClass = 'fa-file-word'; iconColor = '#2b579a';
+      } else if (fileName.endsWith('.xlsx') || fileName.endsWith('.xls')) {
+        iconClass = 'fa-file-excel'; iconColor = '#217346';
+      } else if (fileName.endsWith('.txt') || fileName.endsWith('.log')) {
+        iconClass = 'fa-file-alt'; iconColor = '#6c757d';
+      } else if (fileName.endsWith('.html') || fileName.endsWith('.htm')) {
+        iconClass = 'fa-file-code'; iconColor = '#f06529';
+      } else if (fileName.endsWith('.js')) {
+        iconClass = 'fa-file-code'; iconColor = '#f7df1e';
+      } else if (fileName.endsWith('.json')) {
+        iconClass = 'fa-file-code'; iconColor = '#5a5a5a';
+      } else if (fileName.endsWith('.css')) {
+        iconClass = 'fa-file-code'; iconColor = '#264de4';
+      }
+      iconHtml = `<i class="fas ${iconClass}" style="font-size: 24px; color: ${iconColor};"></i>`;
+    }
+    preview.innerHTML = `
+      ${iconHtml}
+      <span style="flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${file.name}</span>
+      <i class="fas fa-times-circle remove-attachment" data-index="${index}"></i>
+    `;
+    container.appendChild(preview);
+  });
+  container.querySelectorAll('.remove-attachment').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const indexToRemove = parseInt(e.target.dataset.index, 10);
+      appState.attachments.splice(indexToRemove, 1);
+      renderAttachmentPreviews();
+    });
+  });
+}
+
+el('dayModeBtn')?.addEventListener('click', () => {
+  appState.isNightMode = false;
+  document.body.classList.remove('night-mode');
+  localStorage.setItem('nightMode', false);
+  document.querySelectorAll('#chatFullWindow .msg.bot').forEach(msg => applyNightModeToDoc(msg));
+});
+el('nightModeBtn')?.addEventListener('click', () => {
+  appState.isNightMode = true;
+  document.body.classList.add('night-mode');
+  localStorage.setItem('nightMode', true);
+  document.querySelectorAll('#chatFullWindow .msg.bot').forEach(msg => applyNightModeToDoc(msg));
+});
+el('allOnBtn')?.addEventListener('click', () => appState.devices.forEach(d => sendCommand(d.id, 'ON', 100)));
+el('allOffBtn')?.addEventListener('click', () => appState.devices.forEach(d => sendCommand(d.id, 'OFF', 0)));
+
+function updateToggleVoiceBtnUI() {
+  const btn = el('toggleVoiceBtn');
+  if (!btn) return;
+  const icon = btn.querySelector('i');
+  if (appState.voiceNotifications) {
+    btn.classList.remove('muted');
+    icon.className = 'fas fa-volume-up';
+    btn.title = "Désactiver la synthèse vocale";
+  } else {
+    btn.classList.add('muted');
+    icon.className = 'fas fa-volume-mute';
+    btn.title = "Activer la synthèse vocale";
+  }
+}
+  
+function setupSettings() {
+  el('darkModeToggle').checked = appState.isNightMode;
+  el('darkModeToggle').addEventListener('change', (e) => {
+    appState.isNightMode = e.target.checked; localStorage.setItem('nightMode', e.target.checked);
+    document.body.classList.toggle('night-mode', e.target.checked);
+    document.querySelectorAll('#chatFullWindow .msg.bot').forEach(msg => applyNightModeToDoc(msg));
+  });
+  el('notificationsToggle').checked = appState.notificationsEnabled;
+  el('notificationsToggle').addEventListener('change', (e) => {
+      appState.notificationsEnabled = e.target.checked;
+      localStorage.setItem('notifications', e.target.checked);
+      if (e.target.checked) requestNotificationPermission();
+  });
+  el('voiceNotificationsToggle').checked = appState.voiceNotifications;
+  el('voiceNotificationsToggle').addEventListener('change', (e) => {
+      appState.voiceNotifications = e.target.checked;
+      localStorage.setItem('voiceNotifications', e.target.checked);
+      updateToggleVoiceBtnUI();
+  });
+  el('testNotificationBtn')?.addEventListener('click', () => {
+    if (!appState.notificationsEnabled) { alert('❌ Activez d\'abord les notifications.'); return; }
+    sendBrowserNotification('🔔 Test de Notification', 'Si vous voyez ce message, tout fonctionne !');
+    logActivity('Test de notification envoyé.');
+  });
+  el('resetBtn').addEventListener('click', () => { if (confirm("Réinitialiser l'application ?")) { localStorage.clear(); location.reload(); } });
+  el('googleSignInOverlayBtn').addEventListener('click', handleGoogleSignIn);
+  el('signOutBtn').addEventListener('click', handleSignOut);
+  
+  el('toggleVoiceBtn').addEventListener('click', () => {
+    appState.voiceNotifications = !appState.voiceNotifications;
+    localStorage.setItem('voiceNotifications', appState.voiceNotifications);
+    el('voiceNotificationsToggle').checked = appState.voiceNotifications;
+    updateToggleVoiceBtnUI();
+    if (!appState.voiceNotifications && window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+    }
+  });
+}
+
+function handleGoogleSignIn() {
+  if (!auth) return;
+  const provider = new GoogleAuthProvider();
+  signInWithPopup(auth, provider).catch((error) => { console.error("Erreur Auth:", error); logActivity(`Erreur: ${error.message}`); });
+}
+function handleSignOut() { if (auth) signOut(auth).catch((error) => console.error("Erreur Déco:", error)); }
+
+function navigateTo(targetSection) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  const targetEl = el(targetSection);
+  if (targetEl) targetEl.classList.add('active');
+  
+  document.querySelectorAll('.btn-nav').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll(`[data-target="${targetSection}"]`).forEach(b => b.classList.add('active'));
+  
+  const titleMap = {
+    'sec-domotique': 'Domotique',
+    'sec-planning': 'Planning',
+    'sec-params': 'Paramètres',
+    'sec-intelligence': 'Assistant IA'
+  };
+  el('section-header-title').textContent = titleMap[targetSection] || 'Domotique';
+}
+
+document.querySelectorAll('.btn-nav').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const target = btn.dataset.target;
+    navigateTo(target);
+  });
+});
+
+el('sidebar-toggle-btn').addEventListener('click', () => {
+  el('chat-sidebar').classList.toggle('open');
+  el('sidebar-overlay').classList.toggle('open');
+});
+el('sidebar-overlay').addEventListener('click', () => {
+  el('chat-sidebar').classList.remove('open');
+  el('sidebar-overlay').classList.remove('open');
+});
+
+let executedTasksClient = new Map();
+let lastCheckedMinuteClient = '';
+
+setInterval(() => {
+  const now = Date.now();
+  const oneHourAgo = now - (60 * 60 * 1000);
+  
+  for (const [key, timestamp] of executedTasksClient.entries()) {
+    if (timestamp < oneHourAgo) {
+      executedTasksClient.delete(key);
+    }
+  }
+}, 3600000);
+
+function scheduleNextPlanCheck() {
+  const now = new Date();
+  const msUntilNextMinute = 60000 - (now.getSeconds() * 1000 + now.getMilliseconds());
+  setTimeout(async () => {
+    try {
+      await checkAndExecutePlans();
+    } catch (e) {
+      console.error('❌ Client: Erreur boucle de planning:', e);
+    }
+    scheduleNextPlanCheck();
+  }, msUntilNextMinute);
+}
+scheduleNextPlanCheck();
+
+async function checkAndExecutePlans() {
+  const now = new Date();
+  const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+  const todayDate = now.toISOString().split('T')[0];
+  const currentDay = now.getDay();
+  
+  if (currentTime !== lastCheckedMinuteClient) {
+    console.log(`⏰ Client: Nouvelle minute détectée: ${currentTime}`);
+    lastCheckedMinuteClient = currentTime;
+  }
+  
+  if (!db) {
+    const duePlans = appState.plans.filter(p => {
+      if (p.time !== currentTime) return false;
+      const freq = p.frequency || 'once';
+      if (freq === 'daily') return true;
+      if (freq === 'monthly') return true;
+      if (freq === 'weekly') return p.daysOfWeek && p.daysOfWeek.includes(currentDay);
+      if (freq === 'once') return !p.targetDate || p.targetDate === todayDate;
+      return false;
+    });
+    
+    if (duePlans.length > 0) {
+      duePlans.forEach(plan => {
+        const taskKey = `${plan.device}-${plan.time}-${plan.createdAt}`;
         if (executedTasksClient.has(taskKey)) {
           const lastExecution = executedTasksClient.get(taskKey);
-          if (Date.now() - lastExecution < 120000) continue;
+          if (Date.now() - lastExecution < 120000) return;
         }
         executedTasksClient.set(taskKey, Date.now());
         const deviceName = appState.devices.find(d => d.id === plan.device)?.name || plan.device;
         const action = plan.actionType ? (plan.actionType === "allumer" ? "ON" : "OFF") : plan.action;
         const actionText = action === 'ON' ? 'allumé' : 'éteint';
-        console.log(`🚀 Client: Exécution ${deviceName} ${actionText}`);
-        sendCommand(plan.device, action);
         logActivity(`⏰ Exécution : ${deviceName} ${actionText}`);
+        sendCommand(plan.device, action);
         const chatMessage = `⏰ Tâche planifiée : **${deviceName}** ${actionText}`;
         if (el('chatFullWindow')) appendChat("bot", chatMessage);
         if (appState.voiceNotifications) speak(`Exécution planifiée. ${deviceName} ${actionText}.`);
         sendBrowserNotification('⏰ Tâche Planifiée Exécutée', `${deviceName} a été ${actionText}`, { tag: `schedule-${plan.device}-${Date.now()}` });
-        const freq = plan.frequency || 'once';
-        if (freq === 'once') {
-          try {
-            await remove(ref(db, `${planningRefPath}/${firebaseId}`));
-            console.log(`🗑️ Client: Tâche unique supprimée: ${firebaseId}`);
-          } catch (deleteError) {
-            console.error(`❌ Client: Erreur suppression tâche:`, deleteError);
-          }
+        if (plan.frequency === 'once') {
+          appState.plans = appState.plans.filter(p => p.createdAt !== plan.createdAt);
+          savePlansToLocalStorage();
+          renderPlanningListUI(appState.plans);
         }
-      }
-    } catch (error) {
-      console.error('❌ Client: Erreur système de planning:', error);
+      });
     }
+    return;
   }
-
-  // ======= Fonction de Nettoyage Client =======
   
-  async function cleanExpiredPlansClient() {
-    function isPlanExpired(plan, todayDate, currentTime) {
+  try {
+    const planningSnapshot = await get(ref(db, planningRefPath));
+    if (!planningSnapshot.exists()) return;
+    const allPlans = planningSnapshot.val();
+    const planEntries = Object.entries(allPlans);
+    const duePlans = planEntries.filter(([id, plan]) => {
+      if (plan.time !== currentTime) return false;
       const freq = plan.frequency || 'once';
-      if (freq !== 'once') return false;
-      if (plan.targetDate) {
-        return plan.targetDate < todayDate || (plan.targetDate === todayDate && plan.time < currentTime);
+      if (freq === 'daily') return true;
+      if (freq === 'monthly') return true;
+      if (freq === 'weekly') return plan.daysOfWeek && plan.daysOfWeek.includes(currentDay);
+      if (freq === 'once') return !plan.targetDate || plan.targetDate === todayDate;
+      return false;
+    });
+    if (duePlans.length === 0) return;
+    console.log(`⏰ Client: ${duePlans.length} tâche(s) à exécuter à ${currentTime}`);
+    for (const [firebaseId, plan] of duePlans) {
+      const taskKey = `${plan.device}-${plan.time}-${firebaseId}`;
+      if (executedTasksClient.has(taskKey)) {
+        const lastExecution = executedTasksClient.get(taskKey);
+        if (Date.now() - lastExecution < 120000) continue;
       }
-      return plan.time < currentTime;
-    }
-
-    if (!db) {
-      const now = new Date();
-      const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-      const todayDate = now.toISOString().split('T')[0];
-      const validPlans = appState.plans.filter(plan => !isPlanExpired(plan, todayDate, currentTime));
-      const deletedCount = appState.plans.length - validPlans.length;
-      if (deletedCount > 0) {
-        appState.plans = validPlans;
-        savePlansToLocalStorage();
-        renderPlanningListUI(appState.plans);
-        logActivity(`🗑️ ${deletedCount} tâche(s) expirée(s) supprimée(s)`);
-      }
-      return;
-    }
-    
-    try {
-      const planningSnapshot = await get(ref(db, planningRefPath));
-      if (!planningSnapshot.exists()) return;
-      const allPlans = planningSnapshot.val();
-      const now = new Date();
-      const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-      const todayDate = now.toISOString().split('T')[0];
-      let deletedCount = 0;
-      for (const [id, plan] of Object.entries(allPlans)) {
-        if (isPlanExpired(plan, todayDate, currentTime)) {
-          await remove(ref(db, `${planningRefPath}/${id}`));
-          deletedCount++;
+      executedTasksClient.set(taskKey, Date.now());
+      const deviceName = appState.devices.find(d => d.id === plan.device)?.name || plan.device;
+      const action = plan.actionType ? (plan.actionType === "allumer" ? "ON" : "OFF") : plan.action;
+      const actionText = action === 'ON' ? 'allumé' : 'éteint';
+      console.log(`🚀 Client: Exécution ${deviceName} ${actionText}`);
+      sendCommand(plan.device, action);
+      logActivity(`⏰ Exécution : ${deviceName} ${actionText}`);
+      const chatMessage = `⏰ Tâche planifiée : **${deviceName}** ${actionText}`;
+      if (el('chatFullWindow')) appendChat("bot", chatMessage);
+      if (appState.voiceNotifications) speak(`Exécution planifiée. ${deviceName} ${actionText}.`);
+      sendBrowserNotification('⏰ Tâche Planifiée Exécutée', `${deviceName} a été ${actionText}`, { tag: `schedule-${plan.device}-${Date.now()}` });
+      const freq = plan.frequency || 'once';
+      if (freq === 'once') {
+        try {
+          await remove(ref(db, `${planningRefPath}/${firebaseId}`));
+          console.log(`🗑️ Client: Tâche unique supprimée: ${firebaseId}`);
+        } catch (deleteError) {
+          console.error(`❌ Client: Erreur suppression tâche:`, deleteError);
         }
       }
-      if (deletedCount > 0) {
-        logActivity(`🗑️ ${deletedCount} tâche(s) expirée(s) supprimée(s)`);
-      }
-    } catch (error) {
-      console.error('❌ Erreur nettoyage tâches expirées (client):', error);
     }
+  } catch (error) {
+    console.error('❌ Client: Erreur système de planning:', error);
+  }
+}
+
+async function cleanExpiredPlansClient() {
+  function isPlanExpired(plan, todayDate, currentTime) {
+    const freq = plan.frequency || 'once';
+    if (freq !== 'once') return false;
+    if (plan.targetDate) {
+      return plan.targetDate < todayDate || (plan.targetDate === todayDate && plan.time < currentTime);
+    }
+    return plan.time < currentTime;
   }
 
-  setInterval(cleanExpiredPlansClient, 600000);
-  setTimeout(cleanExpiredPlansClient, 5000);
-
-  // ======= Auth State Change Listener =======
-  if (auth) {
-    onAuthStateChanged(auth, (user) => {
-      if (user) {
-        appState.currentUser = user;
-        document.querySelector('.main-app').style.display = 'block';
-        el('login-overlay').style.display = 'none';
-        const userPhoto = el('user-photo');
-        userPhoto.src = user.photoURL || defaultAvatar;
-        userPhoto.onerror = () => { userPhoto.src = defaultAvatar; }; 
-        el('user-name-display').textContent = user.displayName || 'Utilisateur';
-        el('user-email-display').textContent = user.email;
-        
-        loadChatHistorySidebar();
-        
-        if (appState.esp32Ip) {
-          connectToESP32();
-        }
-        
-        navigateTo('sec-domotique');
-
-      } else {
-        appState.currentUser = null;
-        document.querySelector('.main-app').style.display = 'none';
-        el('login-overlay').style.display = 'flex';
-        
-        if (appState.localWebSocket) {
-          appState.isLocalConnected = false;
-          appState.localWebSocket.close();
-          updateStatusUI('local', false);
-        }
-      }
-    });
-  } else {
-    el('login-overlay').innerHTML = `
-      <div class="login-box">
-        <h2>Erreur Critique</h2>
-        <p>Impossible de se connecter à la base de données (Firebase). L'application ne peut pas démarrer.</p>
-      </div>`;
-    el('login-overlay').style.display = 'flex';
+  if (!db) {
+    const now = new Date();
+    const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+    const todayDate = now.toISOString().split('T')[0];
+    const validPlans = appState.plans.filter(plan => !isPlanExpired(plan, todayDate, currentTime));
+    const deletedCount = appState.plans.length - validPlans.length;
+    if (deletedCount > 0) {
+      appState.plans = validPlans;
+      savePlansToLocalStorage();
+      renderPlanningListUI(appState.plans);
+      logActivity(`🗑️ ${deletedCount} tâche(s) expirée(s) supprimée(s)`);
+    }
+    return;
   }
   
-  
-  function updateProactiveSuggestion() {
-    const el_sug = document.getElementById('proactive-suggestion');
-    if (!el_sug) return;
-    el_sug.classList.add('fade-out');
-    setTimeout(() => {
-      suggestionIndex = (suggestionIndex + 1) % proactiveSuggestions.length;
-      el_sug.textContent = proactiveSuggestions[suggestionIndex];
-      el_sug.classList.remove('fade-out');
-    }, 500);
+  try {
+    const planningSnapshot = await get(ref(db, planningRefPath));
+    if (!planningSnapshot.exists()) return;
+    const allPlans = planningSnapshot.val();
+    const now = new Date();
+    const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+    const todayDate = now.toISOString().split('T')[0];
+    let deletedCount = 0;
+    for (const [id, plan] of Object.entries(allPlans)) {
+      if (isPlanExpired(plan, todayDate, currentTime)) {
+        await remove(ref(db, `${planningRefPath}/${id}`));
+        deletedCount++;
+      }
+    }
+    if (deletedCount > 0) {
+      logActivity(`🗑️ ${deletedCount} tâche(s) expirée(s) supprimée(s)`);
+    }
+  } catch (error) {
+    console.error('❌ Erreur nettoyage tâches expirées (client):', error);
   }
+}
 
-  // ======= Initialisation =======
-  function initUI() {
-    if (appState.isNightMode) document.body.classList.add('night-mode');
-    setupSettings();
-    VoiceEngine.init();
-    populatePlanDeviceSelect();
-    renderDevices();
-    logActivity("Application initialisée.");
-    requestNotificationPermission();
-    updateProactiveSuggestion();
-    setInterval(updateProactiveSuggestion, 10000);
-    
-    updateToggleVoiceBtnUI();
-    
-    el('toggleAddDeviceForm').addEventListener('click', () => {
-      const form = el('addDeviceFormContainer');
-      const btn = el('toggleAddDeviceForm');
-      const isHidden = form.style.display === 'none' || form.style.display === '';
-      form.style.display = isHidden ? 'block' : 'none';
-      btn.innerHTML = isHidden ? '➖ Masquer le formulaire' : '➕ Ajouter un appareil';
-    });
-    
-    el('btnConnectLocal').addEventListener('click', () => {
-      const ip = el('esp32IpInput').value.trim();
-      if (ip) {
-        appState.esp32Ip = ip;
-        localStorage.setItem('esp32Ip', ip);
-        logActivity(`IP locale sauvée: ${ip}. Connexion...`);
+setInterval(cleanExpiredPlansClient, 600000);
+setTimeout(cleanExpiredPlansClient, 5000);
+
+if (auth) {
+  onAuthStateChanged(auth, (user) => {
+    if (user) {
+      appState.currentUser = user;
+      document.querySelector('.main-app').style.display = 'block';
+      el('login-overlay').style.display = 'none';
+      const userPhoto = el('user-photo');
+      userPhoto.src = user.photoURL || defaultAvatar;
+      userPhoto.onerror = () => { userPhoto.src = defaultAvatar; }; 
+      el('user-name-display').textContent = user.displayName || 'Utilisateur';
+      el('user-email-display').textContent = user.email;
+      
+      loadChatHistorySidebar();
+      
+      if (appState.esp32Ip) {
         connectToESP32();
       }
-    });
-    el('esp32IpInput').value = appState.esp32Ip;
-    
-    navigateTo('sec-domotique');
-  }
+      
+      navigateTo('sec-domotique');
 
-  function requestNotificationPermission() {
-    if (!('Notification' in window)) return;
-    if (Notification.permission === 'default' && appState.notificationsEnabled) {
-      setTimeout(() => {
-        Notification.requestPermission().then(permission => {
-          if (permission === 'granted') {
-            logActivity('✅ Notifications activées');
-            sendBrowserNotification('🏠 SmartHome Intelligence', 'Notifications activées !', { requireInteraction: false });
-          } else {
-            logActivity('ℹ️ Notifications refusées');
-          }
-        });
-      }, 3000);
+    } else {
+      appState.currentUser = null;
+      document.querySelector('.main-app').style.display = 'none';
+      el('login-overlay').style.display = 'flex';
+      
+      if (appState.localWebSocket) {
+        appState.isLocalConnected = false;
+        appState.localWebSocket.close();
+        updateStatusUI('local', false);
+      }
     }
-    }
+  });
+} else {
+  el('login-overlay').innerHTML = `
+    <div class="login-box">
+      <h2>Erreur Critique</h2>
+      <p>Impossible de se connecter à la base de données (Firebase). L'application ne peut pas démarrer.</p>
+    </div>`;
+  el('login-overlay').style.display = 'flex';
+}
 
-  initUI(); 
+function updateProactiveSuggestion() {
+  const el_sug = document.getElementById('proactive-suggestion');
+  if (!el_sug) return;
+  el_sug.classList.add('fade-out');
+  setTimeout(() => {
+    suggestionIndex = (suggestionIndex + 1) % proactiveSuggestions.length;
+    el_sug.textContent = proactiveSuggestions[suggestionIndex];
+    el_sug.classList.remove('fade-out');
+  }, 500);
+}
 
-  window.appState = appState;
+function initUI() {
+  if (appState.isNightMode) document.body.classList.add('night-mode');
+  setupSettings();
+  VoiceEngine.init();
+  populatePlanDeviceSelect();
+  renderDevices();
+  logActivity("Application initialisée.");
+  requestNotificationPermission();
+  updateProactiveSuggestion();
+  setInterval(updateProactiveSuggestion, 10000);
   
-  console.log('✅ SmartHome Intelligence v12.0 COMPLET - Prêt à l\'emploi');
-  console.log('📄 Documents HTML: CV, Lettre, Rapport, Facture, Contrat');
-  console.log('🔄 Système de continuation: Actif');
-  console.log('⬛ Blocs de code: Style Gemini (fond noir)');
-  console.log('🗣️ Lecture vocale: Texte uniquement (pas de code)');
-  console.log('📎 Gestion fichiers avancée: Icônes par type');
-  console.log('⏰ Planning: Nettoyage auto + cache Map');
-  console.log('🎤 VoiceEngine: Push-to-talk + Continu');
-  console.log('💬 Chat: Multi-sessions Firebase');
-  console.log('🔔 Notifications: Push + Vocales');
-  console.log('📥 Code: Copier + Télécharger par langage');
-  console.log('📡 WebSocket: ESP32 local');
-  console.log('📊 Total: ~3500 lignes');
-  </script>
+  updateToggleVoiceBtnUI();
+  
+  el('toggleAddDeviceForm').addEventListener('click', () => {
+    const form = el('addDeviceFormContainer');
+    const btn = el('toggleAddDeviceForm');
+    const isHidden = form.style.display === 'none' || form.style.display === '';
+    form.style.display = isHidden ? 'block' : 'none';
+    btn.innerHTML = isHidden ? '➖ Masquer le formulaire' : '➕ Ajouter un appareil';
+  });
+  
+  el('btnConnectLocal').addEventListener('click', () => {
+    const ip = el('esp32IpInput').value.trim();
+    if (ip) {
+      appState.esp32Ip = ip;
+      localStorage.setItem('esp32Ip', ip);
+      logActivity(`IP locale sauvée: ${ip}. Connexion...`);
+      connectToESP32();
+    }
+  });
+  el('esp32IpInput').value = appState.esp32Ip;
+  
+  navigateTo('sec-domotique');
+}
+
+function requestNotificationPermission() {
+  if (!('Notification' in window)) return;
+  if (Notification.permission === 'default' && appState.notificationsEnabled) {
+    setTimeout(() => {
+      Notification.requestPermission().then(permission => {
+        if (permission === 'granted') {
+          logActivity('✅ Notifications activées');
+          sendBrowserNotification('🏠 SmartHome Intelligence', 'Notifications activées !', { requireInteraction: false });
+        } else {
+          logActivity('ℹ️ Notifications refusées');
+        }
+      });
+    }, 3000);
+  }
+}
+
+initUI(); 
+
+window.appState = appState;
+
+console.log('✅ SmartHome Intelligence v12.0 COMPLET - Prêt à l\'emploi');
+console.log('📄 Documents: Cartes + Aperçu + Téléchargement');
+console.log('📥 Téléchargement code: ✅ FIXÉ');
+console.log('🔘 Boutons: ✅ addEventListener (plus fiable)');
+</script>
 </body>
 </html>
