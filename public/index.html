@@ -287,6 +287,7 @@
     }
     
    #chat-input-flex { display: flex; gap: 8px; position: relative; }
+    #chat-input-wrap { position: relative; flex: 1; display: flex; }
     #chatFullInput {
       flex: 1; padding: 12px; border-radius: 8px;
       border: 1px solid #ddd; font-size: 15px;
@@ -1139,7 +1140,6 @@
 
       <!-- SECTION INTELLIGENCE / CHAT -->
       <section id="sec-intelligence" class="section">
-        <button id="sidebar-toggle-btn"><i class="fas fa-bars"></i></button>
         <div id="sidebar-overlay"></div>
         
         <div id="chat-sidebar">
@@ -1172,7 +1172,10 @@
                 <i class="fas fa-paperclip"></i>
               </button>
               
-              <input id="chatFullInput" placeholder="Posez une question à l'Assistant..." />
+              <div id="chat-input-wrap">
+                <input id="chatFullInput" placeholder="Posez une question à l'Assistant..." />
+                <button id="sidebar-toggle-btn"><i class="fas fa-bars"></i></button>
+              </div>
               
               <div id="chat-input-buttons">
   <!-- Boutons vocaux version desktop -->
@@ -1529,45 +1532,35 @@ window.printDocument = function(btnElement) {
     }
 
     // CSS pour l'impression
+    // ✅ On reprend le style COMPLET de la page (celui qui définit .doc-cv h1,
+    // .skill, .contact, etc.) au lieu d'un CSS minimal maison qui ne couvrait que
+    // les règles génériques. Le rendu imprimé est ainsi identique à celui du chat.
+    const fullStylesheet = Array.from(document.querySelectorAll('style'))
+      .map(s => s.textContent)
+      .join('\n');
+
+    // Surcharges propres à l'impression, appliquées APRÈS la feuille de style
+    // complète : on force un rendu clair et sans boutons, même si le mode nuit
+    // est actif côté écran (le <body> de la fenêtre d'impression n'a de toute
+    // façon pas la classe "night-mode", mais on sécurise quand même les couleurs).
     const css = `
+      <style>${fullStylesheet}</style>
       <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { 
-          font-family: 'Segoe UI', Arial, sans-serif; 
-          margin: 0; 
-          padding: 20px;
-          -webkit-print-color-adjust: exact;
-          print-color-adjust: exact;
+        * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        body { margin: 0; padding: 20px; background: white !important; }
+        .doc-cv, .doc-facture, .doc-lettre, .doc-rapport, .doc-contrat {
+          width: 100%;
+          max-width: 100%;
+          margin: 0;
+          box-shadow: none !important;
         }
-        
-        .doc-cv, .doc-facture, .doc-lettre, .doc-rapport, .doc-contrat { 
-          width: 100%; 
-          max-width: 100%; 
-          margin: 0; 
-          padding: 0;
-          border: none;
-          background: white !important;
-          color: #333 !important;
-        }
-        
-        .facture-header, thead { 
-          -webkit-print-color-adjust: exact; 
-          print-color-adjust: exact;
-        }
-        
-        button, .copy-code-btn, .continue-btn, .code-actions {
+        button, .copy-code-btn, .continue-btn, .code-actions, .flex-btns {
           display: none !important;
         }
-        
         @page { 
           margin: 1cm; 
           size: A4;
         }
-        
-        h1, h2, h3 { color: #333 !important; }
-        table { border-collapse: collapse; width: 100%; }
-        th, td { border: 1px solid #ddd; padding: 8px; }
-        th { background: #f0f0f0 !important; }
       </style>
     `;
 
@@ -1575,11 +1568,24 @@ window.printDocument = function(btnElement) {
     printWindow.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Impression</title>${css}</head><body>${htmlContent}</body></html>`);
     printWindow.document.close();
     
+    // ✅ On ferme la fenêtre quand le navigateur signale que l'impression est
+    // terminée (impression lancée OU annulée), au lieu d'un délai fixe de 500ms
+    // qui pouvait couper la boîte de dialogue système avant qu'elle ait fini de
+    // s'afficher/se fermer sur mobile. Un filet de sécurité referme quand même
+    // la fenêtre après 60s si "onafterprint" ne se déclenche pas (anciens navigateurs).
+    let printWindowClosed = false;
+    const closePrintWindow = () => {
+      if (printWindowClosed) return;
+      printWindowClosed = true;
+      try { printWindow.close(); } catch (e) {}
+    };
+    printWindow.onafterprint = closePrintWindow;
+
     printWindow.onload = function() {
       setTimeout(() => {
         printWindow.focus();
         printWindow.print();
-        setTimeout(() => { printWindow.close(); }, 500);
+        setTimeout(closePrintWindow, 60000);
       }, 500);
     };
 
@@ -2547,9 +2553,6 @@ el('addPlan')?.addEventListener('click', async () => {
     const action = el('plan-action').value;
     const freq = el('plan-frequency').value;
     
-    // On force la puissance à null ou standard, on ne lit plus le champ input
-    const power = (action === "ON") ? 100 : 0;
-    
     if (!device || !time) return alert('⚠️ Appareil et heure requis');
     
     const payload = {
@@ -2557,7 +2560,6 @@ el('addPlan')?.addEventListener('click', async () => {
       time, 
       action, 
       frequency: freq,
-      power: null, // On met null pour ne pas gérer de progressivité
       createdAt: Date.now()
     };
     
@@ -2766,14 +2768,23 @@ el('addPlan')?.addEventListener('click', async () => {
       vibrate: options.vibrate || [200, 100, 200],
       timestamp: Date.now(), ...options
     };
-    if (Notification.permission === 'granted') {
-      const notification = new Notification(title, notificationOptions);
-      setTimeout(() => notification.close(), 5000);
-      notification.onclick = () => { window.focus(); notification.close(); };
-    } else if (Notification.permission !== 'denied') {
-      Notification.requestPermission().then(permission => {
-        if (permission === 'granted') { new Notification(title, notificationOptions); }
-      });
+    try {
+      if (Notification.permission === 'granted') {
+        const notification = new Notification(title, notificationOptions);
+        setTimeout(() => notification.close(), 5000);
+        notification.onclick = () => { window.focus(); notification.close(); };
+      } else if (Notification.permission !== 'denied') {
+        Notification.requestPermission().then(permission => {
+          if (permission === 'granted') {
+            try { new Notification(title, notificationOptions); } catch (e) { console.warn('Notification indisponible:', e.message); }
+          }
+        });
+      }
+    } catch (e) {
+      // ✅ Sur certains navigateurs mobiles (ex. Chrome Android), `new Notification()`
+      // est interdit hors Service Worker et lève une exception. On l'ignore proprement
+      // pour ne jamais interrompre l'appelant (ex. la boucle d'exécution du planning).
+      console.warn('Notification non supportée sur ce navigateur:', e.message);
     }
   }
 
@@ -3313,18 +3324,17 @@ el('addPlan')?.addEventListener('click', async () => {
           const deviceName = appState.devices.find(d => d.id === plan.device)?.name || plan.device;
           const action = plan.actionType ? (plan.actionType === "allumer" ? "ON" : "OFF") : plan.action;
           const actionText = action === 'ON' ? 'allumé' : 'éteint';
-          const powerText = plan.power !== null ? ` à ${plan.power}%` : '';
           
-          logActivity(`⏰ Exécution : ${deviceName} ${actionText}${powerText}`);
-          sendCommand(plan.device, action, plan.power);
+          logActivity(`⏰ Exécution : ${deviceName} ${actionText}`);
+          sendCommand(plan.device, action);
           
-          const chatMessage = `⏰ Tâche planifiée : **${deviceName}** ${actionText}${powerText}`;
+          const chatMessage = `⏰ Tâche planifiée : **${deviceName}** ${actionText}`;
           if (el('chatFullWindow')) appendChat("bot", chatMessage);
           if (appState.voiceNotifications) speak(`Exécution planifiée. ${deviceName} ${actionText}.`);
           
           sendBrowserNotification(
             '⏰ Tâche Planifiée Exécutée',
-            `${deviceName} a été ${actionText}${powerText}`,
+            `${deviceName} a été ${actionText}`,
             { tag: `schedule-${plan.device}-${Date.now()}` }
           );
           
@@ -3389,23 +3399,21 @@ el('addPlan')?.addEventListener('click', async () => {
           ? (plan.actionType === "allumer" ? "ON" : "OFF") 
           : plan.action;
         const actionText = action === 'ON' ? 'allumé' : 'éteint';
-        const powerValue = plan.power !== null ? plan.power : 100;
-        const powerText = powerValue !== null ? ` à ${powerValue}%` : '';
         
-        console.log(`🚀 Client: Exécution ${deviceName} ${actionText}${powerText}`);
+        console.log(`🚀 Client: Exécution ${deviceName} ${actionText}`);
         
         // Exécuter la commande
-        sendCommand(plan.device, action, powerValue);
+        sendCommand(plan.device, action);
         
-        logActivity(`⏰ Exécution : ${deviceName} ${actionText}${powerText}`);
+        logActivity(`⏰ Exécution : ${deviceName} ${actionText}`);
         
-        const chatMessage = `⏰ Tâche planifiée : **${deviceName}** ${actionText}${powerText}`;
+        const chatMessage = `⏰ Tâche planifiée : **${deviceName}** ${actionText}`;
         if (el('chatFullWindow')) appendChat("bot", chatMessage);
         if (appState.voiceNotifications) speak(`Exécution planifiée. ${deviceName} ${actionText}.`);
         
         sendBrowserNotification(
           '⏰ Tâche Planifiée Exécutée',
-          `${deviceName} a été ${actionText}${powerText}`,
+          `${deviceName} a été ${actionText}`,
           { tag: `schedule-${plan.device}-${Date.now()}` }
         );
         
@@ -3430,12 +3438,27 @@ el('addPlan')?.addEventListener('click', async () => {
   // ======= Fonction de Nettoyage Client =======
   
   async function cleanExpiredPlansClient() {
+    // ✅ Une tâche n'est "expirée" que si elle est ponctuelle ("once") ET que sa
+    // date/heure cible est bel et bien passée. Les tâches récurrentes (daily,
+    // weekly, monthly) ne doivent JAMAIS être supprimées ici : elles sont censées
+    // se redéclencher au prochain jour/semaine/mois correspondant.
+    function isPlanExpired(plan, todayDate, currentTime) {
+      const freq = plan.frequency || 'once';
+      if (freq !== 'once') return false;
+      if (plan.targetDate) {
+        return plan.targetDate < todayDate || (plan.targetDate === todayDate && plan.time < currentTime);
+      }
+      // Anciennes tâches "once" sans targetDate : comportement historique (heure dépassée = expirée)
+      return plan.time < currentTime;
+    }
+
     if (!db) {
       // Mode local
       const now = new Date();
       const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+      const todayDate = now.toISOString().split('T')[0];
       
-      const validPlans = appState.plans.filter(plan => plan.time >= currentTime);
+      const validPlans = appState.plans.filter(plan => !isPlanExpired(plan, todayDate, currentTime));
       const deletedCount = appState.plans.length - validPlans.length;
       
       if (deletedCount > 0) {
@@ -3456,11 +3479,12 @@ el('addPlan')?.addEventListener('click', async () => {
       const allPlans = planningSnapshot.val();
       const now = new Date();
       const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+      const todayDate = now.toISOString().split('T')[0];
       
       let deletedCount = 0;
       
       for (const [id, plan] of Object.entries(allPlans)) {
-        if (plan.time < currentTime) {
+        if (isPlanExpired(plan, todayDate, currentTime)) {
           await remove(ref(db, `${planningRefPath}/${id}`));
           deletedCount++;
         }
