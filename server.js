@@ -1,9 +1,10 @@
 // ========================================
-// INTELLIA v10.1 - SYSTÈME ARTIFACTS + DOCX
+// INTELLIA v13.0 - SYSTÈME ARTIFACTS + PDF/DOCX
 // ✅ Génération de documents/code LONGS
 // ✅ Continuation automatique
 // ✅ Détection de troncature
-// ✅ Téléchargement DOCX (document)
+// ✅ Téléchargement PDF (Puppeteer)
+// ✅ Téléchargement DOCX (LibreOffice)
 // ========================================
 const express = require('express');
 const cors = require('cors');
@@ -11,6 +12,10 @@ const path = require('path');
 const axios = require('axios');
 const cheerio = require('cheerio');
 const { GoogleGenerativeAI } = require("@google/generative-ai");
+const puppeteer = require('puppeteer');
+const { exec } = require('child_process');
+const fs = require('fs').promises;
+const os = require('os');
 
 // ✅ Imports Firebase
 const { initializeApp } = require("firebase/app");
@@ -158,6 +163,7 @@ function getWeatherDescription(code) {
   };
   return descriptions[code] || "Conditions variables";
 }
+
 async function getRealLoKossaTemperature() {
   try {
     console.log("🌡️ Appel WeatherAPI pour Lokossa...");
@@ -363,47 +369,154 @@ async function getHistoryFromFirebase(userId, sessionId) {
 }
 
 // ========================================
-// 📄 GESTION DES DOCUMENTS (AJOUT v10.1)
+// 📄 GÉNÉRATION PDF AVEC PUPPETEER
 // ========================================
+app.post('/api/download/pdf', async (req, res) => {
+  try {
+    const { html } = req.body;
+    if (!html) {
+      return res.status(400).json({ error: 'HTML manquant' });
+    }
 
-// Extraire les métadonnées du HTML d'un document
-function extractDocumentMetadata(html) {
-  const titleMatch = html.match(/<title>(.*?)<\/title>/i) || 
-                     html.match(/<h1[^>]*>(.*?)<\/h1>/i);
-  const title = titleMatch ? titleMatch[1].trim() : 'Document';
-  
-  let type = 'document';
-  if (html.includes('doc-cv') || html.includes('CV')) type = 'cv';
-  else if (html.includes('doc-lettre') || html.includes('Lettre')) type = 'lettre';
-  else if (html.includes('doc-rapport') || html.includes('Rapport')) type = 'rapport';
-  else if (html.includes('doc-facture') || html.includes('Facture')) type = 'facture';
-  else if (html.includes('doc-contrat') || html.includes('Contrat')) type = 'contrat';
-  
-  return { title, type };
-}
+    console.log('📄 Génération PDF avec Puppeteer...');
+    
+    // Lancer un navigateur headless
+    const browser = await puppeteer.launch({
+      headless: 'new',
+      args: ['--no-sandbox', '--disable-setuid-sandbox']
+    });
+    const page = await browser.newPage();
 
-// Convertir un HTML en DOCX (avec la librairie 'docx')
-async function convertHtmlToDocx(html) {
-  const { Document, Packer, Paragraph, TextRun } = require('docx');
-  
-  const $ = cheerio.load(html);
-  $('script, style, .no-print, .code-actions, .doc-actions, button').remove();
-  const text = $('body').text().trim() || $('html').text().trim();
-  
-  const doc = new Document({
-    sections: [{
-      properties: {},
-      children: text.split('\n').filter(line => line.trim().length > 0).map(line => 
-        new Paragraph({
-          children: [new TextRun({ text: line.trim(), size: 24 })],
-        })
-      ),
-    }],
-  });
-  
-  const buffer = await Packer.toBuffer(doc);
-  return buffer;
-}
+    // Définir le contenu HTML avec les styles d'impression
+    await page.setContent(html, { waitUntil: 'networkidle0' });
+
+    // Générer le PDF A4 avec marges
+    const pdfBuffer = await page.pdf({
+      format: 'A4',
+      printBackground: true,
+      margin: { top: '15mm', bottom: '15mm', left: '15mm', right: '15mm' },
+      preferCSSPageSize: true
+    });
+
+    await browser.close();
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename=document.pdf`);
+    res.send(pdfBuffer);
+
+    console.log('✅ PDF généré avec succès');
+
+  } catch (error) {
+    console.error('❌ Erreur génération PDF:', error.message);
+    res.status(500).json({ error: 'Erreur lors de la génération du PDF' });
+  }
+});
+
+// ========================================
+// 📄 GÉNÉRATION DOCX AVEC LIBREOFFICE
+// ========================================
+app.post('/api/download/docx', async (req, res) => {
+  const tempDir = os.tmpdir();
+  const tempHtmlFile = path.join(tempDir, `doc_${Date.now()}.html`);
+  const tempDocxFile = tempHtmlFile.replace(/\.html$/, '.docx');
+
+  try {
+    const { html } = req.body;
+    if (!html) {
+      return res.status(400).json({ error: 'HTML manquant' });
+    }
+
+    console.log('📄 Génération DOCX avec LibreOffice...');
+
+    // Écrire le HTML dans un fichier temporaire
+    await fs.writeFile(tempHtmlFile, html, 'utf8');
+
+    // Vérifier si LibreOffice est disponible
+    let libreOfficeAvailable = true;
+    try {
+      await new Promise((resolve, reject) => {
+        exec('libreoffice --version', (error, stdout, stderr) => {
+          if (error) {
+            libreOfficeAvailable = false;
+            reject(error);
+          } else {
+            resolve(stdout);
+          }
+        });
+      });
+    } catch (e) {
+      libreOfficeAvailable = false;
+      console.warn('⚠️ LibreOffice non installé, utilisation du fallback texte simple');
+    }
+
+    if (libreOfficeAvailable) {
+      // Commande LibreOffice : conversion HTML -> DOCX
+      const cmd = `libreoffice --headless --convert-to docx --outdir ${tempDir} ${tempHtmlFile}`;
+
+      await new Promise((resolve, reject) => {
+        exec(cmd, (error, stdout, stderr) => {
+          if (error) {
+            console.error('❌ LibreOffice error:', stderr || error.message);
+            reject(new Error('Échec de la conversion LibreOffice'));
+          } else {
+            resolve(stdout);
+          }
+        });
+      });
+
+      // Lire le fichier DOCX généré
+      const docxBuffer = await fs.readFile(tempDocxFile);
+
+      // Nettoyer les fichiers temporaires
+      await fs.unlink(tempHtmlFile).catch(() => {});
+      await fs.unlink(tempDocxFile).catch(() => {});
+
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+      res.setHeader('Content-Disposition', `attachment; filename=document.docx`);
+      res.send(docxBuffer);
+      
+      console.log('✅ DOCX généré avec LibreOffice');
+
+    } else {
+      // Fallback : extraction de texte simple (ancienne méthode)
+      console.log('📄 Fallback: extraction de texte simple pour DOCX');
+      const { Document, Packer, Paragraph, TextRun } = require('docx');
+      
+      const $ = cheerio.load(html);
+      $('script, style, .no-print, .code-actions, .doc-actions, button').remove();
+      const text = $('body').text().trim() || $('html').text().trim();
+      
+      const doc = new Document({
+        sections: [{
+          properties: {},
+          children: text.split('\n').filter(line => line.trim().length > 0).map(line => 
+            new Paragraph({
+              children: [new TextRun({ text: line.trim(), size: 24 })],
+            })
+          ),
+        }],
+      });
+      
+      const buffer = await Packer.toBuffer(doc);
+      
+      // Nettoyer les fichiers temporaires
+      await fs.unlink(tempHtmlFile).catch(() => {});
+
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+      res.setHeader('Content-Disposition', `attachment; filename=document.docx`);
+      res.send(buffer);
+      
+      console.log('✅ DOCX généré en fallback texte simple');
+    }
+
+  } catch (error) {
+    console.error('❌ Erreur génération DOCX:', error.message);
+    // En cas d'erreur, essayer de nettoyer
+    await fs.unlink(tempHtmlFile).catch(() => {});
+    await fs.unlink(tempDocxFile).catch(() => {});
+    res.status(500).json({ error: 'Erreur lors de la génération du DOCX' });
+  }
+});
 
 // ========================================
 // RECHERCHE WEB INTELLIGENTE
@@ -636,7 +749,7 @@ function detectTruncation(content) {
 }
 
 // ========================================
-// PROMPT SYSTÈME (identique à votre version)
+// PROMPT SYSTÈME (AVEC INSTRUCTIONS DOCUMENTS A4)
 // ========================================
 const systemPrompt = `Tu es Intellia, assistant universel ultra-intelligent.
 
@@ -662,6 +775,48 @@ Ton principal créateur est DODAHO Ezéchiel étudiant en 2ème année GEI/EE2
 5. **Analyse de fichiers** : PDF, DOCX, TXT, HTML, JS, JSON, CSS, XLSX, CSV, images
 6. **Température Lokossa** : Temps réel via Open-Meteo API
 7. **📄 Génération de documents** : CV, lettres, rapports, factures, contrats (HTML formaté direct - ILLIMITÉ)
+
+## 📄 RÈGLES SPÉCIALES POUR LES DOCUMENTS (CRITIQUE)
+
+### Objectif : documents A4 professionnels, compatibles Word
+
+Lorsque tu génères un document (CV, lettre, rapport, facture, contrat) :
+
+1. **Format A4** : utilise les dimensions A4 (210mm x 297mm) dans le CSS.
+2. **Polices classiques** : utilise Arial, Calibri, Times New Roman ou Georgia. Évite les polices web.
+3. **Structure** : utilise des **tableaux HTML** pour les colonnes et alignements complexes. Évite flexbox et grid.
+4. **Styles à éviter** : position absolute, dégradés complexes, ombres, border-radius excessifs.
+5. **Marges** : utilise des marges de 15-20mm pour un rendu A4 propre.
+6. **Emojis** : autorisés mais espacés du texte.
+
+**Exemple de structure compatible :**
+
+\`\`\`html
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+  body { 
+    width: 210mm; 
+    margin: 15mm auto; 
+    font-family: Arial, sans-serif;
+    font-size: 11pt;
+    line-height: 1.5;
+    color: #222;
+  }
+  table { width: 100%; border-collapse: collapse; }
+  .header { border-bottom: 2px solid #4361ee; padding-bottom: 10px; }
+  .content { padding: 20px 0; }
+</style>
+</head>
+<body>
+  <!-- Contenu structuré avec tableaux -->
+</body>
+</html>
+\`\`\`
+
+⚠️ **RAPPEL : Le document sera converti en PDF et DOCX. Une structure simple garantit un meilleur rendu.**
 
 ## ⚠️ FORMAT DE RÉPONSE (CRITIQUE : JSON + MARKDOWN)
 
@@ -735,11 +890,11 @@ Tu as accès à la température **RÉELLE EN TEMPS RÉEL** de Lokossa via weathe
 - ❌ Dire "je ne peux pas générer tout"
 - ❌ Tronquer sans needs_continuation: true
 
-MOTEUR DOCUMENTAIRE RESPONSIVE 2026
+## 📄 MOTEUR DOCUMENTAIRE RESPONSIVE 2026 (COMPATIBLE WORD)
 
 Lorsqu'un utilisateur demande un document (CV, rapport, contrat, facture, devis, lettre, attestation, document administratif, document professionnel ou tout autre document), l'assistant doit générer un document HTML5 moderne, professionnel, robuste et entièrement responsive.
 
-Objectif principal
+### Objectif principal
 
 Le document doit être parfaitement lisible sur :
 - Smartphone
@@ -752,7 +907,7 @@ La compatibilité mobile est prioritaire.
 
 ---
 
-Règles HTML obligatoires
+### Règles HTML obligatoires
 
 Toujours générer :
 <!DOCTYPE html>
@@ -771,7 +926,7 @@ Respecter les bonnes pratiques HTML5.
 
 ---
 
-Règles CSS obligatoires
+### Règles CSS obligatoires
 
 Inclure systématiquement :
 *{
@@ -798,7 +953,7 @@ p, span, div, td, th, a, li{
 
 ---
 
-Responsive Mobile First
+### Responsive Mobile First
 
 La conception doit être mobile-first.
 Commencer par la version smartphone.
@@ -825,7 +980,7 @@ Exemple :
 
 ---
 
-Colonnes
+### Colonnes
 
 Sur smartphone :
 - 1 seule colonne
@@ -834,11 +989,11 @@ Sur tablette :
 Sur ordinateur :
 - maximum 2 colonnes pour les CV et documents classiques
 
-Éviter les structures complexes à plusieurs colonnes.
+**⚠️ Pour la compatibilité Word :** utilise des **tableaux HTML** pour créer des colonnes (pas de flexbox/grid).
 
 ---
 
-Gestion des emails et téléphones
+### Gestion des emails et téléphones
 
 Les éléments suivants ne doivent jamais être coupés ou masqués :
 - emails
@@ -852,7 +1007,7 @@ Ils doivent automatiquement revenir à la ligne proprement.
 
 ---
 
-Tableaux
+### Tableaux
 
 Tous les tableaux doivent être responsives.
 Toujours utiliser :
@@ -870,7 +1025,7 @@ Les tableaux ne doivent jamais casser la mise en page globale.
 
 ---
 
-Images
+### Images
 
 Les images doivent :
 - rester visibles
@@ -881,7 +1036,7 @@ Aucune image ne doit provoquer de débordement horizontal.
 
 ---
 
-Collecte des informations avant génération (CRITIQUE)
+### Collecte des informations avant génération (CRITIQUE)
 
 Avant de générer un CV, une lettre ou tout document personnel, vérifie si tu disposes des informations réelles nécessaires (nom, titre/poste visé, coordonnées, expériences, formations, compétences).
 
@@ -892,7 +1047,7 @@ Avant de générer un CV, une lettre ou tout document personnel, vérifie si tu 
 
 ---
 
-CV Professionnel 2026
+### CV Professionnel 2026
 
 Pour les CV :
 - Design moderne 2026
@@ -917,11 +1072,11 @@ Structure recommandée :
 Sur mobile :
 - une seule colonne
 Sur desktop :
-- deux colonnes maximum
+- deux colonnes maximum (avec tableaux HTML)
 
 ---
 
-Rapports Professionnels
+### Rapports Professionnels
 
 Les rapports doivent :
 - utiliser une structure hiérarchique claire
@@ -931,7 +1086,7 @@ Les rapports doivent :
 
 ---
 
-Contrats
+### Contrats
 
 Les contrats doivent :
 - être juridiquement présentables
@@ -941,7 +1096,7 @@ Les contrats doivent :
 
 ---
 
-Factures et Devis
+### Factures et Devis
 
 Les factures et devis doivent :
 - présenter clairement les montants
@@ -951,7 +1106,7 @@ Les factures et devis doivent :
 
 ---
 
-Design
+### Design
 
 Interdiction de générer des styles incohérents.
 Ne jamais appliquer une variation graphique qui réduit :
@@ -966,7 +1121,7 @@ Les variations visuelles sont autorisées uniquement si elles restent :
 
 ---
 
-Accessibilité
+### Accessibilité
 
 Toujours privilégier :
 - contraste élevé
@@ -976,7 +1131,7 @@ Toujours privilégier :
 
 ---
 
-Robustesse
+### Robustesse
 
 Le document final doit :
 - fonctionner sur smartphone Android
@@ -994,12 +1149,14 @@ La stabilité d'affichage est prioritaire sur les effets visuels.
 Les emojis professionnels sont autorisés lorsque pertinents :
 📧 📱 📍 🎯 💼 🎓 🛠️ 🌍 📅 ✍️
 Ils doivent améliorer la lecture et non la surcharger.
+
 PRIORITÉ ABSOLUE
 La stabilité d'affichage, la compatibilité mobile et la lisibilité sont prioritaires sur toute créativité graphique.
 Aucun contenu ne doit être masqué.
 Aucun texte ne doit sortir du viewport.
 Aucun élément ne doit dépasser de l'écran.
 Le document doit être immédiatement exploitable sur téléphone, tablette et ordinateur sans correction manuelle.
+
 ### 📅 GESTION DU PLANNING AVANCÉE (ROUTINES)
 
 **AVANT d'ajouter, vérifie l'état actuel.**
@@ -1270,9 +1427,6 @@ async function handleDeviceCommands(commands, userId) {
           .replace(/[^\w\-]/g, '')
           .substring(0, 30);
 
-        // ✅ ID propre par défaut (ex: "lampe_1"), pour correspondre
-        // à ce que le firmware ESP32 attend. On n'ajoute un suffixe
-        // que s'il y a une vraie collision avec un appareil existant.
         let deviceId = baseId;
         const existingSnapshot = await get(ref(db, `${DEVICES_META_REF}/${baseId}`));
         if (existingSnapshot.exists()) {
@@ -1585,10 +1739,9 @@ MESSAGE: "${userMessage}"
       const result = await chat.sendMessage(promptParts, { signal: controller.signal });
       clearTimeout(timeout);
 
-      // ✅ AJOUT v10.1 : Traitement des métadonnées de document
+      // Traitement des métadonnées de document
       let aiText = result.response.text();
       try {
-        // Essayer de parser le JSON pour détecter un document
         let parsed = JSON.parse(aiText);
         if (parsed.reply) {
           const docMatch = parsed.reply.match(/<DOCUMENT_HTML>([\s\S]*?)<\/DOCUMENT_HTML>/);
@@ -1599,9 +1752,9 @@ MESSAGE: "${userMessage}"
               html: htmlContent,
               title: metadata.title,
               type: metadata.type,
+              pdf_url: '/api/download/pdf',
               docx_url: '/api/download/docx'
             };
-            // On garde le reply tel quel, on ajoute juste le champ document
             aiText = JSON.stringify(parsed);
           }
         }
@@ -1625,6 +1778,22 @@ MESSAGE: "${userMessage}"
     }
   }
   return { success: false, error: lastError };
+}
+
+// Fonction d'extraction des métadonnées pour le document
+function extractDocumentMetadata(html) {
+  const titleMatch = html.match(/<title>(.*?)<\/title>/i) || 
+                     html.match(/<h1[^>]*>(.*?)<\/h1>/i);
+  const title = titleMatch ? titleMatch[1].trim() : 'Document';
+  
+  let type = 'document';
+  if (html.includes('doc-cv') || html.includes('CV')) type = 'cv';
+  else if (html.includes('doc-lettre') || html.includes('Lettre')) type = 'lettre';
+  else if (html.includes('doc-rapport') || html.includes('Rapport')) type = 'rapport';
+  else if (html.includes('doc-facture') || html.includes('Facture')) type = 'facture';
+  else if (html.includes('doc-contrat') || html.includes('Contrat')) type = 'contrat';
+  
+  return { title, type };
 }
 
 // ========================================
@@ -1750,23 +1919,9 @@ app.post('/api/chat', async (req, res) => {
 });
 
 // ========================================
-// 📥 TÉLÉCHARGEMENT DOCX (AJOUT v10.1)
+// 📥 ROUTES DE TÉLÉCHARGEMENT (PDF + DOCX)
 // ========================================
-app.post('/api/download/docx', async (req, res) => {
-  try {
-    const { html } = req.body;
-    if (!html) {
-      return res.status(400).json({ error: 'HTML manquant' });
-    }
-    const buffer = await convertHtmlToDocx(html);
-    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
-    res.setHeader('Content-Disposition', 'attachment; filename=document.docx');
-    res.send(buffer);
-  } catch (error) {
-    console.error('❌ Erreur génération DOCX:', error.message);
-    res.status(500).json({ error: 'Erreur lors de la génération du DOCX' });
-  }
-});
+// Les routes sont définies plus haut (avant la route /api/chat)
 
 // ========================================
 // 🌐 ROUTE SANTÉ
@@ -1775,9 +1930,23 @@ app.get('/api/health', async (req, res) => {
   const availableKeys = API_KEYS.filter(k => !k.quotaExceeded).length;
   const beninTime = await getBeninTime();
   
+  // Vérifier si LibreOffice est disponible
+  let libreOfficeAvailable = false;
+  try {
+    await new Promise((resolve, reject) => {
+      exec('libreoffice --version', (error, stdout, stderr) => {
+        if (error) reject(error);
+        else resolve(stdout);
+      });
+    });
+    libreOfficeAvailable = true;
+  } catch (e) {
+    libreOfficeAvailable = false;
+  }
+  
   res.json({
     status: 'ok',
-    version: '10.1-docx',
+    version: '13.0-pdf-docx',
     features: {
       gemini: API_KEYS.length > 0,
       imageGeneration: false,
@@ -1797,8 +1966,7 @@ app.get('/api/health', async (req, res) => {
       autoDeleteDevices: true,
       intelligentPlanningDeletion: true,
       lokossaTemperature: true,
-      // ✅ AJOUT v10.1
-      documentDownload: "HTML + DOCX",
+      documentDownload: "PDF (Puppeteer) + DOCX (LibreOffice)",
       documentMetadata: true,
       supportedFiles: "PDF, DOCX, TXT, HTML, JS, JSON, CSS, XLSX, CSV, Images",
       maxTokens: 65536
@@ -1811,11 +1979,16 @@ app.get('/api/health', async (req, res) => {
       formatted: beninTime.formatted,
       temperature: beninTime.temperature
     },
-    improvements_v10_1: {
-      document_cards: "✅ Affichage en carte dans le frontend",
-      docx_generation: "✅ Téléchargement en DOCX",
-      metadata_extraction: "✅ Titre et type du document",
-      preview_modal: "✅ Aperçu en modale avec mode nuit"
+    conversions: {
+      pdf: "Puppeteer (headless Chromium)",
+      docx: libreOfficeAvailable ? "LibreOffice (headless)" : "Fallback: extraction texte simple"
+    },
+    improvements_v13_0: {
+      pdf_generation: "✅ Téléchargement PDF fidèle avec Puppeteer",
+      docx_generation: "✅ Téléchargement DOCX avec LibreOffice (fallback texte simple)",
+      document_compatibility: "✅ Instructions A4/Word dans le prompt",
+      responsive_documents: "✅ Mobile-first avec tableaux pour Word",
+      download_routes: "✅ /api/download/pdf et /api/download/docx"
     }
   });
 });
@@ -1825,7 +1998,7 @@ app.get('/api/health', async (req, res) => {
 // ========================================
 app.listen(PORT, () => {
   console.log('\n🏠 ╔═══════════════════════════════════════╗');
-  console.log('   ║  INTELLIA v10.1 - SYSTÈME ARTIFACTS  ║');
+  console.log('   ║  INTELLIA v13.0 - PDF/DOCX COMPLET  ║');
   console.log('   ╚═══════════════════════════════════════╝');
   console.log(`\n   🚀 Serveur: http://localhost:${PORT}`);
   console.log(`   🔑 Clés Gemini: ${API_KEYS.length}`);
@@ -1839,7 +2012,8 @@ app.listen(PORT, () => {
   console.log(`   🗑️ Auto Delete Devices: Activé`);
   console.log(`   🌡️ Température Lokossa: Temps réel`);
   console.log(`   📄 Génération de documents: ✅ ACTIVÉE (HTML)`);
-  console.log(`   📥 Téléchargement DOCX: ✅ ACTIVÉ`);
+  console.log(`   📥 Téléchargement PDF: ✅ ACTIVÉ (Puppeteer)`);
+  console.log(`   📥 Téléchargement DOCX: ✅ ACTIVÉ (LibreOffice + fallback)`);
   console.log(`   📋 Métadonnées documents: ✅ ACTIVÉES`);
   console.log(`   💻 Génération de code long: ✅ ACTIVÉE`);
   console.log(`   🔄 Système de continuation: ✅ ACTIVÉ`);
@@ -1847,9 +2021,10 @@ app.listen(PORT, () => {
   console.log(`   📏 Capacité: ILLIMITÉE (avec continuation)`);
   console.log(`   ✅ Output Markdown: Activé`);
   console.log(`   🎯 MaxTokens: 65536 (MAXIMUM)`);
-  console.log(`\n   ✅ NOUVEAUTÉS v10.1:`);
-  console.log(`   • Cartes documents dans le chat`);
-  console.log(`   • Téléchargement DOCX`);
-  console.log(`   • Métadonnées (titre, type)`);
-  console.log(`   • Aperçu en modale avec mode nuit`);
+  console.log(`\n   ✅ NOUVEAUTÉS v13.0:`);
+  console.log(`   • PDF généré avec Puppeteer (fidèle au visuel)`);
+  console.log(`   • DOCX généré avec LibreOffice (compatible Word)`);
+  console.log(`   • Prompt enrichi pour documents A4 professionnels`);
+  console.log(`   • Structure simplifiée (tableaux) pour compatibilité Word`);
+  console.log(`   • Fallback texte simple si LibreOffice non installé`);
 });

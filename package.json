@@ -1,7 +1,7 @@
 {
   "name": "intellia-smarthome",
-  "version": "11.0.0",
-  "description": "SmartHome Intelligence - Assistant domotique intelligent avec IA",
+  "version": "13.0.0",
+  "description": "SmartHome Intelligence - Assistant domotique intelligent avec IA - Génération PDF/DOCX",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
@@ -20,7 +20,8 @@
     "firebase": "^10.12.2",
     "pdf-parse": "^1.1.1",
     "docx": "^8.0.0",
-    "mammoth": "^1.7.2"
+    "mammoth": "^1.7.2",
+    "puppeteer": "^22.0.0"
   },
   "devDependencies": {
     "nodemon": "^3.0.1"
@@ -35,7 +36,9 @@
     "ai",
     "assistant",
     "domotique",
-    "pwa"
+    "pwa",
+    "pdf",
+    "docx"
   ],
   "author": "DODAHO Ezechiel",
   "license": "MIT"
