@@ -12,7 +12,7 @@ const path = require('path');
 const axios = require('axios');
 const cheerio = require('cheerio');
 const { GoogleGenerativeAI } = require("@google/generative-ai");
-const puppeteer = require('puppeteer-core');
+const htmlPdf = require('html-pdf-node');
 const { exec } = require('child_process');
 const fs = require('fs').promises;
 const os = require('os');
@@ -369,54 +369,8 @@ async function getHistoryFromFirebase(userId, sessionId) {
 }
 
 // ========================================
-// 📄 GÉNÉRATION PDF AVEC PUPPETEER-CORE
+// 📄 GÉNÉRATION PDF AVEC HTML-PDF-NODE
 // ========================================
-/**
- * Trouve automatiquement le chemin de Chromium sur le système
- */
-async function findChromiumPath() {
-  if (process.env.CHROME_PATH) {
-    try {
-      await fs.access(process.env.CHROME_PATH, fs.constants.X_OK);
-      console.log(`✅ Chromium trouvé via CHROME_PATH: ${process.env.CHROME_PATH}`);
-      return process.env.CHROME_PATH;
-    } catch (e) {
-      console.warn(`⚠️ CHROME_PATH défini mais inaccessible: ${process.env.CHROME_PATH}`);
-    }
-  }
-
-  const commonPaths = [
-    '/usr/bin/chromium-browser',
-    '/usr/bin/chromium',
-    '/usr/bin/google-chrome-stable',
-    '/usr/bin/google-chrome',
-    '/snap/bin/chromium'
-  ];
-
-  for (const p of commonPaths) {
-    try {
-      await fs.access(p, fs.constants.X_OK);
-      console.log(`✅ Chromium trouvé: ${p}`);
-      return p;
-    } catch (e) {}
-  }
-
-  return new Promise((resolve) => {
-    exec('which chromium-browser || which chromium || which google-chrome || which google-chrome-stable',
-      (error, stdout) => {
-        if (stdout && stdout.trim()) {
-          const p = stdout.trim();
-          console.log(`✅ Chromium trouvé via which: ${p}`);
-          resolve(p);
-        } else {
-          console.warn('⚠️ Chromium non trouvé sur le système');
-          resolve(null);
-        }
-      }
-    );
-  });
-}
-
 app.post('/api/download/pdf', async (req, res) => {
   try {
     const { html } = req.body;
@@ -424,39 +378,17 @@ app.post('/api/download/pdf', async (req, res) => {
       return res.status(400).json({ error: 'HTML manquant' });
     }
 
-    console.log('📄 Génération PDF avec Puppeteer-core...');
+    console.log('📄 Génération PDF avec html-pdf-node...');
 
-    const executablePath = await findChromiumPath();
-    if (!executablePath) {
-      return res.status(500).json({ 
-        error: 'Chromium non disponible. Vérifiez l\'installation ou définissez CHROME_PATH.'
-      });
-    }
-
-    const browser = await puppeteer.launch({
-      executablePath,
-      headless: 'new',
-      args: [
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage',
-        '--disable-gpu',
-        '--no-first-run',
-        '--no-zygote'
-      ]
-    });
-
-    const page = await browser.newPage();
-    await page.setContent(html, { waitUntil: 'networkidle0', timeout: 15000 });
-
-    const pdfBuffer = await page.pdf({
+    const options = {
       format: 'A4',
       printBackground: true,
       margin: { top: '15mm', bottom: '15mm', left: '15mm', right: '15mm' },
-      preferCSSPageSize: true
-    });
+      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
+    };
 
-    await browser.close();
+    const file = { content: html };
+    const pdfBuffer = await htmlPdf.generatePdf(file, options);
 
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', 'attachment; filename=document.pdf');
@@ -1964,12 +1896,9 @@ app.get('/api/health', async (req, res) => {
     libreOfficeAvailable = false;
   }
 
-  // Vérifier si Chromium est trouvé
-  let chromiumPath = await findChromiumPath();
-  
   res.json({
     status: 'ok',
-    version: '13.0-puppeteer-core',
+    version: '13.1-html-pdf-node',
     features: {
       gemini: API_KEYS.length > 0,
       imageGeneration: false,
@@ -1989,7 +1918,7 @@ app.get('/api/health', async (req, res) => {
       autoDeleteDevices: true,
       intelligentPlanningDeletion: true,
       lokossaTemperature: true,
-      documentDownload: "PDF (Puppeteer-core) + DOCX (LibreOffice)",
+      documentDownload: "PDF (html-pdf-node) + DOCX (LibreOffice fallback)",
       documentMetadata: true,
       supportedFiles: "PDF, DOCX, TXT, HTML, JS, JSON, CSS, XLSX, CSV, Images",
       maxTokens: 65536
@@ -2003,15 +1932,14 @@ app.get('/api/health', async (req, res) => {
       temperature: beninTime.temperature
     },
     conversions: {
-      pdf: chromiumPath ? "Puppeteer-core (Chromium système)" : "Puppeteer-core (Chromium non trouvé)",
+      pdf: "html-pdf-node (Chromium embarqué)",
       docx: libreOfficeAvailable ? "LibreOffice (headless)" : "Fallback: extraction texte simple"
     },
     system: {
-      chromium_path: chromiumPath || "non trouvé",
       libreoffice_available: libreOfficeAvailable
     },
-    improvements_v13_0: {
-      pdf_generation: "✅ Puppeteer-core avec Chromium système",
+    improvements_v13_1: {
+      pdf_generation: "✅ html-pdf-node (pas de dépendance système Chromium)",
       docx_generation: "✅ DOCX avec LibreOffice (fallback texte simple)",
       document_compatibility: "✅ Instructions A4/Word dans le prompt",
       responsive_documents: "✅ Mobile-first avec tableaux pour Word",
@@ -2025,7 +1953,7 @@ app.get('/api/health', async (req, res) => {
 // ========================================
 app.listen(PORT, () => {
   console.log('\n🏠 ╔═══════════════════════════════════════╗');
-  console.log('   ║  INTELLIA v13.0 - PUPPETEER-CORE    ║');
+  console.log('   ║   INTELLIA v13.1 - HTML-PDF-NODE     ║');
   console.log('   ╚═══════════════════════════════════════╝');
   console.log(`\n   🚀 Serveur: http://localhost:${PORT}`);
   console.log(`   🔑 Clés Gemini: ${API_KEYS.length}`);
@@ -2034,16 +1962,11 @@ app.listen(PORT, () => {
   console.log(`   📅 Planning AI: Prêt`);
   console.log(`   🌡️ Température Lokossa: Temps réel`);
   console.log(`   📄 Génération de documents: ✅ ACTIVÉE (HTML)`);
-  console.log(`   📥 Téléchargement PDF: ✅ ACTIVÉ (Puppeteer-core)`);
+  console.log(`   📥 Téléchargement PDF: ✅ ACTIVÉ (html-pdf-node)`);
   console.log(`   📥 Téléchargement DOCX: ✅ ACTIVÉ (LibreOffice + fallback)`);
   console.log(`   📋 Métadonnées documents: ✅ ACTIVÉES`);
   console.log(`   💻 Génération de code long: ✅ ACTIVÉE`);
   console.log(`   🔄 Système de continuation: ✅ ACTIVÉ`);
   console.log(`   🎯 Détection troncature: ✅ AUTOMATIQUE`);
   console.log(`   📏 Capacité: ILLIMITÉE (avec continuation)`);
-  console.log(`\n   ✅ SOLUTION 1 - PUPPETEER-CORE :`);
-  console.log(`   • Chromium système (pas de téléchargement)`);
-  console.log(`   • Détection automatique du chemin`);
-  console.log(`   • Build plus rapide sur Render`);
-  console.log(`   • Taille réduite (pas de Chromium inclus)`);
 });
