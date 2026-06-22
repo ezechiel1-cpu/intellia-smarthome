@@ -21,7 +21,8 @@
     "pdf-parse": "^1.1.1",
     "docx": "^8.0.0",
     "mammoth": "^1.7.2",
-    "puppeteer": "^22.0.0"
+    "puppeteer-core": "^22.0.0",
+    "@puppeteer/browsers": "^1.0.0"
   },
   "devDependencies": {
     "nodemon": "^3.0.1"

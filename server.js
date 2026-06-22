@@ -1,10 +1,10 @@
 // ========================================
-// INTELLIA v13.0 - SYSTÈME ARTIFACTS + PDF/DOCX
+// INTELLIA v13.0 - SYSTÈME ARTIFACTS + PDF/DOCX (Puppeteer-core + LibreOffice)
 // ✅ Génération de documents/code LONGS
 // ✅ Continuation automatique
 // ✅ Détection de troncature
-// ✅ Téléchargement PDF (Puppeteer)
-// ✅ Téléchargement DOCX (LibreOffice)
+// ✅ Téléchargement PDF (Puppeteer-core)
+// ✅ Téléchargement DOCX (LibreOffice + fallback)
 // ========================================
 const express = require('express');
 const cors = require('cors');
@@ -12,7 +12,7 @@ const path = require('path');
 const axios = require('axios');
 const cheerio = require('cheerio');
 const { GoogleGenerativeAI } = require("@google/generative-ai");
-const puppeteer = require('puppeteer');
+const puppeteer = require('puppeteer-core');
 const { exec } = require('child_process');
 const fs = require('fs').promises;
 const os = require('os');
@@ -369,8 +369,54 @@ async function getHistoryFromFirebase(userId, sessionId) {
 }
 
 // ========================================
-// 📄 GÉNÉRATION PDF AVEC PUPPETEER
+// 📄 GÉNÉRATION PDF AVEC PUPPETEER-CORE
 // ========================================
+/**
+ * Trouve automatiquement le chemin de Chromium sur le système
+ */
+async function findChromiumPath() {
+  if (process.env.CHROME_PATH) {
+    try {
+      await fs.access(process.env.CHROME_PATH, fs.constants.X_OK);
+      console.log(`✅ Chromium trouvé via CHROME_PATH: ${process.env.CHROME_PATH}`);
+      return process.env.CHROME_PATH;
+    } catch (e) {
+      console.warn(`⚠️ CHROME_PATH défini mais inaccessible: ${process.env.CHROME_PATH}`);
+    }
+  }
+
+  const commonPaths = [
+    '/usr/bin/chromium-browser',
+    '/usr/bin/chromium',
+    '/usr/bin/google-chrome-stable',
+    '/usr/bin/google-chrome',
+    '/snap/bin/chromium'
+  ];
+
+  for (const p of commonPaths) {
+    try {
+      await fs.access(p, fs.constants.X_OK);
+      console.log(`✅ Chromium trouvé: ${p}`);
+      return p;
+    } catch (e) {}
+  }
+
+  return new Promise((resolve) => {
+    exec('which chromium-browser || which chromium || which google-chrome || which google-chrome-stable',
+      (error, stdout) => {
+        if (stdout && stdout.trim()) {
+          const p = stdout.trim();
+          console.log(`✅ Chromium trouvé via which: ${p}`);
+          resolve(p);
+        } else {
+          console.warn('⚠️ Chromium non trouvé sur le système');
+          resolve(null);
+        }
+      }
+    );
+  });
+}
+
 app.post('/api/download/pdf', async (req, res) => {
   try {
     const { html } = req.body;
@@ -378,19 +424,31 @@ app.post('/api/download/pdf', async (req, res) => {
       return res.status(400).json({ error: 'HTML manquant' });
     }
 
-    console.log('📄 Génération PDF avec Puppeteer...');
-    
-    // Lancer un navigateur headless
+    console.log('📄 Génération PDF avec Puppeteer-core...');
+
+    const executablePath = await findChromiumPath();
+    if (!executablePath) {
+      return res.status(500).json({ 
+        error: 'Chromium non disponible. Vérifiez l\'installation ou définissez CHROME_PATH.'
+      });
+    }
+
     const browser = await puppeteer.launch({
+      executablePath,
       headless: 'new',
-      args: ['--no-sandbox', '--disable-setuid-sandbox']
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-gpu',
+        '--no-first-run',
+        '--no-zygote'
+      ]
     });
+
     const page = await browser.newPage();
+    await page.setContent(html, { waitUntil: 'networkidle0', timeout: 15000 });
 
-    // Définir le contenu HTML avec les styles d'impression
-    await page.setContent(html, { waitUntil: 'networkidle0' });
-
-    // Générer le PDF A4 avec marges
     const pdfBuffer = await page.pdf({
       format: 'A4',
       printBackground: true,
@@ -401,19 +459,18 @@ app.post('/api/download/pdf', async (req, res) => {
     await browser.close();
 
     res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename=document.pdf`);
+    res.setHeader('Content-Disposition', 'attachment; filename=document.pdf');
     res.send(pdfBuffer);
 
     console.log('✅ PDF généré avec succès');
-
   } catch (error) {
     console.error('❌ Erreur génération PDF:', error.message);
-    res.status(500).json({ error: 'Erreur lors de la génération du PDF' });
+    res.status(500).json({ error: 'Erreur lors de la génération du PDF', details: error.message });
   }
 });
 
 // ========================================
-// 📄 GÉNÉRATION DOCX AVEC LIBREOFFICE
+// 📄 GÉNÉRATION DOCX AVEC LIBREOFFICE (fallback)
 // ========================================
 app.post('/api/download/docx', async (req, res) => {
   const tempDir = os.tmpdir();
@@ -426,92 +483,61 @@ app.post('/api/download/docx', async (req, res) => {
       return res.status(400).json({ error: 'HTML manquant' });
     }
 
-    console.log('📄 Génération DOCX avec LibreOffice...');
+    console.log('📄 Génération DOCX...');
 
-    // Écrire le HTML dans un fichier temporaire
     await fs.writeFile(tempHtmlFile, html, 'utf8');
 
     // Vérifier si LibreOffice est disponible
-    let libreOfficeAvailable = true;
+    let libreOfficeAvailable = false;
     try {
       await new Promise((resolve, reject) => {
-        exec('libreoffice --version', (error, stdout, stderr) => {
-          if (error) {
-            libreOfficeAvailable = false;
-            reject(error);
-          } else {
-            resolve(stdout);
-          }
+        exec('libreoffice --version', (error, stdout) => {
+          if (error) reject(error);
+          else resolve(stdout);
         });
       });
+      libreOfficeAvailable = true;
     } catch (e) {
-      libreOfficeAvailable = false;
-      console.warn('⚠️ LibreOffice non installé, utilisation du fallback texte simple');
+      console.warn('⚠️ LibreOffice non installé, fallback texte simple');
     }
 
     if (libreOfficeAvailable) {
-      // Commande LibreOffice : conversion HTML -> DOCX
       const cmd = `libreoffice --headless --convert-to docx --outdir ${tempDir} ${tempHtmlFile}`;
-
       await new Promise((resolve, reject) => {
-        exec(cmd, (error, stdout, stderr) => {
-          if (error) {
-            console.error('❌ LibreOffice error:', stderr || error.message);
-            reject(new Error('Échec de la conversion LibreOffice'));
-          } else {
-            resolve(stdout);
-          }
+        exec(cmd, (error) => {
+          if (error) reject(error);
+          else resolve();
         });
       });
-
-      // Lire le fichier DOCX généré
       const docxBuffer = await fs.readFile(tempDocxFile);
-
-      // Nettoyer les fichiers temporaires
       await fs.unlink(tempHtmlFile).catch(() => {});
       await fs.unlink(tempDocxFile).catch(() => {});
-
       res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
-      res.setHeader('Content-Disposition', `attachment; filename=document.docx`);
+      res.setHeader('Content-Disposition', 'attachment; filename=document.docx');
       res.send(docxBuffer);
-      
       console.log('✅ DOCX généré avec LibreOffice');
-
     } else {
-      // Fallback : extraction de texte simple (ancienne méthode)
-      console.log('📄 Fallback: extraction de texte simple pour DOCX');
+      // Fallback texte simple
       const { Document, Packer, Paragraph, TextRun } = require('docx');
-      
       const $ = cheerio.load(html);
-      $('script, style, .no-print, .code-actions, .doc-actions, button').remove();
+      $('script, style, button').remove();
       const text = $('body').text().trim() || $('html').text().trim();
-      
       const doc = new Document({
         sections: [{
-          properties: {},
-          children: text.split('\n').filter(line => line.trim().length > 0).map(line => 
-            new Paragraph({
-              children: [new TextRun({ text: line.trim(), size: 24 })],
-            })
-          ),
-        }],
+          children: text.split('\n').filter(line => line.trim()).map(line =>
+            new Paragraph({ children: [new TextRun({ text: line.trim(), size: 24 })] })
+          )
+        }]
       });
-      
       const buffer = await Packer.toBuffer(doc);
-      
-      // Nettoyer les fichiers temporaires
       await fs.unlink(tempHtmlFile).catch(() => {});
-
       res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
-      res.setHeader('Content-Disposition', `attachment; filename=document.docx`);
+      res.setHeader('Content-Disposition', 'attachment; filename=document.docx');
       res.send(buffer);
-      
       console.log('✅ DOCX généré en fallback texte simple');
     }
-
   } catch (error) {
     console.error('❌ Erreur génération DOCX:', error.message);
-    // En cas d'erreur, essayer de nettoyer
     await fs.unlink(tempHtmlFile).catch(() => {});
     await fs.unlink(tempDocxFile).catch(() => {});
     res.status(500).json({ error: 'Erreur lors de la génération du DOCX' });
@@ -1780,7 +1806,6 @@ MESSAGE: "${userMessage}"
   return { success: false, error: lastError };
 }
 
-// Fonction d'extraction des métadonnées pour le document
 function extractDocumentMetadata(html) {
   const titleMatch = html.match(/<title>(.*?)<\/title>/i) || 
                      html.match(/<h1[^>]*>(.*?)<\/h1>/i);
@@ -1919,11 +1944,6 @@ app.post('/api/chat', async (req, res) => {
 });
 
 // ========================================
-// 📥 ROUTES DE TÉLÉCHARGEMENT (PDF + DOCX)
-// ========================================
-// Les routes sont définies plus haut (avant la route /api/chat)
-
-// ========================================
 // 🌐 ROUTE SANTÉ
 // ========================================
 app.get('/api/health', async (req, res) => {
@@ -1934,7 +1954,7 @@ app.get('/api/health', async (req, res) => {
   let libreOfficeAvailable = false;
   try {
     await new Promise((resolve, reject) => {
-      exec('libreoffice --version', (error, stdout, stderr) => {
+      exec('libreoffice --version', (error, stdout) => {
         if (error) reject(error);
         else resolve(stdout);
       });
@@ -1943,10 +1963,13 @@ app.get('/api/health', async (req, res) => {
   } catch (e) {
     libreOfficeAvailable = false;
   }
+
+  // Vérifier si Chromium est trouvé
+  let chromiumPath = await findChromiumPath();
   
   res.json({
     status: 'ok',
-    version: '13.0-pdf-docx',
+    version: '13.0-puppeteer-core',
     features: {
       gemini: API_KEYS.length > 0,
       imageGeneration: false,
@@ -1966,7 +1989,7 @@ app.get('/api/health', async (req, res) => {
       autoDeleteDevices: true,
       intelligentPlanningDeletion: true,
       lokossaTemperature: true,
-      documentDownload: "PDF (Puppeteer) + DOCX (LibreOffice)",
+      documentDownload: "PDF (Puppeteer-core) + DOCX (LibreOffice)",
       documentMetadata: true,
       supportedFiles: "PDF, DOCX, TXT, HTML, JS, JSON, CSS, XLSX, CSV, Images",
       maxTokens: 65536
@@ -1980,12 +2003,16 @@ app.get('/api/health', async (req, res) => {
       temperature: beninTime.temperature
     },
     conversions: {
-      pdf: "Puppeteer (headless Chromium)",
+      pdf: chromiumPath ? "Puppeteer-core (Chromium système)" : "Puppeteer-core (Chromium non trouvé)",
       docx: libreOfficeAvailable ? "LibreOffice (headless)" : "Fallback: extraction texte simple"
     },
+    system: {
+      chromium_path: chromiumPath || "non trouvé",
+      libreoffice_available: libreOfficeAvailable
+    },
     improvements_v13_0: {
-      pdf_generation: "✅ Téléchargement PDF fidèle avec Puppeteer",
-      docx_generation: "✅ Téléchargement DOCX avec LibreOffice (fallback texte simple)",
+      pdf_generation: "✅ Puppeteer-core avec Chromium système",
+      docx_generation: "✅ DOCX avec LibreOffice (fallback texte simple)",
       document_compatibility: "✅ Instructions A4/Word dans le prompt",
       responsive_documents: "✅ Mobile-first avec tableaux pour Word",
       download_routes: "✅ /api/download/pdf et /api/download/docx"
@@ -1998,33 +2025,25 @@ app.get('/api/health', async (req, res) => {
 // ========================================
 app.listen(PORT, () => {
   console.log('\n🏠 ╔═══════════════════════════════════════╗');
-  console.log('   ║  INTELLIA v13.0 - PDF/DOCX COMPLET  ║');
+  console.log('   ║  INTELLIA v13.0 - PUPPETEER-CORE    ║');
   console.log('   ╚═══════════════════════════════════════╝');
   console.log(`\n   🚀 Serveur: http://localhost:${PORT}`);
   console.log(`   🔑 Clés Gemini: ${API_KEYS.length}`);
   console.log(`   🤖 Modèle: gemini-2.5-flash (65536 tokens)`);
-  console.log(`   🔥 Synchro Firebase (Appareils): Activée`);
-  console.log(`   💾 Synchro Firebase (Chats): Activée`);
+  console.log(`   🔥 Synchro Firebase: Activée`);
   console.log(`   📅 Planning AI: Prêt`);
-  console.log(`   🧠 Planning Intelligent: Activé (Routines + ON/OFF Fix)`);
-  console.log(`   🗑️ Suppression Intelligente: Activée`);
-  console.log(`   ➕ Auto Add Devices: Activé`);
-  console.log(`   🗑️ Auto Delete Devices: Activé`);
   console.log(`   🌡️ Température Lokossa: Temps réel`);
   console.log(`   📄 Génération de documents: ✅ ACTIVÉE (HTML)`);
-  console.log(`   📥 Téléchargement PDF: ✅ ACTIVÉ (Puppeteer)`);
+  console.log(`   📥 Téléchargement PDF: ✅ ACTIVÉ (Puppeteer-core)`);
   console.log(`   📥 Téléchargement DOCX: ✅ ACTIVÉ (LibreOffice + fallback)`);
   console.log(`   📋 Métadonnées documents: ✅ ACTIVÉES`);
   console.log(`   💻 Génération de code long: ✅ ACTIVÉE`);
   console.log(`   🔄 Système de continuation: ✅ ACTIVÉ`);
   console.log(`   🎯 Détection troncature: ✅ AUTOMATIQUE`);
   console.log(`   📏 Capacité: ILLIMITÉE (avec continuation)`);
-  console.log(`   ✅ Output Markdown: Activé`);
-  console.log(`   🎯 MaxTokens: 65536 (MAXIMUM)`);
-  console.log(`\n   ✅ NOUVEAUTÉS v13.0:`);
-  console.log(`   • PDF généré avec Puppeteer (fidèle au visuel)`);
-  console.log(`   • DOCX généré avec LibreOffice (compatible Word)`);
-  console.log(`   • Prompt enrichi pour documents A4 professionnels`);
-  console.log(`   • Structure simplifiée (tableaux) pour compatibilité Word`);
-  console.log(`   • Fallback texte simple si LibreOffice non installé`);
+  console.log(`\n   ✅ SOLUTION 1 - PUPPETEER-CORE :`);
+  console.log(`   • Chromium système (pas de téléchargement)`);
+  console.log(`   • Détection automatique du chemin`);
+  console.log(`   • Build plus rapide sur Render`);
+  console.log(`   • Taille réduite (pas de Chromium inclus)`);
 });
