@@ -3,10 +3,9 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
-  <title>SmartHome Intelligence </title>
+  <title>SmartHome Intelligence</title>
   <meta name="theme-color" content="#06b6d4" />
   
-  <!-- CDN Existants -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
@@ -42,7 +41,7 @@
     }
     body.night-mode #login-overlay { background: linear-gradient(135deg, #0e0f13, #0f1724); }
     body.night-mode input, body.night-mode select, body.night-mode textarea {
-      background: rgba(15, 23, 42, 0.8); color: #e2e8f0; border: 1px solid rgba(255, 255, 0.2);
+      background: rgba(15, 23, 42, 0.8); color: #e2e8f0; border: 1px solid rgba(255, 255, 255, 0.2);
     }
     body.night-mode input::placeholder { color: #94a3b8; }
     body.night-mode .btn { background: rgba(51, 65, 85, 0.8); color: #e2e8f0; border: 1px solid rgba(255, 255, 255, 0.1); }
@@ -394,10 +393,11 @@
       -webkit-overflow-scrolling: touch;
     }
     
+    /* ===== NOUVELLE BARRE DE SAISIE STYLE CLAUDE ===== */
     #chat-input-container {
-      padding: 12px; 
-      border-top: 1px solid rgba(0,0,0,0.1);
-      background: rgba(255, 255, 255, 0.9); 
+      padding: 12px 16px;
+      border-top: 1px solid rgba(0,0,0,0.08);
+      background: rgba(255, 255, 255, 0.92);
       backdrop-filter: blur(10px);
       flex-shrink: 0;
       max-width: 800px;
@@ -406,25 +406,188 @@
       position: relative;
       bottom: auto;
     }
-    
-    #chat-input-flex { display: flex; gap: 8px; position: relative; }
+    body.night-mode #chat-input-container {
+      background: rgba(15, 23, 42, 0.92);
+      border-top-color: rgba(255,255,255,0.08);
+    }
+
+    #chat-input-flex {
+      display: flex;
+      align-items: flex-end;
+      gap: 8px;
+      background: transparent;
+    }
+
+    /* Trombone */
+    #attach-file-btn {
+      flex-shrink: 0;
+      background: transparent;
+      border: none;
+      font-size: 20px;
+      color: var(--muted);
+      padding: 8px 6px;
+      cursor: pointer;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s ease, color 0.2s ease;
+    }
+    #attach-file-btn:hover {
+      background: rgba(0,0,0,0.05);
+      color: var(--dark);
+    }
+    body.night-mode #attach-file-btn:hover {
+      background: rgba(255,255,255,0.08);
+      color: #fff;
+    }
+
+    /* Champ de texte */
     #chatFullInput {
-      flex: 1; padding: 12px; border-radius: 8px;
-      border: 1px solid #ddd; font-size: 15px;
+      flex: 1;
+      min-height: 44px;
+      max-height: 200px;
+      padding: 10px 16px;
+      border-radius: 24px;
+      border: 1px solid #ddd;
+      font-size: 15px;
+      font-family: inherit;
+      resize: none;
+      overflow-y: auto;
+      line-height: 1.5;
+      background: rgba(255,255,255,0.95);
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+      scrollbar-width: thin;
     }
-    #chat-input-buttons { display: flex; gap: 8px; }
-    #chatFullSend { padding: 0 16px; }
-    
-    #attachment-preview-container {
-      display: flex; gap: 8px; margin-bottom: 8px; flex-wrap: wrap;
+    #chatFullInput:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.15);
     }
-    .attachment-preview {
-      display: flex; align-items: center; gap: 8px;
-      background: #e9ecef; padding: 6px 10px; border-radius: 6px; font-size: 13px;
+    body.night-mode #chatFullInput {
+      background: rgba(15, 23, 42, 0.9);
+      border-color: rgba(255,255,255,0.2);
+      color: #e2e8f0;
     }
-    .attachment-preview img { width: 32px; height: 32px; object-fit: cover; border-radius: 4px; }
-    .remove-attachment { cursor: pointer; font-size: 14px; color: var(--danger); }
-    #file-input { display: none; }
+    body.night-mode #chatFullInput:focus {
+      border-color: var(--accent-cyan);
+      box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.15);
+    }
+    body.night-mode #chatFullInput::placeholder {
+      color: #94a3b8;
+    }
+
+    /* Groupe de boutons à droite */
+    #chat-input-buttons {
+      display: flex;
+      gap: 4px;
+      align-items: center;
+      flex-shrink: 0;
+    }
+
+    #chat-input-buttons .btn {
+      min-width: 40px;
+      min-height: 40px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+      border: none;
+      font-size: 18px;
+      color: var(--muted);
+      cursor: pointer;
+      transition: background 0.2s ease, color 0.2s ease, transform 0.1s ease;
+      padding: 0;
+    }
+    #chat-input-buttons .btn:hover {
+      background: rgba(0,0,0,0.05);
+      color: var(--dark);
+    }
+    body.night-mode #chat-input-buttons .btn:hover {
+      background: rgba(255,255,255,0.08);
+      color: #fff;
+    }
+    #chat-input-buttons .btn:active {
+      transform: scale(0.92);
+    }
+
+    #chat-input-buttons .btn.primary {
+      background: var(--primary);
+      color: white;
+    }
+    #chat-input-buttons .btn.primary:hover {
+      background: #3651de;
+      color: white;
+    }
+    #chat-input-buttons .btn.warn {
+      background: var(--danger);
+      color: white;
+    }
+    #chat-input-buttons .btn.warn:hover {
+      background: #c0392b;
+      color: white;
+    }
+
+    /* Bouton muet : positionné au-dessus de la barre, en tête de chat */
+    #stopSpeechBtnContainer {
+      display: none;
+      justify-content: center;
+      padding: 6px 0 10px 0;
+      margin-bottom: 4px;
+    }
+    #stopSpeechBtnContainer.visible {
+      display: flex;
+    }
+    #stopSpeechBtn {
+      background: var(--danger);
+      color: white;
+      border: none;
+      border-radius: 24px;
+      padding: 6px 18px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 4px 12px rgba(231, 76, 60, 0.35);
+      transition: all 0.2s ease;
+      animation: fadeInUp 0.25s ease;
+    }
+    #stopSpeechBtn:hover {
+      transform: scale(1.03);
+      box-shadow: 0 6px 20px rgba(231, 76, 60, 0.5);
+    }
+    #stopSpeechBtn i {
+      font-size: 16px;
+    }
+
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Indicateurs en dessous */
+    #chat-status-bar {
+      margin-top: 8px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .chip {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 999px;
+      background: rgba(0,0,0,0.05);
+      font-size: 12px;
+      color: var(--muted);
+    }
+    body.night-mode .chip {
+      background: rgba(255,255,255,0.06);
+    }
 
     .msg { 
       padding: 10px 14px; border-radius: 12px; max-width: 90%; 
@@ -471,6 +634,7 @@
       border-radius: 12px;
       border: 1px solid rgba(0,0,0,0.08);
       transition: all 0.2s ease;
+      flex-wrap: wrap;
     }
     .doc-card:hover {
       background: rgba(0,0,0,0.05);
@@ -495,7 +659,7 @@
     }
     .doc-card-info {
       flex: 1;
-      min-width: 0;
+      min-width: 120px;
     }
     .doc-card-title {
       font-weight: 600;
@@ -510,15 +674,54 @@
       display: flex;
       gap: 8px;
       flex-shrink: 0;
+      flex-wrap: wrap;
+    }
+    .doc-card-actions .btn {
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 13px;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+    .doc-card-actions .btn:hover {
+      transform: translateY(-1px);
+    }
+    .doc-card-actions .btn-primary {
+      background: var(--primary);
+      color: white;
+    }
+    .doc-card-actions .btn-primary:hover {
+      background: #3651de;
+    }
+    .doc-card-actions .btn-success {
+      background: var(--success);
+      color: white;
+    }
+    .doc-card-actions .btn-success:hover {
+      background: #27ae60;
+    }
+    .doc-card-actions .btn-warning {
+      background: var(--warning);
+      color: white;
+    }
+    .doc-card-actions .btn-warning:hover {
+      background: #e67e22;
     }
     @media (max-width: 600px) {
-      .doc-card-actions {
+      .doc-card {
         flex-direction: column;
-        gap: 4px;
+        align-items: stretch;
+      }
+      .doc-card-actions {
+        justify-content: center;
       }
       .doc-card-actions .btn {
-        padding: 6px 10px;
-        font-size: 12px;
+        flex: 1;
+        justify-content: center;
       }
     }
     
@@ -541,7 +744,6 @@
     .continue-btn:hover {
       transform: translateY(-2px);
       box-shadow: 0 6px 20px rgba(67, 97, 238, 0.4);
-      background: linear-gradient(135deg, #3651de, #2941ce);
     }
     .continue-btn:active {
       transform: translateY(0);
@@ -560,7 +762,7 @@
     
     .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
     .card { background: var(--card-bg); border-radius: 12px; padding: 14px; box-shadow: var(--shadow); }
-    .chip { display: inline-block; padding: 6px 10px; border-radius: 999px; background: rgba(0,0,0,0.05); margin-right: 8px; font-size: 13px; }
+    
     .device-card { border-radius: 12px; padding: 14px; background: var(--card-bg); box-shadow: var(--shadow); transition: transform 0.2s ease; }
     .device-card:hover { transform: translateY(-2px); }
     .device-header { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
@@ -583,16 +785,6 @@
     .btn:hover { transform: translateY(-1px); box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
     .btn.primary { background: var(--primary); color: white; }
     .btn.warn { background: var(--danger); color: white; }
-    
-    #toggleVoiceBtn.muted {
-      color: var(--danger);
-      background: rgba(231, 76, 60, 0.1);
-      border: 1px solid var(--danger);
-    }
-    body.night-mode #toggleVoiceBtn.muted {
-      background: rgba(231, 76, 60, 0.3);
-      color: #f0a0a0;
-    }
     
     .btn.success { background: var(--success); color: white; }
     .btn.warning { background: var(--warning); color: white; }
@@ -940,38 +1132,6 @@
     .voice-btn-desktop {
       display: flex;
     }
-    .voice-menu-btn-mobile {
-      display: none;
-    }
-
-    #voice-dropdown-menu {
-      position: absolute;
-      bottom: 100%;
-      right: 60px;
-      background: white;
-      border-radius: 12px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-      padding: 8px;
-      min-width: 200px;
-    }
-
-    .voice-menu-item {
-      width: 100%;
-      padding: 12px 16px;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      border-radius: 8px;
-    }
-
-    .voice-menu-item:hover {
-      background: rgba(67, 97, 238, 0.1);
-    }
-
-    .voice-menu-item.active {
-      background: rgba(67, 97, 238, 0.15);
-      color: #4361ee;
-    }
 
     @media (max-width: 760px) {
       .grid { grid-template-columns: 1fr; }
@@ -982,14 +1142,7 @@
       .container { padding-bottom: 88px; }
       
       .voice-btn-desktop {
-        display: none !important;
-      }
-      .voice-menu-btn-mobile {
         display: flex !important;
-      }
-      
-      #voice-dropdown-menu {
-        right: 10px;
       }
 
       #sec-intelligence {
@@ -1022,7 +1175,7 @@
       }
       
       #chat-input-buttons button {
-        min-width: 48px; min-height: 48px; font-size: 18px;
+        min-width: 44px; min-height: 44px; font-size: 17px;
       }
       
       #stopAIBtn {
@@ -1030,8 +1183,8 @@
         color: white !important;
         animation: pulse-stop 1.5s infinite;
         font-weight: 700;
-        min-width: 56px !important;
-        min-height: 48px !important;
+        min-width: 48px !important;
+        min-height: 44px !important;
         box-shadow: 0 4px 12px rgba(231, 76, 60, 0.5) !important;
         border: 2px solid rgba(255, 255, 255, 0.3) !important;
       }
@@ -1054,7 +1207,6 @@
         transform: scale(1.1) !important;
       }
       
-      #chatFullSend { min-width: 56px; min-height: 48px; }
       #chatFullInput { min-height: 48px; font-size: 16px; }
       
       #chat-section-container { 
@@ -1078,10 +1230,23 @@
         width: 100%;
         max-width: 100%;
         margin: 0;
-        padding: 12px;
+        padding: 12px 12px 10px;
         transform: none;
         z-index: 999;
         box-sizing: border-box;
+        border-radius: 0;
+      }
+      
+      #chatFullInput {
+        border-radius: 20px;
+        padding: 10px 14px;
+        font-size: 15px;
+      }
+      
+      #attach-file-btn {
+        font-size: 18px;
+        width: 36px;
+        height: 36px;
       }
       
       .msg { 
@@ -1163,6 +1328,14 @@
       .doc-facture .facture-table td {
         padding: 8px;
       }
+
+      #stopSpeechBtn {
+        font-size: 12px;
+        padding: 5px 14px;
+      }
+      #stopSpeechBtn i {
+        font-size: 14px;
+      }
     }
     
     @media (min-width: 761px) {
@@ -1178,6 +1351,8 @@
         position: relative;
         transform: none;
         left: auto;
+        bottom: auto;
+        border-radius: 0;
       }
     }
 
@@ -1215,375 +1390,422 @@
     #proactive-suggestion { transition: opacity 0.5s ease-in-out; }
     #proactive-suggestion.fade-out { opacity: 0; }
 
+    #attachment-preview-container {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 8px;
+      flex-wrap: wrap;
+    }
+    .attachment-preview {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(0,0,0,0.06);
+      padding: 4px 10px 4px 6px;
+      border-radius: 20px;
+      font-size: 13px;
+    }
+    body.night-mode .attachment-preview {
+      background: rgba(255,255,255,0.08);
+    }
+    .attachment-preview img {
+      width: 28px;
+      height: 28px;
+      object-fit: cover;
+      border-radius: 4px;
+    }
+    .remove-attachment {
+      cursor: pointer;
+      font-size: 14px;
+      color: var(--danger);
+      padding: 2px 4px;
+    }
+    .remove-attachment:hover {
+      color: #c0392b;
+    }
+    #file-input { display: none; }
+
+    #chat-loading {
+      display: none;
+      padding-bottom: 8px;
+      text-align: center;
+      font-style: italic;
+      color: var(--muted);
+      font-size: 14px;
+    }
   </style>
 </head>
 <body>
 
-  <div id="print-root"></div>
+<div id="print-root"></div>
 
-  <div id="login-overlay">
-    <div class="login-box">
-      <div class="app-icon"><i class="fas fa-home-user"></i></div>
-      <h2>SmartHome Intelligence </h2>
-      <p>Veuillez vous connecter pour accéder à votre assistant domotique.</p>
-      <button class="btn primary" id="googleSignInOverlayBtn" style="width:100%; justify-content:center;">
-          <svg style="width:20px; height:20px; margin-right:8px;" viewBox="0 0 24 24"><path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" style="color:#4285F4"></path><path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" style="color:#34A853"></path><path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" style="color:#FBBC05"></path><path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" style="color:#EA4335"></path><path fill="none" d="M1 1h22v22H1z"></path></svg>
-          Se connecter avec Google
-      </button>
-    </div>
+<!-- Overlay de connexion -->
+<div id="login-overlay">
+  <div class="login-box">
+    <div class="app-icon"><i class="fas fa-home-user"></i></div>
+    <h2>SmartHome Intelligence</h2>
+    <p>Veuillez vous connecter pour accéder à votre assistant domotique.</p>
+    <button class="btn primary" id="googleSignInOverlayBtn" style="width:100%; justify-content:center;">
+      <svg style="width:20px; height:20px; margin-right:8px;" viewBox="0 0 24 24">
+        <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" style="color:#4285F4"></path>
+        <path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" style="color:#34A853"></path>
+        <path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" style="color:#FBBC05"></path>
+        <path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" style="color:#EA4335"></path>
+        <path fill="none" d="M1 1h22v22H1z"></path>
+      </svg>
+      Se connecter avec Google
+    </button>
   </div>
+</div>
 
-  <div class="main-app">
-    
-    <div class="container">
-      <header id="main-header">
-        <h1 id="section-header-title">Domotique</h1>
-        <div style="margin-top:8px; display:flex; flex-wrap: wrap; justify-content: center; gap: 8px;">
-          <span id="statusLocal" class="chip">ESP32: -</span>
-          <span id="statusFirebase" class="chip">Firebase : -</span> 
-          <span id="statusOnline" class="chip">Assistant : -</span>
-          <span id="intelliaLatency" class="chip">latence: -</span>
-          <span id="db-count" class="chip">on: 0</span>
-        </div>
-      </header>
+<!-- Application principale -->
+<div class="main-app">
+  <div class="container">
+    <header id="main-header">
+      <h1 id="section-header-title">Domotique</h1>
+      <div style="margin-top:8px; display:flex; flex-wrap: wrap; justify-content: center; gap: 8px;">
+        <span id="statusLocal" class="chip">ESP32: -</span>
+        <span id="statusFirebase" class="chip">Firebase : -</span>
+        <span id="statusOnline" class="chip">Assistant : -</span>
+        <span id="intelliaLatency" class="chip">latence: -</span>
+        <span id="db-count" class="chip">on: 0</span>
+      </div>
+    </header>
 
-      <section id="sec-domotique" class="section active">
-        <div class="grid" style="grid-template-columns:1fr">
-          <div>
-            <div class="card">
-              <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
-                <strong>Contrôles rapides</strong>
-                <div class="flex" style="flex-wrap:wrap">
-                  <button class="btn" id="dayModeBtn"><i class="fas fa-sun"></i> Jour</button>
-                  <button class="btn" id="nightModeBtn"><i class="fas fa-moon"></i> Nuit</button>
-                  <button class="btn success" id="allOnBtn">Tout allumer</button>
-                  <button class="btn warn" id="allOffBtn">Tout éteindre</button>
-                </div>
+    <!-- Section Domotique -->
+    <section id="sec-domotique" class="section active">
+      <div class="grid" style="grid-template-columns:1fr">
+        <div>
+          <div class="card">
+            <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+              <strong>Contrôles rapides</strong>
+              <div class="flex" style="flex-wrap:wrap">
+                <button class="btn" id="dayModeBtn"><i class="fas fa-sun"></i> Jour</button>
+                <button class="btn" id="nightModeBtn"><i class="fas fa-moon"></i> Nuit</button>
+                <button class="btn success" id="allOnBtn">Tout allumer</button>
+                <button class="btn warn" id="allOffBtn">Tout éteindre</button>
               </div>
-              
-              <div style="margin-top:12px; border-top: 1px solid rgba(0,0,0,0.1); padding-top:12px;">
-                <strong><i class="fas fa-robot"></i> Assistant Vocal (Raccourci)</strong>
-                <button class="btn primary" id="quickVoiceToggleBtn" style="width:100%; justify-content:center; margin-top:8px; font-size: 15px;">
-                  <i class="fas fa-waveform"></i> Lancer la conversation
-                </button>
-              </div>
-
             </div>
             
-            <div class="card" style="margin-top:12px">
-              <h3>💡 Suggestions Proactives</h3>
-              <p id="proactive-suggestion" style="font-size:14px; color:var(--muted)">...</p>
-            </div>
-
-            <div class="card" style="margin-top:12px" id="addDeviceCard">
-              <button class="btn primary" id="toggleAddDeviceForm" style="width: 100%; justify-content: center;">
-                ➕ Ajouter un appareil
+            <div style="margin-top:12px; border-top: 1px solid rgba(0,0,0,0.1); padding-top:12px;">
+              <strong><i class="fas fa-robot"></i> Assistant Vocal (Raccourci)</strong>
+              <button class="btn primary" id="quickVoiceToggleBtn" style="width:100%; justify-content:center; margin-top:8px; font-size: 15px;">
+                <i class="fas fa-waveform"></i> Lancer la conversation
               </button>
-              <div id="addDeviceFormContainer" style="display: none; margin-top: 15px;">
-                <label>Nom</label>
-                <input id="newDeviceName" placeholder="Lampe Jardin" style="width:100%;padding:8px;border-radius:8px;border:1px solid #ddd" autocomplete="off" />
-                <label>Type</label>
-                <select id="newDeviceType" style="width:100%;padding:8px;border-radius:8px;border:1px solid #ddd">
-                  <option value="lamp">Lampe</option> <option value="ventilateur">Ventilateur</option>
-                  <option value="plug">Prise</option> <option value="thermostat">Thermostat</option>
-                  <option value="volet">Volet Roulant</option>
-                </select>
-                <label>Pièce</label>
-                <input id="newDeviceRoom" placeholder="Salon, Chambre..." style="width:100%;padding:8px;border-radius:8px;border:1px solid #ddd" autocomplete="off" />
-                <div style="margin-top:10px;display:flex;gap:8px">
-                  <button class="btn primary" id="btnAddDevice">Ajouter</button>
-                  <button class="btn" id="btnRefreshDevices">Rafraîchir</button>
-                </div>
-                <div id="addDeviceResult" style="margin-top:8px;color:green"></div>
-              </div>
             </div>
-
-            <div style="margin-top:12px"> <div id="deviceGrid" class="grid"></div> </div>
           </div>
-        </div>
-      </section>
+          
+          <div class="card" style="margin-top:12px">
+            <h3>💡 Suggestions Proactives</h3>
+            <p id="proactive-suggestion" style="font-size:14px; color:var(--muted)">...</p>
+          </div>
 
-      <section id="sec-intelligence" class="section">
-        <div id="sidebar-overlay"></div>
-        
-        <div id="chat-sidebar">
-          <div id="chat-sidebar-header">
-            <button class="btn" id="close-sidebar-btn" style="display: none;">
-              <i class="fas fa-arrow-left"></i> Retour
+          <div class="card" style="margin-top:12px" id="addDeviceCard">
+            <button class="btn primary" id="toggleAddDeviceForm" style="width: 100%; justify-content: center;">
+              ➕ Ajouter un appareil
             </button>
-            <button class="btn primary" id="new-chat-btn">
-              <i class="fas fa-plus"></i> Nouvelle Discussion
-            </button>
-          </div>
-          <div id="chat-history-list">
-          </div>
-        </div>
-        
-        <div id="chat-section-container">
-          <div id="chat-header">
-            <button id="sidebar-toggle-btn"><i class="fas fa-bars"></i></button>
-            <span id="chat-title">💬 Assistant IA</span>
-          </div>
-          
-          <div id="chatFullWindow">
-          </div>
-          
-          <div id="chat-input-container">
-            <div id="chat-loading" style="display:none; padding-bottom: 8px; text-align:center; font-style:italic; color:var(--muted); font-size: 14px;">
-              <i class="fas fa-spinner fa-spin"></i> Assistant en train de réfléchir...
-            </div>
-          
-            <div id="attachment-preview-container"></div>
-            
-            <div id="chat-input-flex">
-              <input type="file" id="file-input" accept="image/*,application/pdf,text/*,.txt,.docx,.doc,.html,.htm,.js,.json,.css,.xml,.csv,.xlsx,.xls,.pptx,.ppt,.zip,.rar" multiple>
-              <button class="btn" id="attach-file-btn" title="Joindre un fichier">
-                <i class="fas fa-paperclip"></i>
-              </button>
-              
-              <input id="chatFullInput" placeholder="Posez une question à l'Assistant..." />
-              
-              <div id="chat-input-buttons">
-                <button class="btn voice-btn-desktop" id="voicePushToTalk" title="Appuyer pour enregistrer">
-                  <i class="fas fa-microphone-alt"></i>
-                </button>
-                <button class="btn voice-btn-desktop" id="voiceContinuous" title="Mode conversation continue">
-                  <i class="fas fa-comment-dots"></i>
-                </button>
-                <button class="btn voice-btn-desktop" id="toggleVoiceBtn" title="Activer/Désactiver la synthèse vocale">
-                  <i class="fas fa-volume-up"></i>
-                </button>
-                
-                <button class="btn voice-menu-btn-mobile" id="voiceMenuBtn" title="Options vocales">
-                  <i class="fas fa-ellipsis-v"></i>
-                </button>
-                
-                <button class="btn primary" id="chatFullSend">
-                  <i class="fas fa-paper-plane"></i>
-                </button>
-                
-                <button class="btn warn" id="stopAIBtn" style="display: none; min-width: 56px; min-height: 48px;">
-                  <i class="fas fa-stop-circle" style="font-size: 20px;"></i>
-                </button>
-              </div>
-            </div>
-
-            <div id="voice-dropdown-menu" style="display: none;">
-              <button class="voice-menu-item" data-action="push-to-talk">
-                <i class="fas fa-microphone-alt"></i> Enregistrer
-              </button>
-              <button class="voice-menu-item" data-action="continuous">
-                <i class="fas fa-comment-dots"></i> Mode continu
-              </button>
-              <button class="voice-menu-item" data-action="toggle-tts">
-                <i class="fas fa-volume-up"></i> Synthèse vocale
-              </button>
-            </div>
-
-            <div style="margin-top:8px; display:flex; flex-wrap:wrap; gap: 8px;">
-              <span class="chip">Mode Conversation: <span id="continuousStatus">Désactivé</span></span>
-              <span class="chip" id="intelliaStatus">Assistant: Non connecté</span>
-              <span class="chip" id="voiceStatus">Voix: Inactive</span>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section id="sec-planning" class="section">
-        <div class="two-column">
-          <div class="card">
-            <strong>⏰ Ajouter une planification</strong>
-            <div style="margin-top:12px">
-              <label>Appareil</label>
-              <select id="plan-device" style="width:100%;padding:8px;border-radius:8px;border:1px solid #ddd;margin-bottom:10px"></select>
-              
-              <label>Fréquence</label>
-              <select id="plan-frequency" style="width:100%;padding:8px;border-radius:8px;border:1px solid #ddd;margin-bottom:10px">
-                <option value="once">Une fois (date spécifique)</option>
-                <option value="daily">Tous les jours</option>
-                <option value="weekly">Hebdomadaire (certains jours)</option>
-                <option value="monthly">Mensuel</option>
+            <div id="addDeviceFormContainer" style="display: none; margin-top: 15px;">
+              <label>Nom</label>
+              <input id="newDeviceName" placeholder="Lampe Jardin" style="width:100%;padding:8px;border-radius:8px;border:1px solid #ddd" autocomplete="off" />
+              <label>Type</label>
+              <select id="newDeviceType" style="width:100%;padding:8px;border-radius:8px;border:1px solid #ddd">
+                <option value="lamp">Lampe</option>
+                <option value="ventilateur">Ventilateur</option>
+                <option value="plug">Prise</option>
+                <option value="thermostat">Thermostat</option>
+                <option value="volet">Volet Roulant</option>
               </select>
-
-              <div id="opt-date" style="margin-bottom:10px">
-                <label>Date</label>
-                <input type="date" id="plan-date" style="width:100%;padding:8px;border-radius:8px;border:1px solid #ddd" />
+              <label>Pièce</label>
+              <input id="newDeviceRoom" placeholder="Salon, Chambre..." style="width:100%;padding:8px;border-radius:8px;border:1px solid #ddd" autocomplete="off" />
+              <div style="margin-top:10px;display:flex;gap:8px">
+                <button class="btn primary" id="btnAddDevice">Ajouter</button>
+                <button class="btn" id="btnRefreshDevices">Rafraîchir</button>
               </div>
-
-              <div id="opt-days" style="display:none;margin-bottom:10px">
-                <label>Jours actifs</label>
-                <div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:8px">
-                  <label class="chip" style="cursor:pointer;user-select:none"><input type="checkbox" class="day-checkbox" value="1" style="margin-right:4px"> Lundi</label>
-                  <label class="chip" style="cursor:pointer;user-select:none"><input type="checkbox" class="day-checkbox" value="2" style="margin-right:4px"> Mardi</label>
-                  <label class="chip" style="cursor:pointer;user-select:none"><input type="checkbox" class="day-checkbox" value="3" style="margin-right:4px"> Mercredi</label>
-                  <label class="chip" style="cursor:pointer;user-select:none"><input type="checkbox" class="day-checkbox" value="4" style="margin-right:4px"> Jeudi</label>
-                  <label class="chip" style="cursor:pointer;user-select:none"><input type="checkbox" class="day-checkbox" value="5" style="margin-right:4px"> Vendredi</label>
-                  <label class="chip" style="cursor:pointer;user-select:none"><input type="checkbox" class="day-checkbox" value="6" style="margin-right:4px"> Samedi</label>
-                  <label class="chip" style="cursor:pointer;user-select:none"><input type="checkbox" class="day-checkbox" value="0" style="margin-right:4px"> Dimanche</label>
-                </div>
-              </div>
-
-              <label>Heure</label>
-              <input type="time" id="plan-time" style="width:100%;padding:8px;border-radius:8px;border:1px solid #ddd;margin-bottom:10px" />
-              
-              <label>Action</label>
-              <select id="plan-action" style="width:100%;padding:8px;border-radius:8px;border:1px solid #ddd;margin-bottom:10px">
-                <option value="ON">Allumer</option><option value="OFF">Éteindre</option>
-              </select>
-
-              <div style="display:flex;gap:8px">
-                <button class="btn primary" id="addPlan" style="flex:1"><i class="fas fa-plus"></i> Planifier</button>
-                <button class="btn warning" id="clearAllPlans" style="flex:1"><i class="fas fa-trash"></i> Effacer tout</button>
-              </div>
+              <div id="addDeviceResult" style="margin-top:8px;color:green"></div>
             </div>
           </div>
 
-          <div class="card">
-            <strong>📋 Tâches Programmées</strong>
-            <div id="planningTable" style="margin-top:12px;font-size:13px"></div>
+          <div style="margin-top:12px">
+            <div id="deviceGrid" class="grid"></div>
           </div>
         </div>
-      </section>
+      </div>
+    </section>
 
-      <section id="sec-params" class="section">
-        <div class="card">
-          <h2>Paramètres du Système</h2>
-          
-          <div class="settings-group">
-            <h3>⚡ Connexion Locale (WebSocket)</h3>
-            <p style="font-size:13px; color:var(--muted); margin-bottom:10px;">
-              Permet un contrôle instantané lorsque vous êtes sur le même WiFi que l'ESP32.
-            </p>
-            <label>Adresse IP de l'ESP32 :</label>
-            <input id="esp32IpInput" placeholder="192.168.x.x" style="width:100%;padding:8px;border-radius:8px;border:1px solid #ddd" />
-            <div style="margin-top:10px;display:flex;gap:8px">
-              <button class="btn primary" id="btnConnectLocal">Sauver & Connecter</button>
-            </div>
-          </div>
-          
-          <div class="settings-group">
-            <h3>Apparence</h3>
-            <div class="toggle-section">
-              <span>Mode sombre</span>
-              <label class="switch-3d"><input type="checkbox" id="darkModeToggle"><span class="slider-3d"></span></label>
-            </div>
-          </div>
-          <div class="settings-group">
-            <h3>Notifications</h3>
-            <div class="toggle-section">
-              <span>Activer les notifications</span>
-              <label class="switch-3d"><input type="checkbox" id="notificationsToggle" checked><span class="slider-3d"></span></label>
-            </div>
-            <div class="toggle-section">
-              <span>Notifications vocales de l'Assistant</span>
-              <label class="switch-3d"><input type="checkbox" id="voiceNotificationsToggle" checked><span class="slider-3d"></span></label>
-            </div>
-            <button class="btn primary" id="testNotificationBtn" style="margin-top: 10px; width: 100%; justify-content: center;">
-              <i class="fas fa-bell"></i> Tester les notifications
-            </button>
-          </div>
-          <div class="settings-group">
-              <h3>👤 Profil Utilisateur</h3>
-              <div id="user-profile-card">
-                  <img id="user-photo" src="" alt="Photo de profil">
-                  <div>
-                      <strong id="user-name-display"></strong>
-                      <p id="user-email-display"></p>
-                  </div>
-              </div>
-              <button class="btn warn" id="signOutBtn" style="margin-top: 15px; width: 100%; justify-content: center;">
-                <i class="fas fa-sign-out-alt"></i> Déconnexion
-              </button>
-          </div>
-          <div class="settings-group">
-              <h3>Journal d'Activité</h3>
-              <div id="activityLog" style="height: 200px; overflow-y: auto; background: rgba(0,0,0,0.03); border-radius: 8px; padding: 10px; font-size: 13px; border: 1px solid rgba(0,0,0,0.06);"></div>
-          </div>
-          <div class="settings-group">
-            <h3>Réinitialisation</h3>
-            <button class="btn warn" id="resetBtn"> <i class="fas fa-trash"></i> Réinitialiser l'application </button>
-            <p style="margin-top:8px;font-size:13px;color:var(--muted)"> Attention: Cette action supprimera tous les appareils et paramètres. </p>
-          </div>
-        </div>
-      </section>
-    </div> 
-    
-    <footer id="main-footer">
-      <button data-target="sec-domotique" class="btn-nav active"><i class="fas fa-home"></i><span>Accueil</span></button>
-      <button data-target="sec-intelligence" class="btn-nav"><i class="fas fa-robot"></i><span>Assistant</span></button>
-      <button data-target="sec-planning" class="btn-nav"><i class="fas fa-calendar-alt"></i><span>Planning</span></button>
-      <button data-target="sec-params" class="btn-nav"><i class="fas fa-cog"></i><span>Paramètres</span></button>
-    </footer>
+    <!-- Section Assistant IA -->
+    <section id="sec-intelligence" class="section">
+      <div id="sidebar-overlay"></div>
       
+      <div id="chat-sidebar">
+        <div id="chat-sidebar-header">
+          <button class="btn" id="close-sidebar-btn" style="display: none;">
+            <i class="fas fa-arrow-left"></i> Retour
+          </button>
+          <button class="btn primary" id="new-chat-btn">
+            <i class="fas fa-plus"></i> Nouvelle Discussion
+          </button>
+        </div>
+        <div id="chat-history-list"></div>
+      </div>
+      
+      <div id="chat-section-container">
+        <div id="chat-header">
+          <button id="sidebar-toggle-btn"><i class="fas fa-bars"></i></button>
+          <span id="chat-title">💬 Assistant IA</span>
+        </div>
+        
+        <!-- Fenêtre de chat -->
+        <div id="chatFullWindow"></div>
+        
+        <!-- Barre de saisie -->
+        <div id="chat-input-container">
+          <!-- Bouton muet : apparaît au-dessus de la barre quand l'IA parle -->
+          <div id="stopSpeechBtnContainer">
+            <button id="stopSpeechBtn">
+              <i class="fas fa-volume-mute"></i> Arrêter la voix
+            </button>
+          </div>
+
+          <div id="chat-loading">
+            <i class="fas fa-spinner fa-spin"></i> Assistant en train de réfléchir...
+          </div>
+        
+          <div id="attachment-preview-container"></div>
+          
+          <div id="chat-input-flex">
+            <!-- Trombone (pièce jointe) -->
+            <button class="btn" id="attach-file-btn" title="Joindre un fichier">
+              <i class="fas fa-paperclip"></i>
+            </button>
+
+            <!-- Champ de texte -->
+            <textarea id="chatFullInput" placeholder="Posez une question à l'Assistant..." rows="1"></textarea>
+
+            <!-- Boutons de droite -->
+            <div id="chat-input-buttons">
+              <!-- Micro (Push-to-talk) -->
+              <button class="btn" id="voicePushToTalk" title="Appuyer pour enregistrer">
+                <i class="fas fa-microphone-alt"></i>
+              </button>
+
+              <!-- Bouton dynamique (Mode continu / Envoyer) -->
+              <button class="btn" id="sendOrModeBtn" title="Mode conversation continue">
+                <i class="fas fa-comment-dots"></i>
+              </button>
+
+              <!-- Bouton Stop IA (génération) -->
+              <button class="btn warn" id="stopAIBtn" style="display: none;">
+                <i class="fas fa-stop-circle" style="font-size: 20px;"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Barre de statut -->
+          <div id="chat-status-bar">
+            <span class="chip">Mode Conversation: <span id="continuousStatus">Désactivé</span></span>
+            <span class="chip" id="intelliaStatus">Assistant: Non connecté</span>
+            <span class="chip" id="voiceStatus">Voix: Inactive</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Section Planning -->
+    <section id="sec-planning" class="section">
+      <div class="two-column">
+        <div class="card">
+          <strong>⏰ Ajouter une planification</strong>
+          <div style="margin-top:12px">
+            <label>Appareil</label>
+            <select id="plan-device" style="width:100%;padding:8px;border-radius:8px;border:1px solid #ddd;margin-bottom:10px"></select>
+            
+            <label>Fréquence</label>
+            <select id="plan-frequency" style="width:100%;padding:8px;border-radius:8px;border:1px solid #ddd;margin-bottom:10px">
+              <option value="once">Une fois (date spécifique)</option>
+              <option value="daily">Tous les jours</option>
+              <option value="weekly">Hebdomadaire (certains jours)</option>
+              <option value="monthly">Mensuel</option>
+            </select>
+
+            <div id="opt-date" style="margin-bottom:10px">
+              <label>Date</label>
+              <input type="date" id="plan-date" style="width:100%;padding:8px;border-radius:8px;border:1px solid #ddd" />
+            </div>
+
+            <div id="opt-days" style="display:none;margin-bottom:10px">
+              <label>Jours actifs</label>
+              <div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:8px">
+                <label class="chip" style="cursor:pointer;user-select:none"><input type="checkbox" class="day-checkbox" value="1" style="margin-right:4px"> Lundi</label>
+                <label class="chip" style="cursor:pointer;user-select:none"><input type="checkbox" class="day-checkbox" value="2" style="margin-right:4px"> Mardi</label>
+                <label class="chip" style="cursor:pointer;user-select:none"><input type="checkbox" class="day-checkbox" value="3" style="margin-right:4px"> Mercredi</label>
+                <label class="chip" style="cursor:pointer;user-select:none"><input type="checkbox" class="day-checkbox" value="4" style="margin-right:4px"> Jeudi</label>
+                <label class="chip" style="cursor:pointer;user-select:none"><input type="checkbox" class="day-checkbox" value="5" style="margin-right:4px"> Vendredi</label>
+                <label class="chip" style="cursor:pointer;user-select:none"><input type="checkbox" class="day-checkbox" value="6" style="margin-right:4px"> Samedi</label>
+                <label class="chip" style="cursor:pointer;user-select:none"><input type="checkbox" class="day-checkbox" value="0" style="margin-right:4px"> Dimanche</label>
+              </div>
+            </div>
+
+            <label>Heure</label>
+            <input type="time" id="plan-time" style="width:100%;padding:8px;border-radius:8px;border:1px solid #ddd;margin-bottom:10px" />
+            
+            <label>Action</label>
+            <select id="plan-action" style="width:100%;padding:8px;border-radius:8px;border:1px solid #ddd;margin-bottom:10px">
+              <option value="ON">Allumer</option><option value="OFF">Éteindre</option>
+            </select>
+
+            <div style="display:flex;gap:8px">
+              <button class="btn primary" id="addPlan" style="flex:1"><i class="fas fa-plus"></i> Planifier</button>
+              <button class="btn warning" id="clearAllPlans" style="flex:1"><i class="fas fa-trash"></i> Effacer tout</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <strong>📋 Tâches Programmées</strong>
+          <div id="planningTable" style="margin-top:12px;font-size:13px"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Section Paramètres -->
+    <section id="sec-params" class="section">
+      <div class="card">
+        <h2>Paramètres du Système</h2>
+        
+        <div class="settings-group">
+          <h3>⚡ Connexion Locale (WebSocket)</h3>
+          <p style="font-size:13px; color:var(--muted); margin-bottom:10px;">
+            Permet un contrôle instantané lorsque vous êtes sur le même WiFi que l'ESP32.
+          </p>
+          <label>Adresse IP de l'ESP32 :</label>
+          <input id="esp32IpInput" placeholder="192.168.x.x" style="width:100%;padding:8px;border-radius:8px;border:1px solid #ddd" />
+          <div style="margin-top:10px;display:flex;gap:8px">
+            <button class="btn primary" id="btnConnectLocal">Sauver & Connecter</button>
+          </div>
+        </div>
+        
+        <div class="settings-group">
+          <h3>Apparence</h3>
+          <div class="toggle-section">
+            <span>Mode sombre</span>
+            <label class="switch-3d"><input type="checkbox" id="darkModeToggle"><span class="slider-3d"></span></label>
+          </div>
+        </div>
+        <div class="settings-group">
+          <h3>Notifications</h3>
+          <div class="toggle-section">
+            <span>Activer les notifications</span>
+            <label class="switch-3d"><input type="checkbox" id="notificationsToggle" checked><span class="slider-3d"></span></label>
+          </div>
+          <div class="toggle-section">
+            <span>Notifications vocales de l'Assistant</span>
+            <label class="switch-3d"><input type="checkbox" id="voiceNotificationsToggle" checked><span class="slider-3d"></span></label>
+          </div>
+          <button class="btn primary" id="testNotificationBtn" style="margin-top: 10px; width: 100%; justify-content: center;">
+            <i class="fas fa-bell"></i> Tester les notifications
+          </button>
+        </div>
+        <div class="settings-group">
+          <h3>👤 Profil Utilisateur</h3>
+          <div id="user-profile-card">
+            <img id="user-photo" src="" alt="Photo de profil">
+            <div>
+              <strong id="user-name-display"></strong>
+              <p id="user-email-display"></p>
+            </div>
+          </div>
+          <button class="btn warn" id="signOutBtn" style="margin-top: 15px; width: 100%; justify-content: center;">
+            <i class="fas fa-sign-out-alt"></i> Déconnexion
+          </button>
+        </div>
+        <div class="settings-group">
+          <h3>Journal d'Activité</h3>
+          <div id="activityLog" style="height: 200px; overflow-y: auto; background: rgba(0,0,0,0.03); border-radius: 8px; padding: 10px; font-size: 13px; border: 1px solid rgba(0,0,0,0.06);"></div>
+        </div>
+        <div class="settings-group">
+          <h3>Réinitialisation</h3>
+          <button class="btn warn" id="resetBtn"> <i class="fas fa-trash"></i> Réinitialiser l'application </button>
+          <p style="margin-top:8px;font-size:13px;color:var(--muted)"> Attention: Cette action supprimera tous les appareils et paramètres. </p>
+        </div>
+      </div>
+    </section>
   </div>
   
-  <script type="module">
-  /*************************************************
-   * SmartHome Intelligence - Version 12.0 COMPLET
-   * 🎯 ~3500 lignes - Toutes fonctionnalités incluses
-   *************************************************/
+  <footer id="main-footer">
+    <button data-target="sec-domotique" class="btn-nav active"><i class="fas fa-home"></i><span>Accueil</span></button>
+    <button data-target="sec-intelligence" class="btn-nav"><i class="fas fa-robot"></i><span>Assistant</span></button>
+    <button data-target="sec-planning" class="btn-nav"><i class="fas fa-calendar-alt"></i><span>Planning</span></button>
+    <button data-target="sec-params" class="btn-nav"><i class="fas fa-cog"></i><span>Paramètres</span></button>
+  </footer>
+</div>
 
-  let RENDER_API;
+<script type="module">
+/*************************************************
+ * SmartHome Intelligence - Version 13.0
+ * Interface Claude-like + PDF/DOCX (Puppeteer/LibreOffice)
+ *************************************************/
 
-  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-    RENDER_API = 'http://localhost:3000';
-    console.log('Environnement local détecté. API ->', RENDER_API);
-  } else {
-    RENDER_API = 'https://intellia-smarthome.onrender.com'; 
-    console.log('Environnement de production détecté. API ->', RENDER_API);
-  }
-  const AUTH_KEY = "cle-secrete-intellia";
+let RENDER_API;
 
-  const firebaseConfig = {
-    apiKey: "AIzaSyA5oYEu4-nOUtjOe2JJ4C9VwNniNSBdjqI",
-    authDomain: "mamaisonintelligente-14485.firebaseapp.com",
-    databaseURL: "https://mamaisonintelligente-14485-default-rtdb.firebaseio.com",
-    projectId: "mamaisonintelligente-14485",
-    storageBucket: "mamaisonintelligente-14485.firebasestorage.app",
-    messagingSenderId: "197281963087",
-    appId: "1:197281963087:web:da680779479391d91f1e3a"
-  };
+if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+  RENDER_API = 'http://localhost:3000';
+  console.log('Environnement local détecté. API ->', RENDER_API);
+} else {
+  RENDER_API = 'https://intellia-smarthome.onrender.com'; 
+  console.log('Environnement de production détecté. API ->', RENDER_API);
+}
+const AUTH_KEY = "cle-secrete-intellia";
 
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-  import { getDatabase, ref, set, push, onValue, remove, get, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
-  import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+const firebaseConfig = {
+  apiKey: "AIzaSyA5oYEu4-nOUtjOe2JJ4C9VwNniNSBdjqI",
+  authDomain: "mamaisonintelligente-14485.firebaseapp.com",
+  databaseURL: "https://mamaisonintelligente-14485-default-rtdb.firebaseio.com",
+  projectId: "mamaisonintelligente-14485",
+  storageBucket: "mamaisonintelligente-14485.firebasestorage.app",
+  messagingSenderId: "197281963087",
+  appId: "1:197281963087:web:da680779479391d91f1e3a"
+};
 
-  const el = id => document.getElementById(id);
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getDatabase, ref, set, push, onValue, remove, get, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
-  const appState = {
-    devices: [], deviceStates: {},
-    isNightMode: localStorage.getItem('nightMode') === 'true',
-    intelliaOnline: false,
-    notificationsEnabled: localStorage.getItem('notifications') !== 'false',
-    voiceNotifications: localStorage.getItem('voiceNotifications') !== 'false',
-    plans: [],
-    currentUser: null,
-    currentSessionId: null,
-    attachments: [], 
-    chatInProgress: false,
-    shouldStopResponse: false, 
-    localWebSocket: null,
-    isLocalConnected: false,
-    esp32Ip: localStorage.getItem('esp32Ip') || '', 
-  };
-  
-  const defaultAvatar = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iI2FlYWVhZSI+PHBhdGggZD0iTTEyIDJDNi44OCAyIDIgNi44OCAyIDEyczQuNDggMTQgMTAgMTBjNS41MiAwIDEwLTQuNDggMTAtMTBTMjcuNTIgMiAxMiAyem0wIDJjMS42NiAwIDMgMS4zNCAzIDNzLTEuMzQgMy0zIDMtMy0xLjM0LTMtM1MwLjM0IDQgMTIgNHptMCAxNmMtMi42NyAwLTUuNDMtMS4yOS03LTIuODguNTYtMS42NSAzLjU1LTIuNjIgNy0yLjYyczYuNDQgLjk3IDcgMi42MmMtMS41NyAxLjU5LTQuMzMgMi44OC03IDIuODh6Ii8+PC9zdmc+";
+const el = id => document.getElementById(id);
 
- const deviceTypes = {
-    'lamp': { name: 'Lampe', hasBrightness: false, icon: 'lightbulb' },
-    'plug': { name: 'Prise', hasBrightness: false, icon: 'plug' },
-    'ventilateur': { name: 'Ventilateur', hasBrightness: false, icon: 'fan' },
-    'thermostat': { name: 'Thermostat', hasBrightness: false, icon: 'temperature-low' },
-    'volet': { name: 'Volet Roulant', hasBrightness: false, icon: 'window-maximize' }
-  };
-  
-  const proactiveSuggestions = [
-    "Bonjour ! Pensez à allumer la lumière du bureau si vous commencez à travailler.",
-    "Il est l'heure du déjeuner. N'oubliez pas d'éteindre les appareils de la cuisine après usage.",
-    "Le soleil se couche bientôt. Voulez-vous que j'allume les lampes d'ambiance ?",
-    "Une nouvelle journée commence ! Je suis prêt à vous aider à automatiser vos tâches."
-  ];
-  let suggestionIndex = 0;
+const appState = {
+  devices: [], deviceStates: {},
+  isNightMode: localStorage.getItem('nightMode') === 'true',
+  intelliaOnline: false,
+  notificationsEnabled: localStorage.getItem('notifications') !== 'false',
+  voiceNotifications: localStorage.getItem('voiceNotifications') !== 'false',
+  plans: [],
+  currentUser: null,
+  currentSessionId: null,
+  attachments: [], 
+  chatInProgress: false,
+  shouldStopResponse: false, 
+  localWebSocket: null,
+  isLocalConnected: false,
+  esp32Ip: localStorage.getItem('esp32Ip') || '', 
+};
+
+const defaultAvatar = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iI2FlYWVhZSI+PHBhdGggZD0iTTEyIDJDNi44OCAyIDIgNi44OCAyIDEyczQuNDggMTQgMTAgMTBjNS41MiAwIDEwLTQuNDggMTAtMTBTMjcuNTIgMiAxMiAyem0wIDJjMS42NiAwIDMgMS4zNCAzIDNzLTEuMzQgMy0zIDMtMy0xLjM0LTMtM1MwLjM0IDQgMTIgNHptMCAxNmMtMi42NyAwLTUuNDMtMS4yOS03LTIuODguNTYtMS42NSAzLjU1LTIuNjIgNy0yLjYyczYuNDQgLjk3IDcgMi42MmMtMS41NyAxLjU5LTQuMzMgMi44OC03IDIuODh6Ii8+PC9zdmc+";
+
+const deviceTypes = {
+  'lamp': { name: 'Lampe', hasBrightness: false, icon: 'lightbulb' },
+  'plug': { name: 'Prise', hasBrightness: false, icon: 'plug' },
+  'ventilateur': { name: 'Ventilateur', hasBrightness: false, icon: 'fan' },
+  'thermostat': { name: 'Thermostat', hasBrightness: false, icon: 'temperature-low' },
+  'volet': { name: 'Volet Roulant', hasBrightness: false, icon: 'window-maximize' }
+};
+
+const proactiveSuggestions = [
+  "Bonjour ! Pensez à allumer la lumière du bureau si vous commencez à travailler.",
+  "Il est l'heure du déjeuner. N'oubliez pas d'éteindre les appareils de la cuisine après usage.",
+  "Le soleil se couche bientôt. Voulez-vous que j'allume les lampes d'ambiance ?",
+  "Une nouvelle journée commence ! Je suis prêt à vous aider à automatiser vos tâches."
+];
+let suggestionIndex = 0;
 
 function extractReadableText(content) {
   if (content.includes('class="doc-cv"') || 
@@ -1989,6 +2211,9 @@ function escapeHtml(str) {
   return div.innerHTML.replace(/"/g, '&quot;');
 }
 
+/* ===================================================
+   CARTE DOCUMENT AVEC BOUTONS PDF + DOCX (PAS DE HTML)
+   =================================================== */
 function appendDocumentCard(htmlContent, metadata) {
   const target = document.getElementById('chatFullWindow');
   if (!target) return;
@@ -2022,30 +2247,77 @@ function appendDocumentCard(htmlContent, metadata) {
         <div class="doc-card-meta">${info.label} · ${size} KB</div>
       </div>
       <div class="doc-card-actions">
-        <button class="btn primary preview-btn">
+        <button class="btn btn-primary preview-btn">
           <i class="fas fa-eye"></i> Aperçu
         </button>
-        <button class="btn download-btn">
-          <i class="fas fa-download"></i> Télécharger
+        <button class="btn btn-success download-docx-btn">
+          <i class="fas fa-file-word"></i> DOCX
+        </button>
+        <button class="btn btn-warning download-pdf-btn">
+          <i class="fas fa-file-pdf"></i> PDF
         </button>
       </div>
     </div>
   `;
   
   const card = node.querySelector('.doc-card');
-  const previewBtn = card.querySelector('.preview-btn');
-  const downloadBtn = card.querySelector('.download-btn');
   
-  previewBtn.addEventListener('click', function() {
+  // Aperçu (modale)
+  card.querySelector('.preview-btn').addEventListener('click', function() {
     const html = decodeURIComponent(card.dataset.html);
     previewDocument(html);
   });
   
-  downloadBtn.addEventListener('click', function() {
+  // Télécharger DOCX (via LibreOffice)
+  card.querySelector('.download-docx-btn').addEventListener('click', async function() {
     const html = decodeURIComponent(card.dataset.html);
     const title = card.dataset.title;
-    const type = card.dataset.type;
-    downloadDocument(html, title, type);
+    try {
+      const response = await fetch(`${RENDER_API}/api/download/docx`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ html })
+      });
+      if (!response.ok) throw new Error('Erreur serveur');
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${title}.docx`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error(err);
+      alert('Erreur lors du téléchargement DOCX.');
+    }
+  });
+  
+  // Télécharger PDF (via Puppeteer)
+  card.querySelector('.download-pdf-btn').addEventListener('click', async function() {
+    const html = decodeURIComponent(card.dataset.html);
+    const title = card.dataset.title;
+    try {
+      const response = await fetch(`${RENDER_API}/api/download/pdf`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ html })
+      });
+      if (!response.ok) throw new Error('Erreur serveur');
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${title}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error(err);
+      alert('Erreur lors du téléchargement PDF.');
+    }
   });
   
   target.appendChild(node);
@@ -2079,9 +2351,6 @@ function previewDocument(html) {
   `;
   closeBtn.onclick = () => modal.remove();
   
-  // ✅ Rendu dans un iframe isolé : le document s'affiche
-  // exactement comme le fichier téléchargé (sa propre mise en
-  // page, ses propres styles), avec un défilement natif.
   const iframe = document.createElement('iframe');
   iframe.style.cssText = `
     width: 100%; height: 100%; border: none; display: block;
@@ -2105,43 +2374,9 @@ function previewDocument(html) {
   modal.focus();
 }
 
-function downloadDocument(html, title, type) {
-  let ext = 'html';
-  let mimeType = 'text/html';
-  
-  const codeMatch = html.match(/<code[^>]*class="[^"]*language-([\w+-]+)/);
-  if (codeMatch) {
-    const lang = codeMatch[1].toLowerCase();
-    const langMap = {
-      'javascript': 'js', 'js': 'js', 'python': 'py', 'py': 'py', 'java': 'java',
-      'cpp': 'cpp', 'c++': 'cpp', 'c': 'c', 'arduino': 'ino', 'ino': 'ino',
-      'html': 'html', 'css': 'css', 'json': 'json', 'xml': 'xml',
-      'bash': 'sh', 'sh': 'sh', 'shell': 'sh', 'sql': 'sql',
-      'php': 'php', 'ruby': 'rb', 'go': 'go', 'rust': 'rs',
-      'typescript': 'ts', 'ts': 'ts', 'matlab': 'm', 'scilab': 'sce',
-      'vhdl': 'vhd', 'csharp': 'cs', 'cs': 'cs'
-    };
-    ext = langMap[lang] || lang || 'txt';
-    mimeType = 'text/plain';
-  }
-  
-  const docTypes = ['cv', 'lettre', 'rapport', 'facture', 'contrat'];
-  if (docTypes.includes(type)) {
-    ext = 'html';
-    mimeType = 'text/html';
-  }
-  
-  const blob = new Blob([html], { type: mimeType });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `${title}.${ext}`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-}
-
+/* ===================================================
+   CHAT
+   =================================================== */
 function appendChat(role, text, returnElement = false, attachments = []) {
   const target = document.getElementById('chatFullWindow');
   if (!target) return;
@@ -2283,70 +2518,264 @@ function simulateTyping(element, text, enableVoice = true, needsContinuation = f
   });
 }
 
-function updateVoiceMenuState() {
-  const menu = el('voice-dropdown-menu');
-  if (!menu) return;
-  
-  const pushItem = menu.querySelector('[data-action="push-to-talk"]');
-  const continuousItem = menu.querySelector('[data-action="continuous"]');
-  const ttsItem = menu.querySelector('[data-action="toggle-tts"]');
-  
-  if (VoiceEngine.isPushToTalkRecording) {
-    pushItem.classList.add('active');
-    pushItem.querySelector('i').className = 'fas fa-stop-circle';
-  }
-  
-  if (VoiceEngine.isContinuousActive) {
-    continuousItem.classList.add('active');
-    continuousItem.innerHTML = '<i class="fas fa-stop-circle"></i> Arrêter conversation';
+/* ===================================================
+   BOUTON DYNAMIQUE (Mode continu / Envoyer)
+   =================================================== */
+const sendOrModeBtn = document.getElementById('sendOrModeBtn');
+const chatInput = document.getElementById('chatFullInput');
+
+function updateSendOrModeBtn() {
+  const hasText = chatInput.value.trim().length > 0;
+  if (hasText) {
+    sendOrModeBtn.innerHTML = '<i class="fas fa-paper-plane"></i>';
+    sendOrModeBtn.className = 'btn primary';
+    sendOrModeBtn.title = 'Envoyer';
   } else {
-    continuousItem.innerHTML = '<i class="fas fa-comment-dots"></i> Mode continu';
-  }
-  
-  if (appState.voiceNotifications) {
-    ttsItem.innerHTML = '<i class="fas fa-volume-up"></i> Synthèse ON';
-  } else {
-    ttsItem.innerHTML = '<i class="fas fa-volume-mute"></i> Synthèse OFF';
+    sendOrModeBtn.innerHTML = '<i class="fas fa-comment-dots"></i>';
+    sendOrModeBtn.className = 'btn';
+    sendOrModeBtn.title = 'Mode conversation continue';
   }
 }
 
-el('voiceMenuBtn')?.addEventListener('click', (e) => {
-  e.stopPropagation();
-  const menu = el('voice-dropdown-menu');
-  const isVisible = menu.style.display === 'block';
-  menu.style.display = isVisible ? 'none' : 'block';
-  if (!isVisible) updateVoiceMenuState();
-});
+chatInput.addEventListener('input', updateSendOrModeBtn);
+updateSendOrModeBtn();
 
-document.addEventListener('click', (e) => {
-  const menu = el('voice-dropdown-menu');
-  if (menu && !menu.contains(e.target)) {
-    menu.style.display = 'none';
+sendOrModeBtn.addEventListener('click', () => {
+  if (chatInput.value.trim().length > 0) {
+    handleChatSubmit(chatInput.value, appState.attachments);
+  } else {
+    VoiceEngine.toggleContinuousConversation();
   }
 });
 
-el('voice-dropdown-menu')?.addEventListener('click', (e) => {
-  const item = e.target.closest('.voice-menu-item');
-  if (!item) return;
-  
-  switch(item.dataset.action) {
-    case 'push-to-talk':
-      VoiceEngine.togglePushToTalk();
-      break;
-    case 'continuous':
-      VoiceEngine.toggleContinuousConversation();
-      el('voice-dropdown-menu').style.display = 'none';
-      break;
-    case 'toggle-tts':
-      appState.voiceNotifications = !appState.voiceNotifications;
-      localStorage.setItem('voiceNotifications', appState.voiceNotifications);
-      updateToggleVoiceBtnUI();
-      break;
-  }
-  
-  updateVoiceMenuState();
+/* ===================================================
+   AUTO-RESIZE DU CHAMP DE TEXTE
+   =================================================== */
+function autoResizeChatInput() {
+  if (!chatInput) return;
+  chatInput.style.height = 'auto';
+  chatInput.style.height = Math.min(chatInput.scrollHeight, 200) + 'px';
+}
+chatInput.addEventListener('input', autoResizeChatInput);
+
+/* ===================================================
+   GESTION DU BOUTON MUET DYNAMIQUE
+   =================================================== */
+const stopSpeechContainer = document.getElementById('stopSpeechBtnContainer');
+const stopSpeechBtn = document.getElementById('stopSpeechBtn');
+
+function showStopSpeechBtn() {
+  stopSpeechContainer.classList.add('visible');
+}
+
+function hideStopSpeechBtn() {
+  stopSpeechContainer.classList.remove('visible');
+}
+
+stopSpeechBtn.addEventListener('click', () => {
+  window.speechSynthesis.cancel();
+  hideStopSpeechBtn();
 });
 
+/* ===================================================
+   VOIX (SPEAK) AVEC GESTION DU BOUTON MUET
+   =================================================== */
+let preferredVoice = null;
+const choosePreferredVoice = () => {
+  const voices = window.speechSynthesis.getVoices() || [];
+  return voices.find(x => /fr[-_]?FR/i.test(x.lang) && /Google/.test(x.name)) || voices.find(x => /fr[-_]?FR/i.test(x.lang)) || voices[0];
+};
+if ('speechSynthesis' in window) window.speechSynthesis.onvoiceschanged = () => { preferredVoice = choosePreferredVoice(); };
+
+function speak(text, isStreaming = false) {
+  if (!appState.voiceNotifications || !text || !('speechSynthesis' in window)) {
+    VoiceEngine.resumeRecognition();
+    return;
+  }
+
+  VoiceEngine.pauseRecognition();
+  window.speechSynthesis.cancel();
+
+  if (isStreaming) {
+    const sentences = text.match(/[^.!?]+[.!?]+/g) || [text];
+    let currentIndex = 0;
+
+    function speakNextSentence() {
+      if (appState.shouldStopResponse) {
+        window.speechSynthesis.cancel();
+        hideStopSpeechBtn();
+        VoiceEngine.resumeRecognition();
+        return;
+      }
+      if (currentIndex >= sentences.length) {
+        hideStopSpeechBtn();
+        setTimeout(() => VoiceEngine.resumeRecognition(), 150);
+        return;
+      }
+      const sentence = sentences[currentIndex].trim();
+      if (sentence) {
+        const u = new SpeechSynthesisUtterance(sentence);
+        u.lang = 'fr-FR';
+        if (!preferredVoice) preferredVoice = choosePreferredVoice();
+        if (preferredVoice) u.voice = preferredVoice;
+        u.rate = 1.1;
+        
+        u.onstart = showStopSpeechBtn;
+        u.onend = () => { currentIndex++; speakNextSentence(); };
+        u.onerror = () => { hideStopSpeechBtn(); VoiceEngine.resumeRecognition(); };
+        
+        window.speechSynthesis.speak(u);
+      } else {
+        currentIndex++;
+        speakNextSentence();
+      }
+    }
+    speakNextSentence();
+  } else {
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = 'fr-FR';
+    if (!preferredVoice) preferredVoice = choosePreferredVoice();
+    if (preferredVoice) u.voice = preferredVoice;
+    u.onstart = showStopSpeechBtn;
+    u.onend = () => { hideStopSpeechBtn(); setTimeout(() => VoiceEngine.resumeRecognition(), 150); };
+    u.onerror = () => { hideStopSpeechBtn(); VoiceEngine.resumeRecognition(); };
+    window.speechSynthesis.speak(u);
+  }
+}
+
+/* ===================================================
+   VOICE ENGINE (Reconnaissance vocale)
+   =================================================== */
+const VoiceEngine = {
+  recognition: null,
+  isPushToTalkRecording: false,
+  isContinuousActive: false,
+  isPausedForSpeech: false,
+  
+  init() {
+    if (!("webkitSpeechRecognition" in window || "SpeechRecognition" in window)) {
+      el('voicePushToTalk').disabled = true;
+      el('quickVoiceToggleBtn').disabled = true;
+      el('quickVoiceToggleBtn').textContent = 'Voix non supportée';
+      el('voiceStatus').textContent = 'Voix: Non supportée';
+      return;
+    }
+    this.requestMicrophonePermission();
+    const pushBtn = el('voicePushToTalk');
+    const quickBtn = el('quickVoiceToggleBtn');
+    pushBtn.addEventListener('touchstart', (e) => { e.preventDefault(); this.togglePushToTalk(); });
+    pushBtn.addEventListener('click', () => this.togglePushToTalk());
+    quickBtn.addEventListener('touchstart', (e) => { e.preventDefault(); this.toggleContinuousConversation(); });
+    quickBtn.addEventListener('click', () => this.toggleContinuousConversation());
+  },
+  requestMicrophonePermission() {
+    navigator.mediaDevices.getUserMedia({ audio: true })
+      .then(stream => { stream.getTracks().forEach(track => track.stop()); })
+      .catch(err => { console.error("Permission micro:", err); el('voiceStatus').textContent = 'Voix: Permission requise'; });
+  },
+  createRecognitionInstance(continuous = false) {
+    const Rec = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const rec = new Rec();
+    rec.lang = 'fr-FR'; rec.continuous = continuous; rec.interimResults = false;
+    return rec;
+  },
+  updateContinuousUI() {
+    const status = el('continuousStatus');
+    const isActive = this.isContinuousActive;
+    if (status) status.textContent = isActive ? 'Activé' : 'Désactivé';
+    const btn = el('quickVoiceToggleBtn');
+    if (btn) {
+      btn.classList.toggle('primary', !isActive);
+      btn.classList.toggle('warn', isActive);
+      btn.innerHTML = isActive ? 
+        '<i class="fas fa-stop-circle icon-pulse"></i> Conversation active' : 
+        '<i class="fas fa-waveform"></i> Lancer la conversation';
+    }
+  },
+  togglePushToTalk() {
+    if (this.isContinuousActive) this.toggleContinuousConversation();
+    const btn = el('voicePushToTalk');
+    if (this.isPushToTalkRecording) {
+      this.isPushToTalkRecording = false;
+      if (this.recognition) this.recognition.stop();
+      btn.classList.remove('pulse');
+      el('voiceStatus').textContent = 'Voix: Traitement...';
+    } else {
+      this.isPushToTalkRecording = true;
+      this.recognition = this.createRecognitionInstance(false);
+      btn.classList.add('pulse');
+      el('voiceStatus').textContent = 'Voix: Enregistrement...';
+      this.recognition.onresult = (e) => {
+        const transcript = e.results[0][0].transcript;
+        chatInput.value = (chatInput.value ? chatInput.value.trim() + ' ' : '') + transcript;
+        autoResizeChatInput();
+        updateSendOrModeBtn();
+        chatInput.focus();
+      };
+      this.recognition.onend = () => {
+        this.isPushToTalkRecording = false;
+        btn.classList.remove('pulse');
+        el('voiceStatus').textContent = 'Voix: Inactive';
+        this.recognition = null;
+      };
+      this.recognition.start();
+    }
+  },
+  toggleContinuousConversation() {
+    this.isContinuousActive = !this.isContinuousActive;
+    this.updateContinuousUI();
+    if (this.isContinuousActive) { 
+      if (this.isPushToTalkRecording) this.togglePushToTalk();
+      this.startContinuousLoop(); 
+    } else { 
+      this.stopRecognition(); 
+    }
+  },
+  startContinuousLoop() {
+    if (!this.isContinuousActive || this.isPausedForSpeech) return;
+    this.recognition = this.createRecognitionInstance(false);
+    el('voiceStatus').textContent = 'Voix: Écoute...';
+    this.recognition.onresult = (e) => { handleVoiceSubmit(e.results[0][0].transcript); };
+    this.recognition.onerror = (e) => { if (e.error !== 'no-speech' && e.error !== 'aborted') console.warn('Voice error:', e.error); };
+    this.recognition.onend = () => { 
+      if (this.isContinuousActive && !this.isPausedForSpeech) {
+        setTimeout(() => this.startContinuousLoop(), 100);
+      } else {
+        el('voiceStatus').textContent = 'Voix: Inactive';
+      }
+    };
+    try { this.recognition.start(); } catch(e) {}
+  },
+  stopRecognition() {
+    if (this.recognition) { try { this.recognition.stop(); } catch(e) {} }
+    this.recognition = null;
+    this.isPushToTalkRecording = false;
+    this.isContinuousActive = false;
+    el('voicePushToTalk').classList.remove('pulse');
+    this.updateContinuousUI();
+    el('voiceStatus').textContent = 'Voix: Inactive';
+  },
+  pauseRecognition() {
+    if (this.isContinuousActive && !this.isPausedForSpeech) {
+      this.isPausedForSpeech = true;
+      if (this.recognition) {
+        this.recognition.onend = null;
+        try { this.recognition.stop(); } catch(e){}
+      }
+      el('voiceStatus').textContent = 'Voix: En pause';
+    }
+  },
+  resumeRecognition() {
+    if (this.isContinuousActive && this.isPausedForSpeech) { 
+      this.isPausedForSpeech = false; 
+      this.startContinuousLoop();
+    }
+  }
+};
+
+/* ===================================================
+   GESTION DU CHAT (ENVOI, CONTINUATION, ETC.)
+   =================================================== */
 async function handleContinuation(context) {
   console.log('🔄 Continuation demandée', context);
   
@@ -2358,8 +2787,6 @@ async function handleContinuation(context) {
   appState.shouldStopResponse = false;
   el('intelliaStatus').textContent = "Assistant: En cours...";
   el('chat-loading').style.display = 'block';
-  el('chatFullSend').style.display = 'none';
-  el('stopAIBtn').style.display = 'flex';
   
   try {
     const reply = await sendToOnline("Continue", [], true);
@@ -2383,8 +2810,6 @@ async function handleContinuation(context) {
     appState.chatInProgress = false;
     appState.shouldStopResponse = false;
     el('chat-loading').style.display = 'none';
-    el('chatFullSend').style.display = 'flex';
-    el('stopAIBtn').style.display = 'none';
   }
 }
 
@@ -2396,15 +2821,16 @@ async function handleChatSubmit(message, attachments = []) {
     createNewChatSession();
   }
 
-  appState.shouldStopResponse = false; 
+  appState.shouldStopResponse = false;
   appState.chatInProgress = true;
   el('intelliaStatus').textContent = "Assistant: En cours...";
   el('chat-loading').style.display = 'block';
-  el('chatFullSend').style.display = 'none';
-  el('stopAIBtn').style.display = 'flex'; 
+  el('stopAIBtn').style.display = 'flex';
 
-  appendChat('user', message, false, attachments); 
-  el('chatFullInput').value = '';
+  appendChat('user', message, false, attachments);
+  chatInput.value = '';
+  autoResizeChatInput();
+  updateSendOrModeBtn();
   appState.attachments = [];
   renderAttachmentPreviews();
   
@@ -2432,9 +2858,8 @@ async function handleChatSubmit(message, attachments = []) {
     }
   } finally {
     appState.chatInProgress = false;
-    appState.shouldStopResponse = false; 
+    appState.shouldStopResponse = false;
     el('chat-loading').style.display = 'none';
-    el('chatFullSend').style.display = 'flex';
     el('stopAIBtn').style.display = 'none';
   }
 }
@@ -2450,12 +2875,11 @@ async function handleVoiceSubmit(command) {
     createNewChatSession();
   }
 
-  appState.shouldStopResponse = false; 
+  appState.shouldStopResponse = false;
   appState.chatInProgress = true;
   el('intelliaStatus').textContent = "Assistant: En cours...";
   el('chat-loading').style.display = 'block';
-  el('stopAIBtn').style.display = 'flex'; 
-  el('chatFullSend').style.display = 'none'; 
+  el('stopAIBtn').style.display = 'flex';
 
   appendChat('user', command);
   logActivity(`Commande vocale: "${command}"`);
@@ -2484,15 +2908,14 @@ async function handleVoiceSubmit(command) {
     appState.chatInProgress = false;
     appState.shouldStopResponse = false;
     el('chat-loading').style.display = 'none';
-    el('chatFullSend').style.display = 'flex';
     el('stopAIBtn').style.display = 'none';
   }
 }
 
 async function sendToOnline(message, attachments = [], continuationMode = false) {
   if (!appState.currentUser) {
-      alert("Erreur: Utilisateur non connecté. Veuillez rafraîchir.");
-      return "Erreur d'authentification.";
+    alert("Erreur: Utilisateur non connecté. Veuillez rafraîchir.");
+    return "Erreur d'authentification.";
   }
   
   const t0 = Date.now();
@@ -2520,7 +2943,7 @@ async function sendToOnline(message, attachments = [], continuationMode = false)
     const j = await response.json();
     
     if (appState.shouldStopResponse) {
-        return "Interrompu.";
+      return "Interrompu.";
     }
     
     await saveMessageToFirebase(message, j.reply, attachments);
@@ -2529,7 +2952,7 @@ async function sendToOnline(message, attachments = [], continuationMode = false)
     if (j.planning_commands) handlePlanningCommands(j.planning_commands);
     if (j.execute) handleExecuteCommands(j.execute);
     
-    appState.intelliaOnline = true; 
+    appState.intelliaOnline = true;
     el('intelliaStatus').textContent = "Assistant: Connecté";
     el('statusOnline').textContent = "Assistant : disponible";
     logActivity(`Assistant a répondu.`);
@@ -2538,7 +2961,7 @@ async function sendToOnline(message, attachments = [], continuationMode = false)
     
   } catch (e) {
     if (appState.shouldStopResponse) {
-        return "Interrompu.";
+      return "Interrompu.";
     }
     console.warn("sendToOnline error", e);
     appState.intelliaOnline = false;
@@ -2549,6 +2972,9 @@ async function sendToOnline(message, attachments = [], continuationMode = false)
   }
 }
 
+/* ===================================================
+   FONCTIONS ANNEXES (planning, etc.)
+   =================================================== */
 async function handlePlanningCommands(commands) {
   for (const cmd of commands) {
     if (cmd.action === 'add') {
@@ -2575,30 +3001,32 @@ function displaySuggestions(suggestions) {
   container.textContent = suggestions[0].message;
 }
 
+/* ===================================================
+   EVENEMENTS UI
+   =================================================== */
 el('chatFullSend')?.addEventListener('click', () => {
   handleChatSubmit(el('chatFullInput').value, appState.attachments);
 });
-el('chatFullInput')?.addEventListener('keypress', (e) => {
-  if (e.key === 'Enter') handleChatSubmit(el('chatFullInput').value, appState.attachments);
+
+el('chatFullInput')?.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    handleChatSubmit(el('chatFullInput').value, appState.attachments);
+  }
 });
 
 el('stopAIBtn')?.addEventListener('click', () => {
   console.log('🛑 ARRÊT DEMANDÉ');
   appState.shouldStopResponse = true;
-
-  if (window.speechSynthesis) {
-    window.speechSynthesis.cancel();
-  }
+  window.speechSynthesis.cancel();
+  hideStopSpeechBtn();
   if (VoiceEngine && VoiceEngine.pauseRecognition) {
     VoiceEngine.pauseRecognition();
   }
   appState.chatInProgress = false;
-
   el('chat-loading').style.display = 'none';
-  el('chatFullSend').style.display = 'flex';
   el('stopAIBtn').style.display = 'none';
   el('intelliaStatus').textContent = "Assistant: Interrompu";
-
   logActivity('⚠️ Réponse IA interrompue par l\'utilisateur');
 });
 
@@ -2607,6 +3035,9 @@ el('close-sidebar-btn')?.addEventListener('click', () => {
   el('sidebar-overlay').classList.remove('open');
 });
 
+/* ===================================================
+   FIREBASE / DB
+   =================================================== */
 let db = null;
 let auth = null;
 
@@ -2631,14 +3062,14 @@ const userChatsRefPath = "userChats";
 if (db) {
   onValue(ref(db, metaRefPath), snap => { appState.devices = Object.values(snap.val() || {}); renderDevices(); });
   onValue(ref(db, devicesRefPath), snap => { 
-      appState.deviceStates = snap.val() || {}; 
-      renderDevices(); 
-      logActivity('☁️ États Firebase synchronisés.');
+    appState.deviceStates = snap.val() || {}; 
+    renderDevices(); 
+    logActivity('☁️ États Firebase synchronisés.');
   });
   onValue(ref(db, planningRefPath), snap => { 
-      const plansObj = snap.val() || {};
-      appState.plans = Object.entries(plansObj).map(([id, p]) => ({ ...p, firebaseId: id }));
-      renderPlanningListUI(appState.plans);
+    const plansObj = snap.val() || {};
+    appState.plans = Object.entries(plansObj).map(([id, p]) => ({ ...p, firebaseId: id }));
+    renderPlanningListUI(appState.plans);
   });
 } else {
   loadDevicesFromLocalStorage(); loadPlansFromLocalStorage();
@@ -2646,19 +3077,19 @@ if (db) {
 }
 
 function logActivity(message, type = 'info') {
-    const logContainer = el('activityLog');
-    if (!logContainer) return;
-    const time = new Date().toLocaleTimeString();
-    const entry = document.createElement('div');
-    let icon = 'ℹ️';
-    if (type === 'success') icon = '✅';
-    else if (type === 'error') icon = '❌';
-    else if (type === 'warning') icon = '⚠️';
-    entry.innerHTML = `<span style="color:var(--muted)">[${time}]</span> ${icon} ${message}`;
-    logContainer.prepend(entry);
-    if (logContainer.children.length > 50) {
-        logContainer.removeChild(logContainer.lastChild);
-    }
+  const logContainer = el('activityLog');
+  if (!logContainer) return;
+  const time = new Date().toLocaleTimeString();
+  const entry = document.createElement('div');
+  let icon = 'ℹ️';
+  if (type === 'success') icon = '✅';
+  else if (type === 'error') icon = '❌';
+  else if (type === 'warning') icon = '⚠️';
+  entry.innerHTML = `<span style="color:var(--muted)">[${time}]</span> ${icon} ${message}`;
+  logContainer.prepend(entry);
+  if (logContainer.children.length > 50) {
+    logContainer.removeChild(logContainer.lastChild);
+  }
 }
 
 function renderDevices() {
@@ -2708,10 +3139,10 @@ el('btnAddDevice')?.addEventListener('click', async () => {
   const type = el('newDeviceType').value;
   const room = el('newDeviceRoom').value.trim();
   if (!name || !room) {
-      el('addDeviceResult').textContent = 'Nom et pièce requis';
-      el('addDeviceResult').style.color = 'var(--danger)';
-      setTimeout(() => { el('addDeviceResult').textContent = ''; }, 3000);
-      return;
+    el('addDeviceResult').textContent = 'Nom et pièce requis';
+    el('addDeviceResult').style.color = 'var(--danger)';
+    setTimeout(() => { el('addDeviceResult').textContent = ''; }, 3000);
+    return;
   }
   const id = name.toLowerCase().replace(/\s+/g, '_').replace(/[^\w\-]/g, '');
   const deviceType = deviceTypes[type] || {};
@@ -2730,7 +3161,7 @@ el('btnAddDevice')?.addEventListener('click', async () => {
 window.deleteDevicePrompt = async function(id) {
   if (!confirm(`Supprimer l'appareil ${id} ?`)) return;
   if (db) {
-    await set(ref(db, `${metaRefPath}/${id}`), null); 
+    await set(ref(db, `${metaRefPath}/${id}`), null);
     await set(ref(db, `${devicesRefPath}/${id}`), null);
   } else {
     appState.devices = appState.devices.filter(d => d.id !== id);
@@ -3015,405 +3446,9 @@ const loadDevicesFromLocalStorage = () => { appState.devices = JSON.parse(localS
 const savePlansToLocalStorage = () => localStorage.setItem('sh_plans', JSON.stringify(appState.plans));
 const loadPlansFromLocalStorage = () => { appState.plans = JSON.parse(localStorage.getItem('sh_plans') || '[]'); };
 
-let preferredVoice = null;
-const choosePreferredVoice = () => {
-  const voices = window.speechSynthesis.getVoices() || [];
-  return voices.find(x => /fr[-_]?FR/i.test(x.lang) && /Google/.test(x.name)) || voices.find(x => /fr[-_]?FR/i.test(x.lang)) || voices[0];
-};
-if ('speechSynthesis' in window) window.speechSynthesis.onvoiceschanged = () => { preferredVoice = choosePreferredVoice(); };
-
-function speak(text, isStreaming = false) {
-  if (!appState.voiceNotifications || !text || !('speechSynthesis' in window)) {
-    VoiceEngine.resumeRecognition();
-    return;
-  }
-  
-  if (appState.shouldStopResponse) {
-    window.speechSynthesis.cancel();
-    VoiceEngine.resumeRecognition();
-    return;
-  }
-
-  VoiceEngine.pauseRecognition();
-  window.speechSynthesis.cancel();
-  
-  if (isStreaming) {
-    const sentences = text.match(/[^.!?]+[.!?]+/g) || [text];
-    let currentIndex = 0;
-    
-    function speakNextSentence() {
-      if (appState.shouldStopResponse) {
-        window.speechSynthesis.cancel();
-        VoiceEngine.resumeRecognition();
-        return;
-      }
-          
-      if (currentIndex >= sentences.length) {
-        setTimeout(() => VoiceEngine.resumeRecognition(), 150);
-        return;
-      }
-          
-      const sentence = sentences[currentIndex].trim();
-      if (sentence) {
-        const u = new SpeechSynthesisUtterance(sentence);
-        u.lang = 'fr-FR';
-        if (!preferredVoice) preferredVoice = choosePreferredVoice();
-        if (preferredVoice) u.voice = preferredVoice;
-        u.rate = 1.1; 
-        
-        u.onend = () => {
-          currentIndex++;
-          speakNextSentence();
-        };
-        
-        u.onerror = () => {
-          if (appState.shouldStopResponse) {
-            window.speechSynthesis.cancel();
-          }
-        };
-        
-        window.speechSynthesis.speak(u);
-      } else {
-        currentIndex++;
-        speakNextSentence();
-      }
-    }
-    speakNextSentence();
-  } else {
-    const u = new SpeechSynthesisUtterance(text);
-    u.lang = 'fr-FR';
-    if (!preferredVoice) preferredVoice = choosePreferredVoice();
-    if (preferredVoice) u.voice = preferredVoice;
-    u.onend = () => {
-      setTimeout(() => VoiceEngine.resumeRecognition(), 150);
-    };
-    window.speechSynthesis.speak(u);
-  }
-}
-
-function sendBrowserNotification(title, body, options = {}) {
-  if (!appState.notificationsEnabled) { logActivity('Notification ignorée (désactivée).'); return; }
-  if (!('Notification' in window)) return;
-  const notificationOptions = {
-    body: body, icon: './favicon.ico', badge: './favicon.ico',
-    tag: options.tag || 'smarthome-notification',
-    requireInteraction: options.requireInteraction || false,
-    vibrate: options.vibrate || [200, 100, 200],
-    timestamp: Date.now(), ...options
-  };
-  try {
-    if (Notification.permission === 'granted') {
-      const notification = new Notification(title, notificationOptions);
-      setTimeout(() => notification.close(), 5000);
-      notification.onclick = () => { window.focus(); notification.close(); };
-    } else if (Notification.permission !== 'denied') {
-      Notification.requestPermission().then(permission => {
-        if (permission === 'granted') {
-          try { new Notification(title, notificationOptions); } catch (e) { console.warn('Notification indisponible:', e.message); }
-        }
-      });
-    }
-  } catch (e) {
-    console.warn('Notification non supportée sur ce navigateur:', e.message);
-  }
-}
-
-const VoiceEngine = {
-  recognition: null, isPushToTalkRecording: false,
-  isContinuousActive: false, isPausedForSpeech: false,
-  
-  init() {
-    if (!("webkitSpeechRecognition" in window || "SpeechRecognition" in window)) {
-      el('voicePushToTalk').disabled = true; el('voiceContinuous').disabled = true;
-      el('quickVoiceToggleBtn').disabled = true; el('quickVoiceToggleBtn').textContent = 'Voix non supportée';
-      el('voiceStatus').textContent = 'Voix: Non supportée';
-      return;
-    }
-    this.requestMicrophonePermission();
-    const pushBtn = el('voicePushToTalk');
-    const continuousBtn = el('voiceContinuous');
-    const quickBtn = el('quickVoiceToggleBtn');
-    pushBtn.addEventListener('touchstart', (e) => { e.preventDefault(); this.togglePushToTalk(); });
-    pushBtn.addEventListener('click', () => this.togglePushToTalk());
-    continuousBtn.addEventListener('touchstart', (e) => { e.preventDefault(); this.toggleContinuousConversation(); });
-    continuousBtn.addEventListener('click', () => this.toggleContinuousConversation());
-    quickBtn.addEventListener('touchstart', (e) => { e.preventDefault(); this.toggleContinuousConversation(); });
-    quickBtn.addEventListener('click', () => this.toggleContinuousConversation());
-  },
-  requestMicrophonePermission() {
-    navigator.mediaDevices.getUserMedia({ audio: true })
-      .then(stream => { stream.getTracks().forEach(track => track.stop()); })
-      .catch(err => { console.error("Permission micro:", err); el('voiceStatus').textContent = 'Voix: Permission requise'; });
-  },
-  createRecognitionInstance(continuous = false) {
-    const Rec = window.SpeechRecognition || window.webkitSpeechRecognition;
-    const rec = new Rec();
-    rec.lang = 'fr-FR'; rec.continuous = continuous; rec.interimResults = false;
-    return rec;
-  },
-  updateContinuousUI() {
-      const btn1 = el('voiceContinuous');
-      const btn2 = el('quickVoiceToggleBtn');
-      const status = el('continuousStatus');
-      const isActive = this.isContinuousActive;
-      if (status) status.textContent = isActive ? 'Activé' : 'Désactivé';
-      if (btn1) {
-        btn1.classList.toggle('active', isActive); btn1.classList.toggle('warn', isActive);
-        const icon1 = btn1.querySelector('i');
-        if (icon1) {
-          icon1.classList.toggle('icon-pulse', isActive);
-          icon1.classList.toggle('fa-waveform', !isActive);
-          icon1.classList.toggle('fa-stop-circle', isActive);
-        }
-      }
-      if (btn2) {
-        btn2.classList.toggle('primary', !isActive); btn2.classList.toggle('warn', isActive);
-        btn2.innerHTML = isActive ? 
-          '<i class="fas fa-stop-circle icon-pulse"></i> Conversation active' : 
-          '<i class="fas fa-waveform"></i> Lancer la conversation';
-      }
-  },
-  togglePushToTalk() {
-    if (this.isContinuousActive) this.toggleContinuousConversation();
-    const btn = el('voicePushToTalk');
-    if (this.isPushToTalkRecording) {
-      this.isPushToTalkRecording = false;
-      if (this.recognition) this.recognition.stop();
-      btn.classList.remove('pulse');
-      el('voiceStatus').textContent = 'Voix: Traitement...';
-    } else {
-      this.isPushToTalkRecording = true;
-      this.recognition = this.createRecognitionInstance(false);
-      btn.classList.add('pulse');
-      el('voiceStatus').textContent = 'Voix: Enregistrement...';
-      this.recognition.onresult = (e) => { handleVoiceSubmit(e.results[0][0].transcript); };
-      this.recognition.onend = () => {
-        this.isPushToTalkRecording = false;
-        btn.classList.remove('pulse');
-        el('voiceStatus').textContent = 'Voix: Inactive';
-        this.recognition = null;
-      };
-      this.recognition.start();
-    }
-  },
-  toggleContinuousConversation() {
-      this.isContinuousActive = !this.isContinuousActive;
-      this.updateContinuousUI();
-      if (this.isContinuousActive) { 
-        if (this.isPushToTalkRecording) this.togglePushToTalk();
-        this.startContinuousLoop(); 
-      } else { 
-        this.stopRecognition(); 
-      }
-  },
-  startContinuousLoop() {
-      if (!this.isContinuousActive || this.isPausedForSpeech) return;
-      this.recognition = this.createRecognitionInstance(false);
-      el('voiceStatus').textContent = 'Voix: Écoute...';
-      this.recognition.onresult = (e) => { handleVoiceSubmit(e.results[0][0].transcript); };
-      this.recognition.onerror = (e) => { if (e.error !== 'no-speech' && e.error !== 'aborted') console.warn('Voice error:', e.error); };
-      this.recognition.onend = () => { 
-        if (this.isContinuousActive && !this.isPausedForSpeech) {
-          setTimeout(() => this.startContinuousLoop(), 100);
-        } else {
-          el('voiceStatus').textContent = 'Voix: Inactive';
-        }
-      };
-      try { this.recognition.start(); } catch(e) {}
-  },
-  stopRecognition() {
-    if (this.recognition) { try { this.recognition.stop(); } catch(e) {} }
-    this.recognition = null; this.isPushToTalkRecording = false; this.isContinuousActive = false;
-    el('voicePushToTalk').classList.remove('pulse');
-    this.updateContinuousUI();
-    el('voiceStatus').textContent = 'Voix: Inactive';
-  },
-  pauseRecognition() {
-    if (this.isContinuousActive && !this.isPausedForSpeech) {
-      this.isPausedForSpeech = true;
-      if (this.recognition) {
-        this.recognition.onend = null;
-        try { this.recognition.stop(); } catch(e){}
-      }
-      el('voiceStatus').textContent = 'Voix: En pause';
-    }
-  },
-  resumeRecognition() {
-    if (this.isContinuousActive && this.isPausedForSpeech) { 
-      this.isPausedForSpeech = false; 
-      this.startContinuousLoop();
-    }
-  }
-};
-
-function getChatHistoryRef(userId, sessionId = null) {
-  let path = `${userChatsRefPath}/${userId}`;
-  if (sessionId) path += `/${sessionId}`;
-  return ref(db, path);
-}
-
-async function loadChatHistorySidebar() {
-  if (!appState.currentUser || !db) return;
-  const historyList = el('chat-history-list');
-  historyList.innerHTML = '';
-  const sessionsRef = getChatHistoryRef(appState.currentUser.uid);
-  const snapshot = await get(sessionsRef);
-  if (snapshot.exists()) {
-    const sessions = snapshot.val();
-    const sortedSessions = Object.keys(sessions).sort((a, b) => {
-      return (sessions[b].lastUpdated || 0) - (sessions[a].lastUpdated || 0);
-    });
-    
-    sortedSessions.forEach(sessionId => {
-      const session = sessions[sessionId];
-      const title = session.title || `Chat du ${new Date(session.createdAt || Date.now()).toLocaleDateString()}`;
-      
-      const item = document.createElement('div');
-      item.className = 'chat-history-item';
-      item.dataset.sessionId = sessionId;
-
-      const titleSpan = document.createElement('span');
-      titleSpan.textContent = title;
-      titleSpan.className = 'chat-history-item-title';
-      titleSpan.onclick = () => loadChatSession(sessionId);
-      
-      const deleteBtn = document.createElement('button');
-      deleteBtn.innerHTML = '<i class="fas fa-ellipsis-v"></i>';
-      deleteBtn.className = 'btn chat-history-delete';
-      deleteBtn.title = "Supprimer la discussion";
-      deleteBtn.onclick = (e) => {
-        e.stopPropagation();
-        deleteChatSession(sessionId, item);
-      };
-
-      item.appendChild(titleSpan);
-      item.appendChild(deleteBtn);
-      historyList.appendChild(item);
-    });
-  }
-}
-
-function createNewChatSession() {
-  const newSessionId = `chat_${Date.now()}`;
-  appState.currentSessionId = newSessionId;
-  
-  el('chatFullWindow').innerHTML = '';
-  appendChat('bot', '### 👋 Bienvenue !\n\nJe suis prêt pour notre nouvelle discussion.');
-  
-  setTimeout(() => {
-    document.querySelectorAll('.chat-history-item').forEach(i => i.classList.remove('active'));
-  }, 100);
-}
-el('new-chat-btn').addEventListener('click', createNewChatSession);
-
-async function deleteChatSession(sessionId, itemElement) {
-  if (!appState.currentUser || !db) return;
-  if (!confirm("Voulez-vous vraiment supprimer cette discussion ? L'action est irréversible.")) return;
-
-  try {
-    const sessionRef = getChatHistoryRef(appState.currentUser.uid, sessionId);
-    await set(sessionRef, null);
-    itemElement.remove();
-    if (appState.currentSessionId === sessionId) {
-      createNewChatSession();
-    }
-    logActivity(`Discussion ${sessionId} supprimée.`);
-  } catch (error) {
-    console.error("Erreur lors de la suppression du chat:", error);
-    logActivity("Erreur de suppression du chat.");
-  }
-}
-
-async function loadChatSession(sessionId) {
-  if (!appState.currentUser || !db) return;
-  appState.currentSessionId = sessionId;
-  const chatWindow = el('chatFullWindow');
-  chatWindow.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--muted);"><i class="fas fa-spinner fa-spin"></i> Chargement...</div>';
-  
-  try {
-    const messagesRef = ref(db, `${userChatsRefPath}/${appState.currentUser.uid}/${sessionId}/messages`);
-    const snapshot = await get(messagesRef);
-    
-    chatWindow.innerHTML = '';
-    
-    if (snapshot.exists()) {
-      const messages = snapshot.val();
-      const sortedMessages = Object.values(messages).sort((a, b) => a.timestamp - b.timestamp);
-      
-      sortedMessages.forEach(msg => {
-        const attachmentsMeta = msg.attachments || [];
-        appendChat('user', msg.user, false, attachmentsMeta);
-        appendChat('bot', msg.bot, false);
-      });
-      
-      setTimeout(() => {
-        el('chatFullWindow').scrollTop = el('chatFullWindow').scrollHeight;
-      }, 100);
-      
-    } else {
-      appendChat('bot', 'C\'est le début de notre conversation.');
-    }
-    
-    document.querySelectorAll('.chat-history-item').forEach(i => i.classList.remove('active'));
-    document.querySelector(`.chat-history-item[data-session-id="${sessionId}"]`)?.classList.add('active');
-    
-    el('chat-sidebar').classList.remove('open');
-    el('sidebar-overlay').classList.remove('open');
-    
-  } catch (error) {
-    console.error("Erreur chargement chat:", error);
-    chatWindow.innerHTML = '<div class="card" style="text-align: center; color: var(--danger);"><i class="fas fa-exclamation-triangle"></i> Erreur de chargement</div>';
-  }
-}
-
-async function saveMessageToFirebase(userMsg, botMsg, attachments) {
-  if (!appState.currentUser || !db || !appState.currentSessionId) return;
-
-  const sessionRef = ref(db, `${userChatsRefPath}/${appState.currentUser.uid}/${appState.currentSessionId}`);
-  const sessionSnapshot = await get(sessionRef);
-  
-  const isNewSession = !sessionSnapshot.exists();
-  
-  if (isNewSession) {
-    let newTitle = userMsg;
-    if (!newTitle && attachments.length > 0) {
-      newTitle = `📎 ${attachments[0].name}`;
-    }
-    if (!newTitle) newTitle = "Nouvelle discussion";
-    newTitle = newTitle.substring(0, 30) + (newTitle.length > 30 ? '...' : '');
-    
-    await set(sessionRef, {
-      title: newTitle,
-      createdAt: serverTimestamp(),
-      lastUpdated: serverTimestamp()
-    });
-  }
-
-  const messagesRef = ref(db, `${userChatsRefPath}/${appState.currentUser.uid}/${appState.currentSessionId}/messages`);
-  const attachmentsMeta = attachments.map(att => ({
-    name: att.name,
-    type: att.type
-  }));
-
-  await push(messagesRef, {
-    user: userMsg,
-    bot: botMsg,
-    attachments: attachmentsMeta,
-    timestamp: serverTimestamp()
-  });
-
-  await set(ref(db, `${userChatsRefPath}/${appState.currentUser.uid}/${appState.currentSessionId}/lastUpdated`), serverTimestamp());
-  
-  if (isNewSession) {
-    loadChatHistorySidebar();
-    setTimeout(() => {
-      document.querySelectorAll('.chat-history-item').forEach(i => i.classList.remove('active'));
-      const item = document.querySelector(`.chat-history-item[data-session-id="${appState.currentSessionId}"]`);
-      if (item) item.classList.add('active');
-    }, 200);
-  }
-}
-
+/* ===================================================
+   PIECES JOINTES
+   =================================================== */
 el('attach-file-btn').addEventListener('click', () => {
   el('file-input').click();
 });
@@ -3487,6 +3522,9 @@ function renderAttachmentPreviews() {
   });
 }
 
+/* ===================================================
+   UI / THEME
+   =================================================== */
 el('dayModeBtn')?.addEventListener('click', () => {
   appState.isNightMode = false;
   document.body.classList.remove('night-mode');
@@ -3502,21 +3540,6 @@ el('nightModeBtn')?.addEventListener('click', () => {
 el('allOnBtn')?.addEventListener('click', () => appState.devices.forEach(d => sendCommand(d.id, 'ON', 100)));
 el('allOffBtn')?.addEventListener('click', () => appState.devices.forEach(d => sendCommand(d.id, 'OFF', 0)));
 
-function updateToggleVoiceBtnUI() {
-  const btn = el('toggleVoiceBtn');
-  if (!btn) return;
-  const icon = btn.querySelector('i');
-  if (appState.voiceNotifications) {
-    btn.classList.remove('muted');
-    icon.className = 'fas fa-volume-up';
-    btn.title = "Désactiver la synthèse vocale";
-  } else {
-    btn.classList.add('muted');
-    icon.className = 'fas fa-volume-mute';
-    btn.title = "Activer la synthèse vocale";
-  }
-}
-  
 function setupSettings() {
   el('darkModeToggle').checked = appState.isNightMode;
   el('darkModeToggle').addEventListener('change', (e) => {
@@ -3526,15 +3549,14 @@ function setupSettings() {
   });
   el('notificationsToggle').checked = appState.notificationsEnabled;
   el('notificationsToggle').addEventListener('change', (e) => {
-      appState.notificationsEnabled = e.target.checked;
-      localStorage.setItem('notifications', e.target.checked);
-      if (e.target.checked) requestNotificationPermission();
+    appState.notificationsEnabled = e.target.checked;
+    localStorage.setItem('notifications', e.target.checked);
+    if (e.target.checked) requestNotificationPermission();
   });
   el('voiceNotificationsToggle').checked = appState.voiceNotifications;
   el('voiceNotificationsToggle').addEventListener('change', (e) => {
-      appState.voiceNotifications = e.target.checked;
-      localStorage.setItem('voiceNotifications', e.target.checked);
-      updateToggleVoiceBtnUI();
+    appState.voiceNotifications = e.target.checked;
+    localStorage.setItem('voiceNotifications', e.target.checked);
   });
   el('testNotificationBtn')?.addEventListener('click', () => {
     if (!appState.notificationsEnabled) { alert('❌ Activez d\'abord les notifications.'); return; }
@@ -3544,16 +3566,33 @@ function setupSettings() {
   el('resetBtn').addEventListener('click', () => { if (confirm("Réinitialiser l'application ?")) { localStorage.clear(); location.reload(); } });
   el('googleSignInOverlayBtn').addEventListener('click', handleGoogleSignIn);
   el('signOutBtn').addEventListener('click', handleSignOut);
-  
-  el('toggleVoiceBtn').addEventListener('click', () => {
-    appState.voiceNotifications = !appState.voiceNotifications;
-    localStorage.setItem('voiceNotifications', appState.voiceNotifications);
-    el('voiceNotificationsToggle').checked = appState.voiceNotifications;
-    updateToggleVoiceBtnUI();
-    if (!appState.voiceNotifications && window.speechSynthesis) {
-      window.speechSynthesis.cancel();
+}
+
+function sendBrowserNotification(title, body, options = {}) {
+  if (!appState.notificationsEnabled) { logActivity('Notification ignorée (désactivée).'); return; }
+  if (!('Notification' in window)) return;
+  const notificationOptions = {
+    body: body, icon: './favicon.ico', badge: './favicon.ico',
+    tag: options.tag || 'smarthome-notification',
+    requireInteraction: options.requireInteraction || false,
+    vibrate: options.vibrate || [200, 100, 200],
+    timestamp: Date.now(), ...options
+  };
+  try {
+    if (Notification.permission === 'granted') {
+      const notification = new Notification(title, notificationOptions);
+      setTimeout(() => notification.close(), 5000);
+      notification.onclick = () => { window.focus(); notification.close(); };
+    } else if (Notification.permission !== 'denied') {
+      Notification.requestPermission().then(permission => {
+        if (permission === 'granted') {
+          try { new Notification(title, notificationOptions); } catch (e) { console.warn('Notification indisponible:', e.message); }
+        }
+      });
     }
-  });
+  } catch (e) {
+    console.warn('Notification non supportée sur ce navigateur:', e.message);
+  }
 }
 
 function handleGoogleSignIn() {
@@ -3596,6 +3635,9 @@ el('sidebar-overlay').addEventListener('click', () => {
   el('sidebar-overlay').classList.remove('open');
 });
 
+/* ===================================================
+   PLANNING (exécution automatique)
+   =================================================== */
 let executedTasksClient = new Map();
 let lastCheckedMinuteClient = '';
 
@@ -3771,6 +3813,9 @@ async function cleanExpiredPlansClient() {
 setInterval(cleanExpiredPlansClient, 600000);
 setTimeout(cleanExpiredPlansClient, 5000);
 
+/* ===================================================
+   AUTH / CONNEXION
+   =================================================== */
 if (auth) {
   onAuthStateChanged(auth, (user) => {
     if (user) {
@@ -3812,6 +3857,180 @@ if (auth) {
   el('login-overlay').style.display = 'flex';
 }
 
+/* ===================================================
+   HISTORIQUE DES CHATS
+   =================================================== */
+function getChatHistoryRef(userId, sessionId = null) {
+  let path = `${userChatsRefPath}/${userId}`;
+  if (sessionId) path += `/${sessionId}`;
+  return ref(db, path);
+}
+
+async function loadChatHistorySidebar() {
+  if (!appState.currentUser || !db) return;
+  const historyList = el('chat-history-list');
+  historyList.innerHTML = '';
+  const sessionsRef = getChatHistoryRef(appState.currentUser.uid);
+  const snapshot = await get(sessionsRef);
+  if (snapshot.exists()) {
+    const sessions = snapshot.val();
+    const sortedSessions = Object.keys(sessions).sort((a, b) => {
+      return (sessions[b].lastUpdated || 0) - (sessions[a].lastUpdated || 0);
+    });
+    
+    sortedSessions.forEach(sessionId => {
+      const session = sessions[sessionId];
+      const title = session.title || `Chat du ${new Date(session.createdAt || Date.now()).toLocaleDateString()}`;
+      
+      const item = document.createElement('div');
+      item.className = 'chat-history-item';
+      item.dataset.sessionId = sessionId;
+
+      const titleSpan = document.createElement('span');
+      titleSpan.textContent = title;
+      titleSpan.className = 'chat-history-item-title';
+      titleSpan.onclick = () => loadChatSession(sessionId);
+      
+      const deleteBtn = document.createElement('button');
+      deleteBtn.innerHTML = '<i class="fas fa-ellipsis-v"></i>';
+      deleteBtn.className = 'btn chat-history-delete';
+      deleteBtn.title = "Supprimer la discussion";
+      deleteBtn.onclick = (e) => {
+        e.stopPropagation();
+        deleteChatSession(sessionId, item);
+      };
+
+      item.appendChild(titleSpan);
+      item.appendChild(deleteBtn);
+      historyList.appendChild(item);
+    });
+  }
+}
+
+function createNewChatSession() {
+  const newSessionId = `chat_${Date.now()}`;
+  appState.currentSessionId = newSessionId;
+  
+  el('chatFullWindow').innerHTML = '';
+  appendChat('bot', '### 👋 Bienvenue !\n\nJe suis prêt pour notre nouvelle discussion.');
+  
+  setTimeout(() => {
+    document.querySelectorAll('.chat-history-item').forEach(i => i.classList.remove('active'));
+  }, 100);
+}
+el('new-chat-btn').addEventListener('click', createNewChatSession);
+
+async function deleteChatSession(sessionId, itemElement) {
+  if (!appState.currentUser || !db) return;
+  if (!confirm("Voulez-vous vraiment supprimer cette discussion ? L'action est irréversible.")) return;
+
+  try {
+    const sessionRef = getChatHistoryRef(appState.currentUser.uid, sessionId);
+    await set(sessionRef, null);
+    itemElement.remove();
+    if (appState.currentSessionId === sessionId) {
+      createNewChatSession();
+    }
+    logActivity(`Discussion ${sessionId} supprimée.`);
+  } catch (error) {
+    console.error("Erreur lors de la suppression du chat:", error);
+    logActivity("Erreur de suppression du chat.");
+  }
+}
+
+async function loadChatSession(sessionId) {
+  if (!appState.currentUser || !db) return;
+  appState.currentSessionId = sessionId;
+  const chatWindow = el('chatFullWindow');
+  chatWindow.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--muted);"><i class="fas fa-spinner fa-spin"></i> Chargement...</div>';
+  
+  try {
+    const messagesRef = ref(db, `${userChatsRefPath}/${appState.currentUser.uid}/${sessionId}/messages`);
+    const snapshot = await get(messagesRef);
+    
+    chatWindow.innerHTML = '';
+    
+    if (snapshot.exists()) {
+      const messages = snapshot.val();
+      const sortedMessages = Object.values(messages).sort((a, b) => a.timestamp - b.timestamp);
+      
+      sortedMessages.forEach(msg => {
+        const attachmentsMeta = msg.attachments || [];
+        appendChat('user', msg.user, false, attachmentsMeta);
+        appendChat('bot', msg.bot, false);
+      });
+      
+      setTimeout(() => {
+        el('chatFullWindow').scrollTop = el('chatFullWindow').scrollHeight;
+      }, 100);
+      
+    } else {
+      appendChat('bot', 'C\'est le début de notre conversation.');
+    }
+    
+    document.querySelectorAll('.chat-history-item').forEach(i => i.classList.remove('active'));
+    document.querySelector(`.chat-history-item[data-session-id="${sessionId}"]`)?.classList.add('active');
+    
+    el('chat-sidebar').classList.remove('open');
+    el('sidebar-overlay').classList.remove('open');
+    
+  } catch (error) {
+    console.error("Erreur chargement chat:", error);
+    chatWindow.innerHTML = '<div class="card" style="text-align: center; color: var(--danger);"><i class="fas fa-exclamation-triangle"></i> Erreur de chargement</div>';
+  }
+}
+
+async function saveMessageToFirebase(userMsg, botMsg, attachments) {
+  if (!appState.currentUser || !db || !appState.currentSessionId) return;
+
+  const sessionRef = ref(db, `${userChatsRefPath}/${appState.currentUser.uid}/${appState.currentSessionId}`);
+  const sessionSnapshot = await get(sessionRef);
+  
+  const isNewSession = !sessionSnapshot.exists();
+  
+  if (isNewSession) {
+    let newTitle = userMsg;
+    if (!newTitle && attachments.length > 0) {
+      newTitle = `📎 ${attachments[0].name}`;
+    }
+    if (!newTitle) newTitle = "Nouvelle discussion";
+    newTitle = newTitle.substring(0, 30) + (newTitle.length > 30 ? '...' : '');
+    
+    await set(sessionRef, {
+      title: newTitle,
+      createdAt: serverTimestamp(),
+      lastUpdated: serverTimestamp()
+    });
+  }
+
+  const messagesRef = ref(db, `${userChatsRefPath}/${appState.currentUser.uid}/${appState.currentSessionId}/messages`);
+  const attachmentsMeta = attachments.map(att => ({
+    name: att.name,
+    type: att.type
+  }));
+
+  await push(messagesRef, {
+    user: userMsg,
+    bot: botMsg,
+    attachments: attachmentsMeta,
+    timestamp: serverTimestamp()
+  });
+
+  await set(ref(db, `${userChatsRefPath}/${appState.currentUser.uid}/${appState.currentSessionId}/lastUpdated`), serverTimestamp());
+  
+  if (isNewSession) {
+    loadChatHistorySidebar();
+    setTimeout(() => {
+      document.querySelectorAll('.chat-history-item').forEach(i => i.classList.remove('active'));
+      const item = document.querySelector(`.chat-history-item[data-session-id="${appState.currentSessionId}"]`);
+      if (item) item.classList.add('active');
+    }, 200);
+  }
+}
+
+/* ===================================================
+   PROACTIVE SUGGESTIONS
+   =================================================== */
 function updateProactiveSuggestion() {
   const el_sug = document.getElementById('proactive-suggestion');
   if (!el_sug) return;
@@ -3823,6 +4042,9 @@ function updateProactiveSuggestion() {
   }, 500);
 }
 
+/* ===================================================
+   INIT
+   =================================================== */
 function initUI() {
   if (appState.isNightMode) document.body.classList.add('night-mode');
   setupSettings();
@@ -3833,8 +4055,6 @@ function initUI() {
   requestNotificationPermission();
   updateProactiveSuggestion();
   setInterval(updateProactiveSuggestion, 10000);
-  
-  updateToggleVoiceBtnUI();
   
   el('toggleAddDeviceForm').addEventListener('click', () => {
     const form = el('addDeviceFormContainer');
@@ -3874,14 +4094,12 @@ function requestNotificationPermission() {
   }
 }
 
-initUI(); 
+initUI();
 
-window.appState = appState;
-
-console.log('✅ SmartHome Intelligence v12.0 COMPLET - Prêt à l\'emploi');
-console.log('📄 Documents: Cartes + Aperçu + Téléchargement');
-console.log('📥 Téléchargement code: ✅ FIXÉ');
-console.log('🔘 Boutons: ✅ addEventListener (plus fiable)');
+console.log('✅ SmartHome Intelligence v13.0 - Interface Claude-like + PDF/DOCX');
+console.log('📄 Bouton muet dynamique (apparaît pendant la voix)');
+console.log('📥 Téléchargement PDF (Puppeteer) + DOCX (LibreOffice)');
+console.log('🔘 Bouton dynamique : Mode continu / Envoyer');
 </script>
 </body>
 </html>
