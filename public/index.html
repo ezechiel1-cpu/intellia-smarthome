@@ -14,7 +14,6 @@
   
   <style>
     /* ===== VOTRE CSS EXISTANT (inchangé) ===== */
-    /* Je le garde exactement comme dans votre version */
     :root {
       --primary:#4361ee; --accent-cyan:#06b6d4; --panel:#14151a; 
       --card-bg:rgba(255,255,255,0.95); --muted:#9aa3b2; --dark:#212529; 
@@ -186,7 +185,6 @@
     .msg-action-btn.is-success { color: var(--success); }
     body.night-mode .msg-action-btn:hover { background: rgba(255,255,255,0.12); color: #fff; }
 
-    /* Styles pour le message en édition */
     .msg.editing {
       opacity: 0.5;
       border: 2px dashed var(--warning);
@@ -1756,12 +1754,11 @@
 
 <script type="module">
 /*************************************************
- * SmartHome Intelligence - Version 13.4
- * Corrections :
- * 1. Micro réactivé après la voix (await speak)
- * 2. Bouton Copier sur messages utilisateur
- * 3. Édition des messages utilisateur
- * 4. Gestion de all_devices dans sendCommand
+ * SmartHome Intelligence - Version 13.5
+ * Corrections finales :
+ * - Édition supprime les messages suivants
+ * - "all_devices" → "Tous les appareils" dans l'UI
+ * - Prévisualisation des documents adaptée mobile
  *************************************************/
 
 let RENDER_API;
@@ -1808,7 +1805,6 @@ const appState = {
   esp32Ip: localStorage.getItem('esp32Ip') || '', 
 };
 
-// Variable pour l'édition de message
 let editingMessageId = null;
 
 const defaultAvatar = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iI2FlZWFhZSI+PHBhdGggZD0iTTEyIDJDNi44OCAyIDIgNi44OCAyIDEyczQuNDggMTQgMTAgMTBjNS41MiAwIDEwLTQuNDggMTAtMTBTMjcuNTIgMiAxMiAyem0wIDJjMS42NiAwIDMgMS4zNCAzIDNzLTEuMzQgMy0zIDMtMy0xLjM0LTMtM1MwLjM0IDQgMTIgNHptMCAxNmMtMi42NyAwLTUuNDMtMS4yOS03LTIuODguNTYtMS42NSAzLjU1LTIuNjIgNy0yLjYyczYuNDQgLjk3IDcgMi42MmMtMS41NyAxLjU5LTQuMzMgMi44OC03IDIuODh6Ii8+PC9zdmc+";
@@ -1829,7 +1825,7 @@ const proactiveSuggestions = [
 ];
 let suggestionIndex = 0;
 
-/* ===== FONCTIONS EXISTANTES (copie, etc.) ===== */
+// ===== FONCTIONS UTILITAIRES (inchangées) =====
 function extractReadableText(content) {
   if (content.includes('class="doc-cv"') || 
       content.includes('class="doc-facture"') ||
@@ -1940,7 +1936,6 @@ function addMessageCopyAction(node) {
   node.appendChild(actions);
 }
 
-// Fonction pour ajouter les actions sur les messages utilisateur (copier + éditer)
 function addUserMessageActions(node, messageId, text) {
   if (!node || node.querySelector('.msg-actions')) return;
   const actions = document.createElement('div');
@@ -1967,21 +1962,16 @@ function addUserMessageActions(node, messageId, text) {
     if (!node) return;
     const text = getMessagePlainText(node);
     if (!text) return;
-    // Copier le texte dans la zone de saisie
     chatInput.value = text;
     autoResizeChatInput();
     updateSendOrModeBtn();
     chatInput.focus();
-    // Marquer le message comme en édition
     editingMessageId = messageId;
-    // Ajouter une classe visuelle
     node.classList.add('editing');
-    // Ajouter un indicateur
     const indicator = document.createElement('span');
     indicator.className = 'edit-indicator';
     indicator.textContent = ' ✏️ en cours d\'édition...';
     node.appendChild(indicator);
-    // Faire défiler vers le bas pour voir le champ de saisie
     document.getElementById('chatFullWindow').scrollTop = document.getElementById('chatFullWindow').scrollHeight;
   });
   node.appendChild(actions);
@@ -2281,9 +2271,7 @@ function escapeHtml(str) {
   return div.innerHTML.replace(/"/g, '&quot;');
 }
 
-/* ===================================================
-   CARTE DOCUMENT AVEC BOUTONS PDF + DOCX
-   =================================================== */
+// ===== CARTE DOCUMENT =====
 function appendDocumentCard(htmlContent, metadata) {
   const target = document.getElementById('chatFullWindow');
   if (!target) return;
@@ -2391,59 +2379,70 @@ function appendDocumentCard(htmlContent, metadata) {
   scrollToBottom();
 }
 
+// ===== PREVIEW DOCUMENT AMÉLIORÉ (mobile) =====
 function previewDocument(html) {
   const modal = document.createElement('div');
   modal.style.cssText = `
     position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(0,0,0,0.7); z-index: 99999;
-    display: flex; align-items: center; justify-content: center;
-    padding: 20px;
+    background: rgba(0,0,0,0.9); z-index: 99999;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: 10px;
   `;
-  
-  const content = document.createElement('div');
-  content.style.cssText = `
-    background: white;
-    max-width: 900px; width: 100%; height: 90vh;
-    border-radius: 12px; overflow: hidden; padding: 0;
-    position: relative;
-  `;
-  
+
   const closeBtn = document.createElement('button');
   closeBtn.innerHTML = '✕';
   closeBtn.style.cssText = `
-    position: absolute; top: 10px; right: 10px; background: white;
-    border: none; font-size: 24px; cursor: pointer; color: #666;
-    z-index: 1; padding: 4px 12px; border-radius: 6px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    position: absolute; top: 10px; right: 10px;
+    background: rgba(255,255,255,0.2); color: white;
+    border: none; border-radius: 50%;
+    width: 40px; height: 40px;
+    font-size: 24px; cursor: pointer;
+    z-index: 10;
+    display: flex; align-items: center; justify-content: center;
   `;
   closeBtn.onclick = () => modal.remove();
-  
+
+  const container = document.createElement('div');
+  container.style.cssText = `
+    width: 100%; height: 100%;
+    max-width: 900px;
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+    position: relative;
+  `;
+
   const iframe = document.createElement('iframe');
   iframe.style.cssText = `
-    width: 100%; height: 100%; border: none; display: block;
+    width: 100%; height: 100%;
+    border: none;
+    display: block;
   `;
-  iframe.srcdoc = html;
-  
-  content.appendChild(iframe);
-  content.appendChild(closeBtn);
-  modal.appendChild(content);
-  
+  // Ajouter viewport pour l'adaptation mobile
+  const htmlWithViewport = html.replace(
+    '<head>',
+    '<head><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">'
+  );
+  iframe.srcdoc = htmlWithViewport;
+
+  container.appendChild(iframe);
+  modal.appendChild(closeBtn);
+  modal.appendChild(container);
+
   modal.addEventListener('click', (e) => {
     if (e.target === modal) modal.remove();
   });
-  
   modal.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') modal.remove();
   });
-  
+
   document.body.appendChild(modal);
   modal.tabIndex = -1;
   modal.focus();
 }
 
-/* ===================================================
-   CHAT
-   =================================================== */
+// ===== CHAT =====
 function appendChat(role, text, returnElement = false, attachments = [], messageId = null) {
   const target = document.getElementById('chatFullWindow');
   if (!target) return;
@@ -2456,12 +2455,10 @@ function appendChat(role, text, returnElement = false, attachments = [], message
 
   if (role === 'user') {
     if (text) {
-      // On crée un conteneur pour le texte
       const textContainer = document.createElement('div');
       textContainer.textContent = text;
       node.appendChild(textContainer);
     }
-    // Ajouter les actions (copier + éditer) si c'est un message utilisateur
     if (messageId) {
       addUserMessageActions(node, messageId, text);
     }
@@ -2538,60 +2535,7 @@ function scrollToBottom() {
   }
 }
 
-/* ===================================================
-   FONCTIONS CORRIGÉES : simulateTyping (affichage immédiat + await speak)
-   =================================================== */
-
-// CORRECTION 1 : simulateTyping attend la voix avant de terminer
-async function simulateTyping(element, text, enableVoice = true, needsContinuation = false, continuationContext = null) {
-  if (appState.shouldStopResponse) {
-    element.innerHTML = '<br><br><em style="color: #e74c3c;">⚠️ Réponse interrompue</em>';
-    throw new Error('Interrupted');
-  }
-
-  // 1. Gérer les documents
-  const documentHtmlMatch = text.match(/<DOCUMENT_HTML>([\s\S]*?)<\/DOCUMENT_HTML>/);
-  if (documentHtmlMatch) {
-    const documentHtml = documentHtmlMatch[1].trim();
-    const metadata = extractDocumentMetadata(documentHtml);
-    appendDocumentCard(documentHtml, metadata);
-    element.classList.remove('loading');
-    scrollToBottom();
-    if (enableVoice && appState.voiceNotifications) {
-      await speak(`Document généré : ${metadata.title}`);
-    }
-    return;
-  }
-
-  // 2. Afficher le HTML immédiatement
-  const renderedHtml = marked.parse(text, { sanitize: false, gfm: true });
-  element.innerHTML = renderedHtml;
-  element.querySelectorAll('pre code').forEach(block => hljs.highlightElement(block));
-  addCopyButtons(element);
-  addMessageCopyAction(element);
-
-  // 3. Ajouter le bouton "Continuer" si nécessaire
-  if (needsContinuation) {
-    const continueBtn = document.createElement('button');
-    continueBtn.className = 'continue-btn';
-    continueBtn.innerHTML = '<i class="fas fa-chevron-down"></i> Continuer';
-    continueBtn.onclick = (e) => handleContinuation(continuationContext, e);
-    element.appendChild(continueBtn);
-  }
-
-  element.classList.remove('loading');
-  scrollToBottom();
-
-  // 4. Lancer la voix et attendre la fin (correction)
-  if (enableVoice && appState.voiceNotifications) {
-    const readableText = extractReadableText(text);
-    if (readableText) {
-      await speak(readableText, true); // ← on attend la fin de la voix
-    }
-  }
-}
-
-// CORRECTION 2 : speak() reste une Promise (inchangée)
+// ===== SPEAK (Promise) =====
 function speak(text, isStreaming = false) {
   return new Promise((resolve) => {
     if (!appState.voiceNotifications || !text || !('speechSynthesis' in window)) {
@@ -2645,7 +2589,52 @@ function speak(text, isStreaming = false) {
   });
 }
 
-// CORRECTION 3 : handleContinuation avec event explicite (inchangé)
+// ===== SIMULATE TYPING (avec await speak) =====
+async function simulateTyping(element, text, enableVoice = true, needsContinuation = false, continuationContext = null) {
+  if (appState.shouldStopResponse) {
+    element.innerHTML = '<br><br><em style="color: #e74c3c;">⚠️ Réponse interrompue</em>';
+    throw new Error('Interrupted');
+  }
+
+  const documentHtmlMatch = text.match(/<DOCUMENT_HTML>([\s\S]*?)<\/DOCUMENT_HTML>/);
+  if (documentHtmlMatch) {
+    const documentHtml = documentHtmlMatch[1].trim();
+    const metadata = extractDocumentMetadata(documentHtml);
+    appendDocumentCard(documentHtml, metadata);
+    element.classList.remove('loading');
+    scrollToBottom();
+    if (enableVoice && appState.voiceNotifications) {
+      await speak(`Document généré : ${metadata.title}`);
+    }
+    return;
+  }
+
+  const renderedHtml = marked.parse(text, { sanitize: false, gfm: true });
+  element.innerHTML = renderedHtml;
+  element.querySelectorAll('pre code').forEach(block => hljs.highlightElement(block));
+  addCopyButtons(element);
+  addMessageCopyAction(element);
+
+  if (needsContinuation) {
+    const continueBtn = document.createElement('button');
+    continueBtn.className = 'continue-btn';
+    continueBtn.innerHTML = '<i class="fas fa-chevron-down"></i> Continuer';
+    continueBtn.onclick = (e) => handleContinuation(continuationContext, e);
+    element.appendChild(continueBtn);
+  }
+
+  element.classList.remove('loading');
+  scrollToBottom();
+
+  if (enableVoice && appState.voiceNotifications) {
+    const readableText = extractReadableText(text);
+    if (readableText) {
+      await speak(readableText, true);
+    }
+  }
+}
+
+// ===== HANDLE CONTINUATION =====
 async function handleContinuation(context, event) {
   const continueBtn = event.target;
   continueBtn.disabled = true;
@@ -2680,9 +2669,7 @@ async function handleContinuation(context, event) {
   }
 }
 
-/* ===================================================
-   BOUTON DYNAMIQUE (Mode continu / Envoyer)
-   =================================================== */
+// ===== BOUTON DYNAMIQUE =====
 const sendOrModeBtn = document.getElementById('sendOrModeBtn');
 const chatInput = document.getElementById('chatFullInput');
 
@@ -2710,9 +2697,6 @@ sendOrModeBtn.addEventListener('click', () => {
   }
 });
 
-/* ===================================================
-   AUTO-RESIZE DU CHAMP DE TEXTE
-   =================================================== */
 function autoResizeChatInput() {
   if (!chatInput) return;
   chatInput.style.height = 'auto';
@@ -2720,9 +2704,7 @@ function autoResizeChatInput() {
 }
 chatInput.addEventListener('input', autoResizeChatInput);
 
-/* ===================================================
-   GESTION DU BOUTON MUET DYNAMIQUE
-   =================================================== */
+// ===== BOUTON MUET =====
 const stopSpeechContainer = document.getElementById('stopSpeechBtnContainer');
 const stopSpeechBtn = document.getElementById('stopSpeechBtn');
 
@@ -2739,9 +2721,6 @@ stopSpeechBtn.addEventListener('click', () => {
   hideStopSpeechBtn();
 });
 
-/* ===================================================
-   VOIX (SPEAK) - Promise déjà corrigée ci-dessus
-   =================================================== */
 let preferredVoice = null;
 const choosePreferredVoice = () => {
   const voices = window.speechSynthesis.getVoices() || [];
@@ -2749,9 +2728,7 @@ const choosePreferredVoice = () => {
 };
 if ('speechSynthesis' in window) window.speechSynthesis.onvoiceschanged = () => { preferredVoice = choosePreferredVoice(); };
 
-/* ===================================================
-   VOICE ENGINE - AVEC COMPTEUR DE PAUSE (inchangé)
-   =================================================== */
+// ===== VOICE ENGINE =====
 const VoiceEngine = {
   recognition: null,
   isPushToTalkRecording: false,
@@ -2962,11 +2939,7 @@ const VoiceEngine = {
   }
 };
 
-/* ===================================================
-   GESTION DU CHAT (ENVOI, CONTINUATION, ETC.)
-   =================================================== */
-
-// Fonction centrale de soumission (texte ou voix) avec pause micro
+// ===== PROCESS USER MESSAGE (avec suppression des messages suivants en édition) =====
 async function processUserMessage(message, attachments = [], isVoice = false) {
   if (appState.chatInProgress) return;
   if (!message && attachments.length === 0) return;
@@ -2975,46 +2948,60 @@ async function processUserMessage(message, attachments = [], isVoice = false) {
     createNewChatSession();
   }
 
-  // PAUSE : couper le micro dès le début du traitement
   VoiceEngine.pauseRecognition();
-
   appState.shouldStopResponse = false;
   appState.chatInProgress = true;
   el('intelliaStatus').textContent = "Assistant: En cours...";
   el('chat-loading').style.display = 'block';
   el('stopAIBtn').style.display = 'flex';
 
-  // Si on est en mode édition, supprimer l'ancien message avant d'envoyer le nouveau
+  // --- Édition : supprimer les messages suivants (DOM et Firebase) ---
   let oldMessageId = editingMessageId;
-  let oldMessageNode = null;
   if (oldMessageId) {
-    // Trouver l'élément du message en édition
-    const nodes = document.querySelectorAll('.msg.user[data-message-id]');
-    for (const node of nodes) {
-      if (node.dataset.messageId === oldMessageId) {
-        oldMessageNode = node;
-        break;
+    // 1. Supprimer du DOM tous les messages à partir de l'ancien message (inclus)
+    const chatWindow = document.getElementById('chatFullWindow');
+    const toRemove = [];
+    let found = false;
+    for (const child of chatWindow.children) {
+      if (child.dataset && child.dataset.messageId === oldMessageId) {
+        found = true;
+      }
+      if (found) {
+        toRemove.push(child);
       }
     }
-    // Supprimer le message de Firebase (si on a un ID Firebase)
-    if (oldMessageId && db && appState.currentUser && appState.currentSessionId) {
+    toRemove.forEach(child => child.remove());
+
+    // 2. Supprimer de Firebase les messages après celui édité
+    if (db && appState.currentUser && appState.currentSessionId) {
       try {
-        const messageRef = ref(db, `${userChatsRefPath}/${appState.currentUser.uid}/${appState.currentSessionId}/messages/${oldMessageId}`);
-        await remove(messageRef);
-        console.log(`🗑️ Ancien message ${oldMessageId} supprimé de Firebase`);
+        const messagesRef = ref(db, `${userChatsRefPath}/${appState.currentUser.uid}/${appState.currentSessionId}/messages`);
+        const snapshot = await get(messagesRef);
+        if (snapshot.exists()) {
+          const messages = snapshot.val();
+          let editedTimestamp = null;
+          for (const [id, msg] of Object.entries(messages)) {
+            if (id === oldMessageId) {
+              editedTimestamp = msg.timestamp;
+              break;
+            }
+          }
+          if (editedTimestamp !== null) {
+            for (const [id, msg] of Object.entries(messages)) {
+              if (msg.timestamp > editedTimestamp) {
+                await remove(ref(db, `${userChatsRefPath}/${appState.currentUser.uid}/${appState.currentSessionId}/messages/${id}`));
+              }
+            }
+          }
+        }
       } catch (e) {
-        console.warn("Erreur suppression ancien message:", e);
+        console.warn("Erreur suppression des messages suivants:", e);
       }
     }
-    // Supprimer du DOM
-    if (oldMessageNode) {
-      oldMessageNode.remove();
-    }
-    // Réinitialiser le mode édition
     editingMessageId = null;
   }
 
-  // Afficher le message utilisateur (avec un ID temporaire si pas encore sauvegardé)
+  // Afficher le message utilisateur
   const tempId = 'temp_' + Date.now();
   appendChat('user', message, false, attachments, tempId);
 
@@ -3028,14 +3015,12 @@ async function processUserMessage(message, attachments = [], isVoice = false) {
 
   try {
     const reply = await sendToOnline(message, attachments, false);
-    
     if (!appState.shouldStopResponse) {
       const botMsgElement = appendChat('bot', '', true);
       try {
         const needsContinuation = reply.includes('[SUITE DANS LA PROCHAINE RÉPONSE]') || 
                                    reply.includes('[À suivre...]') || 
                                    reply.includes('<!-- CONTINUATION NÉCESSAIRE -->');
-        
         await simulateTyping(botMsgElement, reply, true, needsContinuation, null);
       } catch (interruptError) {
         console.log('⚠️ Typing interrompu');
@@ -3053,7 +3038,6 @@ async function processUserMessage(message, attachments = [], isVoice = false) {
     appState.shouldStopResponse = false;
     el('chat-loading').style.display = 'none';
     el('stopAIBtn').style.display = 'none';
-    // REPRISE : réactiver le micro après tout le traitement (et la voix)
     VoiceEngine.resumeRecognition();
   }
 }
@@ -3068,6 +3052,7 @@ async function handleVoiceSubmit(command) {
   logActivity(`Commande vocale: "${command}"`);
 }
 
+// ===== SEND TO ONLINE =====
 async function sendToOnline(message, attachments = [], continuationMode = false) {
   if (!appState.currentUser) {
     alert("Erreur: Utilisateur non connecté. Veuillez rafraîchir.");
@@ -3128,9 +3113,7 @@ async function sendToOnline(message, attachments = [], continuationMode = false)
   }
 }
 
-/* ===================================================
-   FONCTIONS ANNEXES (planning, etc.) - INCHANGÉES
-   =================================================== */
+// ===== FONCTIONS ANNEXES =====
 async function handlePlanningCommands(commands) {
   for (const cmd of commands) {
     if (cmd.action === 'add') {
@@ -3157,9 +3140,7 @@ function displaySuggestions(suggestions) {
   container.textContent = suggestions[0].message;
 }
 
-/* ===================================================
-   EVENEMENTS UI (inchangés)
-   =================================================== */
+// ===== EVENEMENTS UI =====
 el('chatFullSend')?.addEventListener('click', () => {
   handleChatSubmit(el('chatFullInput').value, appState.attachments);
 });
@@ -3196,9 +3177,7 @@ el('close-sidebar-btn')?.addEventListener('click', () => {
   el('sidebar-overlay').classList.remove('open');
 });
 
-/* ===================================================
-   FIREBASE / DB (inchangé)
-   =================================================== */
+// ===== FIREBASE =====
 let db = null;
 let auth = null;
 
@@ -3253,6 +3232,7 @@ function logActivity(message, type = 'info') {
   }
 }
 
+// ===== RENDER DEVICES =====
 function renderDevices() {
   const grid = el('deviceGrid');
   if (!grid) return;
@@ -3432,9 +3412,7 @@ window.adjustBrightness = (deviceId, value) => {
   sendCommand(deviceId, v > 0 ? "ON" : "OFF", v);
 };
 
-// CORRECTION 4 : sendCommand gère "all_devices"
 window.sendCommand = (deviceId, action, value = null) => {
-  // Si l'appareil est "all_devices", on applique à tous
   if (deviceId === "all_devices") {
     appState.devices.forEach(device => {
       sendCommand(device.id, action, value);
@@ -3531,6 +3509,7 @@ el('addPlan')?.addEventListener('click', async () => {
   document.querySelectorAll('.day-checkbox').forEach(cb => cb.checked = false);
 });
 
+// ===== RENDER PLANNING (avec "Tous les appareils") =====
 function renderPlanningListUI(plans) {
   const out = el('planningTable');
   if (!out) return;
@@ -3550,7 +3529,7 @@ function renderPlanningListUI(plans) {
     </thead>
     <tbody>
       ${plans.map(p => {
-        const deviceName = appState.devices.find(d => d.id === p.device)?.name || p.device;
+        let deviceName = p.device === 'all_devices' ? 'Tous les appareils' : (appState.devices.find(d => d.id === p.device)?.name || p.device);
         
         let whenText = p.time;
         const freq = p.frequency || 'once';
@@ -3568,7 +3547,7 @@ function renderPlanningListUI(plans) {
           whenText += ` <span class="chip">📅 ${date}</span>`;
         }
         
-        const actionText = p.action === 'ON' ? '🟢 ON' : '🔴 OFF';
+        const actionText = p.action === 'ON' ? '🟢 Allumer' : '🔴 Éteindre';
         
         return `<tr style="border-bottom:1px solid rgba(0,0,0,0.05)">
           <td style="padding:10px"><strong>${deviceName}</strong></td>
@@ -3616,9 +3595,7 @@ const loadDevicesFromLocalStorage = () => { appState.devices = JSON.parse(localS
 const savePlansToLocalStorage = () => localStorage.setItem('sh_plans', JSON.stringify(appState.plans));
 const loadPlansFromLocalStorage = () => { appState.plans = JSON.parse(localStorage.getItem('sh_plans') || '[]'); };
 
-/* ===================================================
-   PIECES JOINTES (inchangé)
-   =================================================== */
+// ===== PIÈCES JOINTES =====
 el('attach-file-btn').addEventListener('click', () => {
   el('file-input').click();
 });
@@ -3692,9 +3669,7 @@ function renderAttachmentPreviews() {
   });
 }
 
-/* ===================================================
-   UI / THEME (inchangé)
-   =================================================== */
+// ===== UI / THEME =====
 el('dayModeBtn')?.addEventListener('click', () => {
   appState.isNightMode = false;
   document.body.classList.remove('night-mode');
@@ -3805,9 +3780,7 @@ el('sidebar-overlay').addEventListener('click', () => {
   el('sidebar-overlay').classList.remove('open');
 });
 
-/* ===================================================
-   PLANNING (exécution automatique) - INCHANGÉ
-   =================================================== */
+// ===== PLANNING (exécution automatique) =====
 let executedTasksClient = new Map();
 let lastCheckedMinuteClient = '';
 
@@ -3983,9 +3956,7 @@ async function cleanExpiredPlansClient() {
 setInterval(cleanExpiredPlansClient, 600000);
 setTimeout(cleanExpiredPlansClient, 5000);
 
-/* ===================================================
-   AUTH / CONNEXION (inchangé)
-   =================================================== */
+// ===== AUTH / CONNEXION =====
 if (auth) {
   onAuthStateChanged(auth, (user) => {
     if (user) {
@@ -4027,9 +3998,7 @@ if (auth) {
   el('login-overlay').style.display = 'flex';
 }
 
-/* ===================================================
-   HISTORIQUE DES CHATS (inchangé)
-   =================================================== */
+// ===== HISTORIQUE DES CHATS =====
 function getChatHistoryRef(userId, sessionId = null) {
   let path = `${userChatsRefPath}/${userId}`;
   if (sessionId) path += `/${sessionId}`;
@@ -4236,9 +4205,7 @@ async function saveMessageToFirebase(userMsg, botMsg, attachments) {
   }
 }
 
-/* ===================================================
-   PROACTIVE SUGGESTIONS (inchangé)
-   =================================================== */
+// ===== PROACTIVE SUGGESTIONS =====
 function updateProactiveSuggestion() {
   const el_sug = document.getElementById('proactive-suggestion');
   if (!el_sug) return;
@@ -4250,9 +4217,7 @@ function updateProactiveSuggestion() {
   }, 500);
 }
 
-/* ===================================================
-   INIT
-   =================================================== */
+// ===== INIT =====
 function initUI() {
   if (appState.isNightMode) document.body.classList.add('night-mode');
   setupSettings();
@@ -4304,7 +4269,7 @@ function requestNotificationPermission() {
 
 initUI();
 
-console.log('✅ SmartHome Intelligence v13.4 - Corrections finales : micro après voix, copier/éditer user, all_devices');
+console.log('✅ SmartHome Intelligence v13.5 - Corrections finales : édition suit, all_devices en français, preview mobile');
 </script>
 </body>
 </html>
