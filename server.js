@@ -1,10 +1,5 @@
 // ========================================
-// INTELLIA v13.0 - SYSTÈME ARTIFACTS + PDF/DOCX (Puppeteer-core + LibreOffice)
-// ✅ Génération de documents/code LONGS
-// ✅ Continuation automatique
-// ✅ Détection de troncature
-// ✅ Téléchargement PDF (Puppeteer-core)
-// ✅ Téléchargement DOCX (LibreOffice + fallback)
+// INTELLIA v13.3 - Optimisation quota Gemini + fallback modèles
 // ========================================
 const express = require('express');
 const cors = require('cors');
@@ -108,7 +103,7 @@ function markKeyAsFailed(keyObj, isQuotaError = false) {
 }
 
 // ========================================
-// TEMPÉRATURE RÉELLE DE LOKOSSA
+// TEMPÉRATURE RÉELLE DE LOKOSSA (inchangée)
 // ========================================
 function getLoKossaTemperatureEstimated(month, hour) {
   const temperatureData = {
@@ -227,7 +222,7 @@ async function getBeninTime() {
 }
 
 // ========================================
-// HELPERS MULTIMODAL
+// HELPERS MULTIMODAL (inchangés)
 // ========================================
 function parseDataUri(dataUri) {
   try {
@@ -369,7 +364,7 @@ async function getHistoryFromFirebase(userId, sessionId) {
 }
 
 // ========================================
-// 📄 GÉNÉRATION PDF AVEC HTML-PDF-NODE
+// 📄 GÉNÉRATION PDF AVEC HTML-PDF-NODE (inchangé)
 // ========================================
 app.post('/api/download/pdf', async (req, res) => {
   try {
@@ -402,7 +397,7 @@ app.post('/api/download/pdf', async (req, res) => {
 });
 
 // ========================================
-// 📄 GÉNÉRATION DOCX AVEC LIBREOFFICE (fallback)
+// 📄 GÉNÉRATION DOCX AVEC LIBREOFFICE (inchangé)
 // ========================================
 app.post('/api/download/docx', async (req, res) => {
   const tempDir = os.tmpdir();
@@ -419,7 +414,6 @@ app.post('/api/download/docx', async (req, res) => {
 
     await fs.writeFile(tempHtmlFile, html, 'utf8');
 
-    // Vérifier si LibreOffice est disponible
     let libreOfficeAvailable = false;
     try {
       await new Promise((resolve, reject) => {
@@ -449,7 +443,6 @@ app.post('/api/download/docx', async (req, res) => {
       res.send(docxBuffer);
       console.log('✅ DOCX généré avec LibreOffice');
     } else {
-      // Fallback texte simple
       const { Document, Packer, Paragraph, TextRun } = require('docx');
       const $ = cheerio.load(html);
       $('script, style, button').remove();
@@ -479,11 +472,11 @@ app.post('/api/download/docx', async (req, res) => {
 // ========================================
 // RECHERCHE WEB INTELLIGENTE
 // ========================================
-
 if (!process.env.TAVILY_API_KEY) {
   console.warn('⚠️ TAVILY_API_KEY manquante — la recherche web sera désactivée');
 }
 
+// CORRECTION : optimizeQueryWithLLM utilise gemini-1.5-flash
 async function optimizeQueryWithLLM(userQuery) {
   try {
     const promptInterne = `Tu es un assistant de recherche. Transforme le message ci-dessous en une requête de recherche courte et précise (maximum 12 mots, sans ponctuation inutile). Ignore le bavardage, les digressions, garde uniquement l'information nécessaire pour trouver la réponse.
@@ -495,7 +488,7 @@ Requête:`;
 
     const keyObj = getNextApiKey();
     const genAI = new GoogleGenerativeAI(keyObj.key);
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" }); // ← modèle léger
 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 4000);
@@ -552,6 +545,7 @@ async function performWebSearch(query) {
   return searchTavily(searchQuery);
 }
 
+// CORRECTION : decideIfSearchNeeded utilise gemini-1.5-flash
 async function decideIfSearchNeeded(userMessage, historyFromFirebase) {
   try {
     const recentHistory = (historyFromFirebase || []).slice(-4).map(h =>
@@ -580,7 +574,7 @@ Réponds UNIQUEMENT avec ce JSON, rien d'autre :
 
     const keyObj = getNextApiKey();
     const genAI = new GoogleGenerativeAI(keyObj.key);
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" }); // ← modèle léger
 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 4000);
@@ -635,7 +629,7 @@ function needsWebSearch(message) {
 }
 
 // ========================================
-// ANALYSE CONTEXTUELLE
+// ANALYSE CONTEXTUELLE (inchangée)
 // ========================================
 function analyzeContext(message, deviceStates, beninTime) {
   const analysis = { suggestedActions: [] };
@@ -667,7 +661,7 @@ function analyzeContext(message, deviceStates, beninTime) {
 }
 
 // ========================================
-// 🎯 DÉTECTION DE TRONCATURE
+// 🎯 DÉTECTION DE TRONCATURE (inchangée)
 // ========================================
 function detectTruncation(content) {
   const truncationIndicators = [
@@ -707,7 +701,7 @@ function detectTruncation(content) {
 }
 
 // ========================================
-// PROMPT SYSTÈME (AVEC INSTRUCTIONS DOCUMENTS A4)
+// PROMPT SYSTÈME (inchangé)
 // ========================================
 const systemPrompt = `Tu es Intellia, assistant universel ultra-intelligent.
 
@@ -1366,7 +1360,7 @@ et continuer proprement lors de la reprise.
 `;
 
 // ========================================
-// GESTION DES COMMANDES D'APPAREILS
+// GESTION DES COMMANDES D'APPAREILS (inchangée)
 // ========================================
 async function handleDeviceCommands(commands, userId) {
   if (!db) {
@@ -1446,7 +1440,7 @@ async function handleDeviceCommands(commands, userId) {
 }
 
 // ========================================
-// GESTION INTELLIGENTE DES PLANIFICATIONS
+// GESTION INTELLIGENTE DES PLANIFICATIONS (inchangée)
 // ========================================
 async function handlePlanningCommands(commands) {
   if (!commands || commands.length === 0) return;
@@ -1558,7 +1552,7 @@ function jsonErrorDefaults() {
 }
 
 // ========================================
-// FONCTION CHAT AVEC GEMINI
+// FONCTION CHAT AVEC GEMINI - CORRIGÉE
 // ========================================
 async function chatWithGemini(userMessage, devices, userId, sessionId, attachments = [], preferences = {}, continuationMode = false, maxRetries = API_KEYS.length) {
     
@@ -1593,75 +1587,83 @@ async function chatWithGemini(userMessage, devices, userId, sessionId, attachmen
   const contextAnalysis = analyzeContext(userMessage, realDeviceStates, beninTime);
   const historyFromFirebase = await getHistoryFromFirebase(userId, sessionId);
 
+  // OPTIMISATION : on n'appelle decideIfSearchNeeded qu'après un check local
   let webResults = [];
   if (!continuationMode) {
-    const searchDecision = await decideIfSearchNeeded(userMessage, historyFromFirebase);
-    if (searchDecision.needsSearch) {
-      webResults = await searchTavily(searchDecision.query);
+    const localDecision = needsWebSearch(userMessage);
+    if (localDecision) {
+      const searchDecision = await decideIfSearchNeeded(userMessage, historyFromFirebase);
+      if (searchDecision.needsSearch) {
+        webResults = await searchTavily(searchDecision.query);
+      }
     }
   }
 
   let lastError = null;
 
+  // On va essayer plusieurs modèles en cas d'échec
+  const modelNames = ['gemini-2.5-flash', 'gemini-1.5-flash', 'gemini-1.5-pro'];
+
   for (let attempt = 0; attempt < maxRetries; attempt++) {
-    try {
-      const keyObj = getNextApiKey();
-      const genAI = new GoogleGenerativeAI(keyObj.key);
-      const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+    for (const modelName of modelNames) {
+      try {
+        const keyObj = getNextApiKey();
+        const genAI = new GoogleGenerativeAI(keyObj.key);
+        const model = genAI.getGenerativeModel({ model: modelName });
 
-      const historyParts = await Promise.all(
-        historyFromFirebase.flatMap(async (h) => [
-          await createHistoryEntry("user", h.user, h.attachments || []),
-          await createHistoryEntry("model", h.bot)
-        ])
-      );
+        const historyParts = await Promise.all(
+          historyFromFirebase.flatMap(async (h) => [
+            await createHistoryEntry("user", h.user, h.attachments || []),
+            await createHistoryEntry("model", h.bot)
+          ])
+        );
 
-      const chat = model.startChat({
-        history: [
-          { role: "user", parts: [{ text: systemPrompt }] },
-          { role: "model", parts: [{ text: JSON.stringify({
-                reply: "### 👋 Recevez mes chaleureuses salutations !\n\nJe suis **Intellia**, votre assistant universel. Comment puis-je vous aider aujourd'hui ?",
-                needs_continuation: false,
-                continuation_context: null,
-                execute: [],
-                planning_commands: [],
-                device_commands: [],
-                suggestions: [],
-                source: "cloud"
-              })}] 
+        const chat = model.startChat({
+          history: [
+            { role: "user", parts: [{ text: systemPrompt }] },
+            { role: "model", parts: [{ text: JSON.stringify({
+                  reply: "### 👋 Recevez mes chaleureuses salutations !\n\nJe suis **Intellia**, votre assistant universel. Comment puis-je vous aider aujourd'hui ?",
+                  needs_continuation: false,
+                  continuation_context: null,
+                  execute: [],
+                  planning_commands: [],
+                  device_commands: [],
+                  suggestions: [],
+                  source: "cloud"
+                })}] 
+            },
+            ...historyParts.flat()
+          ],
+          generationConfig: {
+            responseMimeType: "application/json",
+            temperature: 0.7,
+            maxOutputTokens: 65536,
           },
-          ...historyParts.flat()
-        ],
-        generationConfig: {
-          responseMimeType: "application/json",
-          temperature: 0.7,
-          maxOutputTokens: 65536,
-        },
-      });
-      
-      let planningsText = "Aucune planification actuellement.";
-      if (currentPlanning.length > 0) {
-        planningsText = currentPlanning.map(p => {
-          const deviceName = devices.find(d => d.id === p.device)?.name || p.device;
-          const actionText = p.actionType || (p.action === 'ON' ? 'allumer' : 'éteindre');
-          const powerText = p.power !== null && p.power !== undefined ? ` à ${p.power}%` : '';
-          const freqText = p.frequency ? ` (${p.frequency})` : '';
-          return `- ${deviceName} (${p.device}): ${actionText} à ${p.time}${powerText}${freqText}`;
-        }).join('\n');
-      }
-      
-      let metadataPrompt;
-      
-      if (continuationMode) {
-        metadataPrompt = `
+        });
+        
+        let planningsText = "Aucune planification actuellement.";
+        if (currentPlanning.length > 0) {
+          planningsText = currentPlanning.map(p => {
+            const deviceName = devices.find(d => d.id === p.device)?.name || p.device;
+            const actionText = p.actionType || (p.action === 'ON' ? 'allumer' : 'éteindre');
+            const powerText = p.power !== null && p.power !== undefined ? ` à ${p.power}%` : '';
+            const freqText = p.frequency ? ` (${p.frequency})` : '';
+            return `- ${deviceName} (${p.device}): ${actionText} à ${p.time}${powerText}${freqText}`;
+          }).join('\n');
+        }
+        
+        let metadataPrompt;
+        
+        if (continuationMode) {
+          metadataPrompt = `
 [MODE: CONTINUATION]
 [INSTRUCTION CRITIQUE: Continue EXACTEMENT là où tu t'es arrêté. NE RECOMMENCE PAS depuis le début.]
 [Tu dois compléter le contenu précédent, pas le répéter.]
 
 MESSAGE: "${userMessage}"
 `;
-      } else {
-        metadataPrompt = `
+        } else {
+          metadataPrompt = `
 [Heure: ${beninTime.formatted}]
 [Température Lokossa TEMPS RÉEL: ${beninTime.temperature.temperature}°C (${beninTime.temperature.description}), Ressenti: ${beninTime.temperature.feels_like}°C, Humidité: ${beninTime.temperature.humidity}%, Source: ${beninTime.temperature.source}]
 [Génération de documents: activée (HTML direct)]
@@ -1676,63 +1678,67 @@ ${webResults.length > 0 ? `[Web: ${JSON.stringify(webResults.slice(0, 3))}]` : '
 
 MESSAGE: "${userMessage}"
 `;
-      }
+        }
 
-      const promptParts = [ { text: metadataPrompt } ];
-      
-      if (!continuationMode) {
-        for (const att of attachments) {
-          if (att.type === 'image') {
-            const parsed = parseDataUri(att.data);
-            if (parsed) promptParts.push({ inlineData: { mimeType: parsed.mimeType, data: parsed.data } });
-          } else if (att.type === 'file') {
-            const fileContent = await parseFileAttachment(att);
-            promptParts.push({ text: `\n[DEBUT FICHIER: ${att.name}]\n${fileContent}\n[FIN FICHIER]\n` });
+        const promptParts = [ { text: metadataPrompt } ];
+        
+        if (!continuationMode) {
+          for (const att of attachments) {
+            if (att.type === 'image') {
+              const parsed = parseDataUri(att.data);
+              if (parsed) promptParts.push({ inlineData: { mimeType: parsed.mimeType, data: parsed.data } });
+            } else if (att.type === 'file') {
+              const fileContent = await parseFileAttachment(att);
+              promptParts.push({ text: `\n[DEBUT FICHIER: ${att.name}]\n${fileContent}\n[FIN FICHIER]\n` });
+            }
           }
         }
-      }
 
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 30000);
-      const result = await chat.sendMessage(promptParts, { signal: controller.signal });
-      clearTimeout(timeout);
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 30000);
+        const result = await chat.sendMessage(promptParts, { signal: controller.signal });
+        clearTimeout(timeout);
 
-      // Traitement des métadonnées de document
-      let aiText = result.response.text();
-      try {
-        let parsed = JSON.parse(aiText);
-        if (parsed.reply) {
-          const docMatch = parsed.reply.match(/<DOCUMENT_HTML>([\s\S]*?)<\/DOCUMENT_HTML>/);
-          if (docMatch) {
-            const htmlContent = docMatch[1].trim();
-            const metadata = extractDocumentMetadata(htmlContent);
-            parsed.document = {
-              html: htmlContent,
-              title: metadata.title,
-              type: metadata.type,
-              pdf_url: '/api/download/pdf',
-              docx_url: '/api/download/docx'
-            };
-            aiText = JSON.stringify(parsed);
+        let aiText = result.response.text();
+        try {
+          let parsed = JSON.parse(aiText);
+          if (parsed.reply) {
+            const docMatch = parsed.reply.match(/<DOCUMENT_HTML>([\s\S]*?)<\/DOCUMENT_HTML>/);
+            if (docMatch) {
+              const htmlContent = docMatch[1].trim();
+              const metadata = extractDocumentMetadata(htmlContent);
+              parsed.document = {
+                html: htmlContent,
+                title: metadata.title,
+                type: metadata.type,
+                pdf_url: '/api/download/pdf',
+                docx_url: '/api/download/docx'
+              };
+              aiText = JSON.stringify(parsed);
+            }
           }
+        } catch (e) {
+          // ce n'est pas du JSON
         }
-      } catch (e) {
-        // Si ce n'est pas du JSON, on ne fait rien
+
+        return {
+          success: true,
+          data: aiText,
+          hadWebResults: webResults.length > 0,
+        };
+
+      } catch (error) {
+        lastError = error;
+        const keyObj = API_KEYS[(currentKeyIndex - 1 + API_KEYS.length) % API_KEYS.length];
+        const isQuotaError = error.message?.includes('quota') || error.message?.includes('429') || error.message?.includes('RESOURCE_EXHAUSTED');
+        markKeyAsFailed(keyObj, isQuotaError);
+        console.warn(`❌ Modèle ${modelName} échoué (tentative ${attempt+1}): ${error.message}`);
+        // Si c'est une erreur 503 (surcharge), on continue avec un autre modèle
+        if (error.message?.includes('503')) {
+          continue;
+        }
+        // Sinon, on passe au prochain modèle
       }
-
-      return {
-        success: true,
-        data: aiText,
-        hadWebResults: webResults.length > 0,
-      };
-
-    } catch (error) {
-      lastError = error;
-      const keyObj = API_KEYS[(currentKeyIndex - 1 + API_KEYS.length) % API_KEYS.length];
-      const isQuotaError = error.message?.includes('quota') || error.message?.includes('429') || error.message?.includes('RESOURCE_EXHAUSTED');
-      markKeyAsFailed(keyObj, isQuotaError);
-      console.warn(`⚠️ Tentative ${attempt + 1}/${maxRetries} échouée: ${error.message}`);
-      if (attempt === maxRetries - 1) break;
     }
   }
   return { success: false, error: lastError };
@@ -1754,7 +1760,7 @@ function extractDocumentMetadata(html) {
 }
 
 // ========================================
-// 🔥 ROUTE PRINCIPALE /api/chat
+// 🔥 ROUTE PRINCIPALE /api/chat (inchangée)
 // ========================================
 app.post('/api/chat', async (req, res) => {
   try {
@@ -1876,13 +1882,12 @@ app.post('/api/chat', async (req, res) => {
 });
 
 // ========================================
-// 🌐 ROUTE SANTÉ
+// 🌐 ROUTE SANTÉ (inchangée)
 // ========================================
 app.get('/api/health', async (req, res) => {
   const availableKeys = API_KEYS.filter(k => !k.quotaExceeded).length;
   const beninTime = await getBeninTime();
   
-  // Vérifier si LibreOffice est disponible
   let libreOfficeAvailable = false;
   try {
     await new Promise((resolve, reject) => {
@@ -1898,7 +1903,7 @@ app.get('/api/health', async (req, res) => {
 
   res.json({
     status: 'ok',
-    version: '13.1-html-pdf-node',
+    version: '13.3-optimized',
     features: {
       gemini: API_KEYS.length > 0,
       imageGeneration: false,
@@ -1937,13 +1942,6 @@ app.get('/api/health', async (req, res) => {
     },
     system: {
       libreoffice_available: libreOfficeAvailable
-    },
-    improvements_v13_1: {
-      pdf_generation: "✅ html-pdf-node (pas de dépendance système Chromium)",
-      docx_generation: "✅ DOCX avec LibreOffice (fallback texte simple)",
-      document_compatibility: "✅ Instructions A4/Word dans le prompt",
-      responsive_documents: "✅ Mobile-first avec tableaux pour Word",
-      download_routes: "✅ /api/download/pdf et /api/download/docx"
     }
   });
 });
@@ -1953,20 +1951,20 @@ app.get('/api/health', async (req, res) => {
 // ========================================
 app.listen(PORT, () => {
   console.log('\n🏠 ╔═══════════════════════════════════════╗');
-  console.log('   ║   INTELLIA v13.1 - HTML-PDF-NODE     ║');
+  console.log('   ║   INTELLIA v13.3 - OPTIMISÉ           ║');
   console.log('   ╚═══════════════════════════════════════╝');
   console.log(`\n   🚀 Serveur: http://localhost:${PORT}`);
   console.log(`   🔑 Clés Gemini: ${API_KEYS.length}`);
-  console.log(`   🤖 Modèle: gemini-2.5-flash (65536 tokens)`);
+  console.log(`   🤖 Modèle principal: gemini-2.5-flash (fallback 1.5-flash, 1.5-pro)`);
   console.log(`   🔥 Synchro Firebase: Activée`);
   console.log(`   📅 Planning AI: Prêt`);
   console.log(`   🌡️ Température Lokossa: Temps réel`);
   console.log(`   📄 Génération de documents: ✅ ACTIVÉE (HTML)`);
   console.log(`   📥 Téléchargement PDF: ✅ ACTIVÉ (html-pdf-node)`);
   console.log(`   📥 Téléchargement DOCX: ✅ ACTIVÉ (LibreOffice + fallback)`);
-  console.log(`   📋 Métadonnées documents: ✅ ACTIVÉES`);
   console.log(`   💻 Génération de code long: ✅ ACTIVÉE`);
   console.log(`   🔄 Système de continuation: ✅ ACTIVÉ`);
   console.log(`   🎯 Détection troncature: ✅ AUTOMATIQUE`);
   console.log(`   📏 Capacité: ILLIMITÉE (avec continuation)`);
+  console.log(`   ⚡ Optimisation quota: sous-tâches sur gemini-1.5-flash, appel de decideIfSearchNeeded conditionné`);
 });
