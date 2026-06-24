@@ -13,7 +13,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/13.0.0/marked.min.js"></script>
   
   <style>
-    /* === VOTRE CSS (identique à celui que vous aviez) === */
+    /* === TOUS VOS STYLES EXISTANTS (inchangés) === */
     :root {
       --primary:#4361ee; --accent-cyan:#06b6d4; --panel:#14151a; 
       --card-bg:rgba(255,255,255,0.95); --muted:#9aa3b2; --dark:#212529; 
@@ -1745,8 +1745,9 @@
 <script type="module">
 /*************************************************
  * SmartHome Intelligence - Version 13.3
- * Corrections : speak asynchrone + handleContinuation
- * + utilisation de gemini-1.5-flash pour les sous‑tâches
+ * Corrections : 
+ * - Affichage immédiat du texte avant la voix
+ * - Gestion de "all_devices" pour les planifications
  *************************************************/
 
 let RENDER_API;
@@ -2462,10 +2463,60 @@ function scrollToBottom() {
 }
 
 /* ===================================================
-   FONCTIONS CORRIGÉES : speak, simulateTyping, handleContinuation
+   FONCTIONS CORRIGÉES : simulateTyping (affichage immédiat)
    =================================================== */
 
-// CORRECTION 1 : speak() retourne une Promise
+// CORRECTION 1 : simulateTyping affiche le HTML tout de suite, puis lance la voix sans bloquer
+async function simulateTyping(element, text, enableVoice = true, needsContinuation = false, continuationContext = null) {
+  if (appState.shouldStopResponse) {
+    element.innerHTML = '<br><br><em style="color: #e74c3c;">⚠️ Réponse interrompue</em>';
+    throw new Error('Interrupted');
+  }
+
+  // 1. Gérer les documents (inchangé)
+  const documentHtmlMatch = text.match(/<DOCUMENT_HTML>([\s\S]*?)<\/DOCUMENT_HTML>/);
+  if (documentHtmlMatch) {
+    const documentHtml = documentHtmlMatch[1].trim();
+    const metadata = extractDocumentMetadata(documentHtml);
+    appendDocumentCard(documentHtml, metadata);
+    element.classList.remove('loading');
+    scrollToBottom();
+    if (enableVoice && appState.voiceNotifications) {
+      // Lancement vocal sans await
+      speak(`Document généré : ${metadata.title}`);
+    }
+    return;
+  }
+
+  // 2. Afficher le HTML immédiatement
+  const renderedHtml = marked.parse(text, { sanitize: false, gfm: true });
+  element.innerHTML = renderedHtml;
+  element.querySelectorAll('pre code').forEach(block => hljs.highlightElement(block));
+  addCopyButtons(element);
+  addMessageCopyAction(element);
+
+  // 3. Ajouter le bouton "Continuer" si nécessaire
+  if (needsContinuation) {
+    const continueBtn = document.createElement('button');
+    continueBtn.className = 'continue-btn';
+    continueBtn.innerHTML = '<i class="fas fa-chevron-down"></i> Continuer';
+    continueBtn.onclick = (e) => handleContinuation(continuationContext, e);
+    element.appendChild(continueBtn);
+  }
+
+  element.classList.remove('loading');
+  scrollToBottom();
+
+  // 4. Lancer la voix en parallèle (sans await)
+  if (enableVoice && appState.voiceNotifications) {
+    const readableText = extractReadableText(text);
+    if (readableText) {
+      speak(readableText, true); // ← lancement non bloquant
+    }
+  }
+}
+
+// CORRECTION 2 : speak() reste une Promise (inchangée, mais appelée sans await)
 function speak(text, isStreaming = false) {
   return new Promise((resolve) => {
     if (!appState.voiceNotifications || !text || !('speechSynthesis' in window)) {
@@ -2519,53 +2570,7 @@ function speak(text, isStreaming = false) {
   });
 }
 
-// CORRECTION 2 : simulateTyping async avec await speak
-async function simulateTyping(element, text, enableVoice = true, needsContinuation = false, continuationContext = null) {
-  if (appState.shouldStopResponse) {
-    element.innerHTML = '<br><br><em style="color: #e74c3c;">⚠️ Réponse interrompue</em>';
-    throw new Error('Interrupted');
-  }
-
-  const documentHtmlMatch = text.match(/<DOCUMENT_HTML>([\s\S]*?)<\/DOCUMENT_HTML>/);
-  if (documentHtmlMatch) {
-    const documentHtml = documentHtmlMatch[1].trim();
-    const metadata = extractDocumentMetadata(documentHtml);
-    appendDocumentCard(documentHtml, metadata);
-    element.classList.remove('loading');
-    scrollToBottom();
-    if (enableVoice && appState.voiceNotifications) {
-      await speak(`Document généré : ${metadata.title}`);
-    }
-    return;
-  }
-
-  if (enableVoice && appState.voiceNotifications) {
-    const readableText = extractReadableText(text);
-    if (readableText) {
-      await speak(readableText, true); // ← on attend la fin
-    }
-  }
-
-  const renderedHtml = marked.parse(text, { sanitize: false, gfm: true });
-  element.innerHTML = renderedHtml;
-  element.querySelectorAll('pre code').forEach(block => hljs.highlightElement(block));
-  addCopyButtons(element);
-  addMessageCopyAction(element);
-
-  if (needsContinuation) {
-    const continueBtn = document.createElement('button');
-    continueBtn.className = 'continue-btn';
-    continueBtn.innerHTML = '<i class="fas fa-chevron-down"></i> Continuer';
-    // On passe l'événement en paramètre
-    continueBtn.onclick = (e) => handleContinuation(continuationContext, e);
-    element.appendChild(continueBtn);
-  }
-
-  element.classList.remove('loading');
-  scrollToBottom();
-}
-
-// CORRECTION 3 : handleContinuation avec event explicite
+// CORRECTION 3 : handleContinuation avec event explicite (inchangé)
 async function handleContinuation(context, event) {
   const continueBtn = event.target;
   continueBtn.disabled = true;
@@ -3321,7 +3326,16 @@ window.adjustBrightness = (deviceId, value) => {
   sendCommand(deviceId, v > 0 ? "ON" : "OFF", v);
 };
 
+// CORRECTION 2 : sendCommand gère "all_devices"
 window.sendCommand = (deviceId, action, value = null) => {
+  // Si l'appareil est "all_devices", on applique à tous
+  if (deviceId === "all_devices") {
+    appState.devices.forEach(device => {
+      sendCommand(device.id, action, value);
+    });
+    return;
+  }
+
   const val = (value !== null) ? parseInt(value) : (action === "ON" ? 100 : 0);
   
   if (appState.isLocalConnected && appState.localWebSocket && appState.localWebSocket.readyState === 1) {
@@ -4146,13 +4160,13 @@ function requestNotificationPermission() {
 
 initUI();
 
-console.log('✅ SmartHome Intelligence v13.3 - Corrections speak asynchrone + handleContinuation + quota optimisé');
+console.log('✅ SmartHome Intelligence v13.3 - Corrections finales : affichage immédiat + all_devices');
 console.log('📄 Bouton muet dynamique (apparaît pendant la voix)');
 console.log('📥 Téléchargement PDF (html-pdf-node) + DOCX (LibreOffice)');
 console.log('🔘 Bouton dynamique : Mode continu / Envoyer');
 console.log('📱 Mobile: Entrée = retour à la ligne, Bureau: Entrée = envoi');
-console.log('🎤 Correction : speak asynchrone, attend la fin du speech avant de réactiver le micro');
-console.log('🧠 Optimisation quota : utilisation de gemini-1.5-flash pour les sous‑tâches');
+console.log('🎤 Correction : affichage du texte immédiatement, voix lancée en parallèle');
+console.log('🧠 Gestion de all_devices dans sendCommand pour les planifications');
 </script>
 </body>
 </html>
