@@ -14,6 +14,7 @@
   
   <style>
     /* ===== VOTRE CSS EXISTANT (inchangé) ===== */
+    /* Je le garde exactement comme dans votre version */
     :root {
       --primary:#4361ee; --accent-cyan:#06b6d4; --panel:#14151a; 
       --card-bg:rgba(255,255,255,0.95); --muted:#9aa3b2; --dark:#212529; 
@@ -185,6 +186,7 @@
     .msg-action-btn.is-success { color: var(--success); }
     body.night-mode .msg-action-btn:hover { background: rgba(255,255,255,0.12); color: #fff; }
 
+    /* Styles pour le message en édition */
     .msg.editing {
       opacity: 0.5;
       border: 2px dashed var(--warning);
@@ -1144,6 +1146,65 @@
       display: flex;
     }
 
+    /* Styles pour le preview document plein écran */
+    .doc-preview-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.85);
+      z-index: 99999;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 10px;
+      box-sizing: border-box;
+    }
+    .doc-preview-overlay .close-btn {
+      position: absolute;
+      top: 15px;
+      right: 20px;
+      background: rgba(255,255,255,0.2);
+      border: none;
+      color: #fff;
+      font-size: 28px;
+      cursor: pointer;
+      z-index: 10;
+      padding: 8px 16px;
+      border-radius: 50%;
+      transition: background 0.2s;
+    }
+    .doc-preview-overlay .close-btn:hover {
+      background: rgba(255,255,255,0.4);
+    }
+    .doc-preview-overlay iframe {
+      width: 100%;
+      height: 100%;
+      max-width: 1200px;
+      max-height: 95vh;
+      border: none;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.6);
+    }
+    @media (max-width: 600px) {
+      .doc-preview-overlay {
+        padding: 4px;
+      }
+      .doc-preview-overlay iframe {
+        max-height: 98vh;
+        border-radius: 4px;
+      }
+      .doc-preview-overlay .close-btn {
+        top: 8px;
+        right: 12px;
+        font-size: 24px;
+        padding: 4px 12px;
+      }
+    }
+
     @media (max-width: 760px) {
       .grid { grid-template-columns: 1fr; }
       .controls { flex-direction: column; }
@@ -1755,10 +1816,11 @@
 <script type="module">
 /*************************************************
  * SmartHome Intelligence - Version 13.5
- * Corrections finales :
- * - Édition supprime les messages suivants
- * - "all_devices" → "Tous les appareils" dans l'UI
- * - Prévisualisation des documents adaptée mobile
+ * Corrections :
+ * 1. Suppression des messages suivants lors de l'édition
+ * 2. Affichage "Tous les appareils" dans le planning
+ * 3. Preview document plein écran responsive
+ * 4. Interdiction des termes anglais (côté prompt, mais on remplace aussi côté affichage)
  *************************************************/
 
 let RENDER_API;
@@ -1805,6 +1867,7 @@ const appState = {
   esp32Ip: localStorage.getItem('esp32Ip') || '', 
 };
 
+// Variable pour l'édition de message
 let editingMessageId = null;
 
 const defaultAvatar = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iI2FlZWFhZSI+PHBhdGggZD0iTTEyIDJDNi44OCAyIDIgNi44OCAyIDEyczQuNDggMTQgMTAgMTBjNS41MiAwIDEwLTQuNDggMTAtMTBTMjcuNTIgMiAxMiAyem0wIDJjMS42NiAwIDMgMS4zNCAzIDNzLTEuMzQgMy0zIDMtMy0xLjM0LTMtM1MwLjM0IDQgMTIgNHptMCAxNmMtMi42NyAwLTUuNDMtMS4yOS03LTIuODguNTYtMS42NSAzLjU1LTIuNjIgNy0yLjYyczYuNDQgLjk3IDcgMi42MmMtMS41NyAxLjU5LTQuMzMgMi44OC03IDIuODh6Ii8+PC9zdmc+";
@@ -1825,7 +1888,7 @@ const proactiveSuggestions = [
 ];
 let suggestionIndex = 0;
 
-// ===== FONCTIONS UTILITAIRES (inchangées) =====
+/* ===== FONCTIONS EXISTANTES ===== */
 function extractReadableText(content) {
   if (content.includes('class="doc-cv"') || 
       content.includes('class="doc-facture"') ||
@@ -1936,6 +1999,7 @@ function addMessageCopyAction(node) {
   node.appendChild(actions);
 }
 
+// Fonction pour ajouter les actions sur les messages utilisateur (copier + éditer)
 function addUserMessageActions(node, messageId, text) {
   if (!node || node.querySelector('.msg-actions')) return;
   const actions = document.createElement('div');
@@ -1962,16 +2026,21 @@ function addUserMessageActions(node, messageId, text) {
     if (!node) return;
     const text = getMessagePlainText(node);
     if (!text) return;
+    // Copier le texte dans la zone de saisie
     chatInput.value = text;
     autoResizeChatInput();
     updateSendOrModeBtn();
     chatInput.focus();
+    // Marquer le message comme en édition
     editingMessageId = messageId;
+    // Ajouter une classe visuelle
     node.classList.add('editing');
+    // Ajouter un indicateur
     const indicator = document.createElement('span');
     indicator.className = 'edit-indicator';
     indicator.textContent = ' ✏️ en cours d\'édition...';
     node.appendChild(indicator);
+    // Faire défiler vers le bas pour voir le champ de saisie
     document.getElementById('chatFullWindow').scrollTop = document.getElementById('chatFullWindow').scrollHeight;
   });
   node.appendChild(actions);
@@ -2271,7 +2340,9 @@ function escapeHtml(str) {
   return div.innerHTML.replace(/"/g, '&quot;');
 }
 
-// ===== CARTE DOCUMENT =====
+/* ===================================================
+   CARTE DOCUMENT AVEC BOUTONS PDF + DOCX
+   =================================================== */
 function appendDocumentCard(htmlContent, metadata) {
   const target = document.getElementById('chatFullWindow');
   if (!target) return;
@@ -2379,70 +2450,47 @@ function appendDocumentCard(htmlContent, metadata) {
   scrollToBottom();
 }
 
-// ===== PREVIEW DOCUMENT AMÉLIORÉ (mobile) =====
+// ===================================================
+// PREVIEW DOCUMENT - VERSION PLEIN ÉCRAN RESPONSIVE
+// ===================================================
 function previewDocument(html) {
-  const modal = document.createElement('div');
-  modal.style.cssText = `
-    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(0,0,0,0.9); z-index: 99999;
-    display: flex; flex-direction: column;
-    align-items: center; justify-content: center;
-    padding: 10px;
-  `;
-
+  // Créer l'overlay
+  const overlay = document.createElement('div');
+  overlay.className = 'doc-preview-overlay';
+  
+  // Bouton de fermeture
   const closeBtn = document.createElement('button');
+  closeBtn.className = 'close-btn';
   closeBtn.innerHTML = '✕';
-  closeBtn.style.cssText = `
-    position: absolute; top: 10px; right: 10px;
-    background: rgba(255,255,255,0.2); color: white;
-    border: none; border-radius: 50%;
-    width: 40px; height: 40px;
-    font-size: 24px; cursor: pointer;
-    z-index: 10;
-    display: flex; align-items: center; justify-content: center;
-  `;
-  closeBtn.onclick = () => modal.remove();
-
-  const container = document.createElement('div');
-  container.style.cssText = `
-    width: 100%; height: 100%;
-    max-width: 900px;
-    background: white;
-    border-radius: 8px;
-    overflow: hidden;
-    position: relative;
-  `;
-
+  closeBtn.setAttribute('aria-label', 'Fermer l\'aperçu');
+  closeBtn.onclick = () => overlay.remove();
+  
+  // Iframe pour le contenu
   const iframe = document.createElement('iframe');
-  iframe.style.cssText = `
-    width: 100%; height: 100%;
-    border: none;
-    display: block;
-  `;
-  // Ajouter viewport pour l'adaptation mobile
-  const htmlWithViewport = html.replace(
-    '<head>',
-    '<head><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">'
-  );
-  iframe.srcdoc = htmlWithViewport;
-
-  container.appendChild(iframe);
-  modal.appendChild(closeBtn);
-  modal.appendChild(container);
-
-  modal.addEventListener('click', (e) => {
-    if (e.target === modal) modal.remove();
+  iframe.srcdoc = html;
+  iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin');
+  
+  overlay.appendChild(closeBtn);
+  overlay.appendChild(iframe);
+  
+  // Fermer en cliquant sur l'overlay (hors iframe)
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay) overlay.remove();
   });
-  modal.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') modal.remove();
+  
+  // Fermer avec la touche Échap
+  overlay.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') overlay.remove();
   });
-
-  document.body.appendChild(modal);
-  modal.tabIndex = -1;
-  modal.focus();
+  
+  document.body.appendChild(overlay);
+  overlay.tabIndex = -1;
+  overlay.focus();
 }
 
-// ===== CHAT =====
+/* ===================================================
+   CHAT
+   =================================================== */
 function appendChat(role, text, returnElement = false, attachments = [], messageId = null) {
   const target = document.getElementById('chatFullWindow');
   if (!target) return;
@@ -2535,7 +2583,58 @@ function scrollToBottom() {
   }
 }
 
-// ===== SPEAK (Promise) =====
+/* ===================================================
+   FONCTIONS CORRIGÉES : simulateTyping (affichage immédiat + await speak)
+   =================================================== */
+
+async function simulateTyping(element, text, enableVoice = true, needsContinuation = false, continuationContext = null) {
+  if (appState.shouldStopResponse) {
+    element.innerHTML = '<br><br><em style="color: #e74c3c;">⚠️ Réponse interrompue</em>';
+    throw new Error('Interrupted');
+  }
+
+  // 1. Gérer les documents
+  const documentHtmlMatch = text.match(/<DOCUMENT_HTML>([\s\S]*?)<\/DOCUMENT_HTML>/);
+  if (documentHtmlMatch) {
+    const documentHtml = documentHtmlMatch[1].trim();
+    const metadata = extractDocumentMetadata(documentHtml);
+    appendDocumentCard(documentHtml, metadata);
+    element.classList.remove('loading');
+    scrollToBottom();
+    if (enableVoice && appState.voiceNotifications) {
+      await speak(`Document généré : ${metadata.title}`);
+    }
+    return;
+  }
+
+  // 2. Afficher le HTML immédiatement
+  const renderedHtml = marked.parse(text, { sanitize: false, gfm: true });
+  element.innerHTML = renderedHtml;
+  element.querySelectorAll('pre code').forEach(block => hljs.highlightElement(block));
+  addCopyButtons(element);
+  addMessageCopyAction(element);
+
+  // 3. Ajouter le bouton "Continuer" si nécessaire
+  if (needsContinuation) {
+    const continueBtn = document.createElement('button');
+    continueBtn.className = 'continue-btn';
+    continueBtn.innerHTML = '<i class="fas fa-chevron-down"></i> Continuer';
+    continueBtn.onclick = (e) => handleContinuation(continuationContext, e);
+    element.appendChild(continueBtn);
+  }
+
+  element.classList.remove('loading');
+  scrollToBottom();
+
+  // 4. Lancer la voix et attendre la fin
+  if (enableVoice && appState.voiceNotifications) {
+    const readableText = extractReadableText(text);
+    if (readableText) {
+      await speak(readableText, true);
+    }
+  }
+}
+
 function speak(text, isStreaming = false) {
   return new Promise((resolve) => {
     if (!appState.voiceNotifications || !text || !('speechSynthesis' in window)) {
@@ -2589,52 +2688,6 @@ function speak(text, isStreaming = false) {
   });
 }
 
-// ===== SIMULATE TYPING (avec await speak) =====
-async function simulateTyping(element, text, enableVoice = true, needsContinuation = false, continuationContext = null) {
-  if (appState.shouldStopResponse) {
-    element.innerHTML = '<br><br><em style="color: #e74c3c;">⚠️ Réponse interrompue</em>';
-    throw new Error('Interrupted');
-  }
-
-  const documentHtmlMatch = text.match(/<DOCUMENT_HTML>([\s\S]*?)<\/DOCUMENT_HTML>/);
-  if (documentHtmlMatch) {
-    const documentHtml = documentHtmlMatch[1].trim();
-    const metadata = extractDocumentMetadata(documentHtml);
-    appendDocumentCard(documentHtml, metadata);
-    element.classList.remove('loading');
-    scrollToBottom();
-    if (enableVoice && appState.voiceNotifications) {
-      await speak(`Document généré : ${metadata.title}`);
-    }
-    return;
-  }
-
-  const renderedHtml = marked.parse(text, { sanitize: false, gfm: true });
-  element.innerHTML = renderedHtml;
-  element.querySelectorAll('pre code').forEach(block => hljs.highlightElement(block));
-  addCopyButtons(element);
-  addMessageCopyAction(element);
-
-  if (needsContinuation) {
-    const continueBtn = document.createElement('button');
-    continueBtn.className = 'continue-btn';
-    continueBtn.innerHTML = '<i class="fas fa-chevron-down"></i> Continuer';
-    continueBtn.onclick = (e) => handleContinuation(continuationContext, e);
-    element.appendChild(continueBtn);
-  }
-
-  element.classList.remove('loading');
-  scrollToBottom();
-
-  if (enableVoice && appState.voiceNotifications) {
-    const readableText = extractReadableText(text);
-    if (readableText) {
-      await speak(readableText, true);
-    }
-  }
-}
-
-// ===== HANDLE CONTINUATION =====
 async function handleContinuation(context, event) {
   const continueBtn = event.target;
   continueBtn.disabled = true;
@@ -2669,7 +2722,9 @@ async function handleContinuation(context, event) {
   }
 }
 
-// ===== BOUTON DYNAMIQUE =====
+/* ===================================================
+   BOUTON DYNAMIQUE (Mode continu / Envoyer)
+   =================================================== */
 const sendOrModeBtn = document.getElementById('sendOrModeBtn');
 const chatInput = document.getElementById('chatFullInput');
 
@@ -2697,6 +2752,9 @@ sendOrModeBtn.addEventListener('click', () => {
   }
 });
 
+/* ===================================================
+   AUTO-RESIZE DU CHAMP DE TEXTE
+   =================================================== */
 function autoResizeChatInput() {
   if (!chatInput) return;
   chatInput.style.height = 'auto';
@@ -2704,7 +2762,9 @@ function autoResizeChatInput() {
 }
 chatInput.addEventListener('input', autoResizeChatInput);
 
-// ===== BOUTON MUET =====
+/* ===================================================
+   GESTION DU BOUTON MUET DYNAMIQUE
+   =================================================== */
 const stopSpeechContainer = document.getElementById('stopSpeechBtnContainer');
 const stopSpeechBtn = document.getElementById('stopSpeechBtn');
 
@@ -2721,6 +2781,9 @@ stopSpeechBtn.addEventListener('click', () => {
   hideStopSpeechBtn();
 });
 
+/* ===================================================
+   VOIX (SPEAK)
+   =================================================== */
 let preferredVoice = null;
 const choosePreferredVoice = () => {
   const voices = window.speechSynthesis.getVoices() || [];
@@ -2728,7 +2791,9 @@ const choosePreferredVoice = () => {
 };
 if ('speechSynthesis' in window) window.speechSynthesis.onvoiceschanged = () => { preferredVoice = choosePreferredVoice(); };
 
-// ===== VOICE ENGINE =====
+/* ===================================================
+   VOICE ENGINE - AVEC COMPTEUR DE PAUSE (inchangé)
+   =================================================== */
 const VoiceEngine = {
   recognition: null,
   isPushToTalkRecording: false,
@@ -2939,7 +3004,11 @@ const VoiceEngine = {
   }
 };
 
-// ===== PROCESS USER MESSAGE (avec suppression des messages suivants en édition) =====
+/* ===================================================
+   GESTION DU CHAT (ENVOI, CONTINUATION, ETC.)
+   =================================================== */
+
+// Fonction centrale de soumission (texte ou voix) avec pause micro
 async function processUserMessage(message, attachments = [], isVoice = false) {
   if (appState.chatInProgress) return;
   if (!message && attachments.length === 0) return;
@@ -2948,60 +3017,57 @@ async function processUserMessage(message, attachments = [], isVoice = false) {
     createNewChatSession();
   }
 
+  // PAUSE : couper le micro dès le début du traitement
   VoiceEngine.pauseRecognition();
+
   appState.shouldStopResponse = false;
   appState.chatInProgress = true;
   el('intelliaStatus').textContent = "Assistant: En cours...";
   el('chat-loading').style.display = 'block';
   el('stopAIBtn').style.display = 'flex';
 
-  // --- Édition : supprimer les messages suivants (DOM et Firebase) ---
+  // Si on est en mode édition, supprimer l'ancien message ET tous les messages suivants
   let oldMessageId = editingMessageId;
+  let oldMessageNode = null;
+  let messageNodes = [];
   if (oldMessageId) {
-    // 1. Supprimer du DOM tous les messages à partir de l'ancien message (inclus)
-    const chatWindow = document.getElementById('chatFullWindow');
-    const toRemove = [];
+    // Récupérer tous les messages du DOM
+    const allMsgNodes = document.querySelectorAll('.msg[data-message-id]');
     let found = false;
-    for (const child of chatWindow.children) {
-      if (child.dataset && child.dataset.messageId === oldMessageId) {
+    let deleteFromIndex = -1;
+    for (let i = 0; i < allMsgNodes.length; i++) {
+      const node = allMsgNodes[i];
+      if (node.dataset.messageId === oldMessageId) {
         found = true;
-      }
-      if (found) {
-        toRemove.push(child);
+        deleteFromIndex = i;
+        oldMessageNode = node;
+        break;
       }
     }
-    toRemove.forEach(child => child.remove());
-
-    // 2. Supprimer de Firebase les messages après celui édité
-    if (db && appState.currentUser && appState.currentSessionId) {
-      try {
-        const messagesRef = ref(db, `${userChatsRefPath}/${appState.currentUser.uid}/${appState.currentSessionId}/messages`);
-        const snapshot = await get(messagesRef);
-        if (snapshot.exists()) {
-          const messages = snapshot.val();
-          let editedTimestamp = null;
-          for (const [id, msg] of Object.entries(messages)) {
-            if (id === oldMessageId) {
-              editedTimestamp = msg.timestamp;
-              break;
-            }
-          }
-          if (editedTimestamp !== null) {
-            for (const [id, msg] of Object.entries(messages)) {
-              if (msg.timestamp > editedTimestamp) {
-                await remove(ref(db, `${userChatsRefPath}/${appState.currentUser.uid}/${appState.currentSessionId}/messages/${id}`));
-              }
-            }
+    if (found && deleteFromIndex >= 0) {
+      // Supprimer tous les messages à partir de cet index (incluant l'ancien)
+      for (let i = allMsgNodes.length - 1; i >= deleteFromIndex; i--) {
+        const node = allMsgNodes[i];
+        const msgId = node.dataset.messageId;
+        // Supprimer de Firebase si c'est un vrai ID (pas temp)
+        if (msgId && !msgId.startsWith('temp_') && db && appState.currentUser && appState.currentSessionId) {
+          try {
+            const messageRef = ref(db, `${userChatsRefPath}/${appState.currentUser.uid}/${appState.currentSessionId}/messages/${msgId}`);
+            await remove(messageRef);
+            console.log(`🗑️ Message ${msgId} supprimé de Firebase`);
+          } catch (e) {
+            console.warn("Erreur suppression message:", e);
           }
         }
-      } catch (e) {
-        console.warn("Erreur suppression des messages suivants:", e);
+        // Supprimer du DOM
+        node.remove();
       }
     }
+    // Réinitialiser le mode édition
     editingMessageId = null;
   }
 
-  // Afficher le message utilisateur
+  // Afficher le message utilisateur (avec un ID temporaire si pas encore sauvegardé)
   const tempId = 'temp_' + Date.now();
   appendChat('user', message, false, attachments, tempId);
 
@@ -3015,12 +3081,14 @@ async function processUserMessage(message, attachments = [], isVoice = false) {
 
   try {
     const reply = await sendToOnline(message, attachments, false);
+    
     if (!appState.shouldStopResponse) {
       const botMsgElement = appendChat('bot', '', true);
       try {
         const needsContinuation = reply.includes('[SUITE DANS LA PROCHAINE RÉPONSE]') || 
                                    reply.includes('[À suivre...]') || 
                                    reply.includes('<!-- CONTINUATION NÉCESSAIRE -->');
+        
         await simulateTyping(botMsgElement, reply, true, needsContinuation, null);
       } catch (interruptError) {
         console.log('⚠️ Typing interrompu');
@@ -3038,6 +3106,7 @@ async function processUserMessage(message, attachments = [], isVoice = false) {
     appState.shouldStopResponse = false;
     el('chat-loading').style.display = 'none';
     el('stopAIBtn').style.display = 'none';
+    // REPRISE : réactiver le micro après tout le traitement (et la voix)
     VoiceEngine.resumeRecognition();
   }
 }
@@ -3052,7 +3121,6 @@ async function handleVoiceSubmit(command) {
   logActivity(`Commande vocale: "${command}"`);
 }
 
-// ===== SEND TO ONLINE =====
 async function sendToOnline(message, attachments = [], continuationMode = false) {
   if (!appState.currentUser) {
     alert("Erreur: Utilisateur non connecté. Veuillez rafraîchir.");
@@ -3113,7 +3181,9 @@ async function sendToOnline(message, attachments = [], continuationMode = false)
   }
 }
 
-// ===== FONCTIONS ANNEXES =====
+/* ===================================================
+   FONCTIONS ANNEXES (planning, etc.)
+   =================================================== */
 async function handlePlanningCommands(commands) {
   for (const cmd of commands) {
     if (cmd.action === 'add') {
@@ -3140,7 +3210,9 @@ function displaySuggestions(suggestions) {
   container.textContent = suggestions[0].message;
 }
 
-// ===== EVENEMENTS UI =====
+/* ===================================================
+   EVENEMENTS UI
+   =================================================== */
 el('chatFullSend')?.addEventListener('click', () => {
   handleChatSubmit(el('chatFullInput').value, appState.attachments);
 });
@@ -3177,7 +3249,9 @@ el('close-sidebar-btn')?.addEventListener('click', () => {
   el('sidebar-overlay').classList.remove('open');
 });
 
-// ===== FIREBASE =====
+/* ===================================================
+   FIREBASE / DB
+   =================================================== */
 let db = null;
 let auth = null;
 
@@ -3232,7 +3306,6 @@ function logActivity(message, type = 'info') {
   }
 }
 
-// ===== RENDER DEVICES =====
 function renderDevices() {
   const grid = el('deviceGrid');
   if (!grid) return;
@@ -3412,7 +3485,9 @@ window.adjustBrightness = (deviceId, value) => {
   sendCommand(deviceId, v > 0 ? "ON" : "OFF", v);
 };
 
+// CORRECTION 4 : sendCommand gère "all_devices"
 window.sendCommand = (deviceId, action, value = null) => {
+  // Si l'appareil est "all_devices", on applique à tous
   if (deviceId === "all_devices") {
     appState.devices.forEach(device => {
       sendCommand(device.id, action, value);
@@ -3509,7 +3584,9 @@ el('addPlan')?.addEventListener('click', async () => {
   document.querySelectorAll('.day-checkbox').forEach(cb => cb.checked = false);
 });
 
-// ===== RENDER PLANNING (avec "Tous les appareils") =====
+// ===================================================
+// RENDER PLANNING LIST UI - AVEC "Tous les appareils" en français
+// ===================================================
 function renderPlanningListUI(plans) {
   const out = el('planningTable');
   if (!out) return;
@@ -3529,7 +3606,9 @@ function renderPlanningListUI(plans) {
     </thead>
     <tbody>
       ${plans.map(p => {
-        let deviceName = p.device === 'all_devices' ? 'Tous les appareils' : (appState.devices.find(d => d.id === p.device)?.name || p.device);
+        let deviceName = appState.devices.find(d => d.id === p.device)?.name || p.device;
+        // Remplacer "all_devices" par "Tous les appareils" (français)
+        if (deviceName === "all_devices") deviceName = "Tous les appareils";
         
         let whenText = p.time;
         const freq = p.frequency || 'once';
@@ -3547,6 +3626,7 @@ function renderPlanningListUI(plans) {
           whenText += ` <span class="chip">📅 ${date}</span>`;
         }
         
+        // Remplacer ON/OFF par Allumer/Éteindre dans l'affichage
         const actionText = p.action === 'ON' ? '🟢 Allumer' : '🔴 Éteindre';
         
         return `<tr style="border-bottom:1px solid rgba(0,0,0,0.05)">
@@ -3595,7 +3675,9 @@ const loadDevicesFromLocalStorage = () => { appState.devices = JSON.parse(localS
 const savePlansToLocalStorage = () => localStorage.setItem('sh_plans', JSON.stringify(appState.plans));
 const loadPlansFromLocalStorage = () => { appState.plans = JSON.parse(localStorage.getItem('sh_plans') || '[]'); };
 
-// ===== PIÈCES JOINTES =====
+/* ===================================================
+   PIECES JOINTES
+   =================================================== */
 el('attach-file-btn').addEventListener('click', () => {
   el('file-input').click();
 });
@@ -3669,7 +3751,9 @@ function renderAttachmentPreviews() {
   });
 }
 
-// ===== UI / THEME =====
+/* ===================================================
+   UI / THEME
+   =================================================== */
 el('dayModeBtn')?.addEventListener('click', () => {
   appState.isNightMode = false;
   document.body.classList.remove('night-mode');
@@ -3780,7 +3864,9 @@ el('sidebar-overlay').addEventListener('click', () => {
   el('sidebar-overlay').classList.remove('open');
 });
 
-// ===== PLANNING (exécution automatique) =====
+/* ===================================================
+   PLANNING (exécution automatique) - INCHANGÉ
+   =================================================== */
 let executedTasksClient = new Map();
 let lastCheckedMinuteClient = '';
 
@@ -3956,7 +4042,9 @@ async function cleanExpiredPlansClient() {
 setInterval(cleanExpiredPlansClient, 600000);
 setTimeout(cleanExpiredPlansClient, 5000);
 
-// ===== AUTH / CONNEXION =====
+/* ===================================================
+   AUTH / CONNEXION (inchangé)
+   =================================================== */
 if (auth) {
   onAuthStateChanged(auth, (user) => {
     if (user) {
@@ -3998,7 +4086,9 @@ if (auth) {
   el('login-overlay').style.display = 'flex';
 }
 
-// ===== HISTORIQUE DES CHATS =====
+/* ===================================================
+   HISTORIQUE DES CHATS (inchangé)
+   =================================================== */
 function getChatHistoryRef(userId, sessionId = null) {
   let path = `${userChatsRefPath}/${userId}`;
   if (sessionId) path += `/${sessionId}`;
@@ -4095,7 +4185,6 @@ async function loadChatSession(sessionId) {
       
       sortedMessages.forEach(msg => {
         const attachmentsMeta = msg.attachments || [];
-        // On utilise l'ID Firebase comme identifiant pour les actions
         const msgId = msg.id || 'temp_' + Date.now() + '_' + Math.random();
         appendChat('user', msg.user, false, attachmentsMeta, msgId);
         appendChat('bot', msg.bot, false, [], msgId + '_bot');
@@ -4167,8 +4256,6 @@ async function saveMessageToFirebase(userMsg, botMsg, attachments) {
       // Mettre à jour les boutons d'édition pour utiliser le nouvel ID
       const editBtn = node.querySelector('.edit-btn');
       if (editBtn) {
-        // L'ID est maintenant fixé, on peut mettre à jour la référence
-        // On clone le bouton pour recréer l'écouteur avec le bon ID
         const newEditBtn = editBtn.cloneNode(true);
         editBtn.parentNode.replaceChild(newEditBtn, editBtn);
         newEditBtn.addEventListener('click', function(e) {
@@ -4205,7 +4292,9 @@ async function saveMessageToFirebase(userMsg, botMsg, attachments) {
   }
 }
 
-// ===== PROACTIVE SUGGESTIONS =====
+/* ===================================================
+   PROACTIVE SUGGESTIONS
+   =================================================== */
 function updateProactiveSuggestion() {
   const el_sug = document.getElementById('proactive-suggestion');
   if (!el_sug) return;
@@ -4217,7 +4306,9 @@ function updateProactiveSuggestion() {
   }, 500);
 }
 
-// ===== INIT =====
+/* ===================================================
+   INIT
+   =================================================== */
 function initUI() {
   if (appState.isNightMode) document.body.classList.add('night-mode');
   setupSettings();
@@ -4269,7 +4360,7 @@ function requestNotificationPermission() {
 
 initUI();
 
-console.log('✅ SmartHome Intelligence v13.5 - Corrections finales : édition suit, all_devices en français, preview mobile');
+console.log('✅ SmartHome Intelligence v13.5 - Corrections finales : micro après voix, copier/éditer user, all_devices, preview doc');
 </script>
 </body>
 </html>
