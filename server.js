@@ -1,5 +1,5 @@
 // ========================================
-// INTELLIA v14.0 - Cascade complète des modèles valides
+// INTELLIA v14.1 - Prompt optimisé + cascade modèles
 // ========================================
 const express = require('express');
 const cors = require('cors');
@@ -103,7 +103,7 @@ function markKeyAsFailed(keyObj, isQuotaError = false) {
 }
 
 // ========================================
-// TEMPÉRATURE RÉELLE DE LOKOSSA (inchangée)
+// TEMPÉRATURE RÉELLE DE LOKOSSA
 // ========================================
 function getLoKossaTemperatureEstimated(month, hour) {
   const temperatureData = {
@@ -222,7 +222,7 @@ async function getBeninTime() {
 }
 
 // ========================================
-// HELPERS MULTIMODAL (inchangés)
+// HELPERS MULTIMODAL
 // ========================================
 function parseDataUri(dataUri) {
   try {
@@ -364,7 +364,7 @@ async function getHistoryFromFirebase(userId, sessionId) {
 }
 
 // ========================================
-// 📄 GÉNÉRATION PDF AVEC HTML-PDF-NODE (inchangé)
+// 📄 GÉNÉRATION PDF AVEC HTML-PDF-NODE
 // ========================================
 app.post('/api/download/pdf', async (req, res) => {
   try {
@@ -397,7 +397,7 @@ app.post('/api/download/pdf', async (req, res) => {
 });
 
 // ========================================
-// 📄 GÉNÉRATION DOCX AVEC LIBREOFFICE (inchangé)
+// 📄 GÉNÉRATION DOCX AVEC LIBREOFFICE
 // ========================================
 app.post('/api/download/docx', async (req, res) => {
   const tempDir = os.tmpdir();
@@ -476,7 +476,6 @@ if (!process.env.TAVILY_API_KEY) {
   console.warn('⚠️ TAVILY_API_KEY manquante — la recherche web sera désactivée');
 }
 
-// 🔥 Sous‑tâches avec gemini-3.1-flash-lite (léger et économique)
 async function optimizeQueryWithLLM(userQuery) {
   try {
     const promptInterne = `Tu es un assistant de recherche. Transforme le message ci-dessous en une requête de recherche courte et précise (maximum 12 mots, sans ponctuation inutile). Ignore le bavardage, les digressions, garde uniquement l'information nécessaire pour trouver la réponse.
@@ -545,7 +544,6 @@ async function performWebSearch(query) {
   return searchTavily(searchQuery);
 }
 
-// 🔥 Sous‑tâches avec gemini-3.1-flash-lite
 async function decideIfSearchNeeded(userMessage, historyFromFirebase) {
   try {
     const recentHistory = (historyFromFirebase || []).slice(-4).map(h =>
@@ -629,7 +627,7 @@ function needsWebSearch(message) {
 }
 
 // ========================================
-// ANALYSE CONTEXTUELLE (inchangée)
+// ANALYSE CONTEXTUELLE
 // ========================================
 function analyzeContext(message, deviceStates, beninTime) {
   const analysis = { suggestedActions: [] };
@@ -661,7 +659,7 @@ function analyzeContext(message, deviceStates, beninTime) {
 }
 
 // ========================================
-// 🎯 DÉTECTION DE TRONCATURE (inchangée)
+// 🎯 DÉTECTION DE TRONCATURE
 // ========================================
 function detectTruncation(content) {
   const truncationIndicators = [
@@ -701,7 +699,7 @@ function detectTruncation(content) {
 }
 
 // ========================================
-// PROMPT SYSTÈME (inchangé)
+// NOUVEAU PROMPT SYSTÈME (corrigé)
 // ========================================
 const systemPrompt = `Tu es Intellia, assistant universel ultra-intelligent.
 
@@ -1301,6 +1299,13 @@ Si l'utilisateur demande de supprimer un appareil (ex: "Supprime la lampe jardin
 6. ❌ TOUJOURS vérifier [États] et [Planifications] avant de répondre pour être intelligent.
 7. ❌ Si tu manques de tokens, AJOUTE needs_continuation: true au lieu de tronquer brutalement.
 
+## 🌐 RÈGLES DE LANGUE ET DE FORMAT (NOUVEAU)
+- Tu dois répondre **UNIQUEMENT en français** dans tous les champs textuels de la réponse (reply, suggestions, etc.). **Interdis-toi tout mot anglais** comme "ON", "OFF", "all devices", "all", "none", "OK", etc.
+- Utilise **"allumer"** et **"éteindre"** pour les actions.
+- Ne mentionne **jamais** de pourcentage de luminosité, sauf si l'appareil possède explicitement une luminosité réglable (ce qui n'est pas le cas dans cette installation). Les appareils sont soit allumés, soit éteints.
+- Quand l'utilisateur parle de **"tous les appareils"**, dans les commandes JSON, utilise l'identifiant \`"all_devices"\` (pour que le système le reconnaisse), mais dans ta réponse textuelle, dis **"tous les appareils"** (en français).
+- Dans les messages de confirmation, utilise des formulations comme : "J'ai allumé la lampe du salon", "J'ai éteint la prise de la cuisine", "Tous les appareils ont été allumés".
+
 ## FORMAT JSON DE RÉPONSE
 
 {
@@ -1360,7 +1365,7 @@ et continuer proprement lors de la reprise.
 `;
 
 // ========================================
-// GESTION DES COMMANDES D'APPAREILS (inchangée)
+// GESTION DES COMMANDES D'APPAREILS
 // ========================================
 async function handleDeviceCommands(commands, userId) {
   if (!db) {
@@ -1440,7 +1445,7 @@ async function handleDeviceCommands(commands, userId) {
 }
 
 // ========================================
-// GESTION INTELLIGENTE DES PLANIFICATIONS (inchangée)
+// GESTION INTELLIGENTE DES PLANIFICATIONS
 // ========================================
 async function handlePlanningCommands(commands) {
   if (!commands || commands.length === 0) return;
@@ -1766,7 +1771,7 @@ function extractDocumentMetadata(html) {
 }
 
 // ========================================
-// 🔥 ROUTE PRINCIPALE /api/chat (inchangée)
+// 🔥 ROUTE PRINCIPALE /api/chat
 // ========================================
 app.post('/api/chat', async (req, res) => {
   try {
@@ -1888,7 +1893,7 @@ app.post('/api/chat', async (req, res) => {
 });
 
 // ========================================
-// 🌐 ROUTE SANTÉ (inchangée)
+// 🌐 ROUTE SANTÉ
 // ========================================
 app.get('/api/health', async (req, res) => {
   const availableKeys = API_KEYS.filter(k => !k.quotaExceeded).length;
@@ -1909,7 +1914,7 @@ app.get('/api/health', async (req, res) => {
 
   res.json({
     status: 'ok',
-    version: '14.0-cascade-complete',
+    version: '14.1-prompt-optimized',
     features: {
       gemini: API_KEYS.length > 0,
       imageGeneration: false,
@@ -1968,7 +1973,7 @@ app.get('/api/health', async (req, res) => {
 // ========================================
 app.listen(PORT, () => {
   console.log('\n🏠 ╔═══════════════════════════════════════╗');
-  console.log('   ║   INTELLIA v14.0 - CASCADE COMPLÈTE  ║');
+  console.log('   ║   INTELLIA v14.1 - PROMPT OPTIMISÉ  ║');
   console.log('   ╚═══════════════════════════════════════╝');
   console.log(`\n   🚀 Serveur: http://localhost:${PORT}`);
   console.log(`   🔑 Clés Gemini: ${API_KEYS.length}`);
@@ -1980,6 +1985,7 @@ app.listen(PORT, () => {
   console.log(`      5. gemini-2.5-flash`);
   console.log(`      6. gemini-2.5-pro`);
   console.log(`   🤖 Sous‑tâches: gemini-3.1-flash-lite`);
+  console.log(`   🌐 Langue: 100% français (interdit ON/OFF/all devices)`);
   console.log(`   🔥 Synchro Firebase: Activée`);
   console.log(`   📅 Planning AI: Prêt`);
   console.log(`   🌡️ Température Lokossa: Temps réel`);
