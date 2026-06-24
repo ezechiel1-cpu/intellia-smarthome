@@ -13,6 +13,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/13.0.0/marked.min.js"></script>
   
   <style>
+    /* Tous vos styles existants (inchangés) */
     :root {
       --primary:#4361ee; --accent-cyan:#06b6d4; --panel:#14151a; 
       --card-bg:rgba(255,255,255,0.95); --muted:#9aa3b2; --dark:#212529; 
@@ -1743,8 +1744,9 @@
 
 <script type="module">
 /*************************************************
- * SmartHome Intelligence - Version 13.0
- * Interface Claude-like + PDF/DOCX (Puppeteer/LibreOffice)
+ * SmartHome Intelligence - Version 13.1
+ * Interface Claude-like + PDF/DOCX
+ * CORRECTION : voix continue + envoi Entrée mobile
  *************************************************/
 
 let RENDER_API;
@@ -1791,7 +1793,7 @@ const appState = {
   esp32Ip: localStorage.getItem('esp32Ip') || '', 
 };
 
-const defaultAvatar = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iI2FlYWVhZSI+PHBhdGggZD0iTTEyIDJDNi44OCAyIDIgNi44OCAyIDEyczQuNDggMTQgMTAgMTBjNS41MiAwIDEwLTQuNDggMTAtMTBTMjcuNTIgMiAxMiAyem0wIDJjMS42NiAwIDMgMS4zNCAzIDNzLTEuMzQgMy0zIDMtMy0xLjM0LTMtM1MwLjM0IDQgMTIgNHptMCAxNmMtMi42NyAwLTUuNDMtMS4yOS03LTIuODguNTYtMS42NSAzLjU1LTIuNjIgNy0yLjYyczYuNDQgLjk3IDcgMi42MmMtMS41NyAxLjU5LTQuMzMgMi44OC03IDIuODh6Ii8+PC9zdmc+";
+const defaultAvatar = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iI2FlZWFhZSI+PHBhdGggZD0iTTEyIDJDNi44OCAyIDIgNi44OCAyIDEyczQuNDggMTQgMTAgMTBjNS41MiAwIDEwLTQuNDggMTAtMTBTMjcuNTIgMiAxMiAyem0wIDJjMS42NiAwIDMgMS4zNCAzIDNzLTEuMzQgMy0zIDMtMy0xLjM0LTMtM1MwLjM0IDQgMTIgNHptMCAxNmMtMi42NyAwLTUuNDMtMS4yOS03LTIuODguNTYtMS42NSAzLjU1LTIuNjIgNy0yLjYyczYuNDQgLjk3IDcgMi42MmMtMS41NyAxLjU5LTQuMzMgMi44OC03IDIuODh6Ii8+PC9zdmc+";
 
 const deviceTypes = {
   'lamp': { name: 'Lampe', hasBrightness: false, icon: 'lightbulb' },
@@ -2214,7 +2216,7 @@ function escapeHtml(str) {
 }
 
 /* ===================================================
-   CARTE DOCUMENT AVEC BOUTONS PDF + DOCX (PAS DE HTML)
+   CARTE DOCUMENT AVEC BOUTONS PDF + DOCX
    =================================================== */
 function appendDocumentCard(htmlContent, metadata) {
   const target = document.getElementById('chatFullWindow');
@@ -2646,13 +2648,14 @@ function speak(text, isStreaming = false) {
 }
 
 /* ===================================================
-   VOICE ENGINE (Reconnaissance vocale)
+   VOICE ENGINE (Reconnaissance vocale) - Version CONTINUOUS TRUE
    =================================================== */
 const VoiceEngine = {
   recognition: null,
   isPushToTalkRecording: false,
   isContinuousActive: false,
   isPausedForSpeech: false,
+  restartTimeout: null,
   
   init() {
     if (!("webkitSpeechRecognition" in window || "SpeechRecognition" in window)) {
@@ -2678,7 +2681,9 @@ const VoiceEngine = {
   createRecognitionInstance(continuous = false) {
     const Rec = window.SpeechRecognition || window.webkitSpeechRecognition;
     const rec = new Rec();
-    rec.lang = 'fr-FR'; rec.continuous = continuous; rec.interimResults = false;
+    rec.lang = 'fr-FR';
+    rec.continuous = continuous;
+    rec.interimResults = false;
     return rec;
   },
   updateContinuousUI() {
@@ -2734,42 +2739,94 @@ const VoiceEngine = {
     }
   },
   startContinuousLoop() {
-    if (!this.isContinuousActive || this.isPausedForSpeech) return;
-    this.recognition = this.createRecognitionInstance(false);
+    // Nettoyer tout timeout en attente
+    if (this.restartTimeout) {
+      clearTimeout(this.restartTimeout);
+      this.restartTimeout = null;
+    }
+    if (!this.isContinuousActive || this.isPausedForSpeech) {
+      el('voiceStatus').textContent = this.isContinuousActive ? 'Voix: En pause' : 'Voix: Inactive';
+      return;
+    }
+    
+    this.recognition = this.createRecognitionInstance(true); // CONTINUOUS
     el('voiceStatus').textContent = 'Voix: Écoute...';
-    this.recognition.onresult = (e) => { handleVoiceSubmit(e.results[0][0].transcript); };
-    this.recognition.onerror = (e) => { if (e.error !== 'no-speech' && e.error !== 'aborted') console.warn('Voice error:', e.error); };
-    this.recognition.onend = () => { 
+    
+    this.recognition.onresult = (e) => {
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        if (e.results[i].isFinal) {
+          const transcript = e.results[i][0].transcript.trim();
+          if (transcript) {
+            handleVoiceSubmit(transcript);
+          }
+        }
+      }
+    };
+    
+    this.recognition.onerror = (e) => {
+      console.warn('Voice error:', e.error);
+      // Ne pas redémarrer sur certaines erreurs
+      if (e.error === 'not-allowed' || e.error === 'audio-capture') {
+        el('voiceStatus').textContent = 'Voix: Erreur micro';
+        return;
+      }
+      // Redémarrer après un court délai si toujours actif
       if (this.isContinuousActive && !this.isPausedForSpeech) {
-        setTimeout(() => this.startContinuousLoop(), 100);
+        this.restartTimeout = setTimeout(() => this.startContinuousLoop(), 200);
+      }
+    };
+    
+    this.recognition.onend = () => {
+      // La reconnaissance s'est arrêtée (peut-être à cause d'une interruption ou d'une erreur)
+      if (this.isContinuousActive && !this.isPausedForSpeech) {
+        // Redémarrer après un petit délai
+        this.restartTimeout = setTimeout(() => this.startContinuousLoop(), 100);
       } else {
         el('voiceStatus').textContent = 'Voix: Inactive';
       }
     };
-    try { this.recognition.start(); } catch(e) {}
+    
+    try {
+      this.recognition.start();
+    } catch(e) {
+      console.warn('Erreur démarrage reconnaissance:', e);
+      if (this.isContinuousActive && !this.isPausedForSpeech) {
+        this.restartTimeout = setTimeout(() => this.startContinuousLoop(), 500);
+      }
+    }
   },
   stopRecognition() {
-    if (this.recognition) { try { this.recognition.stop(); } catch(e) {} }
-    this.recognition = null;
-    this.isPushToTalkRecording = false;
+    // Arrêter complètement
+    if (this.restartTimeout) {
+      clearTimeout(this.restartTimeout);
+      this.restartTimeout = null;
+    }
     this.isContinuousActive = false;
+    this.isPausedForSpeech = false;
+    if (this.recognition) {
+      try {
+        this.recognition.stop();
+      } catch(e) {}
+      this.recognition = null;
+    }
+    el('voiceStatus').textContent = 'Voix: Inactive';
     el('voicePushToTalk').classList.remove('pulse');
     this.updateContinuousUI();
-    el('voiceStatus').textContent = 'Voix: Inactive';
   },
   pauseRecognition() {
     if (this.isContinuousActive && !this.isPausedForSpeech) {
       this.isPausedForSpeech = true;
       if (this.recognition) {
-        this.recognition.onend = null;
+        // onend ne sera pas appelé, on va juste arrêter et relancer plus tard
         try { this.recognition.stop(); } catch(e){}
+        this.recognition = null;
       }
       el('voiceStatus').textContent = 'Voix: En pause';
     }
   },
   resumeRecognition() {
-    if (this.isContinuousActive && this.isPausedForSpeech) { 
-      this.isPausedForSpeech = false; 
+    if (this.isContinuousActive && this.isPausedForSpeech) {
+      this.isPausedForSpeech = false;
       this.startContinuousLoop();
     }
   }
@@ -3010,10 +3067,20 @@ el('chatFullSend')?.addEventListener('click', () => {
   handleChatSubmit(el('chatFullInput').value, appState.attachments);
 });
 
+// ✅ MODIFICATION : Envoi par Entrée désactivé sur mobile
 el('chatFullInput')?.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter' && !e.shiftKey) {
-    e.preventDefault();
-    handleChatSubmit(el('chatFullInput').value, appState.attachments);
+  const isMobile = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+  if (e.key === 'Enter') {
+    if (isMobile) {
+      // Sur mobile, on ne fait rien (retour à la ligne normal)
+      return;
+    } else {
+      // Sur ordinateur, Enter envoie, Shift+Enter retour à la ligne
+      if (!e.shiftKey) {
+        e.preventDefault();
+        handleChatSubmit(el('chatFullInput').value, appState.attachments);
+      }
+    }
   }
 });
 
@@ -4098,10 +4165,11 @@ function requestNotificationPermission() {
 
 initUI();
 
-console.log('✅ SmartHome Intelligence v13.0 - Interface Claude-like + PDF/DOCX');
+console.log('✅ SmartHome Intelligence v13.1 - Correction voix continue + Entrée mobile');
 console.log('📄 Bouton muet dynamique (apparaît pendant la voix)');
-console.log('📥 Téléchargement PDF (Puppeteer) + DOCX (LibreOffice)');
+console.log('📥 Téléchargement PDF (html-pdf-node) + DOCX (LibreOffice)');
 console.log('🔘 Bouton dynamique : Mode continu / Envoyer');
+console.log('📱 Mobile: Entrée = retour à la ligne, Bureau: Entrée = envoi');
 </script>
 </body>
 </html>
