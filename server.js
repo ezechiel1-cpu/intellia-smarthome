@@ -1,5 +1,5 @@
 // ========================================
-// INTELLIA v13.3 - Optimisation quota Gemini + fallback modèles
+// INTELLIA v14.0 - Cascade complète des modèles valides
 // ========================================
 const express = require('express');
 const cors = require('cors');
@@ -476,7 +476,7 @@ if (!process.env.TAVILY_API_KEY) {
   console.warn('⚠️ TAVILY_API_KEY manquante — la recherche web sera désactivée');
 }
 
-// CORRECTION : optimizeQueryWithLLM utilise gemini-1.5-flash
+// 🔥 Sous‑tâches avec gemini-3.1-flash-lite (léger et économique)
 async function optimizeQueryWithLLM(userQuery) {
   try {
     const promptInterne = `Tu es un assistant de recherche. Transforme le message ci-dessous en une requête de recherche courte et précise (maximum 12 mots, sans ponctuation inutile). Ignore le bavardage, les digressions, garde uniquement l'information nécessaire pour trouver la réponse.
@@ -488,7 +488,7 @@ Requête:`;
 
     const keyObj = getNextApiKey();
     const genAI = new GoogleGenerativeAI(keyObj.key);
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" }); // ← modèle léger
+    const model = genAI.getGenerativeModel({ model: "gemini-3.1-flash-lite" });
 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 4000);
@@ -545,7 +545,7 @@ async function performWebSearch(query) {
   return searchTavily(searchQuery);
 }
 
-// CORRECTION : decideIfSearchNeeded utilise gemini-1.5-flash
+// 🔥 Sous‑tâches avec gemini-3.1-flash-lite
 async function decideIfSearchNeeded(userMessage, historyFromFirebase) {
   try {
     const recentHistory = (historyFromFirebase || []).slice(-4).map(h =>
@@ -574,7 +574,7 @@ Réponds UNIQUEMENT avec ce JSON, rien d'autre :
 
     const keyObj = getNextApiKey();
     const genAI = new GoogleGenerativeAI(keyObj.key);
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" }); // ← modèle léger
+    const model = genAI.getGenerativeModel({ model: "gemini-3.1-flash-lite" });
 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 4000);
@@ -1552,7 +1552,7 @@ function jsonErrorDefaults() {
 }
 
 // ========================================
-// FONCTION CHAT AVEC GEMINI - CORRIGÉE
+// FONCTION CHAT AVEC GEMINI - CASCADE COMPLÈTE
 // ========================================
 async function chatWithGemini(userMessage, devices, userId, sessionId, attachments = [], preferences = {}, continuationMode = false, maxRetries = API_KEYS.length) {
     
@@ -1587,7 +1587,7 @@ async function chatWithGemini(userMessage, devices, userId, sessionId, attachmen
   const contextAnalysis = analyzeContext(userMessage, realDeviceStates, beninTime);
   const historyFromFirebase = await getHistoryFromFirebase(userId, sessionId);
 
-  // OPTIMISATION : on n'appelle decideIfSearchNeeded qu'après un check local
+  // OPTIMISATION : check local avant appel API
   let webResults = [];
   if (!continuationMode) {
     const localDecision = needsWebSearch(userMessage);
@@ -1601,8 +1601,15 @@ async function chatWithGemini(userMessage, devices, userId, sessionId, attachmen
 
   let lastError = null;
 
-  // On va essayer plusieurs modèles en cas d'échec
-  const modelNames = ['gemini-2.5-flash', 'gemini-1.5-flash', 'gemini-1.5-pro'];
+  // 🔥 CASCADE COMPLÈTE des modèles valides
+  const modelNames = [
+    'gemini-3.1-flash-lite',   // stable, gros quota (500 RPD)
+    'gemini-3.5-flash',        // stable, quota limité (20 RPD)
+    'gemini-3-flash-preview',  // preview, toujours accessible
+    'gemini-3.1-pro-preview',  // preview, à utiliser avec précaution
+    'gemini-2.5-flash',        // fiable, pour requêtes standards
+    'gemini-2.5-pro'           // dernier recours (texte brut)
+  ];
 
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     for (const modelName of modelNames) {
@@ -1718,7 +1725,7 @@ MESSAGE: "${userMessage}"
             }
           }
         } catch (e) {
-          // ce n'est pas du JSON
+          // pas du JSON
         }
 
         return {
@@ -1733,11 +1740,10 @@ MESSAGE: "${userMessage}"
         const isQuotaError = error.message?.includes('quota') || error.message?.includes('429') || error.message?.includes('RESOURCE_EXHAUSTED');
         markKeyAsFailed(keyObj, isQuotaError);
         console.warn(`❌ Modèle ${modelName} échoué (tentative ${attempt+1}): ${error.message}`);
-        // Si c'est une erreur 503 (surcharge), on continue avec un autre modèle
-        if (error.message?.includes('503')) {
-          continue;
+        if (error.message?.includes('503') || error.message?.includes('429')) {
+          continue; // essayer le modèle suivant
         }
-        // Sinon, on passe au prochain modèle
+        // sinon, on passe au prochain modèle de la liste
       }
     }
   }
@@ -1903,7 +1909,7 @@ app.get('/api/health', async (req, res) => {
 
   res.json({
     status: 'ok',
-    version: '13.3-optimized',
+    version: '14.0-cascade-complete',
     features: {
       gemini: API_KEYS.length > 0,
       imageGeneration: false,
@@ -1942,6 +1948,17 @@ app.get('/api/health', async (req, res) => {
     },
     system: {
       libreoffice_available: libreOfficeAvailable
+    },
+    models_used: {
+      chat_cascade: [
+        "gemini-3.1-flash-lite (500 RPD)",
+        "gemini-3.5-flash (20 RPD)",
+        "gemini-3-flash-preview",
+        "gemini-3.1-pro-preview",
+        "gemini-2.5-flash",
+        "gemini-2.5-pro"
+      ],
+      subtasks: "gemini-3.1-flash-lite"
     }
   });
 });
@@ -1951,11 +1968,18 @@ app.get('/api/health', async (req, res) => {
 // ========================================
 app.listen(PORT, () => {
   console.log('\n🏠 ╔═══════════════════════════════════════╗');
-  console.log('   ║   INTELLIA v13.3 - OPTIMISÉ           ║');
+  console.log('   ║   INTELLIA v14.0 - CASCADE COMPLÈTE  ║');
   console.log('   ╚═══════════════════════════════════════╝');
   console.log(`\n   🚀 Serveur: http://localhost:${PORT}`);
   console.log(`   🔑 Clés Gemini: ${API_KEYS.length}`);
-  console.log(`   🤖 Modèle principal: gemini-2.5-flash (fallback 1.5-flash, 1.5-pro)`);
+  console.log(`   🤖 Cascade:`);
+  console.log(`      1. gemini-3.1-flash-lite (500 RPD)`);
+  console.log(`      2. gemini-3.5-flash (20 RPD)`);
+  console.log(`      3. gemini-3-flash-preview`);
+  console.log(`      4. gemini-3.1-pro-preview`);
+  console.log(`      5. gemini-2.5-flash`);
+  console.log(`      6. gemini-2.5-pro`);
+  console.log(`   🤖 Sous‑tâches: gemini-3.1-flash-lite`);
   console.log(`   🔥 Synchro Firebase: Activée`);
   console.log(`   📅 Planning AI: Prêt`);
   console.log(`   🌡️ Température Lokossa: Temps réel`);
@@ -1966,5 +1990,4 @@ app.listen(PORT, () => {
   console.log(`   🔄 Système de continuation: ✅ ACTIVÉ`);
   console.log(`   🎯 Détection troncature: ✅ AUTOMATIQUE`);
   console.log(`   📏 Capacité: ILLIMITÉE (avec continuation)`);
-  console.log(`   ⚡ Optimisation quota: sous-tâches sur gemini-1.5-flash, appel de decideIfSearchNeeded conditionné`);
 });
