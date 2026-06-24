@@ -13,7 +13,10 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/13.0.0/marked.min.js"></script>
   
   <style>
-    /* Tous vos styles existants (inchangés) */
+    /* ===== TOUS VOS STYLES EXISTANTS (INCHANGÉS) ===== */
+    /* ... (le CSS reste identique à votre version) ... */
+    /* Pour gagner de la place, je ne le recopie pas intégralement, mais vous devez le reprendre tel quel. */
+    /* Je mets ici le même CSS que dans votre fichier original. */
     :root {
       --primary:#4361ee; --accent-cyan:#06b6d4; --panel:#14151a; 
       --card-bg:rgba(255,255,255,0.95); --muted:#9aa3b2; --dark:#212529; 
@@ -1744,9 +1747,8 @@
 
 <script type="module">
 /*************************************************
- * SmartHome Intelligence - Version 13.1
- * Interface Claude-like + PDF/DOCX
- * CORRECTION : voix continue + debounce + filtrage
+ * SmartHome Intelligence - Version 13.2
+ * Correction définitive : pause micro pendant toute la durée du traitement
  *************************************************/
 
 let RENDER_API;
@@ -1811,6 +1813,7 @@ const proactiveSuggestions = [
 ];
 let suggestionIndex = 0;
 
+/* ===== FONCTIONS EXISTANTES (copie, etc.) ===== */
 function extractReadableText(content) {
   if (content.includes('class="doc-cv"') || 
       content.includes('class="doc-facture"') ||
@@ -2266,13 +2269,11 @@ function appendDocumentCard(htmlContent, metadata) {
   
   const card = node.querySelector('.doc-card');
   
-  // Aperçu (modale)
   card.querySelector('.preview-btn').addEventListener('click', function() {
     const html = decodeURIComponent(card.dataset.html);
     previewDocument(html);
   });
   
-  // Télécharger DOCX (via LibreOffice)
   card.querySelector('.download-docx-btn').addEventListener('click', async function() {
     const html = decodeURIComponent(card.dataset.html);
     const title = card.dataset.title;
@@ -2298,7 +2299,6 @@ function appendDocumentCard(htmlContent, metadata) {
     }
   });
   
-  // Télécharger PDF (via Puppeteer)
   card.querySelector('.download-pdf-btn').addEventListener('click', async function() {
     const html = decodeURIComponent(card.dataset.html);
     const title = card.dataset.title;
@@ -2582,7 +2582,7 @@ stopSpeechBtn.addEventListener('click', () => {
 });
 
 /* ===================================================
-   VOIX (SPEAK) AVEC GESTION DU BOUTON MUET
+   VOIX (SPEAK) - SANS GESTION DE PAUSE (désormais gérée par les fonctions de soumission)
    =================================================== */
 let preferredVoice = null;
 const choosePreferredVoice = () => {
@@ -2593,11 +2593,10 @@ if ('speechSynthesis' in window) window.speechSynthesis.onvoiceschanged = () => 
 
 function speak(text, isStreaming = false) {
   if (!appState.voiceNotifications || !text || !('speechSynthesis' in window)) {
-    VoiceEngine.resumeRecognition();
+    // On ne touche pas au micro ici
     return;
   }
 
-  VoiceEngine.pauseRecognition();
   window.speechSynthesis.cancel();
 
   if (isStreaming) {
@@ -2608,12 +2607,10 @@ function speak(text, isStreaming = false) {
       if (appState.shouldStopResponse) {
         window.speechSynthesis.cancel();
         hideStopSpeechBtn();
-        VoiceEngine.resumeRecognition();
         return;
       }
       if (currentIndex >= sentences.length) {
         hideStopSpeechBtn();
-        setTimeout(() => VoiceEngine.resumeRecognition(), 150);
         return;
       }
       const sentence = sentences[currentIndex].trim();
@@ -2626,7 +2623,7 @@ function speak(text, isStreaming = false) {
         
         u.onstart = showStopSpeechBtn;
         u.onend = () => { currentIndex++; speakNextSentence(); };
-        u.onerror = () => { hideStopSpeechBtn(); VoiceEngine.resumeRecognition(); };
+        u.onerror = () => { hideStopSpeechBtn(); };
         
         window.speechSynthesis.speak(u);
       } else {
@@ -2641,25 +2638,26 @@ function speak(text, isStreaming = false) {
     if (!preferredVoice) preferredVoice = choosePreferredVoice();
     if (preferredVoice) u.voice = preferredVoice;
     u.onstart = showStopSpeechBtn;
-    u.onend = () => { hideStopSpeechBtn(); setTimeout(() => VoiceEngine.resumeRecognition(), 150); };
-    u.onerror = () => { hideStopSpeechBtn(); VoiceEngine.resumeRecognition(); };
+    u.onend = () => { hideStopSpeechBtn(); };
+    u.onerror = () => { hideStopSpeechBtn(); };
     window.speechSynthesis.speak(u);
   }
 }
 
 /* ===================================================
-   VOICE ENGINE (Reconnaissance vocale) - Version CONTINUOUS AVEC DEBOUNCE
+   VOICE ENGINE - AVEC COMPTEUR DE PAUSE
    =================================================== */
 const VoiceEngine = {
   recognition: null,
   isPushToTalkRecording: false,
   isContinuousActive: false,
-  isPausedForSpeech: false,
+  isPausedForSpeech: false, // gardé pour compatibilité, mais on utilise pauseCount
+  pauseCount: 0,
   restartTimeout: null,
   // Debounce
   continuousBuffer: '',
   debounceTimer: null,
-  DEBOUNCE_DELAY: 600, // 0.6 seconde de silence avant envoi
+  DEBOUNCE_DELAY: 600,
 
   init() {
     if (!("webkitSpeechRecognition" in window || "SpeechRecognition" in window)) {
@@ -2753,7 +2751,8 @@ const VoiceEngine = {
       clearTimeout(this.restartTimeout);
       this.restartTimeout = null;
     }
-    if (!this.isContinuousActive || this.isPausedForSpeech) {
+    // Ne démarrer que si le mode continu est actif ET qu'aucune pause n'est en cours
+    if (!this.isContinuousActive || this.pauseCount > 0) {
       el('voiceStatus').textContent = this.isContinuousActive ? 'Voix: En pause' : 'Voix: Inactive';
       return;
     }
@@ -2765,11 +2764,9 @@ const VoiceEngine = {
       for (let i = e.resultIndex; i < e.results.length; i++) {
         if (e.results[i].isFinal) {
           let transcript = e.results[i][0].transcript.trim();
-          // 🔥 FILTRAGE : ignorer les fragments vides ou trop courts (<3 caractères) ou sans alphanumérique
           if (transcript.length < 2 || !/[a-zA-Z0-9]/.test(transcript)) {
             continue;
           }
-          // Accumulation avec debounce
           this.continuousBuffer = (this.continuousBuffer + ' ' + transcript).trim();
           clearTimeout(this.debounceTimer);
           this.debounceTimer = setTimeout(() => {
@@ -2789,14 +2786,13 @@ const VoiceEngine = {
         el('voiceStatus').textContent = 'Voix: Erreur micro';
         return;
       }
-      if (this.isContinuousActive && !this.isPausedForSpeech) {
+      if (this.isContinuousActive && this.pauseCount === 0) {
         this.restartTimeout = setTimeout(() => this.startContinuousLoop(), 500);
       }
     };
 
     this.recognition.onend = () => {
-      if (this.isContinuousActive && !this.isPausedForSpeech) {
-        // Ne pas redémarrer immédiatement si un buffer est en attente
+      if (this.isContinuousActive && this.pauseCount === 0) {
         if (!this.continuousBuffer) {
           this.restartTimeout = setTimeout(() => this.startContinuousLoop(), 300);
         }
@@ -2809,8 +2805,39 @@ const VoiceEngine = {
       this.recognition.start();
     } catch(e) {
       console.warn('Erreur démarrage reconnaissance:', e);
-      if (this.isContinuousActive && !this.isPausedForSpeech) {
+      if (this.isContinuousActive && this.pauseCount === 0) {
         this.restartTimeout = setTimeout(() => this.startContinuousLoop(), 500);
+      }
+    }
+  },
+
+  pauseRecognition() {
+    this.pauseCount++;
+    if (this.pauseCount === 1) {
+      // On arrête la reconnaissance immédiatement
+      if (this.recognition) {
+        try { this.recognition.stop(); } catch(e) {}
+        this.recognition = null;
+      }
+      // On annule tout timer de redémarrage
+      if (this.restartTimeout) {
+        clearTimeout(this.restartTimeout);
+        this.restartTimeout = null;
+      }
+      el('voiceStatus').textContent = 'Voix: En pause';
+    }
+  },
+
+  resumeRecognition() {
+    if (this.pauseCount > 0) {
+      this.pauseCount--;
+      if (this.pauseCount === 0) {
+        // Redémarrer si le mode continu est toujours actif
+        if (this.isContinuousActive) {
+          this.startContinuousLoop();
+        } else {
+          el('voiceStatus').textContent = 'Voix: Inactive';
+        }
       }
     }
   },
@@ -2823,7 +2850,7 @@ const VoiceEngine = {
     clearTimeout(this.debounceTimer);
     this.continuousBuffer = '';
     this.isContinuousActive = false;
-    this.isPausedForSpeech = false;
+    this.pauseCount = 0;
     if (this.recognition) {
       try {
         this.recognition.stop();
@@ -2833,24 +2860,6 @@ const VoiceEngine = {
     el('voiceStatus').textContent = 'Voix: Inactive';
     el('voicePushToTalk').classList.remove('pulse');
     this.updateContinuousUI();
-  },
-
-  pauseRecognition() {
-    if (this.isContinuousActive && !this.isPausedForSpeech) {
-      this.isPausedForSpeech = true;
-      if (this.recognition) {
-        try { this.recognition.stop(); } catch(e){}
-        this.recognition = null;
-      }
-      el('voiceStatus').textContent = 'Voix: En pause';
-    }
-  },
-
-  resumeRecognition() {
-    if (this.isContinuousActive && this.isPausedForSpeech) {
-      this.isPausedForSpeech = false;
-      this.startContinuousLoop();
-    }
   }
 };
 
@@ -2894,7 +2903,8 @@ async function handleContinuation(context) {
   }
 }
 
-async function handleChatSubmit(message, attachments = []) {
+// Fonction centrale de soumission (texte ou voix) avec pause micro
+async function processUserMessage(message, attachments = [], isVoice = false) {
   if (appState.chatInProgress) return;
   if (!message && attachments.length === 0) return;
 
@@ -2902,19 +2912,25 @@ async function handleChatSubmit(message, attachments = []) {
     createNewChatSession();
   }
 
+  // PAUSE : couper le micro dès le début du traitement
+  VoiceEngine.pauseRecognition();
+
   appState.shouldStopResponse = false;
   appState.chatInProgress = true;
   el('intelliaStatus').textContent = "Assistant: En cours...";
   el('chat-loading').style.display = 'block';
   el('stopAIBtn').style.display = 'flex';
 
+  // Afficher le message utilisateur
   appendChat('user', message, false, attachments);
-  chatInput.value = '';
-  autoResizeChatInput();
-  updateSendOrModeBtn();
-  appState.attachments = [];
-  renderAttachmentPreviews();
-  
+  if (!isVoice) {
+    chatInput.value = '';
+    autoResizeChatInput();
+    updateSendOrModeBtn();
+    appState.attachments = [];
+    renderAttachmentPreviews();
+  }
+
   try {
     const reply = await sendToOnline(message, attachments, false);
     
@@ -2942,55 +2958,20 @@ async function handleChatSubmit(message, attachments = []) {
     appState.shouldStopResponse = false;
     el('chat-loading').style.display = 'none';
     el('stopAIBtn').style.display = 'none';
+    // REPRISE : réactiver le micro après tout le traitement (y compris la synthèse vocale)
+    VoiceEngine.resumeRecognition();
   }
+}
+
+// Les fonctions handleChatSubmit et handleVoiceSubmit deviennent des wrappers
+async function handleChatSubmit(message, attachments = []) {
+  await processUserMessage(message, attachments, false);
 }
 
 async function handleVoiceSubmit(command) {
   if (!command) return;
-  if (appState.chatInProgress) {
-    logActivity(`Voix ignorée (chat en cours): "${command}"`);
-    return;
-  }
-
-  if (!appState.currentSessionId) {
-    createNewChatSession();
-  }
-
-  appState.shouldStopResponse = false;
-  appState.chatInProgress = true;
-  el('intelliaStatus').textContent = "Assistant: En cours...";
-  el('chat-loading').style.display = 'block';
-  el('stopAIBtn').style.display = 'flex';
-
-  appendChat('user', command);
+  await processUserMessage(command, [], true);
   logActivity(`Commande vocale: "${command}"`);
-  
-  try {
-    const reply = await sendToOnline(command, [], false);
-    
-    if (!appState.shouldStopResponse) {
-      const botMsgElement = appendChat('bot', '', true);
-      try {
-        const needsContinuation = reply.includes('[SUITE DANS LA PROCHAINE RÉPONSE]') || 
-                                   reply.includes('[À suivre...]');
-        await simulateTyping(botMsgElement, reply, true, needsContinuation, null);
-      } catch (interruptError) {
-        console.log('⚠️ Typing interrompu (voix)');
-      }
-    } else {
-      appendChat('bot', '<em style="color: #e74c3c;">⚠️ Réponse interrompue</em>');
-    }
-  } catch (error) {
-    if (!appState.shouldStopResponse) {
-      console.error("Erreur voix:", error);
-      appendChat('bot', "Désolé, une erreur s'est produite.");
-    }
-  } finally {
-    appState.chatInProgress = false;
-    appState.shouldStopResponse = false;
-    el('chat-loading').style.display = 'none';
-    el('stopAIBtn').style.display = 'none';
-  }
 }
 
 async function sendToOnline(message, attachments = [], continuationMode = false) {
@@ -3054,7 +3035,7 @@ async function sendToOnline(message, attachments = [], continuationMode = false)
 }
 
 /* ===================================================
-   FONCTIONS ANNEXES (planning, etc.)
+   FONCTIONS ANNEXES (planning, etc.) - INCHANGÉES
    =================================================== */
 async function handlePlanningCommands(commands) {
   for (const cmd of commands) {
@@ -3089,15 +3070,12 @@ el('chatFullSend')?.addEventListener('click', () => {
   handleChatSubmit(el('chatFullInput').value, appState.attachments);
 });
 
-// ✅ MODIFICATION : Envoi par Entrée désactivé sur mobile
 el('chatFullInput')?.addEventListener('keydown', (e) => {
   const isMobile = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
   if (e.key === 'Enter') {
     if (isMobile) {
-      // Sur mobile, on ne fait rien (retour à la ligne normal)
       return;
     } else {
-      // Sur ordinateur, Enter envoie, Shift+Enter retour à la ligne
       if (!e.shiftKey) {
         e.preventDefault();
         handleChatSubmit(el('chatFullInput').value, appState.attachments);
@@ -3111,14 +3089,12 @@ el('stopAIBtn')?.addEventListener('click', () => {
   appState.shouldStopResponse = true;
   window.speechSynthesis.cancel();
   hideStopSpeechBtn();
-  if (VoiceEngine && VoiceEngine.pauseRecognition) {
-    VoiceEngine.pauseRecognition();
-  }
   appState.chatInProgress = false;
   el('chat-loading').style.display = 'none';
   el('stopAIBtn').style.display = 'none';
   el('intelliaStatus').textContent = "Assistant: Interrompu";
   logActivity('⚠️ Réponse IA interrompue par l\'utilisateur');
+  VoiceEngine.resumeRecognition(); // Réactiver le micro en cas d'interruption
 });
 
 el('close-sidebar-btn')?.addEventListener('click', () => {
@@ -3127,7 +3103,7 @@ el('close-sidebar-btn')?.addEventListener('click', () => {
 });
 
 /* ===================================================
-   FIREBASE / DB
+   FIREBASE / DB (INCHANGÉ)
    =================================================== */
 let db = null;
 let auth = null;
@@ -3538,7 +3514,7 @@ const savePlansToLocalStorage = () => localStorage.setItem('sh_plans', JSON.stri
 const loadPlansFromLocalStorage = () => { appState.plans = JSON.parse(localStorage.getItem('sh_plans') || '[]'); };
 
 /* ===================================================
-   PIECES JOINTES
+   PIECES JOINTES (INCHANGÉ)
    =================================================== */
 el('attach-file-btn').addEventListener('click', () => {
   el('file-input').click();
@@ -3614,7 +3590,7 @@ function renderAttachmentPreviews() {
 }
 
 /* ===================================================
-   UI / THEME
+   UI / THEME (INCHANGÉ)
    =================================================== */
 el('dayModeBtn')?.addEventListener('click', () => {
   appState.isNightMode = false;
@@ -3727,7 +3703,7 @@ el('sidebar-overlay').addEventListener('click', () => {
 });
 
 /* ===================================================
-   PLANNING (exécution automatique)
+   PLANNING (exécution automatique) - INCHANGÉ
    =================================================== */
 let executedTasksClient = new Map();
 let lastCheckedMinuteClient = '';
@@ -3905,7 +3881,7 @@ setInterval(cleanExpiredPlansClient, 600000);
 setTimeout(cleanExpiredPlansClient, 5000);
 
 /* ===================================================
-   AUTH / CONNEXION
+   AUTH / CONNEXION (INCHANGÉ)
    =================================================== */
 if (auth) {
   onAuthStateChanged(auth, (user) => {
@@ -3949,7 +3925,7 @@ if (auth) {
 }
 
 /* ===================================================
-   HISTORIQUE DES CHATS
+   HISTORIQUE DES CHATS (INCHANGÉ)
    =================================================== */
 function getChatHistoryRef(userId, sessionId = null) {
   let path = `${userChatsRefPath}/${userId}`;
@@ -4120,7 +4096,7 @@ async function saveMessageToFirebase(userMsg, botMsg, attachments) {
 }
 
 /* ===================================================
-   PROACTIVE SUGGESTIONS
+   PROACTIVE SUGGESTIONS (INCHANGÉ)
    =================================================== */
 function updateProactiveSuggestion() {
   const el_sug = document.getElementById('proactive-suggestion');
@@ -4187,12 +4163,12 @@ function requestNotificationPermission() {
 
 initUI();
 
-console.log('✅ SmartHome Intelligence v13.1 - Correction voix continue + debounce');
+console.log('✅ SmartHome Intelligence v13.2 - Correction finale : pause micro pendant tout le traitement');
 console.log('📄 Bouton muet dynamique (apparaît pendant la voix)');
 console.log('📥 Téléchargement PDF (html-pdf-node) + DOCX (LibreOffice)');
 console.log('🔘 Bouton dynamique : Mode continu / Envoyer');
 console.log('📱 Mobile: Entrée = retour à la ligne, Bureau: Entrée = envoi');
-console.log('🎤 Correction : debounce + filtrage des transcriptions pour le mode continu');
+console.log('🎤 Correction : pause micro avant envoi, reprise après réponse complète');
 </script>
 </body>
 </html>
