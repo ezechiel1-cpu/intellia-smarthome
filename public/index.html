@@ -1746,7 +1746,7 @@
 /*************************************************
  * SmartHome Intelligence - Version 13.1
  * Interface Claude-like + PDF/DOCX
- * CORRECTION : voix continue + envoi Entrée mobile
+ * CORRECTION : voix continue + debounce + filtrage
  *************************************************/
 
 let RENDER_API;
@@ -2648,7 +2648,7 @@ function speak(text, isStreaming = false) {
 }
 
 /* ===================================================
-   VOICE ENGINE (Reconnaissance vocale) - Version CONTINUOUS TRUE
+   VOICE ENGINE (Reconnaissance vocale) - Version CONTINUOUS AVEC DEBOUNCE
    =================================================== */
 const VoiceEngine = {
   recognition: null,
@@ -2656,7 +2656,11 @@ const VoiceEngine = {
   isContinuousActive: false,
   isPausedForSpeech: false,
   restartTimeout: null,
-  
+  // Debounce
+  continuousBuffer: '',
+  debounceTimer: null,
+  DEBOUNCE_DELAY: 600, // 0.6 seconde de silence avant envoi
+
   init() {
     if (!("webkitSpeechRecognition" in window || "SpeechRecognition" in window)) {
       el('voicePushToTalk').disabled = true;
@@ -2673,11 +2677,13 @@ const VoiceEngine = {
     quickBtn.addEventListener('touchstart', (e) => { e.preventDefault(); this.toggleContinuousConversation(); });
     quickBtn.addEventListener('click', () => this.toggleContinuousConversation());
   },
+
   requestMicrophonePermission() {
     navigator.mediaDevices.getUserMedia({ audio: true })
       .then(stream => { stream.getTracks().forEach(track => track.stop()); })
       .catch(err => { console.error("Permission micro:", err); el('voiceStatus').textContent = 'Voix: Permission requise'; });
   },
+
   createRecognitionInstance(continuous = false) {
     const Rec = window.SpeechRecognition || window.webkitSpeechRecognition;
     const rec = new Rec();
@@ -2686,6 +2692,7 @@ const VoiceEngine = {
     rec.interimResults = false;
     return rec;
   },
+
   updateContinuousUI() {
     const status = el('continuousStatus');
     const isActive = this.isContinuousActive;
@@ -2699,6 +2706,7 @@ const VoiceEngine = {
         '<i class="fas fa-waveform"></i> Lancer la conversation';
     }
   },
+
   togglePushToTalk() {
     if (this.isContinuousActive) this.toggleContinuousConversation();
     const btn = el('voicePushToTalk');
@@ -2728,6 +2736,7 @@ const VoiceEngine = {
       this.recognition.start();
     }
   },
+
   toggleContinuousConversation() {
     this.isContinuousActive = !this.isContinuousActive;
     this.updateContinuousUI();
@@ -2738,8 +2747,8 @@ const VoiceEngine = {
       this.stopRecognition(); 
     }
   },
+
   startContinuousLoop() {
-    // Nettoyer tout timeout en attente
     if (this.restartTimeout) {
       clearTimeout(this.restartTimeout);
       this.restartTimeout = null;
@@ -2748,44 +2757,54 @@ const VoiceEngine = {
       el('voiceStatus').textContent = this.isContinuousActive ? 'Voix: En pause' : 'Voix: Inactive';
       return;
     }
-    
-    this.recognition = this.createRecognitionInstance(true); // CONTINUOUS
+
+    this.recognition = this.createRecognitionInstance(true);
     el('voiceStatus').textContent = 'Voix: Écoute...';
-    
+
     this.recognition.onresult = (e) => {
       for (let i = e.resultIndex; i < e.results.length; i++) {
         if (e.results[i].isFinal) {
-          const transcript = e.results[i][0].transcript.trim();
-          if (transcript) {
-            handleVoiceSubmit(transcript);
+          let transcript = e.results[i][0].transcript.trim();
+          // 🔥 FILTRAGE : ignorer les fragments vides ou trop courts (<3 caractères) ou sans alphanumérique
+          if (transcript.length < 2 || !/[a-zA-Z0-9]/.test(transcript)) {
+            continue;
           }
+          // Accumulation avec debounce
+          this.continuousBuffer = (this.continuousBuffer + ' ' + transcript).trim();
+          clearTimeout(this.debounceTimer);
+          this.debounceTimer = setTimeout(() => {
+            const finalText = this.continuousBuffer;
+            this.continuousBuffer = '';
+            if (finalText) {
+              handleVoiceSubmit(finalText);
+            }
+          }, this.DEBOUNCE_DELAY);
         }
       }
     };
-    
+
     this.recognition.onerror = (e) => {
       console.warn('Voice error:', e.error);
-      // Ne pas redémarrer sur certaines erreurs
       if (e.error === 'not-allowed' || e.error === 'audio-capture') {
         el('voiceStatus').textContent = 'Voix: Erreur micro';
         return;
       }
-      // Redémarrer après un court délai si toujours actif
       if (this.isContinuousActive && !this.isPausedForSpeech) {
-        this.restartTimeout = setTimeout(() => this.startContinuousLoop(), 200);
+        this.restartTimeout = setTimeout(() => this.startContinuousLoop(), 500);
       }
     };
-    
+
     this.recognition.onend = () => {
-      // La reconnaissance s'est arrêtée (peut-être à cause d'une interruption ou d'une erreur)
       if (this.isContinuousActive && !this.isPausedForSpeech) {
-        // Redémarrer après un petit délai
-        this.restartTimeout = setTimeout(() => this.startContinuousLoop(), 100);
+        // Ne pas redémarrer immédiatement si un buffer est en attente
+        if (!this.continuousBuffer) {
+          this.restartTimeout = setTimeout(() => this.startContinuousLoop(), 300);
+        }
       } else {
         el('voiceStatus').textContent = 'Voix: Inactive';
       }
     };
-    
+
     try {
       this.recognition.start();
     } catch(e) {
@@ -2795,12 +2814,14 @@ const VoiceEngine = {
       }
     }
   },
+
   stopRecognition() {
-    // Arrêter complètement
     if (this.restartTimeout) {
       clearTimeout(this.restartTimeout);
       this.restartTimeout = null;
     }
+    clearTimeout(this.debounceTimer);
+    this.continuousBuffer = '';
     this.isContinuousActive = false;
     this.isPausedForSpeech = false;
     if (this.recognition) {
@@ -2813,17 +2834,18 @@ const VoiceEngine = {
     el('voicePushToTalk').classList.remove('pulse');
     this.updateContinuousUI();
   },
+
   pauseRecognition() {
     if (this.isContinuousActive && !this.isPausedForSpeech) {
       this.isPausedForSpeech = true;
       if (this.recognition) {
-        // onend ne sera pas appelé, on va juste arrêter et relancer plus tard
         try { this.recognition.stop(); } catch(e){}
         this.recognition = null;
       }
       el('voiceStatus').textContent = 'Voix: En pause';
     }
   },
+
   resumeRecognition() {
     if (this.isContinuousActive && this.isPausedForSpeech) {
       this.isPausedForSpeech = false;
@@ -4165,11 +4187,12 @@ function requestNotificationPermission() {
 
 initUI();
 
-console.log('✅ SmartHome Intelligence v13.1 - Correction voix continue + Entrée mobile');
+console.log('✅ SmartHome Intelligence v13.1 - Correction voix continue + debounce');
 console.log('📄 Bouton muet dynamique (apparaît pendant la voix)');
 console.log('📥 Téléchargement PDF (html-pdf-node) + DOCX (LibreOffice)');
 console.log('🔘 Bouton dynamique : Mode continu / Envoyer');
 console.log('📱 Mobile: Entrée = retour à la ligne, Bureau: Entrée = envoi');
+console.log('🎤 Correction : debounce + filtrage des transcriptions pour le mode continu');
 </script>
 </body>
 </html>
