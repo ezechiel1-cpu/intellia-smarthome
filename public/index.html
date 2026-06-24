@@ -13,7 +13,8 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/13.0.0/marked.min.js"></script>
   
   <style>
-    /* === VOTRE CSS EXISTANT (inchangé) === */
+    /* ===== VOTRE CSS EXISTANT (inchangé) ===== */
+    /* Je le garde exactement comme dans votre version */
     :root {
       --primary:#4361ee; --accent-cyan:#06b6d4; --panel:#14151a; 
       --card-bg:rgba(255,255,255,0.95); --muted:#9aa3b2; --dark:#212529; 
@@ -184,6 +185,17 @@
     .msg-action-btn:hover { background: rgba(0,0,0,0.06); color: var(--dark); }
     .msg-action-btn.is-success { color: var(--success); }
     body.night-mode .msg-action-btn:hover { background: rgba(255,255,255,0.12); color: #fff; }
+
+    /* Styles pour le message en édition */
+    .msg.editing {
+      opacity: 0.5;
+      border: 2px dashed var(--warning);
+    }
+    .msg .edit-indicator {
+      font-size: 12px;
+      color: var(--warning);
+      margin-left: 8px;
+    }
 
     #print-root { display: none; }
     @media print {
@@ -1744,11 +1756,12 @@
 
 <script type="module">
 /*************************************************
- * SmartHome Intelligence - Version 14.0
- * Corrections finales :
- * - Micro réactivé après la lecture vocale
- * - Bouton copier sur les messages utilisateur
- * - Édition des messages utilisateur (remplacement)
+ * SmartHome Intelligence - Version 13.4
+ * Corrections :
+ * 1. Micro réactivé après la voix (await speak)
+ * 2. Bouton Copier sur messages utilisateur
+ * 3. Édition des messages utilisateur
+ * 4. Gestion de all_devices dans sendCommand
  *************************************************/
 
 let RENDER_API;
@@ -1793,8 +1806,10 @@ const appState = {
   localWebSocket: null,
   isLocalConnected: false,
   esp32Ip: localStorage.getItem('esp32Ip') || '', 
-  editingMessageId: null, // pour l'édition
 };
+
+// Variable pour l'édition de message
+let editingMessageId = null;
 
 const defaultAvatar = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iI2FlZWFhZSI+PHBhdGggZD0iTTEyIDJDNi44OCAyIDIgNi44OCAyIDEyczQuNDggMTQgMTAgMTBjNS41MiAwIDEwLTQuNDggMTAtMTBTMjcuNTIgMiAxMiAyem0wIDJjMS42NiAwIDMgMS4zNCAzIDNzLTEuMzQgMy0zIDMtMy0xLjM0LTMtM1MwLjM0IDQgMTIgNHptMCAxNmMtMi42NyAwLTUuNDMtMS4yOS03LTIuODguNTYtMS42NSAzLjU1LTIuNjIgNy0yLjYyczYuNDQgLjk3IDcgMi42MmMtMS41NyAxLjU5LTQuMzMgMi44OC03IDIuODh6Ii8+PC9zdmc+";
 
@@ -1814,7 +1829,7 @@ const proactiveSuggestions = [
 ];
 let suggestionIndex = 0;
 
-/* ===== FONCTIONS EXISTANTES ===== */
+/* ===== FONCTIONS EXISTANTES (copie, etc.) ===== */
 function extractReadableText(content) {
   if (content.includes('class="doc-cv"') || 
       content.includes('class="doc-facture"') ||
@@ -1925,17 +1940,17 @@ function addMessageCopyAction(node) {
   node.appendChild(actions);
 }
 
-// Nouvelle fonction : ajouter les boutons copier et éditer sur les messages utilisateur
-function addUserMessageActions(node, messageId) {
+// Fonction pour ajouter les actions sur les messages utilisateur (copier + éditer)
+function addUserMessageActions(node, messageId, text) {
   if (!node || node.querySelector('.msg-actions')) return;
   const actions = document.createElement('div');
   actions.className = 'msg-actions';
   actions.innerHTML = `
-    <button type="button" class="msg-action-btn copy-btn" title="Copier le message">
+    <button type="button" class="msg-action-btn copy-btn" title="Copier" aria-label="Copier le message">
       <i class="fas fa-copy"></i>
     </button>
-    <button type="button" class="msg-action-btn edit-btn" title="Modifier le message" data-msg-id="${messageId}">
-      <i class="fas fa-edit"></i>
+    <button type="button" class="msg-action-btn edit-btn" title="Éditer" aria-label="Éditer le message">
+      <i class="fas fa-pen"></i>
     </button>
   `;
   const copyBtn = actions.querySelector('.copy-btn');
@@ -1948,235 +1963,635 @@ function addUserMessageActions(node, messageId) {
   });
   const editBtn = actions.querySelector('.edit-btn');
   editBtn.addEventListener('click', function() {
-    const msgId = this.dataset.msgId;
-    editUserMessage(msgId);
+    const node = this.closest('.msg');
+    if (!node) return;
+    const text = getMessagePlainText(node);
+    if (!text) return;
+    // Copier le texte dans la zone de saisie
+    chatInput.value = text;
+    autoResizeChatInput();
+    updateSendOrModeBtn();
+    chatInput.focus();
+    // Marquer le message comme en édition
+    editingMessageId = messageId;
+    // Ajouter une classe visuelle
+    node.classList.add('editing');
+    // Ajouter un indicateur
+    const indicator = document.createElement('span');
+    indicator.className = 'edit-indicator';
+    indicator.textContent = ' ✏️ en cours d\'édition...';
+    node.appendChild(indicator);
+    // Faire défiler vers le bas pour voir le champ de saisie
+    document.getElementById('chatFullWindow').scrollTop = document.getElementById('chatFullWindow').scrollHeight;
   });
   node.appendChild(actions);
 }
 
-// Fonction pour éditer un message utilisateur
-async function editUserMessage(messageId) {
-  // Trouver le message dans le DOM
-  const msgElement = document.querySelector(`.msg.user[data-msg-id="${messageId}"]`);
-  if (!msgElement) return;
-  
-  // Récupérer le texte du message (sans les boutons)
-  const text = getMessagePlainText(msgElement);
-  if (!text) return;
-  
-  // Mettre le texte dans le champ de saisie
-  chatInput.value = text;
-  autoResizeChatInput();
-  updateSendOrModeBtn();
-  chatInput.focus();
-  
-  // Marquer le message comme en cours d'édition
-  appState.editingMessageId = messageId;
-  
-  // Modifier l'apparence du message (optionnel)
-  msgElement.style.opacity = '0.5';
-  msgElement.style.border = '2px solid var(--primary)';
-  
-  // Ajouter un indicateur "Édition en cours"
-  const editIndicator = document.createElement('span');
-  editIndicator.className = 'edit-indicator';
-  editIndicator.textContent = ' (édition en cours)';
-  editIndicator.style.fontSize = '12px';
-  editIndicator.style.color = 'var(--primary)';
-  const existing = msgElement.querySelector('.edit-indicator');
-  if (existing) existing.remove();
-  msgElement.appendChild(editIndicator);
-}
+function applyNightModeToDoc(container) {
+  const isNight = appState.isNightMode;
+  const docEl = container.querySelector(
+    '.doc-cv, .doc-lettre, .doc-rapport, .doc-facture, .doc-contrat'
+  );
+  if (!docEl) return;
 
-// Fonction pour annuler l'édition (appelée après soumission ou annulation)
-function cancelEdit() {
-  if (appState.editingMessageId) {
-    const msgElement = document.querySelector(`.msg.user[data-msg-id="${appState.editingMessageId}"]`);
-    if (msgElement) {
-      msgElement.style.opacity = '';
-      msgElement.style.border = '';
-      const indicator = msgElement.querySelector('.edit-indicator');
-      if (indicator) indicator.remove();
-    }
-    appState.editingMessageId = null;
-  }
-}
-
-// Surcharger le comportement d'envoi pour gérer l'édition
-const originalHandleChatSubmit = handleChatSubmit;
-handleChatSubmit = async function(message, attachments) {
-  if (appState.editingMessageId) {
-    // On est en mode édition : on va remplacer le message existant
-    const msgId = appState.editingMessageId;
-    const msgElement = document.querySelector(`.msg.user[data-msg-id="${msgId}"]`);
-    if (msgElement) {
-      // Supprimer l'ancien message de Firebase
-      await deleteMessageFromFirebase(msgId);
-      // Supprimer le message du DOM
-      msgElement.remove();
-      // Annuler l'édition
-      cancelEdit();
-      // Envoyer le nouveau message
-      await originalHandleChatSubmit(message, attachments);
-    } else {
-      cancelEdit();
-      await originalHandleChatSubmit(message, attachments);
-    }
+  if (isNight) {
+    docEl.style.background = 'rgba(30, 41, 59, 0.95)';
+    docEl.style.color = '#e2e8f0';
+    docEl.style.border = '1px solid rgba(255,255,255,0.1)';
+    docEl.querySelectorAll('h1, h2, h3, h4').forEach(h => {
+      if (!h.getAttribute('data-orig-color')) h.setAttribute('data-orig-color', h.style.color || '');
+      h.style.color = 'var(--accent-cyan)';
+    });
+    docEl.querySelectorAll('p, li, td, th, span, div').forEach(el2 => {
+      const c = window.getComputedStyle(el2).color;
+      if (!el2.style.color || el2.style.color === 'rgb(51, 51, 51)' || el2.style.color === '#333' || el2.style.color === 'rgb(102, 102, 102)') {
+        if (!el2.getAttribute('data-orig-color')) el2.setAttribute('data-orig-color', el2.style.color || '');
+        el2.style.color = '#e2e8f0';
+      }
+    });
+    docEl.querySelectorAll('[style*="background"]').forEach(el2 => {
+      if (!el2.getAttribute('data-orig-bg')) el2.setAttribute('data-orig-bg', el2.style.background || '');
+      el2.style.background = 'rgba(51, 65, 85, 0.4)';
+    });
   } else {
-    await originalHandleChatSubmit(message, attachments);
-  }
-};
-
-// Fonction pour supprimer un message de Firebase (par son ID)
-async function deleteMessageFromFirebase(messageId) {
-  if (!appState.currentUser || !db || !appState.currentSessionId) return;
-  try {
-    const messagesRef = ref(db, `${userChatsRefPath}/${appState.currentUser.uid}/${appState.currentSessionId}/messages/${messageId}`);
-    await set(messagesRef, null);
-    console.log(`🗑️ Message ${messageId} supprimé de Firebase`);
-  } catch (error) {
-    console.error("Erreur suppression message Firebase:", error);
-  }
-}
-
-// Modifier appendChat pour ajouter les actions utilisateur
-const originalAppendChat = appendChat;
-appendChat = function(role, text, returnElement = false, attachments = []) {
-  const node = originalAppendChat(role, text, returnElement, attachments);
-  if (role === 'user' && node) {
-    // Générer un ID unique pour le message (si pas déjà présent)
-    const msgId = Date.now() + '_' + Math.random().toString(36).substr(2, 6);
-    node.dataset.msgId = msgId;
-    addUserMessageActions(node, msgId);
-    // Stocker l'ID pour le sauvegarder plus tard
-    node._messageId = msgId;
-  }
-  return node;
-};
-
-// Surcharger saveMessageToFirebase pour inclure l'ID du message
-const originalSaveMessageToFirebase = saveMessageToFirebase;
-saveMessageToFirebase = async function(userMsg, botMsg, attachments) {
-  if (!appState.currentUser || !db || !appState.currentSessionId) return;
-  
-  const sessionRef = ref(db, `${userChatsRefPath}/${appState.currentUser.uid}/${appState.currentSessionId}`);
-  const sessionSnapshot = await get(sessionRef);
-  const isNewSession = !sessionSnapshot.exists();
-  
-  if (isNewSession) {
-    let newTitle = userMsg;
-    if (!newTitle && attachments.length > 0) {
-      newTitle = `📎 ${attachments[0].name}`;
-    }
-    if (!newTitle) newTitle = "Nouvelle discussion";
-    newTitle = newTitle.substring(0, 30) + (newTitle.length > 30 ? '...' : '');
-    
-    await set(sessionRef, {
-      title: newTitle,
-      createdAt: serverTimestamp(),
-      lastUpdated: serverTimestamp()
+    docEl.style.background = '';
+    docEl.style.color = '';
+    docEl.style.border = '';
+    docEl.querySelectorAll('[data-orig-color]').forEach(el2 => {
+      el2.style.color = el2.getAttribute('data-orig-color') || '';
+      el2.removeAttribute('data-orig-color');
+    });
+    docEl.querySelectorAll('[data-orig-bg]').forEach(el2 => {
+      el2.style.background = el2.getAttribute('data-orig-bg') || '';
+      el2.removeAttribute('data-orig-bg');
     });
   }
+}
 
-  const messagesRef = ref(db, `${userChatsRefPath}/${appState.currentUser.uid}/${appState.currentSessionId}/messages`);
-  const attachmentsMeta = attachments.map(att => ({
-    name: att.name,
-    type: att.type
-  }));
-  
-  // Récupérer l'ID du message utilisateur depuis le DOM
-  const userMsgElements = document.querySelectorAll('.msg.user');
-  const lastUserMsg = userMsgElements[userMsgElements.length - 1];
-  let userMsgId = lastUserMsg ? lastUserMsg._messageId || lastUserMsg.dataset.msgId : null;
-  
-  // Si l'ID n'existe pas, on en génère un
-  if (!userMsgId) {
-    userMsgId = Date.now() + '_' + Math.random().toString(36).substr(2, 6);
-    if (lastUserMsg) {
-      lastUserMsg.dataset.msgId = userMsgId;
-      lastUserMsg._messageId = userMsgId;
+window.printDocument = function(btnElement) {
+  let restoreFn = null;
+  try {
+    let docElement = null;
+
+    if (btnElement && btnElement.closest) {
+      const messageContainer = btnElement.closest('.msg.bot');
+      if (messageContainer) {
+        docElement = messageContainer.querySelector(
+          '.doc-cv, .doc-lettre, .doc-rapport, .doc-facture, .doc-contrat'
+        );
+        if (!docElement) {
+          const clone = messageContainer.cloneNode(true);
+          clone.querySelectorAll('button, .copy-code-btn, .continue-btn, .flex-btns, .code-actions, .msg-actions, .doc-actions').forEach(b => b.remove());
+          docElement = clone;
+        }
+      }
     }
-  }
 
-  // Ajouter le message utilisateur avec son ID
-  await push(messagesRef, {
-    user: userMsg,
-    bot: botMsg,
-    attachments: attachmentsMeta,
-    timestamp: serverTimestamp(),
-    userId: userMsgId  // stocker l'ID pour référence
-  });
+    if (!docElement) {
+      const allDocs = document.querySelectorAll('.doc-cv, .doc-lettre, .doc-rapport, .doc-facture, .doc-contrat');
+      if (allDocs.length > 0) docElement = allDocs[allDocs.length - 1];
+    }
 
-  await set(ref(db, `${userChatsRefPath}/${appState.currentUser.uid}/${appState.currentSessionId}/lastUpdated`), serverTimestamp());
-  
-  if (isNewSession) {
-    loadChatHistorySidebar();
-    setTimeout(() => {
-      document.querySelectorAll('.chat-history-item').forEach(i => i.classList.remove('active'));
-      const item = document.querySelector(`.chat-history-item[data-session-id="${appState.currentSessionId}"]`);
-      if (item) item.classList.add('active');
-    }, 200);
+    if (!docElement) {
+      alert('❌ Impossible de localiser le document à télécharger.');
+      return;
+    }
+
+    let printRoot = document.getElementById('print-root');
+    if (!printRoot) {
+      printRoot = document.createElement('div');
+      printRoot.id = 'print-root';
+      document.body.appendChild(printRoot);
+    }
+    printRoot.innerHTML = docElement.outerHTML || docElement.innerHTML;
+    printRoot.querySelectorAll('button, .copy-code-btn, .continue-btn, .flex-btns, .code-actions, .msg-actions, .doc-actions')
+      .forEach(b => b.remove());
+
+    document.body.classList.add('printing-mode');
+
+    let restored = false;
+    const mql = window.matchMedia ? window.matchMedia('print') : null;
+    const onMqlChange = (e) => { if (!e.matches) restore(); };
+
+    const restore = () => {
+      if (restored) return;
+      restored = true;
+      document.body.classList.remove('printing-mode');
+      printRoot.innerHTML = '';
+      window.removeEventListener('afterprint', restore);
+      if (mql) {
+        if (mql.removeEventListener) mql.removeEventListener('change', onMqlChange);
+        else if (mql.removeListener) mql.removeListener(onMqlChange);
+      }
+    };
+    restoreFn = restore;
+
+    window.addEventListener('afterprint', restore);
+    if (mql) {
+      if (mql.addEventListener) mql.addEventListener('change', onMqlChange);
+      else if (mql.addListener) mql.addListener(onMqlChange);
+    }
+    setTimeout(restore, 60000);
+
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        try {
+          window.print();
+        } catch (e) {
+          console.error('❌ Erreur impression:', e);
+          alert('Impossible de lancer le téléchargement sur cet appareil.');
+          restore();
+        }
+      });
+    });
+
+  } catch (error) {
+    console.error('❌ Erreur impression:', error);
+    alert('Erreur technique : ' + error.message);
+    document.body.classList.remove('printing-mode');
+    if (restoreFn) restoreFn();
   }
 };
 
-// Adapter loadChatSession pour charger les IDs de messages
-const originalLoadChatSession = loadChatSession;
-loadChatSession = async function(sessionId) {
-  if (!appState.currentUser || !db) return;
-  appState.currentSessionId = sessionId;
-  const chatWindow = el('chatFullWindow');
-  chatWindow.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--muted);"><i class="fas fa-spinner fa-spin"></i> Chargement...</div>';
-  
+window.copyDocumentText = function(btnElement) {
   try {
-    const messagesRef = ref(db, `${userChatsRefPath}/${appState.currentUser.uid}/${sessionId}/messages`);
-    const snapshot = await get(messagesRef);
+    let docElement = null;
+
+    const messageContainer = (btnElement && btnElement.closest)
+      ? btnElement.closest('.msg.bot')
+      : document.querySelector('.msg.bot:last-of-type');
+
+    if (messageContainer) {
+      docElement = messageContainer.querySelector(
+        '.doc-cv, .doc-lettre, .doc-rapport, .doc-facture, .doc-contrat'
+      );
+    }
+
+    if (!docElement) {
+      const allDocs = document.querySelectorAll('.doc-cv, .doc-lettre, .doc-rapport, .doc-facture, .doc-contrat');
+      if (allDocs.length > 0) docElement = allDocs[allDocs.length - 1];
+    }
+
+    if (!docElement) {
+      alert('❌ Aucun document trouvé');
+      return;
+    }
+
+    const text = extractReadableText(docElement.outerHTML);
+    if (!text) {
+      alert('❌ Le document ne contient pas de texte lisible.');
+      return;
+    }
+
+    copyTextToClipboard(text, btnElement);
+
+  } catch (error) {
+    console.error('❌ Erreur copie texte document:', error);
+    alert('❌ Erreur lors de la copie. Veuillez réessayer.');
+  }
+};
+
+window.downloadImage = function(imageUrl, filename = null) {
+  if (!filename) {
+    filename = `intellia_image_${Date.now()}.png`;
+  }
+  
+  fetch(imageUrl)
+    .then(response => response.blob())
+    .then(blob => {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      console.log(`✅ Image téléchargée: ${filename}`);
+    })
+    .catch(error => {
+      console.error("❌ Erreur téléchargement image:", error);
+      alert("❌ Impossible de télécharger l'image. Faites clic droit > Enregistrer l'image.");
+    });
+};
+
+function addCopyButtons(element) {
+  const codeBlocks = element.querySelectorAll('pre');
+  codeBlocks.forEach(block => {
+    const code = block.querySelector('code');
+    if (!code) return;
     
-    chatWindow.innerHTML = '';
+    let language = 'TEXT';
+    let extension = 'txt';
+    const classes = code.className.split(' ');
+    const langClass = classes.find(c => c.startsWith('language-'));
     
-    if (snapshot.exists()) {
-      const messages = snapshot.val();
-      const sortedMessages = Object.values(messages).sort((a, b) => a.timestamp - b.timestamp);
+    if (langClass) {
+      language = langClass.replace('language-', '').toUpperCase();
+      const langMap = {
+        'JAVASCRIPT': 'js', 'PYTHON': 'py', 'HTML': 'html', 
+        'CSS': 'css', 'JSON': 'json', 'JAVA': 'java',
+        'CPP': 'cpp', 'C': 'c', 'PHP': 'php', 'RUBY': 'rb',
+        'GO': 'go', 'RUST': 'rs', 'TYPESCRIPT': 'ts',
+        'BASH': 'sh', 'SQL': 'sql', 'XML': 'xml',
+        'ARDUINO': 'ino', 'MATLAB': 'm', 'SCILAB': 'sce',
+        'VHDL': 'vhd', 'CSHARP': 'cs'
+      };
+      extension = langMap[language] || language.toLowerCase();
+    }
+    
+    const actions = document.createElement('div');
+    actions.className = 'code-actions';
+    
+    const langSpan = document.createElement('span');
+    langSpan.textContent = language;
+    
+    const buttonsDiv = document.createElement('div');
+    buttonsDiv.className = 'code-actions-buttons';
+    
+    const copyBtn = document.createElement('button');
+    copyBtn.className = 'code-action-btn';
+    copyBtn.innerHTML = '<i class="fas fa-copy"></i> Copier';
+    copyBtn.addEventListener('click', function() {
+      const codeText = this.closest('pre').querySelector('code').innerText;
+      navigator.clipboard.writeText(codeText)
+        .then(() => {
+          this.innerHTML = '<i class="fas fa-check"></i> Copié';
+          setTimeout(() => {
+            this.innerHTML = '<i class="fas fa-copy"></i> Copier';
+          }, 2000);
+        })
+        .catch(() => {
+          const textarea = document.createElement('textarea');
+          textarea.value = codeText;
+          document.body.appendChild(textarea);
+          textarea.select();
+          document.execCommand('copy');
+          document.body.removeChild(textarea);
+          this.innerHTML = '<i class="fas fa-check"></i> Copié';
+          setTimeout(() => {
+            this.innerHTML = '<i class="fas fa-copy"></i> Copier';
+          }, 2000);
+        });
+    });
+    
+    const downloadBtn = document.createElement('button');
+    downloadBtn.className = 'code-action-btn';
+    downloadBtn.innerHTML = '<i class="fas fa-download"></i> Télécharger';
+    downloadBtn.addEventListener('click', function() {
+      const codeText = this.closest('pre').querySelector('code').innerText;
+      const blob = new Blob([codeText], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `code.${extension}`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    });
+    
+    buttonsDiv.appendChild(copyBtn);
+    buttonsDiv.appendChild(downloadBtn);
+    actions.appendChild(langSpan);
+    actions.appendChild(buttonsDiv);
+    
+    block.insertBefore(actions, block.firstChild);
+  });
+}
+
+function extractDocumentMetadata(html) {
+  const titleMatch = html.match(/<title>(.*?)<\/title>/i) || 
+                     html.match(/<h1[^>]*>(.*?)<\/h1>/i);
+  const title = titleMatch ? titleMatch[1].trim() : 'Document';
+  
+  let type = 'document';
+  if (html.includes('doc-cv') || html.includes('CV')) type = 'cv';
+  else if (html.includes('doc-lettre') || html.includes('Lettre')) type = 'lettre';
+  else if (html.includes('doc-rapport') || html.includes('Rapport')) type = 'rapport';
+  else if (html.includes('doc-facture') || html.includes('Facture')) type = 'facture';
+  else if (html.includes('doc-contrat') || html.includes('Contrat')) type = 'contrat';
+  
+  return { title, type };
+}
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML.replace(/"/g, '&quot;');
+}
+
+/* ===================================================
+   CARTE DOCUMENT AVEC BOUTONS PDF + DOCX
+   =================================================== */
+function appendDocumentCard(htmlContent, metadata) {
+  const target = document.getElementById('chatFullWindow');
+  if (!target) return;
+  
+  const node = document.createElement('div');
+  node.className = 'msg bot';
+  
+  const typeMap = {
+    cv: { icon: 'fa-file-pdf', color: '#e74c3c', label: 'CV' },
+    lettre: { icon: 'fa-file-alt', color: '#3498db', label: 'Lettre' },
+    rapport: { icon: 'fa-file-lines', color: '#2ecc71', label: 'Rapport' },
+    facture: { icon: 'fa-file-invoice', color: '#f39c12', label: 'Facture' },
+    contrat: { icon: 'fa-file-signature', color: '#9b59b6', label: 'Contrat' }
+  };
+  
+  const type = metadata.type || 'document';
+  const info = typeMap[type] || { icon: 'fa-file', color: '#6c757d', label: 'Document' };
+  const title = metadata.title || 'Document';
+  const size = Math.round(htmlContent.length / 1024);
+  
+  const encodedHtml = encodeURIComponent(htmlContent);
+  const safeTitle = escapeHtml(title);
+  
+  node.innerHTML = `
+    <div class="doc-card" data-html="${encodedHtml}" data-title="${safeTitle}" data-type="${type}">
+      <div class="doc-card-icon" style="background: ${info.color}20; color: ${info.color};">
+        <i class="fas ${info.icon}"></i>
+      </div>
+      <div class="doc-card-info">
+        <div class="doc-card-title">${safeTitle}</div>
+        <div class="doc-card-meta">${info.label} · ${size} KB</div>
+      </div>
+      <div class="doc-card-actions">
+        <button class="btn btn-primary preview-btn">
+          <i class="fas fa-eye"></i> Aperçu
+        </button>
+        <button class="btn btn-success download-docx-btn">
+          <i class="fas fa-file-word"></i> DOCX
+        </button>
+        <button class="btn btn-warning download-pdf-btn">
+          <i class="fas fa-file-pdf"></i> PDF
+        </button>
+      </div>
+    </div>
+  `;
+  
+  const card = node.querySelector('.doc-card');
+  
+  card.querySelector('.preview-btn').addEventListener('click', function() {
+    const html = decodeURIComponent(card.dataset.html);
+    previewDocument(html);
+  });
+  
+  card.querySelector('.download-docx-btn').addEventListener('click', async function() {
+    const html = decodeURIComponent(card.dataset.html);
+    const title = card.dataset.title;
+    try {
+      const response = await fetch(`${RENDER_API}/api/download/docx`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ html })
+      });
+      if (!response.ok) throw new Error('Erreur serveur');
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${title}.docx`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error(err);
+      alert('Erreur lors du téléchargement DOCX.');
+    }
+  });
+  
+  card.querySelector('.download-pdf-btn').addEventListener('click', async function() {
+    const html = decodeURIComponent(card.dataset.html);
+    const title = card.dataset.title;
+    try {
+      const response = await fetch(`${RENDER_API}/api/download/pdf`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ html })
+      });
+      if (!response.ok) throw new Error('Erreur serveur');
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${title}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error(err);
+      alert('Erreur lors du téléchargement PDF.');
+    }
+  });
+  
+  target.appendChild(node);
+  scrollToBottom();
+}
+
+function previewDocument(html) {
+  const modal = document.createElement('div');
+  modal.style.cssText = `
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.7); z-index: 99999;
+    display: flex; align-items: center; justify-content: center;
+    padding: 20px;
+  `;
+  
+  const content = document.createElement('div');
+  content.style.cssText = `
+    background: white;
+    max-width: 900px; width: 100%; height: 90vh;
+    border-radius: 12px; overflow: hidden; padding: 0;
+    position: relative;
+  `;
+  
+  const closeBtn = document.createElement('button');
+  closeBtn.innerHTML = '✕';
+  closeBtn.style.cssText = `
+    position: absolute; top: 10px; right: 10px; background: white;
+    border: none; font-size: 24px; cursor: pointer; color: #666;
+    z-index: 1; padding: 4px 12px; border-radius: 6px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  `;
+  closeBtn.onclick = () => modal.remove();
+  
+  const iframe = document.createElement('iframe');
+  iframe.style.cssText = `
+    width: 100%; height: 100%; border: none; display: block;
+  `;
+  iframe.srcdoc = html;
+  
+  content.appendChild(iframe);
+  content.appendChild(closeBtn);
+  modal.appendChild(content);
+  
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) modal.remove();
+  });
+  
+  modal.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') modal.remove();
+  });
+  
+  document.body.appendChild(modal);
+  modal.tabIndex = -1;
+  modal.focus();
+}
+
+/* ===================================================
+   CHAT
+   =================================================== */
+function appendChat(role, text, returnElement = false, attachments = [], messageId = null) {
+  const target = document.getElementById('chatFullWindow');
+  if (!target) return;
+  
+  const node = document.createElement('div');
+  node.className = 'msg ' + (role === 'user' ? 'user' : 'bot');
+  if (messageId) {
+    node.dataset.messageId = messageId;
+  }
+
+  if (role === 'user') {
+    if (text) {
+      // On crée un conteneur pour le texte
+      const textContainer = document.createElement('div');
+      textContainer.textContent = text;
+      node.appendChild(textContainer);
+    }
+    // Ajouter les actions (copier + éditer) si c'est un message utilisateur
+    if (messageId) {
+      addUserMessageActions(node, messageId, text);
+    }
+  } else {
+    const documentHtmlMatch = text.match(/<DOCUMENT_HTML>([\s\S]*?)<\/DOCUMENT_HTML>/);
+    if (documentHtmlMatch) {
+      const documentHtml = documentHtmlMatch[1].trim();
+      const metadata = extractDocumentMetadata(documentHtml);
+      appendDocumentCard(documentHtml, metadata);
+      target.appendChild(node);
+      scrollToBottom();
+      return node;
+    }
+    
+    if (text) {
+      const renderedHtml = marked.parse(text, { sanitize: false, gfm: true });
+      node.innerHTML = renderedHtml;
       
-      sortedMessages.forEach(msg => {
-        const attachmentsMeta = msg.attachments || [];
-        const userMsg = appendChat('user', msg.user, false, attachmentsMeta);
-        // Ajouter l'ID du message si disponible
-        if (msg.userId && userMsg) {
-          userMsg.dataset.msgId = msg.userId;
-          userMsg._messageId = msg.userId;
-          // Ajouter les actions (copier, éditer) si ce n'est pas déjà fait
-          if (!userMsg.querySelector('.msg-actions')) {
-            addUserMessageActions(userMsg, msg.userId);
-          }
-        }
-        appendChat('bot', msg.bot, false);
+      node.querySelectorAll('pre code').forEach(block => {
+        hljs.highlightElement(block);
       });
       
-      setTimeout(() => {
-        el('chatFullWindow').scrollTop = el('chatFullWindow').scrollHeight;
-      }, 100);
+      addCopyButtons(node);
+      addMessageCopyAction(node);
       
-    } else {
-      appendChat('bot', 'C\'est le début de notre conversation.');
+    } else if (returnElement) {
+      node.classList.add('loading');
     }
-    
-    document.querySelectorAll('.chat-history-item').forEach(i => i.classList.remove('active'));
-    document.querySelector(`.chat-history-item[data-session-id="${sessionId}"]`)?.classList.add('active');
-    
-    el('chat-sidebar').classList.remove('open');
-    el('sidebar-overlay').classList.remove('open');
-    
-  } catch (error) {
-    console.error("Erreur chargement chat:", error);
-    chatWindow.innerHTML = '<div class="card" style="text-align: center; color: var(--danger);"><i class="fas fa-exclamation-triangle"></i> Erreur de chargement</div>';
   }
-};
+  
+  if (attachments && attachments.length > 0) {
+    const attachmentsDiv = document.createElement('div');
+    attachmentsDiv.style.cssText = 'margin-top: 8px; display: flex; flex-wrap: wrap; gap: 8px;';
+    
+    attachments.forEach(att => {
+      if (att.type === 'image' && att.data) {
+        const img = document.createElement('img');
+        img.src = att.data;
+        img.style.cssText = 'max-width: 150px; max-height: 150px; border-radius: 8px; object-fit: cover; cursor: pointer;';
+        img.onclick = () => window.open(att.data, '_blank');
+        attachmentsDiv.appendChild(img);
+      } else if (att.type === 'file') {
+        const fileDiv = document.createElement('div');
+        fileDiv.style.cssText = 'padding: 8px 12px; background: rgba(0,0,0,0.1); border-radius: 6px; font-size: 13px;';
+        let iconClass = 'fa-file';
+        let iconColor = '#6c757d';
+        
+        const fileName = att.name.toLowerCase();
+        if (fileName.endsWith('.pdf')) { iconClass = 'fa-file-pdf'; iconColor = '#dc3545'; }
+        else if (fileName.endsWith('.docx') || fileName.endsWith('.doc')) { iconClass = 'fa-file-word'; iconColor = '#2b579a'; }
+        else if (fileName.endsWith('.xlsx') || fileName.endsWith('.xls')) { iconClass = 'fa-file-excel'; iconColor = '#217346'; }
+        else if (fileName.endsWith('.txt')) { iconClass = 'fa-file-alt'; }
+        else if (fileName.endsWith('.html') || fileName.endsWith('.htm')) { iconClass = 'fa-file-code'; iconColor = '#f06529'; }
+        else if (fileName.endsWith('.js')) { iconClass = 'fa-file-code'; iconColor = '#f7df1e'; }
+        else if (fileName.endsWith('.json')) { iconClass = 'fa-file-code'; iconColor = '#5a5a5a'; }
+        else if (fileName.endsWith('.css')) { iconClass = 'fa-file-code'; iconColor = '#264de4'; }
+        
+        fileDiv.innerHTML = `<i class="fas ${iconClass}" style="color: ${iconColor}; margin-right: 6px;"></i> ${att.name}`;
+        attachmentsDiv.appendChild(fileDiv);
+      }
+    });
+    node.appendChild(attachmentsDiv);
+  }
 
-// ===================================================
-// FONCTIONS DE VOIX CORRIGÉES
-// ===================================================
+  target.appendChild(node);
+  scrollToBottom();
+  if (returnElement) return node;
+}
 
-// CORRECTION 1 : speak() retourne une Promise et réactive le micro à la fin
+function scrollToBottom() {
+  const container = document.getElementById('chatFullWindow');
+  if (container) {
+    container.scrollTop = container.scrollHeight;
+  }
+}
+
+/* ===================================================
+   FONCTIONS CORRIGÉES : simulateTyping (affichage immédiat + await speak)
+   =================================================== */
+
+// CORRECTION 1 : simulateTyping attend la voix avant de terminer
+async function simulateTyping(element, text, enableVoice = true, needsContinuation = false, continuationContext = null) {
+  if (appState.shouldStopResponse) {
+    element.innerHTML = '<br><br><em style="color: #e74c3c;">⚠️ Réponse interrompue</em>';
+    throw new Error('Interrupted');
+  }
+
+  // 1. Gérer les documents
+  const documentHtmlMatch = text.match(/<DOCUMENT_HTML>([\s\S]*?)<\/DOCUMENT_HTML>/);
+  if (documentHtmlMatch) {
+    const documentHtml = documentHtmlMatch[1].trim();
+    const metadata = extractDocumentMetadata(documentHtml);
+    appendDocumentCard(documentHtml, metadata);
+    element.classList.remove('loading');
+    scrollToBottom();
+    if (enableVoice && appState.voiceNotifications) {
+      await speak(`Document généré : ${metadata.title}`);
+    }
+    return;
+  }
+
+  // 2. Afficher le HTML immédiatement
+  const renderedHtml = marked.parse(text, { sanitize: false, gfm: true });
+  element.innerHTML = renderedHtml;
+  element.querySelectorAll('pre code').forEach(block => hljs.highlightElement(block));
+  addCopyButtons(element);
+  addMessageCopyAction(element);
+
+  // 3. Ajouter le bouton "Continuer" si nécessaire
+  if (needsContinuation) {
+    const continueBtn = document.createElement('button');
+    continueBtn.className = 'continue-btn';
+    continueBtn.innerHTML = '<i class="fas fa-chevron-down"></i> Continuer';
+    continueBtn.onclick = (e) => handleContinuation(continuationContext, e);
+    element.appendChild(continueBtn);
+  }
+
+  element.classList.remove('loading');
+  scrollToBottom();
+
+  // 4. Lancer la voix et attendre la fin (correction)
+  if (enableVoice && appState.voiceNotifications) {
+    const readableText = extractReadableText(text);
+    if (readableText) {
+      await speak(readableText, true); // ← on attend la fin de la voix
+    }
+  }
+}
+
+// CORRECTION 2 : speak() reste une Promise (inchangée)
 function speak(text, isStreaming = false) {
   return new Promise((resolve) => {
     if (!appState.voiceNotifications || !text || !('speechSynthesis' in window)) {
@@ -2230,121 +2645,7 @@ function speak(text, isStreaming = false) {
   });
 }
 
-// CORRECTION 2 : simulateTyping attend la fin de la voix
-async function simulateTyping(element, text, enableVoice = true, needsContinuation = false, continuationContext = null) {
-  if (appState.shouldStopResponse) {
-    element.innerHTML = '<br><br><em style="color: #e74c3c;">⚠️ Réponse interrompue</em>';
-    throw new Error('Interrupted');
-  }
-
-  // 1. Gérer les documents
-  const documentHtmlMatch = text.match(/<DOCUMENT_HTML>([\s\S]*?)<\/DOCUMENT_HTML>/);
-  if (documentHtmlMatch) {
-    const documentHtml = documentHtmlMatch[1].trim();
-    const metadata = extractDocumentMetadata(documentHtml);
-    appendDocumentCard(documentHtml, metadata);
-    element.classList.remove('loading');
-    scrollToBottom();
-    if (enableVoice && appState.voiceNotifications) {
-      await speak(`Document généré : ${metadata.title}`); // on attend la fin
-    }
-    return;
-  }
-
-  // 2. Afficher le HTML immédiatement
-  const renderedHtml = marked.parse(text, { sanitize: false, gfm: true });
-  element.innerHTML = renderedHtml;
-  element.querySelectorAll('pre code').forEach(block => hljs.highlightElement(block));
-  addCopyButtons(element);
-  addMessageCopyAction(element);
-
-  // 3. Ajouter le bouton "Continuer" si nécessaire
-  if (needsContinuation) {
-    const continueBtn = document.createElement('button');
-    continueBtn.className = 'continue-btn';
-    continueBtn.innerHTML = '<i class="fas fa-chevron-down"></i> Continuer';
-    continueBtn.onclick = (e) => handleContinuation(continuationContext, e);
-    element.appendChild(continueBtn);
-  }
-
-  element.classList.remove('loading');
-  scrollToBottom();
-
-  // 4. Lancer la voix et ATTENDRE la fin
-  if (enableVoice && appState.voiceNotifications) {
-    const readableText = extractReadableText(text);
-    if (readableText) {
-      await speak(readableText, true); // on attend la fin
-    }
-  }
-}
-
-// CORRECTION 3 : processUserMessage ne réactive PAS le micro dans finally, car speak s'en charge
-async function processUserMessage(message, attachments = [], isVoice = false) {
-  if (appState.chatInProgress) return;
-  if (!message && attachments.length === 0) return;
-
-  if (!appState.currentSessionId) {
-    createNewChatSession();
-  }
-
-  // Annuler toute édition en cours
-  if (appState.editingMessageId) {
-    cancelEdit();
-  }
-
-  // PAUSE : couper le micro
-  VoiceEngine.pauseRecognition();
-
-  appState.shouldStopResponse = false;
-  appState.chatInProgress = true;
-  el('intelliaStatus').textContent = "Assistant: En cours...";
-  el('chat-loading').style.display = 'block';
-  el('stopAIBtn').style.display = 'flex';
-
-  // Afficher le message utilisateur (avec actions copier/éditer)
-  appendChat('user', message, false, attachments);
-  if (!isVoice) {
-    chatInput.value = '';
-    autoResizeChatInput();
-    updateSendOrModeBtn();
-    appState.attachments = [];
-    renderAttachmentPreviews();
-  }
-
-  try {
-    const reply = await sendToOnline(message, attachments, false);
-    
-    if (!appState.shouldStopResponse) {
-      const botMsgElement = appendChat('bot', '', true);
-      try {
-        const needsContinuation = reply.includes('[SUITE DANS LA PROCHAINE RÉPONSE]') || 
-                                   reply.includes('[À suivre...]') || 
-                                   reply.includes('<!-- CONTINUATION NÉCESSAIRE -->');
-        
-        // simulateTyping attendra la fin de la voix
-        await simulateTyping(botMsgElement, reply, true, needsContinuation, null);
-      } catch (interruptError) {
-        console.log('⚠️ Typing interrompu');
-      }
-    } else {
-      appendChat('bot', '<em style="color: #e74c3c;">⚠️ Réponse interrompue par l\'utilisateur</em>');
-    }
-  } catch (error) {
-    if (!appState.shouldStopResponse) {
-      console.error("Erreur chat:", error);
-      appendChat('bot', "Désolé, une erreur s'est produite.");
-    }
-  } finally {
-    appState.chatInProgress = false;
-    appState.shouldStopResponse = false;
-    el('chat-loading').style.display = 'none';
-    el('stopAIBtn').style.display = 'none';
-    // NE PAS réactiver le micro ici — il sera réactivé après la voix par simulateTyping (via speak)
-  }
-}
-
-// handleContinuation modifié pour attendre la voix également
+// CORRECTION 3 : handleContinuation avec event explicite (inchangé)
 async function handleContinuation(context, event) {
   const continueBtn = event.target;
   continueBtn.disabled = true;
@@ -2436,12 +2737,10 @@ function hideStopSpeechBtn() {
 stopSpeechBtn.addEventListener('click', () => {
   window.speechSynthesis.cancel();
   hideStopSpeechBtn();
-  // Réactiver le micro si on coupe la voix
-  VoiceEngine.resumeRecognition();
 });
 
 /* ===================================================
-   VOIX (SPEAK) - Promise déjà définie
+   VOIX (SPEAK) - Promise déjà corrigée ci-dessus
    =================================================== */
 let preferredVoice = null;
 const choosePreferredVoice = () => {
@@ -2667,7 +2966,98 @@ const VoiceEngine = {
    GESTION DU CHAT (ENVOI, CONTINUATION, ETC.)
    =================================================== */
 
-// Fonctions handleChatSubmit, handleVoiceSubmit, sendToOnline (inchangées)
+// Fonction centrale de soumission (texte ou voix) avec pause micro
+async function processUserMessage(message, attachments = [], isVoice = false) {
+  if (appState.chatInProgress) return;
+  if (!message && attachments.length === 0) return;
+
+  if (!appState.currentSessionId) {
+    createNewChatSession();
+  }
+
+  // PAUSE : couper le micro dès le début du traitement
+  VoiceEngine.pauseRecognition();
+
+  appState.shouldStopResponse = false;
+  appState.chatInProgress = true;
+  el('intelliaStatus').textContent = "Assistant: En cours...";
+  el('chat-loading').style.display = 'block';
+  el('stopAIBtn').style.display = 'flex';
+
+  // Si on est en mode édition, supprimer l'ancien message avant d'envoyer le nouveau
+  let oldMessageId = editingMessageId;
+  let oldMessageNode = null;
+  if (oldMessageId) {
+    // Trouver l'élément du message en édition
+    const nodes = document.querySelectorAll('.msg.user[data-message-id]');
+    for (const node of nodes) {
+      if (node.dataset.messageId === oldMessageId) {
+        oldMessageNode = node;
+        break;
+      }
+    }
+    // Supprimer le message de Firebase (si on a un ID Firebase)
+    if (oldMessageId && db && appState.currentUser && appState.currentSessionId) {
+      try {
+        const messageRef = ref(db, `${userChatsRefPath}/${appState.currentUser.uid}/${appState.currentSessionId}/messages/${oldMessageId}`);
+        await remove(messageRef);
+        console.log(`🗑️ Ancien message ${oldMessageId} supprimé de Firebase`);
+      } catch (e) {
+        console.warn("Erreur suppression ancien message:", e);
+      }
+    }
+    // Supprimer du DOM
+    if (oldMessageNode) {
+      oldMessageNode.remove();
+    }
+    // Réinitialiser le mode édition
+    editingMessageId = null;
+  }
+
+  // Afficher le message utilisateur (avec un ID temporaire si pas encore sauvegardé)
+  const tempId = 'temp_' + Date.now();
+  appendChat('user', message, false, attachments, tempId);
+
+  if (!isVoice) {
+    chatInput.value = '';
+    autoResizeChatInput();
+    updateSendOrModeBtn();
+    appState.attachments = [];
+    renderAttachmentPreviews();
+  }
+
+  try {
+    const reply = await sendToOnline(message, attachments, false);
+    
+    if (!appState.shouldStopResponse) {
+      const botMsgElement = appendChat('bot', '', true);
+      try {
+        const needsContinuation = reply.includes('[SUITE DANS LA PROCHAINE RÉPONSE]') || 
+                                   reply.includes('[À suivre...]') || 
+                                   reply.includes('<!-- CONTINUATION NÉCESSAIRE -->');
+        
+        await simulateTyping(botMsgElement, reply, true, needsContinuation, null);
+      } catch (interruptError) {
+        console.log('⚠️ Typing interrompu');
+      }
+    } else {
+      appendChat('bot', '<em style="color: #e74c3c;">⚠️ Réponse interrompue par l\'utilisateur</em>');
+    }
+  } catch (error) {
+    if (!appState.shouldStopResponse) {
+      console.error("Erreur chat:", error);
+      appendChat('bot', "Désolé, une erreur s'est produite.");
+    }
+  } finally {
+    appState.chatInProgress = false;
+    appState.shouldStopResponse = false;
+    el('chat-loading').style.display = 'none';
+    el('stopAIBtn').style.display = 'none';
+    // REPRISE : réactiver le micro après tout le traitement (et la voix)
+    VoiceEngine.resumeRecognition();
+  }
+}
+
 async function handleChatSubmit(message, attachments = []) {
   await processUserMessage(message, attachments, false);
 }
@@ -2799,13 +3189,11 @@ el('stopAIBtn')?.addEventListener('click', () => {
   el('intelliaStatus').textContent = "Assistant: Interrompu";
   logActivity('⚠️ Réponse IA interrompue par l\'utilisateur');
   VoiceEngine.resumeRecognition();
-  cancelEdit();
 });
 
 el('close-sidebar-btn')?.addEventListener('click', () => {
   el('chat-sidebar').classList.remove('open');
   el('sidebar-overlay').classList.remove('open');
-  cancelEdit();
 });
 
 /* ===================================================
@@ -3044,7 +3432,9 @@ window.adjustBrightness = (deviceId, value) => {
   sendCommand(deviceId, v > 0 ? "ON" : "OFF", v);
 };
 
+// CORRECTION 4 : sendCommand gère "all_devices"
 window.sendCommand = (deviceId, action, value = null) => {
+  // Si l'appareil est "all_devices", on applique à tous
   if (deviceId === "all_devices") {
     appState.devices.forEach(device => {
       sendCommand(device.id, action, value);
@@ -3413,7 +3803,6 @@ el('sidebar-toggle-btn').addEventListener('click', () => {
 el('sidebar-overlay').addEventListener('click', () => {
   el('chat-sidebar').classList.remove('open');
   el('sidebar-overlay').classList.remove('open');
-  cancelEdit();
 });
 
 /* ===================================================
@@ -3484,10 +3873,7 @@ async function checkAndExecutePlans() {
         sendCommand(plan.device, action);
         const chatMessage = `⏰ Tâche planifiée : **${deviceName}** ${actionText}`;
         if (el('chatFullWindow')) appendChat("bot", chatMessage);
-        if (appState.voiceNotifications) {
-          // On lance la voix sans attendre (mais le micro est déjà en pause ici)
-          speak(`Exécution planifiée. ${deviceName} ${actionText}.`);
-        }
+        if (appState.voiceNotifications) speak(`Exécution planifiée. ${deviceName} ${actionText}.`);
         sendBrowserNotification('⏰ Tâche Planifiée Exécutée', `${deviceName} a été ${actionText}`, { tag: `schedule-${plan.device}-${Date.now()}` });
         if (plan.frequency === 'once') {
           appState.plans = appState.plans.filter(p => p.createdAt !== plan.createdAt);
@@ -3530,9 +3916,7 @@ async function checkAndExecutePlans() {
       logActivity(`⏰ Exécution : ${deviceName} ${actionText}`);
       const chatMessage = `⏰ Tâche planifiée : **${deviceName}** ${actionText}`;
       if (el('chatFullWindow')) appendChat("bot", chatMessage);
-      if (appState.voiceNotifications) {
-        speak(`Exécution planifiée. ${deviceName} ${actionText}.`);
-      }
+      if (appState.voiceNotifications) speak(`Exécution planifiée. ${deviceName} ${actionText}.`);
       sendBrowserNotification('⏰ Tâche Planifiée Exécutée', `${deviceName} a été ${actionText}`, { tag: `schedule-${plan.device}-${Date.now()}` });
       const freq = plan.frequency || 'once';
       if (freq === 'once') {
@@ -3742,15 +4126,10 @@ async function loadChatSession(sessionId) {
       
       sortedMessages.forEach(msg => {
         const attachmentsMeta = msg.attachments || [];
-        const userMsg = appendChat('user', msg.user, false, attachmentsMeta);
-        if (msg.userId && userMsg) {
-          userMsg.dataset.msgId = msg.userId;
-          userMsg._messageId = msg.userId;
-          if (!userMsg.querySelector('.msg-actions')) {
-            addUserMessageActions(userMsg, msg.userId);
-          }
-        }
-        appendChat('bot', msg.bot, false);
+        // On utilise l'ID Firebase comme identifiant pour les actions
+        const msgId = msg.id || 'temp_' + Date.now() + '_' + Math.random();
+        appendChat('user', msg.user, false, attachmentsMeta, msgId);
+        appendChat('bot', msg.bot, false, [], msgId + '_bot');
       });
       
       setTimeout(() => {
@@ -3801,26 +4180,49 @@ async function saveMessageToFirebase(userMsg, botMsg, attachments) {
     name: att.name,
     type: att.type
   }));
-  
-  const userMsgElements = document.querySelectorAll('.msg.user');
-  const lastUserMsg = userMsgElements[userMsgElements.length - 1];
-  let userMsgId = lastUserMsg ? lastUserMsg._messageId || lastUserMsg.dataset.msgId : null;
-  
-  if (!userMsgId) {
-    userMsgId = Date.now() + '_' + Math.random().toString(36).substr(2, 6);
-    if (lastUserMsg) {
-      lastUserMsg.dataset.msgId = userMsgId;
-      lastUserMsg._messageId = userMsgId;
-    }
-  }
 
-  await push(messagesRef, {
+  const newMessageRef = push(messagesRef);
+  const messageId = newMessageRef.key;
+  await set(newMessageRef, {
     user: userMsg,
     bot: botMsg,
     attachments: attachmentsMeta,
-    timestamp: serverTimestamp(),
-    userId: userMsgId
+    timestamp: serverTimestamp()
   });
+
+  // Mettre à jour le message utilisateur avec le vrai ID Firebase pour les actions
+  const userMsgNodes = document.querySelectorAll('.msg.user[data-message-id]');
+  for (const node of userMsgNodes) {
+    if (node.dataset.messageId && node.dataset.messageId.startsWith('temp_')) {
+      node.dataset.messageId = messageId;
+      // Mettre à jour les boutons d'édition pour utiliser le nouvel ID
+      const editBtn = node.querySelector('.edit-btn');
+      if (editBtn) {
+        // L'ID est maintenant fixé, on peut mettre à jour la référence
+        // On clone le bouton pour recréer l'écouteur avec le bon ID
+        const newEditBtn = editBtn.cloneNode(true);
+        editBtn.parentNode.replaceChild(newEditBtn, editBtn);
+        newEditBtn.addEventListener('click', function(e) {
+          const node = this.closest('.msg');
+          if (!node) return;
+          const text = getMessagePlainText(node);
+          if (!text) return;
+          chatInput.value = text;
+          autoResizeChatInput();
+          updateSendOrModeBtn();
+          chatInput.focus();
+          editingMessageId = messageId;
+          node.classList.add('editing');
+          const indicator = document.createElement('span');
+          indicator.className = 'edit-indicator';
+          indicator.textContent = ' ✏️ en cours d\'édition...';
+          node.appendChild(indicator);
+          document.getElementById('chatFullWindow').scrollTop = document.getElementById('chatFullWindow').scrollHeight;
+        });
+      }
+      break;
+    }
+  }
 
   await set(ref(db, `${userChatsRefPath}/${appState.currentUser.uid}/${appState.currentSessionId}/lastUpdated`), serverTimestamp());
   
@@ -3902,14 +4304,7 @@ function requestNotificationPermission() {
 
 initUI();
 
-console.log('✅ SmartHome Intelligence v14.0 - Corrections finales');
-console.log('📄 Bouton muet dynamique (apparaît pendant la voix)');
-console.log('📥 Téléchargement PDF (html-pdf-node) + DOCX (LibreOffice)');
-console.log('🔘 Bouton dynamique : Mode continu / Envoyer');
-console.log('📱 Mobile: Entrée = retour à la ligne, Bureau: Entrée = envoi');
-console.log('🎤 Micro réactivé après la fin de la lecture vocale');
-console.log('📋 Bouton copier sur les messages utilisateur');
-console.log('✏️ Édition des messages utilisateur (remplacement)');
+console.log('✅ SmartHome Intelligence v13.4 - Corrections finales : micro après voix, copier/éditer user, all_devices');
 </script>
 </body>
 </html>
