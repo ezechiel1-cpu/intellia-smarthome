@@ -13,10 +13,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/13.0.0/marked.min.js"></script>
   
   <style>
-    /* ===== TOUS VOS STYLES EXISTANTS (INCHANGÉS) ===== */
-    /* ... (le CSS reste identique à votre version) ... */
-    /* Pour gagner de la place, je ne le recopie pas intégralement, mais vous devez le reprendre tel quel. */
-    /* Je mets ici le même CSS que dans votre fichier original. */
+    /* === VOTRE CSS (identique à celui que vous aviez) === */
     :root {
       --primary:#4361ee; --accent-cyan:#06b6d4; --panel:#14151a; 
       --card-bg:rgba(255,255,255,0.95); --muted:#9aa3b2; --dark:#212529; 
@@ -1747,8 +1744,9 @@
 
 <script type="module">
 /*************************************************
- * SmartHome Intelligence - Version 13.2
- * Correction définitive : pause micro pendant toute la durée du traitement
+ * SmartHome Intelligence - Version 13.3
+ * Corrections : speak asynchrone + handleContinuation
+ * + utilisation de gemini-1.5-flash pour les sous‑tâches
  *************************************************/
 
 let RENDER_API;
@@ -2463,63 +2461,143 @@ function scrollToBottom() {
   }
 }
 
-function simulateTyping(element, text, enableVoice = true, needsContinuation = false, continuationContext = null) {
-  return new Promise((resolve, reject) => {
-    
-    if (appState.shouldStopResponse) {
-      element.innerHTML = '<br><br><em style="color: #e74c3c;">⚠️ Réponse interrompue</em>';
-      reject(new Error('Interrupted'));
-      return;
-    }
-    
-    const documentHtmlMatch = text.match(/<DOCUMENT_HTML>([\s\S]*?)<\/DOCUMENT_HTML>/);
-    if (documentHtmlMatch) {
-      const documentHtml = documentHtmlMatch[1].trim();
-      const metadata = extractDocumentMetadata(documentHtml);
-      
-      appendDocumentCard(documentHtml, metadata);
-      
-      element.classList.remove('loading');
-      scrollToBottom();
-      
-      if (enableVoice && appState.voiceNotifications) {
-        speak(`Document généré : ${metadata.title}`);
-      }
-      
+/* ===================================================
+   FONCTIONS CORRIGÉES : speak, simulateTyping, handleContinuation
+   =================================================== */
+
+// CORRECTION 1 : speak() retourne une Promise
+function speak(text, isStreaming = false) {
+  return new Promise((resolve) => {
+    if (!appState.voiceNotifications || !text || !('speechSynthesis' in window)) {
       resolve();
       return;
     }
-    
-    if (enableVoice && appState.voiceNotifications) {
-      const readableText = extractReadableText(text);
-      if (readableText) {
-        console.log('📢 Lecture vocale (markdown) :', readableText.substring(0, 100) + '...');
-        speak(readableText, true);
+    window.speechSynthesis.cancel();
+
+    if (isStreaming) {
+      const sentences = text.match(/[^.!?]+[.!?]+/g) || [text];
+      let currentIndex = 0;
+      function speakNextSentence() {
+        if (appState.shouldStopResponse) {
+          window.speechSynthesis.cancel();
+          hideStopSpeechBtn();
+          resolve();
+          return;
+        }
+        if (currentIndex >= sentences.length) {
+          hideStopSpeechBtn();
+          resolve();
+          return;
+        }
+        const sentence = sentences[currentIndex].trim();
+        if (sentence) {
+          const u = new SpeechSynthesisUtterance(sentence);
+          u.lang = 'fr-FR';
+          if (!preferredVoice) preferredVoice = choosePreferredVoice();
+          if (preferredVoice) u.voice = preferredVoice;
+          u.rate = 1.1;
+          u.onstart = showStopSpeechBtn;
+          u.onend = () => { currentIndex++; speakNextSentence(); };
+          u.onerror = () => { hideStopSpeechBtn(); resolve(); };
+          window.speechSynthesis.speak(u);
+        } else {
+          currentIndex++;
+          speakNextSentence();
+        }
       }
+      speakNextSentence();
+    } else {
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = 'fr-FR';
+      if (!preferredVoice) preferredVoice = choosePreferredVoice();
+      if (preferredVoice) u.voice = preferredVoice;
+      u.onstart = showStopSpeechBtn;
+      u.onend = () => { hideStopSpeechBtn(); resolve(); };
+      u.onerror = () => { hideStopSpeechBtn(); resolve(); };
+      window.speechSynthesis.speak(u);
     }
-    
-    const renderedHtml = marked.parse(text, { sanitize: false, gfm: true });
-    element.innerHTML = renderedHtml;
-    
-    element.querySelectorAll('pre code').forEach(block => {
-      hljs.highlightElement(block);
-    });
-    
-    addCopyButtons(element);
-    addMessageCopyAction(element);
-    
-    if (needsContinuation) {
-      const continueBtn = document.createElement('button');
-      continueBtn.className = 'continue-btn';
-      continueBtn.innerHTML = '<i class="fas fa-chevron-down"></i> Continuer';
-      continueBtn.onclick = () => handleContinuation(continuationContext);
-      element.appendChild(continueBtn);
-    }
-    
+  });
+}
+
+// CORRECTION 2 : simulateTyping async avec await speak
+async function simulateTyping(element, text, enableVoice = true, needsContinuation = false, continuationContext = null) {
+  if (appState.shouldStopResponse) {
+    element.innerHTML = '<br><br><em style="color: #e74c3c;">⚠️ Réponse interrompue</em>';
+    throw new Error('Interrupted');
+  }
+
+  const documentHtmlMatch = text.match(/<DOCUMENT_HTML>([\s\S]*?)<\/DOCUMENT_HTML>/);
+  if (documentHtmlMatch) {
+    const documentHtml = documentHtmlMatch[1].trim();
+    const metadata = extractDocumentMetadata(documentHtml);
+    appendDocumentCard(documentHtml, metadata);
     element.classList.remove('loading');
     scrollToBottom();
-    resolve();
-  });
+    if (enableVoice && appState.voiceNotifications) {
+      await speak(`Document généré : ${metadata.title}`);
+    }
+    return;
+  }
+
+  if (enableVoice && appState.voiceNotifications) {
+    const readableText = extractReadableText(text);
+    if (readableText) {
+      await speak(readableText, true); // ← on attend la fin
+    }
+  }
+
+  const renderedHtml = marked.parse(text, { sanitize: false, gfm: true });
+  element.innerHTML = renderedHtml;
+  element.querySelectorAll('pre code').forEach(block => hljs.highlightElement(block));
+  addCopyButtons(element);
+  addMessageCopyAction(element);
+
+  if (needsContinuation) {
+    const continueBtn = document.createElement('button');
+    continueBtn.className = 'continue-btn';
+    continueBtn.innerHTML = '<i class="fas fa-chevron-down"></i> Continuer';
+    // On passe l'événement en paramètre
+    continueBtn.onclick = (e) => handleContinuation(continuationContext, e);
+    element.appendChild(continueBtn);
+  }
+
+  element.classList.remove('loading');
+  scrollToBottom();
+}
+
+// CORRECTION 3 : handleContinuation avec event explicite
+async function handleContinuation(context, event) {
+  const continueBtn = event.target;
+  continueBtn.disabled = true;
+  continueBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Chargement...';
+
+  appState.chatInProgress = true;
+  appState.shouldStopResponse = false;
+  el('intelliaStatus').textContent = "Assistant: En cours...";
+  el('chat-loading').style.display = 'block';
+
+  try {
+    const reply = await sendToOnline("Continue", [], true);
+    if (!appState.shouldStopResponse) {
+      const botMsgElement = appendChat('bot', '', true);
+      try {
+        await simulateTyping(botMsgElement, reply, true, false);
+      } catch (interruptError) {
+        console.log('⚠️ Typing interrompu');
+      }
+    } else {
+      appendChat('bot', '<em style="color: #e74c3c;">⚠️ Réponse interrompue</em>');
+    }
+  } catch (error) {
+    if (!appState.shouldStopResponse) {
+      console.error("Erreur continuation:", error);
+      appendChat('bot', "Désolé, une erreur s'est produite lors de la continuation.");
+    }
+  } finally {
+    appState.chatInProgress = false;
+    appState.shouldStopResponse = false;
+    el('chat-loading').style.display = 'none';
+  }
 }
 
 /* ===================================================
@@ -2582,7 +2660,7 @@ stopSpeechBtn.addEventListener('click', () => {
 });
 
 /* ===================================================
-   VOIX (SPEAK) - SANS GESTION DE PAUSE (désormais gérée par les fonctions de soumission)
+   VOIX (SPEAK) - Promise déjà corrigée ci-dessus
    =================================================== */
 let preferredVoice = null;
 const choosePreferredVoice = () => {
@@ -2591,70 +2669,17 @@ const choosePreferredVoice = () => {
 };
 if ('speechSynthesis' in window) window.speechSynthesis.onvoiceschanged = () => { preferredVoice = choosePreferredVoice(); };
 
-function speak(text, isStreaming = false) {
-  if (!appState.voiceNotifications || !text || !('speechSynthesis' in window)) {
-    // On ne touche pas au micro ici
-    return;
-  }
-
-  window.speechSynthesis.cancel();
-
-  if (isStreaming) {
-    const sentences = text.match(/[^.!?]+[.!?]+/g) || [text];
-    let currentIndex = 0;
-
-    function speakNextSentence() {
-      if (appState.shouldStopResponse) {
-        window.speechSynthesis.cancel();
-        hideStopSpeechBtn();
-        return;
-      }
-      if (currentIndex >= sentences.length) {
-        hideStopSpeechBtn();
-        return;
-      }
-      const sentence = sentences[currentIndex].trim();
-      if (sentence) {
-        const u = new SpeechSynthesisUtterance(sentence);
-        u.lang = 'fr-FR';
-        if (!preferredVoice) preferredVoice = choosePreferredVoice();
-        if (preferredVoice) u.voice = preferredVoice;
-        u.rate = 1.1;
-        
-        u.onstart = showStopSpeechBtn;
-        u.onend = () => { currentIndex++; speakNextSentence(); };
-        u.onerror = () => { hideStopSpeechBtn(); };
-        
-        window.speechSynthesis.speak(u);
-      } else {
-        currentIndex++;
-        speakNextSentence();
-      }
-    }
-    speakNextSentence();
-  } else {
-    const u = new SpeechSynthesisUtterance(text);
-    u.lang = 'fr-FR';
-    if (!preferredVoice) preferredVoice = choosePreferredVoice();
-    if (preferredVoice) u.voice = preferredVoice;
-    u.onstart = showStopSpeechBtn;
-    u.onend = () => { hideStopSpeechBtn(); };
-    u.onerror = () => { hideStopSpeechBtn(); };
-    window.speechSynthesis.speak(u);
-  }
-}
+// Le speak est déjà défini plus haut
 
 /* ===================================================
-   VOICE ENGINE - AVEC COMPTEUR DE PAUSE
+   VOICE ENGINE - AVEC COMPTEUR DE PAUSE (inchangé)
    =================================================== */
 const VoiceEngine = {
   recognition: null,
   isPushToTalkRecording: false,
   isContinuousActive: false,
-  isPausedForSpeech: false, // gardé pour compatibilité, mais on utilise pauseCount
   pauseCount: 0,
   restartTimeout: null,
-  // Debounce
   continuousBuffer: '',
   debounceTimer: null,
   DEBOUNCE_DELAY: 600,
@@ -2751,7 +2776,6 @@ const VoiceEngine = {
       clearTimeout(this.restartTimeout);
       this.restartTimeout = null;
     }
-    // Ne démarrer que si le mode continu est actif ET qu'aucune pause n'est en cours
     if (!this.isContinuousActive || this.pauseCount > 0) {
       el('voiceStatus').textContent = this.isContinuousActive ? 'Voix: En pause' : 'Voix: Inactive';
       return;
@@ -2814,12 +2838,10 @@ const VoiceEngine = {
   pauseRecognition() {
     this.pauseCount++;
     if (this.pauseCount === 1) {
-      // On arrête la reconnaissance immédiatement
       if (this.recognition) {
         try { this.recognition.stop(); } catch(e) {}
         this.recognition = null;
       }
-      // On annule tout timer de redémarrage
       if (this.restartTimeout) {
         clearTimeout(this.restartTimeout);
         this.restartTimeout = null;
@@ -2832,7 +2854,6 @@ const VoiceEngine = {
     if (this.pauseCount > 0) {
       this.pauseCount--;
       if (this.pauseCount === 0) {
-        // Redémarrer si le mode continu est toujours actif
         if (this.isContinuousActive) {
           this.startContinuousLoop();
         } else {
@@ -2866,42 +2887,6 @@ const VoiceEngine = {
 /* ===================================================
    GESTION DU CHAT (ENVOI, CONTINUATION, ETC.)
    =================================================== */
-async function handleContinuation(context) {
-  console.log('🔄 Continuation demandée', context);
-  
-  const continueBtn = event.target;
-  continueBtn.disabled = true;
-  continueBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Chargement...';
-  
-  appState.chatInProgress = true;
-  appState.shouldStopResponse = false;
-  el('intelliaStatus').textContent = "Assistant: En cours...";
-  el('chat-loading').style.display = 'block';
-  
-  try {
-    const reply = await sendToOnline("Continue", [], true);
-    
-    if (!appState.shouldStopResponse) {
-      const botMsgElement = appendChat('bot', '', true);
-      try {
-        await simulateTyping(botMsgElement, reply, true, false);
-      } catch (interruptError) {
-        console.log('⚠️ Typing interrompu');
-      }
-    } else {
-      appendChat('bot', '<em style="color: #e74c3c;">⚠️ Réponse interrompue</em>');
-    }
-  } catch (error) {
-    if (!appState.shouldStopResponse) {
-      console.error("Erreur continuation:", error);
-      appendChat('bot', "Désolé, une erreur s'est produite lors de la continuation.");
-    }
-  } finally {
-    appState.chatInProgress = false;
-    appState.shouldStopResponse = false;
-    el('chat-loading').style.display = 'none';
-  }
-}
 
 // Fonction centrale de soumission (texte ou voix) avec pause micro
 async function processUserMessage(message, attachments = [], isVoice = false) {
@@ -2921,7 +2906,6 @@ async function processUserMessage(message, attachments = [], isVoice = false) {
   el('chat-loading').style.display = 'block';
   el('stopAIBtn').style.display = 'flex';
 
-  // Afficher le message utilisateur
   appendChat('user', message, false, attachments);
   if (!isVoice) {
     chatInput.value = '';
@@ -2958,12 +2942,11 @@ async function processUserMessage(message, attachments = [], isVoice = false) {
     appState.shouldStopResponse = false;
     el('chat-loading').style.display = 'none';
     el('stopAIBtn').style.display = 'none';
-    // REPRISE : réactiver le micro après tout le traitement (y compris la synthèse vocale)
+    // REPRISE : réactiver le micro après tout le traitement
     VoiceEngine.resumeRecognition();
   }
 }
 
-// Les fonctions handleChatSubmit et handleVoiceSubmit deviennent des wrappers
 async function handleChatSubmit(message, attachments = []) {
   await processUserMessage(message, attachments, false);
 }
@@ -3064,7 +3047,7 @@ function displaySuggestions(suggestions) {
 }
 
 /* ===================================================
-   EVENEMENTS UI
+   EVENEMENTS UI (inchangés)
    =================================================== */
 el('chatFullSend')?.addEventListener('click', () => {
   handleChatSubmit(el('chatFullInput').value, appState.attachments);
@@ -3094,7 +3077,7 @@ el('stopAIBtn')?.addEventListener('click', () => {
   el('stopAIBtn').style.display = 'none';
   el('intelliaStatus').textContent = "Assistant: Interrompu";
   logActivity('⚠️ Réponse IA interrompue par l\'utilisateur');
-  VoiceEngine.resumeRecognition(); // Réactiver le micro en cas d'interruption
+  VoiceEngine.resumeRecognition();
 });
 
 el('close-sidebar-btn')?.addEventListener('click', () => {
@@ -3103,7 +3086,7 @@ el('close-sidebar-btn')?.addEventListener('click', () => {
 });
 
 /* ===================================================
-   FIREBASE / DB (INCHANGÉ)
+   FIREBASE / DB (inchangé)
    =================================================== */
 let db = null;
 let auth = null;
@@ -3514,7 +3497,7 @@ const savePlansToLocalStorage = () => localStorage.setItem('sh_plans', JSON.stri
 const loadPlansFromLocalStorage = () => { appState.plans = JSON.parse(localStorage.getItem('sh_plans') || '[]'); };
 
 /* ===================================================
-   PIECES JOINTES (INCHANGÉ)
+   PIECES JOINTES (inchangé)
    =================================================== */
 el('attach-file-btn').addEventListener('click', () => {
   el('file-input').click();
@@ -3590,7 +3573,7 @@ function renderAttachmentPreviews() {
 }
 
 /* ===================================================
-   UI / THEME (INCHANGÉ)
+   UI / THEME (inchangé)
    =================================================== */
 el('dayModeBtn')?.addEventListener('click', () => {
   appState.isNightMode = false;
@@ -3881,7 +3864,7 @@ setInterval(cleanExpiredPlansClient, 600000);
 setTimeout(cleanExpiredPlansClient, 5000);
 
 /* ===================================================
-   AUTH / CONNEXION (INCHANGÉ)
+   AUTH / CONNEXION (inchangé)
    =================================================== */
 if (auth) {
   onAuthStateChanged(auth, (user) => {
@@ -3925,7 +3908,7 @@ if (auth) {
 }
 
 /* ===================================================
-   HISTORIQUE DES CHATS (INCHANGÉ)
+   HISTORIQUE DES CHATS (inchangé)
    =================================================== */
 function getChatHistoryRef(userId, sessionId = null) {
   let path = `${userChatsRefPath}/${userId}`;
@@ -4096,7 +4079,7 @@ async function saveMessageToFirebase(userMsg, botMsg, attachments) {
 }
 
 /* ===================================================
-   PROACTIVE SUGGESTIONS (INCHANGÉ)
+   PROACTIVE SUGGESTIONS (inchangé)
    =================================================== */
 function updateProactiveSuggestion() {
   const el_sug = document.getElementById('proactive-suggestion');
@@ -4163,12 +4146,13 @@ function requestNotificationPermission() {
 
 initUI();
 
-console.log('✅ SmartHome Intelligence v13.2 - Correction finale : pause micro pendant tout le traitement');
+console.log('✅ SmartHome Intelligence v13.3 - Corrections speak asynchrone + handleContinuation + quota optimisé');
 console.log('📄 Bouton muet dynamique (apparaît pendant la voix)');
 console.log('📥 Téléchargement PDF (html-pdf-node) + DOCX (LibreOffice)');
 console.log('🔘 Bouton dynamique : Mode continu / Envoyer');
 console.log('📱 Mobile: Entrée = retour à la ligne, Bureau: Entrée = envoi');
-console.log('🎤 Correction : pause micro avant envoi, reprise après réponse complète');
+console.log('🎤 Correction : speak asynchrone, attend la fin du speech avant de réactiver le micro');
+console.log('🧠 Optimisation quota : utilisation de gemini-1.5-flash pour les sous‑tâches');
 </script>
 </body>
 </html>
