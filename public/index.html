@@ -3153,6 +3153,19 @@ async function sendToOnline(message, attachments = [], continuationMode = false)
   
   const t0 = Date.now();
   
+  // 🔍 Debug pièces jointes (utile pour détecter un data URI corrompu)
+  if (attachments.length > 0) {
+    attachments.forEach(att => {
+      console.debug('[ATTACH]', {
+        name: att.name,
+        type: att.type,
+        dataLength: att.data?.length,
+        dataStart: att.data?.substring(0, 60),
+        hasNewlines: att.data?.includes('\n')
+      });
+    });
+  }
+  
   try {
     const response = await fetch(`${RENDER_API}/api/chat`, {
       method: "POST", headers: { "Content-Type": "application/json" },
