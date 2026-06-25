@@ -2442,30 +2442,97 @@ function appendDocumentCard(htmlContent, metadata) {
    PREVIEW DOCUMENT - VERSION PLEIN ÉCRAN + BOUTON FERMETURE
    =================================================== */
 function previewDocument(html) {
+  // Supprimer un éventuel overlay déjà ouvert
+  const existing = document.querySelector('.doc-preview-overlay');
+  if (existing) existing.remove();
+
   const overlay = document.createElement('div');
   overlay.className = 'doc-preview-overlay';
-  
+  overlay.style.cssText = `
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: #000;
+    z-index: 99999;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  `;
+
+  // Barre de contrôle en haut (toujours visible, jamais masquée)
+  const toolbar = document.createElement('div');
+  toolbar.style.cssText = `
+    position: relative;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #1a1a2e;
+    padding: 8px 16px;
+    flex-shrink: 0;
+    min-height: 48px;
+  `;
+
+  const title = document.createElement('span');
+  title.style.cssText = 'color: #fff; font-size: 14px; font-weight: 600; opacity: 0.85;';
+  title.textContent = '📄 Aperçu du document';
+
   const closeBtn = document.createElement('button');
-  closeBtn.className = 'close-btn';
-  closeBtn.innerHTML = '✕';
-  closeBtn.setAttribute('aria-label', 'Fermer l\'aperçu');
+  closeBtn.innerHTML = '<i class="fas fa-times"></i> Fermer';
+  closeBtn.style.cssText = `
+    background: rgba(231,76,60,0.85);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 8px 18px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: background 0.2s;
+  `;
+  closeBtn.onmouseover = () => closeBtn.style.background = 'rgba(192,57,43,1)';
+  closeBtn.onmouseout = () => closeBtn.style.background = 'rgba(231,76,60,0.85)';
   closeBtn.onclick = () => overlay.remove();
-  
+
+  toolbar.appendChild(title);
+  toolbar.appendChild(closeBtn);
+
+  // Conteneur de l'iframe qui prend tout l'espace restant
+  const iframeWrapper = document.createElement('div');
+  iframeWrapper.style.cssText = `
+    flex: 1;
+    overflow: hidden;
+    position: relative;
+    background: #fff;
+  `;
+
   const iframe = document.createElement('iframe');
-  iframe.srcdoc = html;
+  iframe.style.cssText = `
+    width: 100%;
+    height: 100%;
+    border: none;
+    display: block;
+  `;
+
+  // Injecter le HTML avec meta viewport pour forcer le responsive
+  const htmlWithViewport = html.includes('<meta name="viewport"') ? html :
+    html.replace('<head>', '<head><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">');
+  
+  iframe.srcdoc = htmlWithViewport;
   iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin');
-  
-  overlay.appendChild(closeBtn);
-  overlay.appendChild(iframe);
-  
-  overlay.addEventListener('click', (e) => {
-    if (e.target === overlay) overlay.remove();
-  });
-  
+
+  iframeWrapper.appendChild(iframe);
+  overlay.appendChild(toolbar);
+  overlay.appendChild(iframeWrapper);
+
+  // Fermeture avec Escape
   overlay.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') overlay.remove();
   });
-  
+
   document.body.appendChild(overlay);
   overlay.tabIndex = -1;
   overlay.focus();
@@ -3151,10 +3218,34 @@ async function sendToOnline(message, attachments = [], continuationMode = false)
 async function handlePlanningCommands(commands) {
   for (const cmd of commands) {
     if (cmd.action === 'add') {
-      const p = { device: cmd.device, time: cmd.time, action: cmd.action, power: cmd.power, createdAt: Date.now() };
+      // Déterminer l'état réel ON/OFF depuis actionType ou le champ action du contenu
+      let realAction = 'OFF';
+      if (cmd.actionType) {
+        realAction = cmd.actionType.toLowerCase() === 'allumer' ? 'ON' : 'OFF';
+      } else if (cmd.execute_action === 'ON' || cmd.state === 'ON') {
+        realAction = 'ON';
+      }
+      const actionType = realAction === 'ON' ? 'allumer' : 'éteindre';
+      const p = {
+        device: cmd.device,
+        time: cmd.time,
+        action: realAction,
+        actionType: actionType,
+        power: cmd.power !== undefined ? cmd.power : null,
+        frequency: cmd.frequency || 'once',
+        createdAt: Date.now()
+      };
+      if (cmd.frequency === 'weekly' && Array.isArray(cmd.daysOfWeek)) {
+        p.daysOfWeek = cmd.daysOfWeek;
+      }
+      if (cmd.frequency === 'once' || !cmd.frequency) {
+        p.targetDate = cmd.targetDate || new Date().toISOString().split('T')[0];
+      }
       if (db) await push(ref(db, planningRefPath), p);
     } else if (cmd.action === 'delete_all') {
       await deleteAllPlans();
+    } else if (cmd.action === 'delete_specific') {
+      // Géré côté serveur, rien à faire ici
     }
   }
 }
@@ -3162,7 +3253,12 @@ async function handlePlanningCommands(commands) {
 function handleExecuteCommands(commands) {
   for (const exec of (Array.isArray(commands) ? commands : [commands])) {
     const [devId, action, value] = exec.split('|');
-    if (appState.devices.some(d => d.id === devId)) {
+    // "all_devices" = appliquer à tous les appareils
+    if (devId === 'all_devices') {
+      appState.devices.forEach(device => {
+        sendCommand(device.id, action, value ? parseInt(value) : null);
+      });
+    } else if (appState.devices.some(d => d.id === devId)) {
       sendCommand(devId, action, value ? parseInt(value) : null);
     }
   }
@@ -3596,7 +3692,12 @@ function renderPlanningListUI(plans) {
         }
         
         // AFFICHAGE uniquement (pas de modification de l'action)
-        const actionDisplay = p.action === 'ON' ? '🟢 Allumer' : '🔴 Éteindre';
+        let actionDisplay;
+        if (p.actionType) {
+          actionDisplay = p.actionType === 'allumer' ? '🟢 Allumer' : '🔴 Éteindre';
+        } else {
+          actionDisplay = p.action === 'ON' ? '🟢 Allumer' : '🔴 Éteindre';
+        }
         
         return `<tr style="border-bottom:1px solid rgba(0,0,0,0.05)">
           <td style="padding:10px"><strong>${deviceName}</strong></td>
