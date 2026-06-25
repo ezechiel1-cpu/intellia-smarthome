@@ -168,12 +168,29 @@ async function getRealLoKossaTemperature() {
       timeout: 5000
     });
     const current = response.data.current;
-    console.log(`✅ Température réelle récupérée : ${Math.round(current.temp_c)}°C`);
+    const temp = Math.round(current.temp_c);
+    const feels = Math.round(current.feelslike_c);
+    // WeatherAPI condition codes → emoji français
+    const code = current.condition.code;
+    const isDay = current.is_day === 1;
+    let emoji = '🌡️';
+    if ([1000].includes(code)) emoji = isDay ? '☀️' : '🌙';
+    else if ([1003].includes(code)) emoji = isDay ? '🌤️' : '🌤️';
+    else if ([1006].includes(code)) emoji = '⛅';
+    else if ([1009].includes(code)) emoji = '☁️';
+    else if ([1030, 1135, 1147].includes(code)) emoji = '🌫️';
+    else if ([1063, 1072, 1150, 1153, 1168, 1171, 1180, 1186, 1192, 1198, 1204, 1240, 1246].includes(code)) emoji = '🌧️';
+    else if ([1066, 1069, 1114, 1117, 1210, 1216, 1222, 1255, 1261].includes(code)) emoji = '❄️';
+    else if ([1087, 1273, 1279, 1282].includes(code)) emoji = '⛈️';
+    else if ([1183, 1189, 1195, 1201, 1207, 1213, 1219, 1225, 1237, 1243, 1249, 1252, 1258, 1264].includes(code)) emoji = '🌦️';
+    // Description en français depuis l'API (lang=fr) + emoji
+    const description = `${current.condition.text} ${emoji}`;
+    console.log(`✅ Température réelle récupérée : ${temp}°C (${description})`);
     return {
-      temperature: Math.round(current.temp_c),
-      feels_like: Math.round(current.feelslike_c),
+      temperature: temp,
+      feels_like: feels,
       humidity: current.humidity,
-      description: current.condition.text,
+      description: description,
       source: 'weatherapi',
       success: true
     };
@@ -183,6 +200,13 @@ async function getRealLoKossaTemperature() {
     const month = now.getMonth() + 1;
     const hour = now.getHours();
     const estimated = getLoKossaTemperatureEstimated(month, hour);
+    // Ajouter emoji selon la description estimée
+    let emoji = '🌡️';
+    if (estimated.description.includes('chaud') || estimated.description.includes('Très chaud')) emoji = '🔆';
+    else if (estimated.description.includes('Chaud')) emoji = '☀️';
+    else if (estimated.description.includes('Agréable')) emoji = '🌤️';
+    else if (estimated.description.includes('Frais')) emoji = '🌬️';
+    estimated.description = `${estimated.description} ${emoji}`;
     console.log(`📊 Température estimée : ${estimated.temperature}°C`);
     return { ...estimated, success: false };
   }
