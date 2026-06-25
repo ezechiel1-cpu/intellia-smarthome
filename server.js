@@ -1328,6 +1328,11 @@ Si l'utilisateur demande de supprimer un appareil (ex: "Supprime la lampe jardin
   "source": "cloud"
 }
 
+
+- Pour les appareils de type lampe, plug, ventilateur, thermostat, volet : les commandes sont uniquement ON ou OFF. **Aucune valeur de luminosité (pourcentage) n'est prise en charge**. Si l'utilisateur demande une luminosité, ignore ce paramètre et utilise ON/OFF.
+- Dans toutes les réponses textuelles (en dehors du JSON de commande), utilise **uniquement des mots en français**. Les termes comme "ON", "OFF", "all_devices" sont interdits. Remplacez-les par "Allumer", "Éteindre", "Tous les appareils".
+- Pour une commande concernant tous les appareils, ne créez PAS une planification avec device: "all_devices". À la place, créez une planification pour chaque appareil individuellement (ou utilisez l'action "all" dans le champ device que le client interprétera). Cependant, pour simplifier, le client reconnaît "all_devices" et l'affiche en français "Tous les appareils". Mais dans le texte de réponse, dites "Tous les appareils" et jamais "all_devices".
+
 📌 RÈGLES GÉNÉRALES
 
 1. Vérification: Vérifie [États] et [Planifications] AVANT toute réponse.
