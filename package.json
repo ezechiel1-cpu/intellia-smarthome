@@ -1,6 +1,6 @@
 {
   "name": "intellia-smarthome",
-  "version": "13.1.0",
+  "version": "14.2.0",
   "description": "SmartHome Intelligence - Assistant domotique intelligent avec IA - Génération PDF/DOCX",
   "main": "server.js",
   "scripts": {
@@ -21,7 +21,9 @@
     "pdf-parse": "^1.1.1",
     "docx": "^8.0.0",
     "mammoth": "^1.7.2",
-    "html-pdf-node": "^1.0.8"
+    "html-pdf-node": "^1.0.8",
+    "html-to-docx": "^1.8.0",
+    "officeparser": "^4.1.3"
   },
   "devDependencies": {
     "nodemon": "^3.0.1"

@@ -8,9 +8,7 @@ const axios = require('axios');
 const cheerio = require('cheerio');
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const htmlPdf = require('html-pdf-node');
-const { exec } = require('child_process');
-const fs = require('fs').promises;
-const os = require('os');
+// exec/fs/os supprimés : LibreOffice remplacé par html-to-docx (aucune dépendance système)
 
 // ✅ Imports Firebase
 const { initializeApp } = require("firebase/app");
@@ -251,10 +249,13 @@ async function getBeninTime() {
 // ========================================
 function parseDataUri(dataUri) {
   try {
-    const regex = /^data:(.+);base64,(.*)$/;
-    const match = dataUri.match(regex);
+    // Nettoyer les éventuels sauts de ligne dans la partie base64
+    // (FileReader ne devrait pas en injecter, mais sécurité défensive)
+    const cleaned = dataUri.replace(/\r?\n/g, '');
+    const regex = /^data:([^;]+);base64,(.+)$/;
+    const match = cleaned.match(regex);
     if (!match) return null;
-    return { mimeType: match[1], data: match[2] };
+    return { mimeType: match[1].trim(), data: match[2] };
   } catch (e) {
     console.error("Erreur parsing Data URI:", e.message);
     return null;
@@ -264,7 +265,13 @@ function parseDataUri(dataUri) {
 async function parseFileAttachment(attachment) {
   try {
     const parsedData = parseDataUri(attachment.data);
-    if (!parsedData) throw new Error("Invalid Data URI");
+    if (!parsedData) {
+      const preview = (attachment.data || '').substring(0, 80);
+      console.error(`❌ parseDataUri échoué pour "${attachment.name}"`);
+      console.error(`   Début du data reçu : ${preview}`);
+      console.error(`   Type : ${typeof attachment.data}, longueur : ${(attachment.data || '').length}`);
+      throw new Error(`Data URI invalide pour ${attachment.name}`);
+    }
     const buffer = Buffer.from(parsedData.data, 'base64');
     let text = "";
     const MAX_CHARS = 500000;
@@ -330,7 +337,19 @@ async function parseFileAttachment(attachment) {
         }
         break;
       case ext === 'pptx': case ext === 'ppt':
-        return `[Fichier PowerPoint détecté: ${attachment.name}. Extraction non supportée.]`;
+      case ext === 'odp': case ext === 'odt': case ext === 'ods':
+        try {
+          const { parseOffice } = require('officeparser');
+          text = await parseOffice(buffer);
+          if (!text || !text.trim()) {
+            return `[Fichier ${ext.toUpperCase()} vide ou illisible : ${attachment.name}]`;
+          }
+          console.log(`✅ ${ext.toUpperCase()} extrait: ${text.length} caractères`);
+        } catch (officeErr) {
+          console.error(`❌ Erreur ${ext.toUpperCase()}:`, officeErr.message);
+          return `[Erreur lecture ${ext.toUpperCase()} "${attachment.name}": ${officeErr.message}]`;
+        }
+        break;
       case ext === 'zip': case ext === 'rar': case ext === '7z':
         return `[Archive détectée: ${attachment.name}. Extraction non supportée.]`;
       default:
@@ -422,75 +441,32 @@ app.post('/api/download/pdf', async (req, res) => {
 });
 
 // ========================================
-// 📄 GÉNÉRATION DOCX AVEC LIBREOFFICE
+// 📄 GÉNÉRATION DOCX AVEC HTML-TO-DOCX (sans dépendance système)
 // ========================================
 app.post('/api/download/docx', async (req, res) => {
-  const tempDir = os.tmpdir();
-  const tempHtmlFile = path.join(tempDir, `doc_${Date.now()}.html`);
-  const tempDocxFile = tempHtmlFile.replace(/\.html$/, '.docx');
-
   try {
     const { html } = req.body;
-    if (!html) {
-      return res.status(400).json({ error: 'HTML manquant' });
-    }
+    if (!html) return res.status(400).json({ error: 'HTML manquant' });
 
-    console.log('📄 Génération DOCX...');
+    console.log('📄 Génération DOCX avec html-to-docx...');
 
-    await fs.writeFile(tempHtmlFile, html, 'utf8');
+    const HTMLtoDOCX = require('html-to-docx');
+    const buffer = await HTMLtoDOCX(html, null, {
+      table:      { row: { cantSplit: true } },
+      footer:     true,
+      pageNumber: false,
+      margins:    { top: 850, right: 850, bottom: 850, left: 850 }, // ~15mm en twips
+      font:       'Arial',
+      fontSize:   22, // 11pt
+    });
 
-    let libreOfficeAvailable = false;
-    try {
-      await new Promise((resolve, reject) => {
-        exec('libreoffice --version', (error, stdout) => {
-          if (error) reject(error);
-          else resolve(stdout);
-        });
-      });
-      libreOfficeAvailable = true;
-    } catch (e) {
-      console.warn('⚠️ LibreOffice non installé, fallback texte simple');
-    }
-
-    if (libreOfficeAvailable) {
-      const cmd = `libreoffice --headless --convert-to docx --outdir ${tempDir} ${tempHtmlFile}`;
-      await new Promise((resolve, reject) => {
-        exec(cmd, (error) => {
-          if (error) reject(error);
-          else resolve();
-        });
-      });
-      const docxBuffer = await fs.readFile(tempDocxFile);
-      await fs.unlink(tempHtmlFile).catch(() => {});
-      await fs.unlink(tempDocxFile).catch(() => {});
-      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
-      res.setHeader('Content-Disposition', 'attachment; filename=document.docx');
-      res.send(docxBuffer);
-      console.log('✅ DOCX généré avec LibreOffice');
-    } else {
-      const { Document, Packer, Paragraph, TextRun } = require('docx');
-      const $ = cheerio.load(html);
-      $('script, style, button').remove();
-      const text = $('body').text().trim() || $('html').text().trim();
-      const doc = new Document({
-        sections: [{
-          children: text.split('\n').filter(line => line.trim()).map(line =>
-            new Paragraph({ children: [new TextRun({ text: line.trim(), size: 24 })] })
-          )
-        }]
-      });
-      const buffer = await Packer.toBuffer(doc);
-      await fs.unlink(tempHtmlFile).catch(() => {});
-      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
-      res.setHeader('Content-Disposition', 'attachment; filename=document.docx');
-      res.send(buffer);
-      console.log('✅ DOCX généré en fallback texte simple');
-    }
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+    res.setHeader('Content-Disposition', 'attachment; filename=document.docx');
+    res.send(buffer);
+    console.log('✅ DOCX généré avec html-to-docx');
   } catch (error) {
     console.error('❌ Erreur génération DOCX:', error.message);
-    await fs.unlink(tempHtmlFile).catch(() => {});
-    await fs.unlink(tempDocxFile).catch(() => {});
-    res.status(500).json({ error: 'Erreur lors de la génération du DOCX' });
+    res.status(500).json({ error: 'Erreur génération DOCX', details: error.message });
   }
 });
 
@@ -973,9 +949,10 @@ Lorsque tu génères un document (CV, lettre, rapport, facture, contrat) :
 1. **Format A4** : utilise les dimensions A4 (210mm x 297mm) dans le CSS.
 2. **Polices classiques** : utilise Arial, Calibri, Times New Roman ou Georgia. Évite les polices web.
 3. **Structure** : utilise des **tableaux HTML** pour les colonnes et alignements complexes. Évite flexbox et grid.
-4. **Styles à éviter** : position absolute, dégradés complexes, ombres, border-radius excessifs.
+4. **Styles à éviter** : position absolute, dégradés complexes, ombres (box-shadow, text-shadow), border-radius excessifs, background-image, @font-face, Google Fonts (pas de <link> vers fonts.googleapis.com).
 5. **Marges** : utilise des marges de 15-20mm pour un rendu A4 propre.
 6. **Emojis** : autorisés mais espacés du texte.
+7. **Images** : embarque-les en base64 si indispensables. Sinon, évite-les — les URL externes ne sont pas résolues lors de la conversion DOCX.
 
 **Exemple de structure compatible :**
 
@@ -2166,19 +2143,6 @@ app.post('/api/chat', async (req, res) => {
 app.get('/api/health', async (req, res) => {
   const availableKeys = API_KEYS.filter(k => !k.quotaExceeded).length;
   const beninTime = await getBeninTime();
-  
-  let libreOfficeAvailable = false;
-  try {
-    await new Promise((resolve, reject) => {
-      exec('libreoffice --version', (error, stdout) => {
-        if (error) reject(error);
-        else resolve(stdout);
-      });
-    });
-    libreOfficeAvailable = true;
-  } catch (e) {
-    libreOfficeAvailable = false;
-  }
 
   res.json({
     status: 'ok',
@@ -2202,9 +2166,9 @@ app.get('/api/health', async (req, res) => {
       autoDeleteDevices: true,
       intelligentPlanningDeletion: true,
       lokossaTemperature: true,
-      documentDownload: "PDF (html-pdf-node) + DOCX (LibreOffice fallback)",
+      documentDownload: "PDF (html-pdf-node) + DOCX (html-to-docx, sans dépendance système)",
       documentMetadata: true,
-      supportedFiles: "PDF, DOCX, TXT, HTML, JS, JSON, CSS, XLSX, CSV, Images",
+      supportedFiles: "PDF, DOCX, TXT, HTML, JS, JSON, CSS, XLSX, CSV, PPTX, ODT, ODP, ODS, Images",
       maxTokens: 65536,
       // ✅ NOUVEAU v14.2
       historyLogs: true,
@@ -2223,10 +2187,7 @@ app.get('/api/health', async (req, res) => {
     },
     conversions: {
       pdf: "html-pdf-node (Chromium embarqué)",
-      docx: libreOfficeAvailable ? "LibreOffice (headless)" : "Fallback: extraction texte simple"
-    },
-    system: {
-      libreoffice_available: libreOfficeAvailable
+      docx: "html-to-docx (pur Node.js, pas de dépendance système)"
     },
     models_used: {
       chat_cascade: [
@@ -2265,7 +2226,7 @@ app.listen(PORT, () => {
   console.log(`   🌡️ Température Lokossa: Temps réel`);
   console.log(`   📄 Génération de documents: ✅ ACTIVÉE (HTML)`);
   console.log(`   📥 Téléchargement PDF: ✅ ACTIVÉ (html-pdf-node)`);
-  console.log(`   📥 Téléchargement DOCX: ✅ ACTIVÉ (LibreOffice + fallback)`);
+  console.log(`   📥 Téléchargement DOCX: ✅ ACTIVÉ (html-to-docx, HTML → DOCX formaté)`);
   console.log(`   💻 Génération de code long: ✅ ACTIVÉE`);
   console.log(`   🔄 Système de continuation: ✅ ACTIVÉ`);
   console.log(`   🎯 Détection troncature: ✅ AUTOMATIQUE`);
