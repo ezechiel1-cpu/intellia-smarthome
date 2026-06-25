@@ -3250,9 +3250,13 @@ function handleExecuteCommands(commands) {
     if (devId === 'all_devices') {
       appState.devices.forEach(device => {
         sendCommand(device.id, action, value ? parseInt(value) : null);
+        // Re-logger avec la bonne source "ai_command"
+        logStateChange(device.id, action, 'ai_command');
       });
     } else if (appState.devices.some(d => d.id === devId)) {
       sendCommand(devId, action, value ? parseInt(value) : null);
+      // Re-logger avec la bonne source "ai_command"
+      logStateChange(devId, action, 'ai_command');
     }
   }
 }
@@ -3325,11 +3329,28 @@ const metaRefPath = "devicesMeta";
 const devicesRefPath = "devices";
 const planningRefPath = "planning";
 const userChatsRefPath = "userChats";
+const historyLogsRefPath = "history_logs"; // ✅ NOUVEAU v14.2 : logs horodatés
 
 if (db) {
   onValue(ref(db, metaRefPath), snap => { appState.devices = Object.values(snap.val() || {}); renderDevices(); });
   onValue(ref(db, devicesRefPath), snap => { 
-    appState.deviceStates = snap.val() || {}; 
+    const newStates = snap.val() || {};
+    
+    // ✅ NOUVEAU v14.2 : détection des changements d'état initiés par l'ESP32
+    // Si un état change sans que ce soit initié par sendCommand, c'est l'ESP32
+    if (appState._prevDeviceStates) {
+      for (const [deviceId, newState] of Object.entries(newStates)) {
+        const prevState = appState._prevDeviceStates[deviceId];
+        if (prevState && prevState.etat !== newState.etat && !appState._pendingCommands?.has(deviceId)) {
+          // Changement détecté qui ne vient pas d'une commande de l'interface
+          logStateChange(deviceId, newState.etat, 'esp32');
+        }
+      }
+    }
+    appState._prevDeviceStates = JSON.parse(JSON.stringify(newStates));
+    appState._pendingCommands = new Set();
+    
+    appState.deviceStates = newStates; 
     renderDevices(); 
     logActivity('☁️ États Firebase synchronisés.');
   });
@@ -3342,6 +3363,43 @@ if (db) {
   loadDevicesFromLocalStorage(); loadPlansFromLocalStorage();
   renderDevices(); renderPlanningListUI(appState.plans);
 }
+
+// ========================================
+// 📊 LOGGING DES ÉTATS — NOUVEAU v14.2
+// ========================================
+
+/**
+ * Enregistre un changement d'état dans history_logs (Firebase).
+ * source : 'manual' | 'ai_command' | 'planning' | 'esp32'
+ */
+async function logStateChange(deviceId, etat, source = 'manual') {
+  if (!db || !deviceId || deviceId === 'all_devices') return;
+  try {
+    await push(ref(db, historyLogsRefPath), {
+      deviceId,
+      etat,
+      source,
+      timestamp: Date.now()
+    });
+  } catch (e) {
+    console.warn(`⚠️ Impossible de logger ${deviceId} → ${etat}:`, e.message);
+  }
+}
+
+/**
+ * Récupère et affiche les statistiques d'usage d'un appareil.
+ * Utilisable depuis la console ou pour debug.
+ */
+window.getUsageStats = async (deviceId) => {
+  try {
+    const res = await fetch(`/api/usage-stats/${deviceId}`);
+    const data = await res.json();
+    if (data.stats) {
+      console.log(`📊 Stats pour ${deviceId}:`, data.stats);
+      return data.stats;
+    }
+  } catch (e) { console.warn('Erreur stats:', e); }
+};
 
 function logActivity(message, type = 'info') {
   const logContainer = el('activityLog');
@@ -3555,6 +3613,11 @@ window.sendCommand = (deviceId, action, value = null) => {
 
   const val = (value !== null) ? parseInt(value) : (action === "ON" ? 100 : 0);
   
+  // ✅ NOUVEAU v14.2 : marquer la commande comme "en attente" 
+  // pour ne pas la re-logger comme changement ESP32
+  if (!appState._pendingCommands) appState._pendingCommands = new Set();
+  appState._pendingCommands.add(deviceId);
+  
   if (appState.isLocalConnected && appState.localWebSocket && appState.localWebSocket.readyState === 1) {
     logActivity(`⚡[WS] Envoi: ${deviceId} → ${action} (${val}%)`);
     appState.localWebSocket.send(JSON.stringify({
@@ -3566,6 +3629,8 @@ window.sendCommand = (deviceId, action, value = null) => {
     
     appState.deviceStates[deviceId] = { etat: action, luminosite: val };
     renderDevices();
+    // ✅ Logger le changement d'état (source: manual car initié par l'interface)
+    logStateChange(deviceId, action, 'manual');
     
   } else {
     logActivity(`☁️ [Firebase] Envoi: ${deviceId} → ${action} (${val}%)`);
@@ -3573,7 +3638,12 @@ window.sendCommand = (deviceId, action, value = null) => {
     
     appState.deviceStates[deviceId] = { etat: action, luminosite: val };
     renderDevices();
+    // ✅ Logger le changement d'état
+    logStateChange(deviceId, action, 'manual');
   }
+  
+  // Nettoyer le marqueur après 2 secondes
+  setTimeout(() => appState._pendingCommands?.delete(deviceId), 2000);
 };
 
 function populatePlanDeviceSelect() {
@@ -4012,6 +4082,7 @@ async function checkAndExecutePlans() {
         const actionText = action === 'ON' ? 'allumé' : 'éteint';
         logActivity(`⏰ Exécution : ${deviceName} ${actionText}`);
         sendCommand(plan.device, action);
+        logStateChange(plan.device, action, 'planning'); // ✅ NOUVEAU v14.2
         const chatMessage = `⏰ Tâche planifiée : **${deviceName}** ${actionText}`;
         if (el('chatFullWindow')) appendChat("bot", chatMessage);
         if (appState.voiceNotifications) speak(`Exécution planifiée. ${deviceName} ${actionText}.`);
@@ -4054,6 +4125,7 @@ async function checkAndExecutePlans() {
       const actionText = action === 'ON' ? 'allumé' : 'éteint';
       console.log(`🚀 Client: Exécution ${deviceName} ${actionText}`);
       sendCommand(plan.device, action);
+      logStateChange(plan.device, action, 'planning'); // ✅ NOUVEAU v14.2
       logActivity(`⏰ Exécution : ${deviceName} ${actionText}`);
       const chatMessage = `⏰ Tâche planifiée : **${deviceName}** ${actionText}`;
       if (el('chatFullWindow')) appendChat("bot", chatMessage);
