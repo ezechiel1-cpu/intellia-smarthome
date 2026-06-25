@@ -61,6 +61,7 @@ const DEVICES_STATES_REF = "devices";
 const DEVICES_META_REF = "devicesMeta";
 const USER_CHATS_REF = "userChats";
 const PLANNING_REF = "planning";
+const HISTORY_LOGS_REF = "history_logs"; // ✅ NOUVEAU : logs horodatés de tous les changements d'état
 
 // ========================================
 // GESTION DES CLÉS API GEMINI
@@ -494,6 +495,47 @@ app.post('/api/download/docx', async (req, res) => {
 });
 
 // ========================================
+// 📊 ROUTE : ENREGISTREMENT D'UN CHANGEMENT D'ÉTAT (depuis index.html)
+// ========================================
+app.post('/api/log-state', async (req, res) => {
+  try {
+    const { deviceId, etat, source = 'manual' } = req.body;
+    if (!deviceId || !etat) return res.status(400).json({ error: 'deviceId et etat requis' });
+    await logDeviceStateChange(deviceId, etat, source);
+    res.json({ success: true });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// ========================================
+// 📊 ROUTE : STATISTIQUES D'USAGE D'UN APPAREIL
+// ========================================
+app.get('/api/usage-stats/:deviceId', async (req, res) => {
+  try {
+    const { deviceId } = req.params;
+    const days = parseInt(req.query.days) || 7;
+    const stats = await computeUsageStats(deviceId, days);
+    res.json({ success: true, stats });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// ========================================
+// 📊 ROUTE : JOURNAL D'UN JOUR (pour "qu'a-t-on fait hier ?")
+// ========================================
+app.get('/api/day-history', async (req, res) => {
+  try {
+    const date = req.query.date || new Date().toISOString().split('T')[0];
+    const history = await getDayHistory(date);
+    res.json({ success: true, history, date });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// ========================================
 // RECHERCHE WEB INTELLIGENTE
 // ========================================
 if (!process.env.TAVILY_API_KEY) {
@@ -651,13 +693,32 @@ function needsWebSearch(message) {
 }
 
 // ========================================
-// ANALYSE CONTEXTUELLE
+// ANALYSE CONTEXTUELLE (corrigée v14.2)
 // ========================================
 function analyzeContext(message, deviceStates, beninTime) {
   const analysis = { suggestedActions: [] };
-  const lowerMsg = message.toLowerCase();
+  const lowerMsg = message.toLowerCase().trim();
 
-  if (lowerMsg.includes('je sors') || lowerMsg.includes('je pars')) {
+  // ✅ FIX BUG "perte de fil" : si le message est court OU technique,
+  // on ne génère AUCUNE suggestion domotique automatique.
+  // Gemini doit lire l'historique pour comprendre le contexte, 
+  // pas se laisser distraire par [Analyse].
+  const isTechnicalOrShortContext = 
+    lowerMsg.length < 30 ||  // messages courts : "oui", "vas-y", "continue", "ok"
+    ['code', 'fonction', 'server', 'serveur', 'firebase', 'history',
+     'log', 'intégr', 'implémente', 'ajoute', 'écris', 'module',
+     'route', 'api', 'index', 'fichier', 'bug', 'erreur', 'corrig',
+     'modifi', 'oui', 'vas-y', 'continue', 'ok', 'd\'accord', 'parfait',
+     'exactement', 'maintenant', 'ça marche', 'test', 'développ',
+     'expliqu', 'analyse', 'prédic', 'statistique', 'comment'].some(kw => lowerMsg.includes(kw));
+
+  if (isTechnicalOrShortContext) {
+    // Retour immédiat : aucune suggestion domotique auto-injectée
+    return analysis;
+  }
+
+  // Suggestion sécurité au départ seulement si message explicite
+  if (lowerMsg.includes('je sors') || lowerMsg.includes('je pars') || lowerMsg.includes('je quitte')) {
     const onDevices = Object.values(deviceStates).filter(d => d.etat === 'ON');
     if (onDevices.length > 0) {
       analysis.suggestedActions.push({
@@ -668,7 +729,10 @@ function analyzeContext(message, deviceStates, beninTime) {
     }
   }
 
-  if (beninTime && (beninTime.hours >= 22 || beninTime.hours < 6)) {
+  // Suggestion économie d'énergie la nuit uniquement si l'utilisateur parle d'appareils
+  const talkingAboutDevices = lowerMsg.includes('lampe') || lowerMsg.includes('lumière') || 
+    lowerMsg.includes('appareil') || lowerMsg.includes('allum') || lowerMsg.includes('étein');
+  if (talkingAboutDevices && beninTime && (beninTime.hours >= 22 || beninTime.hours < 6)) {
     const brightDevices = Object.values(deviceStates).filter(d => d.etat === 'ON' && d.luminosite > 50);
     if (brightDevices.length > 0) {
       analysis.suggestedActions.push({
@@ -680,6 +744,156 @@ function analyzeContext(message, deviceStates, beninTime) {
   }
 
   return analysis;
+}
+
+// ========================================
+// 📊 HISTORIQUE D'USAGE — FONCTIONS PRÉDICTIVES (nouveau v14.2)
+// ========================================
+
+/**
+ * Enregistre un changement d'état dans history_logs.
+ * Appelé par handleDeviceCommands (commandes IA côté serveur).
+ * index.html appelle /api/log-state pour les commandes client.
+ */
+async function logDeviceStateChange(deviceId, etat, source = 'ai_command') {
+  if (!db || !deviceId) return;
+  try {
+    await push(ref(db, HISTORY_LOGS_REF), {
+      deviceId,
+      etat,          // "ON" ou "OFF"
+      source,        // 'ai_command' | 'manual' | 'planning' | 'esp32'
+      timestamp: Date.now()
+    });
+  } catch (e) {
+    console.warn(`⚠️ Impossible de logger l'état pour ${deviceId}:`, e.message);
+  }
+}
+
+/**
+ * Calcule les statistiques d'usage d'un appareil sur les N derniers jours.
+ * Retourne les heures d'activité habituelles et une probabilité par tranche.
+ */
+async function computeUsageStats(deviceId, days = 7) {
+  if (!db) return null;
+  try {
+    const snapshot = await get(ref(db, HISTORY_LOGS_REF));
+    if (!snapshot.exists()) return null;
+    
+    const allLogs = Object.values(snapshot.val() || {});
+    const cutoff = Date.now() - (days * 24 * 60 * 60 * 1000);
+    
+    // Filtrer les logs de cet appareil sur la période
+    const deviceLogs = allLogs.filter(l => 
+      l.deviceId === deviceId && 
+      l.etat === 'ON' && 
+      l.timestamp >= cutoff
+    );
+
+    if (deviceLogs.length === 0) return null;
+
+    // Compter les activations par heure
+    const hourCounts = new Array(24).fill(0);
+    deviceLogs.forEach(l => {
+      const h = new Date(l.timestamp).getHours();
+      hourCounts[h]++;
+    });
+
+    // Heure de pointe (la plus fréquente)
+    const peakHour = hourCounts.indexOf(Math.max(...hourCounts));
+    const peakCount = hourCounts[peakHour];
+    
+    // Probabilité par heure (sur combien de jours l'appareil était ON)
+    const hourlyProbability = hourCounts.map(c => Math.round((c / days) * 100));
+
+    // Heures habituelles (probabilité > 40%)
+    const usualHours = hourlyProbability
+      .map((p, h) => ({ hour: h, probability: p }))
+      .filter(x => x.probability >= 40)
+      .sort((a, b) => b.probability - a.probability);
+
+    return {
+      deviceId,
+      totalActivations: deviceLogs.length,
+      peakHour,
+      peakCount,
+      hourlyProbability,
+      usualHours,
+      daysAnalyzed: days
+    };
+  } catch (e) {
+    console.warn(`⚠️ Erreur calcul stats pour ${deviceId}:`, e.message);
+    return null;
+  }
+}
+
+/**
+ * Calcule les statistiques pour tous les appareils et génère
+ * un résumé textuel injecté dans le prompt de Gemini.
+ */
+async function getAllDeviceUsagePatterns(currentHour) {
+  if (!db) return '';
+  try {
+    const snapshot = await get(ref(db, HISTORY_LOGS_REF));
+    if (!snapshot.exists()) return '';
+
+    const allLogs = Object.values(snapshot.val() || {});
+    const cutoff = Date.now() - (7 * 24 * 60 * 60 * 1000);
+    const recentLogs = allLogs.filter(l => l.timestamp >= cutoff && l.etat === 'ON');
+
+    if (recentLogs.length < 3) return ''; // Pas encore assez de données
+
+    // Grouper par appareil
+    const byDevice = {};
+    recentLogs.forEach(l => {
+      if (!byDevice[l.deviceId]) byDevice[l.deviceId] = [];
+      byDevice[l.deviceId].push(new Date(l.timestamp).getHours());
+    });
+
+    const patterns = [];
+    for (const [deviceId, hours] of Object.entries(byDevice)) {
+      // Probabilité à l'heure courante ±1h
+      const nearNow = hours.filter(h => Math.abs(h - currentHour) <= 1).length;
+      const probability = Math.round((nearNow / 7) * 100);
+      if (probability >= 50) {
+        patterns.push(`${deviceId}: actif ${probability}% du temps à ${currentHour}h`);
+      }
+    }
+
+    if (patterns.length === 0) return '';
+    return `\n[Habitudes d'usage (7j): ${patterns.join(' | ')}]`;
+  } catch (e) {
+    return '';
+  }
+}
+
+/**
+ * Récupère le journal des actions d'hier ou d'un jour précis.
+ * Utilisé pour "fais comme hier" ou "qu'a-t-on fait vendredi ?".
+ */
+async function getDayHistory(targetDate) {
+  if (!db) return [];
+  try {
+    const snapshot = await get(ref(db, HISTORY_LOGS_REF));
+    if (!snapshot.exists()) return [];
+
+    const allLogs = Object.values(snapshot.val() || {});
+    const start = new Date(targetDate);
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(targetDate);
+    end.setHours(23, 59, 59, 999);
+
+    return allLogs
+      .filter(l => l.timestamp >= start.getTime() && l.timestamp <= end.getTime())
+      .sort((a, b) => a.timestamp - b.timestamp)
+      .map(l => ({
+        deviceId: l.deviceId,
+        etat: l.etat,
+        source: l.source,
+        heure: new Date(l.timestamp).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+      }));
+  } catch (e) {
+    return [];
+  }
 }
 
 // ========================================
@@ -1364,15 +1578,28 @@ Si l'utilisateur demande de supprimer un appareil (ex: "Supprime la lampe jardin
 3. Heure: Mentionne SEULEMENT si demandé ou pertinent.
 4. Naturalité: Réponses NATURELLES et CONVERSATIONNELLES.
 5. CONTEXTE: Si message court ("les", "tout", "oui"), analyse l'historique.
-6. Fichiers: Base ta réponse sur le contenu fourni.
-7. PRÉSENTATION: Utilise la structure Markdown (titres, listes, gras) SAUF pour documents (HTML avec "<DOCUMENT_HTML>").
-8. Température Lokossa: Toujours disponible dans les métadonnées. Ne jamais effectuer de recherche web pour l'obtenir. Ne la mentionner que lorsqu'elle est explicitement demandée ou lorsqu'elle est réellement pertinente pour la réponse en cours.
-9. Documents: Lorsqu'un document est demandé, retourner directement un document HTML complet encapsulé dans <DOCUMENT_HTML> ... </DOCUMENT_HTML> en appliquant les règles du Moteur Documentaire Responsive 2026.
-10. Suppression: Utilise "device_commands" avec "action: "delete"" pour supprimer des appareils.
-11. Suppression planning: Utilise "planning_commands" avec les bonnes actions.
-12. Intelligence: Détecte les incohérences (ex : planifier l'allumage d'une lampe déjà allumée).
-13. CONTINUATION: Si tu atteins la limite de tokens, ajoute "needs_continuation: true" et le client affichera un bouton "Continuer".
-14. Fiabilité des faits sensibles au temps (CRITIQUE) : Pour tout fait qui peut changer avec le temps (chef d'état, ministres, gouvernement, prix, actualités, résultats d'élections, etc.), tes connaissances internes peuvent être dépassées. 
+6. MESSAGES COURTS — RÈGLE CRITIQUE (corrigée v14.2) :
+   Pour tout message de moins de 6 mots OU contenant "oui", "vas-y", "continue", "ok", "d'accord", "parfait", "exactement", "maintenant" :
+   - Lis IMPÉRATIVEMENT les 3 derniers échanges de l'historique.
+   - Identifie le SUJET EN COURS : technique/développement/code ? OU domotique ?
+   - Si le sujet est technique (code, server.js, Firebase, fonctions, bugs, analyse, implémentation) :
+     ✅ IGNORE COMPLÈTEMENT [Analyse] et les états des appareils.
+     ✅ Continue le sujet technique en cours. Ne parle PAS d'appareils.
+     ✅ "oui vas-y" après une question technique = "continue à écrire le code".
+   - Si le sujet est clairement domotique : réponds sur la domotique.
+   - En cas de doute : priorité au sujet de la dernière réponse longue de l'historique.
+   - Ne JAMAIS interpréter "oui" seul comme une confirmation d'action domotique si la conversation précédente était technique.
+7. Fichiers: Base ta réponse sur le contenu fourni.
+8. PRÉSENTATION: Utilise la structure Markdown (titres, listes, gras) SAUF pour documents (HTML avec "<DOCUMENT_HTML>").
+9. Température Lokossa: Toujours disponible dans les métadonnées. Ne jamais effectuer de recherche web pour l'obtenir. Ne la mentionner que lorsqu'elle est explicitement demandée ou lorsqu'elle est réellement pertinente pour la réponse en cours.
+10. Documents: Lorsqu'un document est demandé, retourner directement un document HTML complet encapsulé dans <DOCUMENT_HTML> ... </DOCUMENT_HTML> en appliquant les règles du Moteur Documentaire Responsive 2026.
+11. Suppression: Utilise "device_commands" avec "action: "delete"" pour supprimer des appareils.
+12. Suppression planning: Utilise "planning_commands" avec les bonnes actions.
+13. Intelligence: Détecte les incohérences (ex : planifier l'allumage d'une lampe déjà allumée).
+14. CONTINUATION: Si tu atteins la limite de tokens, ajoute "needs_continuation: true" et le client affichera un bouton "Continuer".
+15. Habitudes d'usage : Si [Habitudes d'usage] est présent dans les métadonnées, utilise-le pour faire des suggestions proactives. Ex : "D'habitude vous allumez la lampe salon vers 18h, voulez-vous que je le fasse ?".
+16. Mémoire du jour précédent : Si l'utilisateur dit "fais comme hier", "répète ce qu'on a fait vendredi", etc., propose d'appeler /api/day-history pour reconstituer la séquence exacte.
+17. Fiabilité des faits sensibles au temps (CRITIQUE) : Pour tout fait qui peut changer avec le temps (chef d'état, ministres, gouvernement, prix, actualités, résultats d'élections, etc.), tes connaissances internes peuvent être dépassées. 
 - Si un bloc [Web: ...] est présent dans le message, considère-le comme la vérité la plus à jour et fais-le PRIMER sur tes connaissances internes en cas de contradiction. 
 - Si [Web] est absent et que la question porte sur un fait potentiellement périmé, dis clairement que l'information pourrait avoir changé plutôt que d'affirmer avec une fausse certitude une réponse issue uniquement de tes connaissances internes. 
 - Ne contredis JAMAIS silencieusement une information que TU as toi-même donnée plus tôt dans la même conversation (visible dans l'historique) sans expliquer pourquoi tu corriges (nouvelle recherche, information plus récente, etc.). Si tu n'es pas sûr de laquelle de tes deux réponses précédentes est correcte, dis-le honnêtement au lieu de trancher au hasard.
@@ -1548,6 +1775,7 @@ async function handlePlanningCommands(commands) {
         try {
           await push(ref(db, PLANNING_REF), payload);
           console.log(`✅ Planification sauvegardée : ${finalState}`);
+          // ✅ Log du planning lui-même (pas de l'exécution, le client loggue à l'exécution)
         } catch (error) {
           console.error('❌ Erreur Firebase:', error);
         }
@@ -1713,6 +1941,8 @@ async function chatWithGemini(userMessage, devices, userId, sessionId, attachmen
 MESSAGE: "${userMessage}"
 `;
         } else {
+          // ✅ NOUVEAU v14.2 : injection des habitudes d'usage
+          const usagePatterns = await getAllDeviceUsagePatterns(beninTime.hours);
           metadataPrompt = `
 [Heure: ${beninTime.formatted}]
 [Température Lokossa TEMPS RÉEL: ${beninTime.temperature.temperature}°C (${beninTime.temperature.description}), Ressenti: ${beninTime.temperature.feels_like}°C, Humidité: ${beninTime.temperature.humidity}%, Source: ${beninTime.temperature.source}]
@@ -1723,7 +1953,7 @@ MESSAGE: "${userMessage}"
 [Planifications: 
 ${planningsText}
 ]
-[Analyse: ${JSON.stringify(contextAnalysis)}]
+[Analyse: ${JSON.stringify(contextAnalysis)}]${usagePatterns}
 ${webResults.length > 0 ? `[Web: ${JSON.stringify(webResults.slice(0, 3))}]` : ''}
 
 MESSAGE: "${userMessage}"
@@ -1952,7 +2182,7 @@ app.get('/api/health', async (req, res) => {
 
   res.json({
     status: 'ok',
-    version: '14.1-prompt-optimized',
+    version: '14.2-predictive-analytics',
     features: {
       gemini: API_KEYS.length > 0,
       imageGeneration: false,
@@ -1975,7 +2205,13 @@ app.get('/api/health', async (req, res) => {
       documentDownload: "PDF (html-pdf-node) + DOCX (LibreOffice fallback)",
       documentMetadata: true,
       supportedFiles: "PDF, DOCX, TXT, HTML, JS, JSON, CSS, XLSX, CSV, Images",
-      maxTokens: 65536
+      maxTokens: 65536,
+      // ✅ NOUVEAU v14.2
+      historyLogs: true,
+      usageStats: true,
+      predictiveContext: true,
+      dayHistory: true,
+      shortMessageFix: true
     },
     keys: {
       gemini: { total: API_KEYS.length, available: availableKeys }
@@ -2011,7 +2247,7 @@ app.get('/api/health', async (req, res) => {
 // ========================================
 app.listen(PORT, () => {
   console.log('\n🏠 ╔═══════════════════════════════════════╗');
-  console.log('   ║   INTELLIA v14.1 - PROMPT OPTIMISÉ  ║');
+  console.log('   ║  INTELLIA v14.2 - ANALYSE PRÉDICTIVE ║');
   console.log('   ╚═══════════════════════════════════════╝');
   console.log(`\n   🚀 Serveur: http://localhost:${PORT}`);
   console.log(`   🔑 Clés Gemini: ${API_KEYS.length}`);
@@ -2034,4 +2270,9 @@ app.listen(PORT, () => {
   console.log(`   🔄 Système de continuation: ✅ ACTIVÉ`);
   console.log(`   🎯 Détection troncature: ✅ AUTOMATIQUE`);
   console.log(`   📏 Capacité: ILLIMITÉE (avec continuation)`);
+  console.log(`   📊 History Logs: ✅ ACTIVÉ → /api/log-state`);
+  console.log(`   📈 Usage Stats: ✅ ACTIVÉ → /api/usage-stats/:deviceId`);
+  console.log(`   📆 Day History: ✅ ACTIVÉ → /api/day-history`);
+  console.log(`   🧠 Analyse prédictive: ✅ ACTIVÉE (habitudes 7 jours)`);
+  console.log(`   🐛 Fix "perte de fil": ✅ CORRIGÉ (v14.2)`);
 });
