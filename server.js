@@ -67,7 +67,7 @@ const HISTORY_LOGS_REF = "history_logs"; // ✅ NOUVEAU : logs horodatés de tou
 const API_KEYS = [];
 let currentKeyIndex = 0;
 
-for (let i = 1; i <= 10; i++) {
+for (let i = 1; i <= 12; i++) {
   const key = process.env[`GEMINI_KEY_${i}`];
   if (key && key !== "VOTRE_CLE_API_ICI") {
     API_KEYS.push({ key: key, failures: 0, lastUsed: null, quotaExceeded: false });
