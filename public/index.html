@@ -200,67 +200,67 @@
     /* ===== PREVIEW DOCUMENT PLEIN ÉCRAN MOBILE ===== */
     .doc-preview-overlay {
       position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0,0,0,0.92);
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: #f0f0f0;
       z-index: 99999;
       display: flex;
       flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 10px;
+      overflow: hidden;
+      padding: 0;
+      margin: 0;
       box-sizing: border-box;
     }
-    .doc-preview-overlay .close-btn {
-      position: fixed;
-      top: 12px;
-      right: 16px;
-      background: rgba(255,255,255,0.15);
-      border: 2px solid rgba(255,255,255,0.3);
-      color: #fff;
-      font-size: 26px;
-      cursor: pointer;
-      z-index: 10;
-      width: 44px;
-      height: 44px;
-      border-radius: 50%;
+    .doc-preview-toolbar {
       display: flex;
       align-items: center;
-      justify-content: center;
-      transition: background 0.2s;
-      font-weight: bold;
+      justify-content: space-between;
+      background: #1a1a2e;
+      padding: 8px 14px;
+      flex-shrink: 0;
+      min-height: 50px;
+      z-index: 10;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.4);
     }
-    .doc-preview-overlay .close-btn:hover {
-      background: rgba(255,255,255,0.3);
+    .doc-preview-toolbar-title {
+      color: #e2e8f0;
+      font-size: 14px;
+      font-weight: 600;
     }
-    .doc-preview-overlay iframe {
-      width: 100%;
-      height: 100%;
-      max-width: 1200px;
-      max-height: 95vh;
+    .doc-preview-close-btn {
+      background: #e74c3c;
+      color: #fff;
       border: none;
-      background: white;
       border-radius: 8px;
-      box-shadow: 0 8px 30px rgba(0,0,0,0.6);
+      padding: 8px 18px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      transition: background 0.2s;
+      -webkit-tap-highlight-color: transparent;
     }
-    @media (max-width: 600px) {
-      .doc-preview-overlay {
-        padding: 4px;
-      }
-      .doc-preview-overlay iframe {
-        max-height: 98vh;
-        border-radius: 4px;
-        max-width: 100%;
-      }
-      .doc-preview-overlay .close-btn {
-        top: 8px;
-        right: 10px;
-        font-size: 22px;
-        width: 40px;
-        height: 40px;
-      }
+    .doc-preview-close-btn:active { background: #c0392b; }
+
+    /* Wrapper scrollable — c'est lui qui scroll, pas l'iframe */
+    .doc-preview-iframe-wrapper {
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: hidden;
+      -webkit-overflow-scrolling: touch;
+      background: #f0f0f0;
+      width: 100%;
+    }
+    /* L'iframe s'étire à la hauteur de son contenu */
+    .doc-preview-iframe-wrapper iframe {
+      width: 100%;
+      height: 100vh; /* valeur initiale, sera ajustée par JS */
+      min-height: 400px;
+      border: none;
+      display: block;
+      background: #fff;
     }
 
     #print-root { display: none; }
@@ -2439,96 +2439,89 @@ function appendDocumentCard(htmlContent, metadata) {
 }
 
 /* ===================================================
-   PREVIEW DOCUMENT - VERSION PLEIN ÉCRAN + BOUTON FERMETURE
+   PREVIEW DOCUMENT - VRAI PLEIN ÉCRAN MOBILE (sans bandes noires)
    =================================================== */
 function previewDocument(html) {
-  // Supprimer un éventuel overlay déjà ouvert
+  // Supprimer un overlay déjà ouvert
   const existing = document.querySelector('.doc-preview-overlay');
   if (existing) existing.remove();
 
   const overlay = document.createElement('div');
   overlay.className = 'doc-preview-overlay';
-  overlay.style.cssText = `
-    position: fixed;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
-    background: #000;
-    z-index: 99999;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-  `;
 
-  // Barre de contrôle en haut (toujours visible, jamais masquée)
+  // Barre du haut : titre + bouton Fermer (toujours visible)
   const toolbar = document.createElement('div');
-  toolbar.style.cssText = `
-    position: relative;
-    z-index: 10;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    background: #1a1a2e;
-    padding: 8px 16px;
-    flex-shrink: 0;
-    min-height: 48px;
-  `;
+  toolbar.className = 'doc-preview-toolbar';
 
-  const title = document.createElement('span');
-  title.style.cssText = 'color: #fff; font-size: 14px; font-weight: 600; opacity: 0.85;';
-  title.textContent = '📄 Aperçu du document';
+  const titleEl = document.createElement('span');
+  titleEl.className = 'doc-preview-toolbar-title';
+  titleEl.innerHTML = '&#128196; Aperçu du document';
 
   const closeBtn = document.createElement('button');
-  closeBtn.innerHTML = '<i class="fas fa-times"></i> Fermer';
-  closeBtn.style.cssText = `
-    background: rgba(231,76,60,0.85);
-    color: #fff;
-    border: none;
-    border-radius: 8px;
-    padding: 8px 18px;
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    transition: background 0.2s;
-  `;
-  closeBtn.onmouseover = () => closeBtn.style.background = 'rgba(192,57,43,1)';
-  closeBtn.onmouseout = () => closeBtn.style.background = 'rgba(231,76,60,0.85)';
-  closeBtn.onclick = () => overlay.remove();
+  closeBtn.className = 'doc-preview-close-btn';
+  closeBtn.innerHTML = '&#10005; Fermer';
+  closeBtn.setAttribute('aria-label', 'Fermer l\'aperçu');
+  closeBtn.addEventListener('click', () => overlay.remove());
 
-  toolbar.appendChild(title);
+  toolbar.appendChild(titleEl);
   toolbar.appendChild(closeBtn);
 
-  // Conteneur de l'iframe qui prend tout l'espace restant
-  const iframeWrapper = document.createElement('div');
-  iframeWrapper.style.cssText = `
-    flex: 1;
-    overflow: hidden;
-    position: relative;
-    background: #fff;
-  `;
+  // Wrapper de l'iframe : prend tout l'espace restant
+  const wrapper = document.createElement('div');
+  wrapper.className = 'doc-preview-iframe-wrapper';
+
+  // Injecter viewport responsive si absent dans le HTML du document
+  let finalHtml = html;
+  if (!finalHtml.includes('name="viewport"')) {
+    finalHtml = finalHtml.replace(
+      /<head([^>]*)>/i,
+      '<head$1><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5">'
+    );
+    if (!finalHtml.includes('name="viewport"')) {
+      // Pas de <head>, on enveloppe
+      finalHtml = '<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5"><style>*{box-sizing:border-box;}body{margin:0;padding:12px;max-width:100%;overflow-x:hidden;font-family:Arial,sans-serif;}img,table,iframe,canvas,svg{max-width:100%;}</style></head><body>' + finalHtml + '</body></html>';
+    }
+  }
+
+  // Forcer le contenu A4 à s'adapter à la largeur de l'écran
+  const viewportPatch = `<style>
+    html, body { max-width: 100% !important; overflow-x: hidden !important; }
+    body { width: 100% !important; min-width: unset !important; margin: 0 !important; padding: 10px !important; box-sizing: border-box !important; }
+    * { max-width: 100% !important; box-sizing: border-box !important; word-break: break-word !important; }
+    table { width: 100% !important; }
+    img, canvas, svg, iframe { max-width: 100% !important; height: auto !important; }
+  </style>`;
+  finalHtml = finalHtml.replace('</head>', viewportPatch + '</head>');
 
   const iframe = document.createElement('iframe');
-  iframe.style.cssText = `
-    width: 100%;
-    height: 100%;
-    border: none;
-    display: block;
-  `;
-
-  // Injecter le HTML avec meta viewport pour forcer le responsive
-  const htmlWithViewport = html.includes('<meta name="viewport"') ? html :
-    html.replace('<head>', '<head><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">');
-  
-  iframe.srcdoc = htmlWithViewport;
+  iframe.srcdoc = finalHtml;
   iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin');
+  iframe.setAttribute('scrolling', 'no');
 
-  iframeWrapper.appendChild(iframe);
+  // Ajuster la hauteur de l'iframe à son contenu réel après chargement
+  iframe.addEventListener('load', () => {
+    try {
+      const doc = iframe.contentDocument || iframe.contentWindow.document;
+      // Laisser le contenu respirer, puis mesurer
+      requestAnimationFrame(() => {
+        const h = Math.max(
+          doc.documentElement.scrollHeight,
+          doc.body ? doc.body.scrollHeight : 0,
+          500
+        );
+        iframe.style.height = h + 'px';
+      });
+    } catch (e) {
+      // Cross-origin fallback
+      iframe.style.height = '200vh';
+    }
+  });
+
+  wrapper.appendChild(iframe);
   overlay.appendChild(toolbar);
-  overlay.appendChild(iframeWrapper);
+  overlay.appendChild(wrapper);
 
-  // Fermeture avec Escape
+  // Fermeture avec touche Escape
   overlay.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') overlay.remove();
   });
@@ -3671,9 +3664,7 @@ function renderPlanningListUI(plans) {
     </thead>
     <tbody>
       ${plans.map(p => {
-        let deviceName = appState.devices.find(d => d.id === p.device)?.name || p.device;
-        // Affichage en français : "all_devices" → "Tous les appareils"
-        if (deviceName === "all_devices") deviceName = "Tous les appareils";
+        let deviceName = getDeviceDisplayName(p.device);
         
         let whenText = p.time;
         const freq = p.frequency || 'once';
@@ -3956,6 +3947,22 @@ setInterval(() => {
   }
 }, 3600000);
 
+// Retourne toujours un nom lisible en français pour un device ID
+function getDeviceDisplayName(deviceId) {
+  if (!deviceId || deviceId === 'all_devices') return 'Tous les appareils';
+  return appState.devices.find(d => d.id === deviceId)?.name || deviceId;
+}
+
+// Retourne l'action réelle ON/OFF depuis un objet plan (robuste aux données corrompues)
+function getPlanAction(plan) {
+  if (plan.actionType) {
+    return plan.actionType.toLowerCase() === 'allumer' ? 'ON' : 'OFF';
+  }
+  if (plan.action === 'ON' || plan.action === 'OFF') return plan.action;
+  // Valeur corrompue (ex: "add") → défaut OFF
+  return 'OFF';
+}
+
 function scheduleNextPlanCheck() {
   const now = new Date();
   const msUntilNextMinute = 60000 - (now.getSeconds() * 1000 + now.getMilliseconds());
@@ -4000,9 +4007,8 @@ async function checkAndExecutePlans() {
           if (Date.now() - lastExecution < 120000) return;
         }
         executedTasksClient.set(taskKey, Date.now());
-        const deviceName = appState.devices.find(d => d.id === plan.device)?.name || plan.device;
-        // Récupérer l'action brute (ON/OFF) - ne pas modifier
-        const action = plan.actionType ? (plan.actionType === "allumer" ? "ON" : "OFF") : plan.action;
+        const deviceName = getDeviceDisplayName(plan.device);
+        const action = getPlanAction(plan);
         const actionText = action === 'ON' ? 'allumé' : 'éteint';
         logActivity(`⏰ Exécution : ${deviceName} ${actionText}`);
         sendCommand(plan.device, action);
@@ -4043,8 +4049,8 @@ async function checkAndExecutePlans() {
         if (Date.now() - lastExecution < 120000) continue;
       }
       executedTasksClient.set(taskKey, Date.now());
-      const deviceName = appState.devices.find(d => d.id === plan.device)?.name || plan.device;
-      const action = plan.actionType ? (plan.actionType === "allumer" ? "ON" : "OFF") : plan.action;
+      const deviceName = getDeviceDisplayName(plan.device);
+      const action = getPlanAction(plan);
       const actionText = action === 'ON' ? 'allumé' : 'éteint';
       console.log(`🚀 Client: Exécution ${deviceName} ${actionText}`);
       sendCommand(plan.device, action);
