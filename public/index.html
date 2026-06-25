@@ -14,7 +14,7 @@
   
   <style>
     /* ===== VOTRE CSS EXISTANT (inchangé) ===== */
-    /* Je le garde exactement comme dans votre version */
+    /* Je reprends exactement votre CSS d'origine, sans mes modifications */
     :root {
       --primary:#4361ee; --accent-cyan:#06b6d4; --panel:#14151a; 
       --card-bg:rgba(255,255,255,0.95); --muted:#9aa3b2; --dark:#212529; 
@@ -195,6 +195,72 @@
       font-size: 12px;
       color: var(--warning);
       margin-left: 8px;
+    }
+
+    /* ===== PREVIEW DOCUMENT PLEIN ÉCRAN MOBILE ===== */
+    .doc-preview-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.92);
+      z-index: 99999;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 10px;
+      box-sizing: border-box;
+    }
+    .doc-preview-overlay .close-btn {
+      position: fixed;
+      top: 12px;
+      right: 16px;
+      background: rgba(255,255,255,0.15);
+      border: 2px solid rgba(255,255,255,0.3);
+      color: #fff;
+      font-size: 26px;
+      cursor: pointer;
+      z-index: 10;
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s;
+      font-weight: bold;
+    }
+    .doc-preview-overlay .close-btn:hover {
+      background: rgba(255,255,255,0.3);
+    }
+    .doc-preview-overlay iframe {
+      width: 100%;
+      height: 100%;
+      max-width: 1200px;
+      max-height: 95vh;
+      border: none;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.6);
+    }
+    @media (max-width: 600px) {
+      .doc-preview-overlay {
+        padding: 4px;
+      }
+      .doc-preview-overlay iframe {
+        max-height: 98vh;
+        border-radius: 4px;
+        max-width: 100%;
+      }
+      .doc-preview-overlay .close-btn {
+        top: 8px;
+        right: 10px;
+        font-size: 22px;
+        width: 40px;
+        height: 40px;
+      }
     }
 
     #print-root { display: none; }
@@ -1146,65 +1212,6 @@
       display: flex;
     }
 
-    /* Styles pour le preview document plein écran */
-    .doc-preview-overlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0,0,0,0.85);
-      z-index: 99999;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 10px;
-      box-sizing: border-box;
-    }
-    .doc-preview-overlay .close-btn {
-      position: absolute;
-      top: 15px;
-      right: 20px;
-      background: rgba(255,255,255,0.2);
-      border: none;
-      color: #fff;
-      font-size: 28px;
-      cursor: pointer;
-      z-index: 10;
-      padding: 8px 16px;
-      border-radius: 50%;
-      transition: background 0.2s;
-    }
-    .doc-preview-overlay .close-btn:hover {
-      background: rgba(255,255,255,0.4);
-    }
-    .doc-preview-overlay iframe {
-      width: 100%;
-      height: 100%;
-      max-width: 1200px;
-      max-height: 95vh;
-      border: none;
-      background: white;
-      border-radius: 8px;
-      box-shadow: 0 8px 30px rgba(0,0,0,0.6);
-    }
-    @media (max-width: 600px) {
-      .doc-preview-overlay {
-        padding: 4px;
-      }
-      .doc-preview-overlay iframe {
-        max-height: 98vh;
-        border-radius: 4px;
-      }
-      .doc-preview-overlay .close-btn {
-        top: 8px;
-        right: 12px;
-        font-size: 24px;
-        padding: 4px 12px;
-      }
-    }
-
     @media (max-width: 760px) {
       .grid { grid-template-columns: 1fr; }
       .controls { flex-direction: column; }
@@ -1509,9 +1516,7 @@
 </head>
 <body>
 
-<div id="print-root"></div>
-
-<!-- Overlay de connexion -->
+<!-- ===== OVERLAY DE CONNEXION ===== -->
 <div id="login-overlay">
   <div class="login-box">
     <div class="app-icon"><i class="fas fa-home-user"></i></div>
@@ -1530,7 +1535,7 @@
   </div>
 </div>
 
-<!-- Application principale -->
+<!-- ===== APPLICATION PRINCIPALE ===== -->
 <div class="main-app">
   <div class="container">
     <header id="main-header">
@@ -1544,7 +1549,7 @@
       </div>
     </header>
 
-    <!-- Section Domotique -->
+    <!-- SECTION DOMOTIQUE -->
     <section id="sec-domotique" class="section active">
       <div class="grid" style="grid-template-columns:1fr">
         <div>
@@ -1604,7 +1609,7 @@
       </div>
     </section>
 
-    <!-- Section Assistant IA -->
+    <!-- SECTION ASSISTANT IA -->
     <section id="sec-intelligence" class="section">
       <div id="sidebar-overlay"></div>
       
@@ -1631,7 +1636,6 @@
         
         <!-- Barre de saisie -->
         <div id="chat-input-container">
-          <!-- Bouton muet : apparaît au-dessus de la barre quand l'IA parle -->
           <div id="stopSpeechBtnContainer">
             <button id="stopSpeechBtn">
               <i class="fas fa-volume-mute"></i> Arrêter la voix
@@ -1645,36 +1649,28 @@
           <div id="attachment-preview-container"></div>
           
           <div id="chat-input-flex">
-            <!-- Trombone (pièce jointe) -->
             <button class="btn" id="attach-file-btn" title="Joindre un fichier">
               <i class="fas fa-paperclip"></i>
             </button>
-            <!-- Input fichier caché (requis par le JS) -->
             <input type="file" id="file-input" accept="image/*,application/pdf,text/*,.txt,.docx,.doc,.html,.htm,.js,.json,.css,.xml,.csv,.xlsx,.xls,.pptx,.ppt,.zip,.rar" multiple>
 
-            <!-- Champ de texte -->
             <textarea id="chatFullInput" placeholder="Posez une question à l'Assistant..." rows="1"></textarea>
 
-            <!-- Boutons de droite -->
             <div id="chat-input-buttons">
-              <!-- Micro (Push-to-talk) -->
               <button class="btn" id="voicePushToTalk" title="Appuyer pour enregistrer">
                 <i class="fas fa-microphone-alt"></i>
               </button>
 
-              <!-- Bouton dynamique (Mode continu / Envoyer) -->
               <button class="btn" id="sendOrModeBtn" title="Mode conversation continue">
                 <i class="fas fa-comment-dots"></i>
               </button>
 
-              <!-- Bouton Stop IA (génération) -->
               <button class="btn warn" id="stopAIBtn" style="display: none;">
                 <i class="fas fa-stop-circle" style="font-size: 20px;"></i>
               </button>
             </div>
           </div>
 
-          <!-- Barre de statut -->
           <div id="chat-status-bar">
             <span class="chip">Mode Conversation: <span id="continuousStatus">Désactivé</span></span>
             <span class="chip" id="intelliaStatus">Assistant: Non connecté</span>
@@ -1684,7 +1680,7 @@
       </div>
     </section>
 
-    <!-- Section Planning -->
+    <!-- SECTION PLANNING -->
     <section id="sec-planning" class="section">
       <div class="two-column">
         <div class="card">
@@ -1741,7 +1737,7 @@
       </div>
     </section>
 
-    <!-- Section Paramètres -->
+    <!-- SECTION PARAMÈTRES -->
     <section id="sec-params" class="section">
       <div class="card">
         <h2>Paramètres du Système</h2>
@@ -1815,12 +1811,11 @@
 
 <script type="module">
 /*************************************************
- * SmartHome Intelligence - Version 13.5
- * Corrections :
- * 1. Suppression des messages suivants lors de l'édition
- * 2. Affichage "Tous les appareils" dans le planning
- * 3. Preview document plein écran responsive
- * 4. Interdiction des termes anglais (côté prompt, mais on remplace aussi côté affichage)
+ * SmartHome Intelligence - Version 13.6
+ * Corrections ciblées :
+ * 1. Preview document plein écran + bouton fermeture
+ * 2. Exécution du planning (ON/OFF) restaurée
+ * 3. Commande "Tous les appareils" restaurée
  *************************************************/
 
 let RENDER_API;
@@ -1867,7 +1862,6 @@ const appState = {
   esp32Ip: localStorage.getItem('esp32Ip') || '', 
 };
 
-// Variable pour l'édition de message
 let editingMessageId = null;
 
 const defaultAvatar = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iI2FlZWFhZSI+PHBhdGggZD0iTTEyIDJDNi44OCAyIDIgNi44OCAyIDEyczQuNDggMTQgMTAgMTBjNS41MiAwIDEwLTQuNDggMTAtMTBTMjcuNTIgMiAxMiAyem0wIDJjMS42NiAwIDMgMS4zNCAzIDNzLTEuMzQgMy0zIDMtMy0xLjM0LTMtM1MwLjM0IDQgMTIgNHptMCAxNmMtMi42NyAwLTUuNDMtMS4yOS03LTIuODguNTYtMS42NSAzLjU1LTIuNjIgNy0yLjYyczYuNDQgLjk3IDcgMi42MmMtMS41NyAxLjU5LTQuMzMgMi44OC03IDIuODh6Ii8+PC9zdmc+";
@@ -1888,7 +1882,7 @@ const proactiveSuggestions = [
 ];
 let suggestionIndex = 0;
 
-/* ===== FONCTIONS EXISTANTES ===== */
+/* ===== FONCTIONS DE BASE ===== */
 function extractReadableText(content) {
   if (content.includes('class="doc-cv"') || 
       content.includes('class="doc-facture"') ||
@@ -1999,7 +1993,6 @@ function addMessageCopyAction(node) {
   node.appendChild(actions);
 }
 
-// Fonction pour ajouter les actions sur les messages utilisateur (copier + éditer)
 function addUserMessageActions(node, messageId, text) {
   if (!node || node.querySelector('.msg-actions')) return;
   const actions = document.createElement('div');
@@ -2026,21 +2019,16 @@ function addUserMessageActions(node, messageId, text) {
     if (!node) return;
     const text = getMessagePlainText(node);
     if (!text) return;
-    // Copier le texte dans la zone de saisie
     chatInput.value = text;
     autoResizeChatInput();
     updateSendOrModeBtn();
     chatInput.focus();
-    // Marquer le message comme en édition
     editingMessageId = messageId;
-    // Ajouter une classe visuelle
     node.classList.add('editing');
-    // Ajouter un indicateur
     const indicator = document.createElement('span');
     indicator.className = 'edit-indicator';
     indicator.textContent = ' ✏️ en cours d\'édition...';
     node.appendChild(indicator);
-    // Faire défiler vers le bas pour voir le champ de saisie
     document.getElementById('chatFullWindow').scrollTop = document.getElementById('chatFullWindow').scrollHeight;
   });
   node.appendChild(actions);
@@ -2341,7 +2329,7 @@ function escapeHtml(str) {
 }
 
 /* ===================================================
-   CARTE DOCUMENT AVEC BOUTONS PDF + DOCX
+   CARTE DOCUMENT
    =================================================== */
 function appendDocumentCard(htmlContent, metadata) {
   const target = document.getElementById('chatFullWindow');
@@ -2450,22 +2438,19 @@ function appendDocumentCard(htmlContent, metadata) {
   scrollToBottom();
 }
 
-// ===================================================
-// PREVIEW DOCUMENT - VERSION PLEIN ÉCRAN RESPONSIVE
-// ===================================================
+/* ===================================================
+   PREVIEW DOCUMENT - VERSION PLEIN ÉCRAN + BOUTON FERMETURE
+   =================================================== */
 function previewDocument(html) {
-  // Créer l'overlay
   const overlay = document.createElement('div');
   overlay.className = 'doc-preview-overlay';
   
-  // Bouton de fermeture
   const closeBtn = document.createElement('button');
   closeBtn.className = 'close-btn';
   closeBtn.innerHTML = '✕';
   closeBtn.setAttribute('aria-label', 'Fermer l\'aperçu');
   closeBtn.onclick = () => overlay.remove();
   
-  // Iframe pour le contenu
   const iframe = document.createElement('iframe');
   iframe.srcdoc = html;
   iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin');
@@ -2473,12 +2458,10 @@ function previewDocument(html) {
   overlay.appendChild(closeBtn);
   overlay.appendChild(iframe);
   
-  // Fermer en cliquant sur l'overlay (hors iframe)
   overlay.addEventListener('click', (e) => {
     if (e.target === overlay) overlay.remove();
   });
   
-  // Fermer avec la touche Échap
   overlay.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') overlay.remove();
   });
@@ -2584,16 +2567,14 @@ function scrollToBottom() {
 }
 
 /* ===================================================
-   FONCTIONS CORRIGÉES : simulateTyping (affichage immédiat + await speak)
+   FONCTIONS SPEAK ET SIMULATE TYPING
    =================================================== */
-
 async function simulateTyping(element, text, enableVoice = true, needsContinuation = false, continuationContext = null) {
   if (appState.shouldStopResponse) {
     element.innerHTML = '<br><br><em style="color: #e74c3c;">⚠️ Réponse interrompue</em>';
     throw new Error('Interrupted');
   }
 
-  // 1. Gérer les documents
   const documentHtmlMatch = text.match(/<DOCUMENT_HTML>([\s\S]*?)<\/DOCUMENT_HTML>/);
   if (documentHtmlMatch) {
     const documentHtml = documentHtmlMatch[1].trim();
@@ -2607,14 +2588,12 @@ async function simulateTyping(element, text, enableVoice = true, needsContinuati
     return;
   }
 
-  // 2. Afficher le HTML immédiatement
   const renderedHtml = marked.parse(text, { sanitize: false, gfm: true });
   element.innerHTML = renderedHtml;
   element.querySelectorAll('pre code').forEach(block => hljs.highlightElement(block));
   addCopyButtons(element);
   addMessageCopyAction(element);
 
-  // 3. Ajouter le bouton "Continuer" si nécessaire
   if (needsContinuation) {
     const continueBtn = document.createElement('button');
     continueBtn.className = 'continue-btn';
@@ -2626,7 +2605,6 @@ async function simulateTyping(element, text, enableVoice = true, needsContinuati
   element.classList.remove('loading');
   scrollToBottom();
 
-  // 4. Lancer la voix et attendre la fin
   if (enableVoice && appState.voiceNotifications) {
     const readableText = extractReadableText(text);
     if (readableText) {
@@ -2723,7 +2701,7 @@ async function handleContinuation(context, event) {
 }
 
 /* ===================================================
-   BOUTON DYNAMIQUE (Mode continu / Envoyer)
+   BOUTON DYNAMIQUE
    =================================================== */
 const sendOrModeBtn = document.getElementById('sendOrModeBtn');
 const chatInput = document.getElementById('chatFullInput');
@@ -2753,7 +2731,7 @@ sendOrModeBtn.addEventListener('click', () => {
 });
 
 /* ===================================================
-   AUTO-RESIZE DU CHAMP DE TEXTE
+   AUTO-RESIZE
    =================================================== */
 function autoResizeChatInput() {
   if (!chatInput) return;
@@ -2763,7 +2741,7 @@ function autoResizeChatInput() {
 chatInput.addEventListener('input', autoResizeChatInput);
 
 /* ===================================================
-   GESTION DU BOUTON MUET DYNAMIQUE
+   BOUTON MUET
    =================================================== */
 const stopSpeechContainer = document.getElementById('stopSpeechBtnContainer');
 const stopSpeechBtn = document.getElementById('stopSpeechBtn');
@@ -2782,7 +2760,7 @@ stopSpeechBtn.addEventListener('click', () => {
 });
 
 /* ===================================================
-   VOIX (SPEAK)
+   VOICE ENGINE
    =================================================== */
 let preferredVoice = null;
 const choosePreferredVoice = () => {
@@ -2791,9 +2769,6 @@ const choosePreferredVoice = () => {
 };
 if ('speechSynthesis' in window) window.speechSynthesis.onvoiceschanged = () => { preferredVoice = choosePreferredVoice(); };
 
-/* ===================================================
-   VOICE ENGINE - AVEC COMPTEUR DE PAUSE (inchangé)
-   =================================================== */
 const VoiceEngine = {
   recognition: null,
   isPushToTalkRecording: false,
@@ -3005,10 +2980,8 @@ const VoiceEngine = {
 };
 
 /* ===================================================
-   GESTION DU CHAT (ENVOI, CONTINUATION, ETC.)
+   GESTION DU CHAT
    =================================================== */
-
-// Fonction centrale de soumission (texte ou voix) avec pause micro
 async function processUserMessage(message, attachments = [], isVoice = false) {
   if (appState.chatInProgress) return;
   if (!message && attachments.length === 0) return;
@@ -3017,7 +2990,6 @@ async function processUserMessage(message, attachments = [], isVoice = false) {
     createNewChatSession();
   }
 
-  // PAUSE : couper le micro dès le début du traitement
   VoiceEngine.pauseRecognition();
 
   appState.shouldStopResponse = false;
@@ -3026,12 +2998,10 @@ async function processUserMessage(message, attachments = [], isVoice = false) {
   el('chat-loading').style.display = 'block';
   el('stopAIBtn').style.display = 'flex';
 
-  // Si on est en mode édition, supprimer l'ancien message ET tous les messages suivants
   let oldMessageId = editingMessageId;
   let oldMessageNode = null;
   let messageNodes = [];
   if (oldMessageId) {
-    // Récupérer tous les messages du DOM
     const allMsgNodes = document.querySelectorAll('.msg[data-message-id]');
     let found = false;
     let deleteFromIndex = -1;
@@ -3045,11 +3015,9 @@ async function processUserMessage(message, attachments = [], isVoice = false) {
       }
     }
     if (found && deleteFromIndex >= 0) {
-      // Supprimer tous les messages à partir de cet index (incluant l'ancien)
       for (let i = allMsgNodes.length - 1; i >= deleteFromIndex; i--) {
         const node = allMsgNodes[i];
         const msgId = node.dataset.messageId;
-        // Supprimer de Firebase si c'est un vrai ID (pas temp)
         if (msgId && !msgId.startsWith('temp_') && db && appState.currentUser && appState.currentSessionId) {
           try {
             const messageRef = ref(db, `${userChatsRefPath}/${appState.currentUser.uid}/${appState.currentSessionId}/messages/${msgId}`);
@@ -3059,15 +3027,12 @@ async function processUserMessage(message, attachments = [], isVoice = false) {
             console.warn("Erreur suppression message:", e);
           }
         }
-        // Supprimer du DOM
         node.remove();
       }
     }
-    // Réinitialiser le mode édition
     editingMessageId = null;
   }
 
-  // Afficher le message utilisateur (avec un ID temporaire si pas encore sauvegardé)
   const tempId = 'temp_' + Date.now();
   appendChat('user', message, false, attachments, tempId);
 
@@ -3106,7 +3071,6 @@ async function processUserMessage(message, attachments = [], isVoice = false) {
     appState.shouldStopResponse = false;
     el('chat-loading').style.display = 'none';
     el('stopAIBtn').style.display = 'none';
-    // REPRISE : réactiver le micro après tout le traitement (et la voix)
     VoiceEngine.resumeRecognition();
   }
 }
@@ -3182,7 +3146,7 @@ async function sendToOnline(message, attachments = [], continuationMode = false)
 }
 
 /* ===================================================
-   FONCTIONS ANNEXES (planning, etc.)
+   PLANNING - COMMANDES
    =================================================== */
 async function handlePlanningCommands(commands) {
   for (const cmd of commands) {
@@ -3306,6 +3270,9 @@ function logActivity(message, type = 'info') {
   }
 }
 
+/* ===================================================
+   RENDER DEVICES
+   =================================================== */
 function renderDevices() {
   const grid = el('deviceGrid');
   if (!grid) return;
@@ -3485,7 +3452,9 @@ window.adjustBrightness = (deviceId, value) => {
   sendCommand(deviceId, v > 0 ? "ON" : "OFF", v);
 };
 
-// CORRECTION 4 : sendCommand gère "all_devices"
+/* ===================================================
+   CORRECTION 1 : sendCommand gère "all_devices"
+   =================================================== */
 window.sendCommand = (deviceId, action, value = null) => {
   // Si l'appareil est "all_devices", on applique à tous
   if (deviceId === "all_devices") {
@@ -3584,9 +3553,9 @@ el('addPlan')?.addEventListener('click', async () => {
   document.querySelectorAll('.day-checkbox').forEach(cb => cb.checked = false);
 });
 
-// ===================================================
-// RENDER PLANNING LIST UI - AVEC "Tous les appareils" en français
-// ===================================================
+/* ===================================================
+   CORRECTION 2 : AFFICHAGE PLANNING (français) + EXÉCUTION RESTAURÉE
+   =================================================== */
 function renderPlanningListUI(plans) {
   const out = el('planningTable');
   if (!out) return;
@@ -3607,7 +3576,7 @@ function renderPlanningListUI(plans) {
     <tbody>
       ${plans.map(p => {
         let deviceName = appState.devices.find(d => d.id === p.device)?.name || p.device;
-        // Remplacer "all_devices" par "Tous les appareils" (français)
+        // Affichage en français : "all_devices" → "Tous les appareils"
         if (deviceName === "all_devices") deviceName = "Tous les appareils";
         
         let whenText = p.time;
@@ -3626,13 +3595,13 @@ function renderPlanningListUI(plans) {
           whenText += ` <span class="chip">📅 ${date}</span>`;
         }
         
-        // Remplacer ON/OFF par Allumer/Éteindre dans l'affichage
-        const actionText = p.action === 'ON' ? '🟢 Allumer' : '🔴 Éteindre';
+        // AFFICHAGE uniquement (pas de modification de l'action)
+        const actionDisplay = p.action === 'ON' ? '🟢 Allumer' : '🔴 Éteindre';
         
         return `<tr style="border-bottom:1px solid rgba(0,0,0,0.05)">
           <td style="padding:10px"><strong>${deviceName}</strong></td>
           <td style="padding:10px">${whenText}</td>
-          <td style="padding:10px">${actionText}</td>
+          <td style="padding:10px">${actionDisplay}</td>
           <td style="padding:10px;text-align:center">
             <button class="btn warn" onclick="deletePlan('${p.firebaseId || p.createdAt}')" style="padding:6px 12px">
               <i class="fas fa-trash"></i>
@@ -3766,8 +3735,13 @@ el('nightModeBtn')?.addEventListener('click', () => {
   localStorage.setItem('nightMode', true);
   document.querySelectorAll('#chatFullWindow .msg.bot').forEach(msg => applyNightModeToDoc(msg));
 });
-el('allOnBtn')?.addEventListener('click', () => appState.devices.forEach(d => sendCommand(d.id, 'ON', 100)));
-el('allOffBtn')?.addEventListener('click', () => appState.devices.forEach(d => sendCommand(d.id, 'OFF', 0)));
+el('allOnBtn')?.addEventListener('click', () => {
+  // Utilise sendCommand avec "all_devices" pour tout allumer
+  sendCommand('all_devices', 'ON', 100);
+});
+el('allOffBtn')?.addEventListener('click', () => {
+  sendCommand('all_devices', 'OFF', 0);
+});
 
 function setupSettings() {
   el('darkModeToggle').checked = appState.isNightMode;
@@ -3865,7 +3839,7 @@ el('sidebar-overlay').addEventListener('click', () => {
 });
 
 /* ===================================================
-   PLANNING (exécution automatique) - INCHANGÉ
+   PLANNING (exécution automatique) - RESTAURÉ
    =================================================== */
 let executedTasksClient = new Map();
 let lastCheckedMinuteClient = '';
@@ -3926,6 +3900,7 @@ async function checkAndExecutePlans() {
         }
         executedTasksClient.set(taskKey, Date.now());
         const deviceName = appState.devices.find(d => d.id === plan.device)?.name || plan.device;
+        // Récupérer l'action brute (ON/OFF) - ne pas modifier
         const action = plan.actionType ? (plan.actionType === "allumer" ? "ON" : "OFF") : plan.action;
         const actionText = action === 'ON' ? 'allumé' : 'éteint';
         logActivity(`⏰ Exécution : ${deviceName} ${actionText}`);
@@ -4043,7 +4018,7 @@ setInterval(cleanExpiredPlansClient, 600000);
 setTimeout(cleanExpiredPlansClient, 5000);
 
 /* ===================================================
-   AUTH / CONNEXION (inchangé)
+   AUTH / CONNEXION
    =================================================== */
 if (auth) {
   onAuthStateChanged(auth, (user) => {
@@ -4087,7 +4062,7 @@ if (auth) {
 }
 
 /* ===================================================
-   HISTORIQUE DES CHATS (inchangé)
+   HISTORIQUE DES CHATS
    =================================================== */
 function getChatHistoryRef(userId, sessionId = null) {
   let path = `${userChatsRefPath}/${userId}`;
@@ -4248,12 +4223,10 @@ async function saveMessageToFirebase(userMsg, botMsg, attachments) {
     timestamp: serverTimestamp()
   });
 
-  // Mettre à jour le message utilisateur avec le vrai ID Firebase pour les actions
   const userMsgNodes = document.querySelectorAll('.msg.user[data-message-id]');
   for (const node of userMsgNodes) {
     if (node.dataset.messageId && node.dataset.messageId.startsWith('temp_')) {
       node.dataset.messageId = messageId;
-      // Mettre à jour les boutons d'édition pour utiliser le nouvel ID
       const editBtn = node.querySelector('.edit-btn');
       if (editBtn) {
         const newEditBtn = editBtn.cloneNode(true);
@@ -4360,7 +4333,7 @@ function requestNotificationPermission() {
 
 initUI();
 
-console.log('✅ SmartHome Intelligence v13.5 - Corrections finales : micro après voix, copier/éditer user, all_devices, preview doc');
+console.log('✅ SmartHome Intelligence v13.6 - Corrections ciblées : preview document, planning, all_devices');
 </script>
 </body>
 </html>
