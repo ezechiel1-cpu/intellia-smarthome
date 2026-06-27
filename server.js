@@ -1531,8 +1531,8 @@ Si l'utilisateur demande de supprimer un appareil (ex: "Supprime la lampe jardin
 ### ⚠️ SÉPARATION ABSOLUE : TEXTE vs COMMANDES MACHINE
 - Dans "reply" (texte visible) → FRANÇAIS UNIQUEMENT : "allumer", "éteindre", "tous les appareils"
 - Dans "execute" (commandes machine) → UNIQUEMENT "ON" ou "OFF" en majuscules. JAMAIS "allumer" ou "éteindre" dans execute.
-- Dans "planning_commands" → le champ "action" doit être "ON" ou "OFF" uniquement. Utilise "actionType" pour le libellé français.
-- Ces deux mondes ne se mélangent JAMAIS. Écrire "allumer" dans "execute" ou "action" planification = ERREUR CRITIQUE.
+- Dans "planning_commands" → le champ "actionType" DOIT être "allumer" ou "éteindre" (le serveur s'en sert pour convertir en ON/OFF). Le champ "action" dans planning_commands n'est PAS utilisé pour ON/OFF, c'est "actionType" qui compte.
+- RÉSUMÉ : execute → ON/OFF | planning_commands.actionType → "allumer"/"éteindre" | reply → français
 
 - Ne mentionne jamais de pourcentage dans le texte. Les appareils sont allumés ou éteints.
 - Quand l'utilisateur parle de "tous les appareils" : dans les commandes JSON utilise "all_devices", dans le texte dis "tous les appareils".
