@@ -735,6 +735,7 @@ async function logDeviceStateChange(deviceId, etat, source = 'ai_command') {
   if (!db || !deviceId) return;
   try {
     await push(ref(db, HISTORY_LOGS_REF), {
+      type: 'state_change',
       deviceId,
       etat,          // "ON" ou "OFF"
       source,        // 'ai_command' | 'manual' | 'planning' | 'esp32'
@@ -742,6 +743,47 @@ async function logDeviceStateChange(deviceId, etat, source = 'ai_command') {
     });
   } catch (e) {
     console.warn(`⚠️ Impossible de logger l'état pour ${deviceId}:`, e.message);
+  }
+}
+
+/**
+ * Enregistre un ajout ou une suppression d'appareil dans history_logs.
+ * Ces événements sont STOCKÉS mais ne sont JAMAIS racontés spontanément
+ * par l'IA dans un résumé de journée — seulement si l'utilisateur les
+ * demande explicitement (cf. règles du prompt système).
+ */
+async function logDeviceMetaChange(deviceId, deviceName, action) {
+  // action: 'device_add' | 'device_delete'
+  if (!db || !deviceId) return;
+  try {
+    await push(ref(db, HISTORY_LOGS_REF), {
+      type: action,
+      deviceId,
+      deviceName: deviceName || deviceId,
+      timestamp: Date.now()
+    });
+  } catch (e) {
+    console.warn(`⚠️ Impossible de logger ${action} pour ${deviceId}:`, e.message);
+  }
+}
+
+/**
+ * Enregistre un ajout ou une suppression de planification dans history_logs.
+ * Mêmes règles de discrétion que logDeviceMetaChange : stocké, mais
+ * jamais raconté sans demande explicite de l'utilisateur.
+ */
+async function logPlanningMetaChange(deviceId, action, extra = {}) {
+  // action: 'planning_add' | 'planning_delete' | 'planning_delete_all'
+  if (!db) return;
+  try {
+    await push(ref(db, HISTORY_LOGS_REF), {
+      type: action,
+      deviceId: deviceId || null,
+      ...extra,
+      timestamp: Date.now()
+    });
+  } catch (e) {
+    console.warn(`⚠️ Impossible de logger ${action}:`, e.message);
   }
 }
 
@@ -861,20 +903,102 @@ async function getDayHistory(targetDate) {
     return allLogs
       .filter(l => l.timestamp >= start.getTime() && l.timestamp <= end.getTime())
       .sort((a, b) => a.timestamp - b.timestamp)
-      .map(l => ({
-        deviceId: l.deviceId,
-        etat: l.etat,
-        source: l.source,
-        heure: new Date(l.timestamp).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
-      }));
+      .map(l => {
+        const heure = new Date(l.timestamp).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+        const type = l.type || 'state_change'; // logs historiques sans "type" = changements d'état
+        if (type === 'device_add' || type === 'device_delete') {
+          return { type, deviceId: l.deviceId, deviceName: l.deviceName, heure };
+        }
+        if (type === 'planning_add' || type === 'planning_delete' || type === 'planning_delete_all') {
+          return { type, deviceId: l.deviceId, time: l.time, frequency: l.frequency, heure };
+        }
+        // state_change (par défaut, y compris les anciens logs sans champ "type")
+        return { type: 'state_change', deviceId: l.deviceId, etat: l.etat, source: l.source, heure };
+      });
   } catch (e) {
     return [];
   }
 }
 
 // ========================================
-// 🎯 DÉTECTION DE TRONCATURE
+// 🗓️ DÉTECTION "RÉCAP DE JOURNÉE" + HELPERS DE DATE (BÉNIN)
 // ========================================
+
+function getBeninDateString(daysOffset = 0) {
+  try {
+    const fmt = new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Porto-Novo', year: 'numeric', month: '2-digit', day: '2-digit' });
+    const parts = fmt.formatToParts(new Date());
+    const y = parseInt(parts.find(p => p.type === 'year').value, 10);
+    const m = parseInt(parts.find(p => p.type === 'month').value, 10);
+    const d = parseInt(parts.find(p => p.type === 'day').value, 10);
+    const baseDate = new Date(Date.UTC(y, m - 1, d));
+    baseDate.setUTCDate(baseDate.getUTCDate() + daysOffset);
+    return baseDate.toISOString().split('T')[0];
+  } catch (e) {
+    const d = new Date(Date.now() + daysOffset * 86400000);
+    return d.toISOString().split('T')[0];
+  }
+}
+
+const DAY_NAMES_FR = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
+
+function getMostRecentDayOfWeekDate(targetDow) {
+  // Retourne la date (YYYY-MM-DD, heure de Lokossa/Bénin) du jour de semaine le plus récent <= aujourd'hui
+  for (let offset = 0; offset <= 7; offset++) {
+    const dateStr = getBeninDateString(-offset);
+    const dow = new Date(dateStr + 'T12:00:00Z').getUTCDay();
+    if (dow === targetDow) return dateStr;
+  }
+  return getBeninDateString(0);
+}
+
+/**
+ * Détecte si le message demande un récapitulatif de journée passée
+ * (ex: "qu'a-t-on fait hier ?", "fais comme vendredi", "résumé de la journée").
+ * Retourne la date cible (YYYY-MM-DD) ou null si aucune demande détectée.
+ */
+function detectDayHistoryRequest(message) {
+  if (!message) return null;
+  const lower = message.toLowerCase();
+  const recapKeywords = /(qu['’]a[- ]t[- ]on fait|qu['’]est[- ]ce qu['’]on a fait|qu['’]est[- ]ce qui a (?:été|ete) fait|qu['’]as[- ]tu fait|qu['’]avez[- ]vous fait|récapitulat|recapitulat|résumé de la journée|resume de la journee|fais comme (?:hier|aujourd['’]hui)|répète ce qu['’]on a fait|repete ce qu['’]on a fait|journal (?:du|de la) jour|historique (?:du|de la) jour)/i;
+  if (!recapKeywords.test(lower)) return null;
+
+  if (/avant[- ]hier/.test(lower)) return getBeninDateString(-2);
+  if (/\bhier\b/.test(lower)) return getBeninDateString(-1);
+
+  for (let i = 0; i < DAY_NAMES_FR.length; i++) {
+    if (new RegExp(`\\b${DAY_NAMES_FR[i]}\\b`, 'i').test(lower)) {
+      return getMostRecentDayOfWeekDate(i);
+    }
+  }
+  // Par défaut (mention "aujourd'hui" ou demande générique) : aujourd'hui
+  return getBeninDateString(0);
+}
+
+/**
+ * Construit le bloc texte [Journal du jour] à injecter dans le prompt,
+ * à partir des logs bruts de history_logs pour la date donnée.
+ * Le formatage final (traduction des sources en français naturel) est
+ * délégué au modèle, conformément aux règles du prompt système.
+ */
+async function buildDayHistoryBlock(targetDate, devices) {
+  const entries = await getDayHistory(targetDate);
+  if (!entries || entries.length === 0) {
+    return `\n[Journal du jour (${targetDate}): aucune donnée enregistrée pour cette date]`;
+  }
+  const deviceName = (id) => devices.find(d => d.id === id)?.name || id;
+  const lines = entries.map(e => {
+    if (e.type === 'device_add') return `- ${e.heure} | AJOUT_APPAREIL | ${e.deviceName || deviceName(e.deviceId)}`;
+    if (e.type === 'device_delete') return `- ${e.heure} | SUPPRESSION_APPAREIL | ${e.deviceName || deviceName(e.deviceId)}`;
+    if (e.type === 'planning_add') return `- ${e.heure} | AJOUT_PLANIFICATION | ${deviceName(e.deviceId)} (${e.time || '?'}, ${e.frequency || 'once'})`;
+    if (e.type === 'planning_delete') return `- ${e.heure} | SUPPRESSION_PLANIFICATION | ${deviceName(e.deviceId)}`;
+    if (e.type === 'planning_delete_all') return `- ${e.heure} | SUPPRESSION_TOUTES_PLANIFICATIONS`;
+    return `- ${e.heure} | ETAT | ${deviceName(e.deviceId)} | ${e.etat} | source=${e.source || 'inconnue'}`;
+  });
+  return `\n[Journal du jour (${targetDate}):\n${lines.join('\n')}\n]`;
+}
+
+
 function detectTruncation(content) {
   const truncationIndicators = [
     /\.\.\.\s*$/,
@@ -999,13 +1123,14 @@ Le champ "reply" doit contenir du texte en **Markdown (GFM)** OU du **HTML forma
 
 ### 🌡️ TEMPÉRATURE DE LOKOSSA
 Tu as accès à la température **RÉELLE EN TEMPS RÉEL** de Lokossa via weather API dans les métadonnées.
-**Quand l'utilisateur demande la température**, donne IMMÉDIATEMENT la valeur **sans mentionner de recherche**.
+**Quand l'utilisateur demande EXPLICITEMENT la température**, donne IMMÉDIATEMENT la valeur **sans mentionner de recherche**.
 
 **Instructions critiques :**
 - ❌ Ne dis JAMAIS "Je vais chercher" ou "Laissez-moi vérifier"
 - ✅ Réponds directement : "À Lokossa, il fait actuellement **28°C** (Ciel dégagé ☀️). Ressenti: 30°C, Humidité: 75%."
 - ✅ Si la source est "estimation", ajoute discrètement : "(estimation basée sur les moyennes saisonnières)"
 - ❌ Ne mentionne JAMAIS "Weather" ou "API météo" sauf si l'utilisateur demande la source
+- 🚫 **INTERDICTION ABSOLUE** : ne mentionne JAMAIS la température spontanément dans une réponse qui ne porte pas sur la météo, même si tu juges que c'est "pertinent" ou en lien avec le sujet (chaleur, confort, appareils, etc.). Uniquement si l'utilisateur la demande noir sur blanc.
 
 ## 📝 GÉNÉRATION DE CODE ET DOCUMENTS LONGS (CRITIQUE)
 
@@ -1581,14 +1706,23 @@ Si l'utilisateur demande de supprimer un appareil (ex: "Supprime la lampe jardin
    - Ne JAMAIS interpréter "oui" seul comme une confirmation d'action domotique si la conversation précédente était technique.
 7. Fichiers: Base ta réponse sur le contenu fourni.
 8. PRÉSENTATION: Utilise la structure Markdown (titres, listes, gras) SAUF pour documents (HTML avec "<DOCUMENT_HTML>").
-9. Température Lokossa: Toujours disponible dans les métadonnées. Ne jamais effectuer de recherche web pour l'obtenir. Ne la mentionner que lorsqu'elle est explicitement demandée ou lorsqu'elle est réellement pertinente pour la réponse en cours.
+9. Température Lokossa: Toujours disponible dans les métadonnées. Ne jamais effectuer de recherche web pour l'obtenir. Ne la mentionne JAMAIS spontanément — uniquement lorsqu'elle est explicitement demandée par l'utilisateur.
 10. Documents: Lorsqu'un document est demandé, retourner directement un document HTML complet encapsulé dans <DOCUMENT_HTML> ... </DOCUMENT_HTML> en appliquant les règles du Moteur Documentaire Responsive 2026.
 11. Suppression: Utilise "device_commands" avec "action: "delete"" pour supprimer des appareils.
 12. Suppression planning: Utilise "planning_commands" avec les bonnes actions.
 13. Intelligence: Détecte les incohérences (ex : planifier l'allumage d'une lampe déjà allumée).
 14. CONTINUATION: Si tu atteins la limite de tokens, ajoute "needs_continuation: true" et le client affichera un bouton "Continuer".
 15. Habitudes d'usage : Si [Habitudes d'usage] est présent dans les métadonnées, utilise-le pour faire des suggestions proactives. Ex : "D'habitude vous allumez la lampe salon vers 18h, voulez-vous que je le fasse ?".
-16. Mémoire du jour précédent : Si l'utilisateur dit "fais comme hier", "répète ce qu'on a fait vendredi", etc., propose d'appeler /api/day-history pour reconstituer la séquence exacte.
+16. Mémoire du jour précédent (RÉCAPITULATIF DE JOURNÉE) : Si l'utilisateur demande "qu'a-t-on fait aujourd'hui/hier ?", "fais comme hier", "répète ce qu'on a fait vendredi", etc., un bloc [Journal du jour] peut être présent dans les métadonnées (issu de history_logs). Utilise-le pour répondre avec PRÉCISION. Règles strictes :
+- Par défaut, ne raconte QUE les changements d'état des appareils (allumage/extinction), avec l'heure exacte de chaque action.
+- Traduis TOUJOURS la source technique en formulation naturelle et professionnelle, sans jamais utiliser les termes techniques bruts ("manual", "ai_command", "planning", "esp32", "source", "type") :
+  - source "manual" → "allumé/éteint manuellement"
+  - source "ai_command" → "allumé/éteint par l'assistant"
+  - source "planning" → "allumé/éteint automatiquement (planification)"
+  - source "esp32" → "allumé/éteint par appui sur bouton poussoir"
+- N'évoque les ajouts/suppressions d'appareils ou de planifications QUE si l'utilisateur les demande explicitement (ex: "quels appareils ont été ajoutés aujourd'hui ?", "quelles planifications ont été créées ?"). Par défaut, ces événements sont ignorés dans le récapitulatif, même s'ils sont présents dans les données.
+- Présente le récapitulatif de façon chronologique et lisible (liste à puces avec heure, appareil, action, source reformulée), jamais sous forme de JSON ou de jargon technique.
+- Si [Journal du jour] est absent ou vide pour la date demandée, dis-le clairement plutôt que d'inventer des événements.
 17. Fiabilité des faits sensibles au temps (CRITIQUE) : Pour tout fait qui peut changer avec le temps (chef d'état, ministres, gouvernement, prix, actualités, résultats d'élections, etc.), tes connaissances internes peuvent être dépassées. 
 - Si un bloc [Web: ...] est présent dans le message, considère-le comme la vérité la plus à jour et fais-le PRIMER sur tes connaissances internes en cas de contradiction. 
 - Si [Web] est absent et que la question porte sur un fait potentiellement périmé, dis clairement que l'information pourrait avoir changé plutôt que d'affirmer avec une fausse certitude une réponse issue uniquement de tes connaissances internes. 
@@ -1667,6 +1801,7 @@ async function handleDeviceCommands(commands, userId) {
           etat: 'OFF',
           luminosite: 0
         });
+        await logDeviceMetaChange(deviceId, deviceName, 'device_add');
         console.log(`✅ Appareil ajouté: ${deviceName} (${deviceId})`);
       } catch (error) {
         console.error(`❌ Erreur ajout appareil:`, error.message);
@@ -1678,6 +1813,13 @@ async function handleDeviceCommands(commands, userId) {
           console.warn("⚠️ Aucun appareil spécifié pour la suppression");
           continue;
         }
+        let deletedDeviceName = deviceToDelete;
+        try {
+          const metaSnapshot = await get(ref(db, `${DEVICES_META_REF}/${deviceToDelete}`));
+          if (metaSnapshot.exists()) {
+            deletedDeviceName = metaSnapshot.val().name || deviceToDelete;
+          }
+        } catch (e) { /* ignore */ }
         await set(ref(db, `${DEVICES_META_REF}/${deviceToDelete}`), null);
         await set(ref(db, `${DEVICES_STATES_REF}/${deviceToDelete}`), null);
         const planningSnapshot = await get(ref(db, PLANNING_REF));
@@ -1691,6 +1833,7 @@ async function handleDeviceCommands(commands, userId) {
           });
           await set(ref(db, PLANNING_REF), updatedPlanning);
         }
+        await logDeviceMetaChange(deviceToDelete, deletedDeviceName, 'device_delete');
         console.log(`✅ Appareil supprimé: ${deviceToDelete}`);
       } catch (error) {
         console.error(`❌ Erreur suppression appareil:`, error.message);
@@ -1718,7 +1861,10 @@ async function handlePlanningCommands(commands) {
   for (const cmd of uniqueCommands) {
     if (cmd.action === 'delete_all') {
       console.log('🗑️ Suppression de TOUTES les planifications');
-      if (db) await set(ref(db, PLANNING_REF), null);
+      if (db) {
+        await set(ref(db, PLANNING_REF), null);
+        await logPlanningMetaChange(null, 'planning_delete_all');
+      }
       continue;
     }
     if (cmd.action === 'delete_specific') {
@@ -1731,8 +1877,10 @@ async function handlePlanningCommands(commands) {
           for (const [id, p] of Object.entries(plans)) {
             if (cmd.time && p.device === cmd.device && p.time === cmd.time) {
               await remove(ref(db, `${PLANNING_REF}/${id}`));
+              await logPlanningMetaChange(cmd.device, 'planning_delete', { time: p.time });
             } else if (!cmd.time && p.device === cmd.device) {
               await remove(ref(db, `${PLANNING_REF}/${id}`));
+              await logPlanningMetaChange(cmd.device, 'planning_delete', { time: p.time });
             }
           }
         }
@@ -1764,6 +1912,7 @@ async function handlePlanningCommands(commands) {
       if (db) {
         try {
           await push(ref(db, PLANNING_REF), payload);
+          await logPlanningMetaChange(cmd.device, 'planning_add', { time: cmd.time, frequency: payload.frequency });
           console.log(`✅ Planification sauvegardée : ${finalState}`);
           // ✅ Log du planning lui-même (pas de l'exécution, le client loggue à l'exécution)
         } catch (error) {
@@ -1860,6 +2009,15 @@ async function chatWithGemini(userMessage, devices, userId, sessionId, attachmen
     }
   }
 
+  // ✅ NOUVEAU : récapitulatif de journée ("qu'a-t-on fait hier/aujourd'hui/vendredi ?")
+  let dayHistoryBlock = '';
+  if (!continuationMode) {
+    const requestedDate = detectDayHistoryRequest(userMessage);
+    if (requestedDate) {
+      dayHistoryBlock = await buildDayHistoryBlock(requestedDate, devices);
+    }
+  }
+
   let lastError = null;
 
   // 🔥 CASCADE COMPLÈTE des modèles valides
@@ -1944,7 +2102,7 @@ MESSAGE: "${userMessage}"
 ${planningsText}
 ]
 [Analyse: ${JSON.stringify(contextAnalysis)}]${usagePatterns}
-${webResults.length > 0 ? `[Web: ${JSON.stringify(webResults.slice(0, 3))}]` : ''}
+${webResults.length > 0 ? `[Web: ${JSON.stringify(webResults.slice(0, 3))}]` : ''}${dayHistoryBlock}
 
 MESSAGE: "${userMessage}"
 `;
