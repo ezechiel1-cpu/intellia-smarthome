@@ -1541,7 +1541,6 @@
     <header id="main-header">
       <h1 id="section-header-title">Domotique</h1>
       <div style="margin-top:8px; display:flex; flex-wrap: wrap; justify-content: center; gap: 8px;">
-        <span id="statusLocal" class="chip">ESP32: -</span>
         <span id="statusFirebase" class="chip">Firebase : -</span>
         <span id="statusOnline" class="chip">Assistant : -</span>
         <span id="intelliaLatency" class="chip">latence: -</span>
@@ -1743,18 +1742,6 @@
         <h2>Paramètres du Système</h2>
         
         <div class="settings-group">
-          <h3>⚡ Connexion Locale (WebSocket)</h3>
-          <p style="font-size:13px; color:var(--muted); margin-bottom:10px;">
-            Permet un contrôle instantané lorsque vous êtes sur le même WiFi que l'ESP32.
-          </p>
-          <label>Adresse IP de l'ESP32 :</label>
-          <input id="esp32IpInput" placeholder="192.168.x.x" style="width:100%;padding:8px;border-radius:8px;border:1px solid #ddd" />
-          <div style="margin-top:10px;display:flex;gap:8px">
-            <button class="btn primary" id="btnConnectLocal">Sauver & Connecter</button>
-          </div>
-        </div>
-        
-        <div class="settings-group">
           <h3>Apparence</h3>
           <div class="toggle-section">
             <span>Mode sombre</span>
@@ -1857,9 +1844,6 @@ const appState = {
   attachments: [], 
   chatInProgress: false,
   shouldStopResponse: false, 
-  localWebSocket: null,
-  isLocalConnected: false,
-  esp32Ip: localStorage.getItem('esp32Ip') || '', 
 };
 
 let editingMessageId = null;
@@ -3262,14 +3246,10 @@ function handleExecuteCommands(commands) {
     // "all_devices" = appliquer à tous les appareils
     if (devId === 'all_devices') {
       appState.devices.forEach(device => {
-        sendCommand(device.id, action, value ? parseInt(value) : null);
-        // Re-logger avec la bonne source "ai_command"
-        logStateChange(device.id, action, 'ai_command');
+        sendCommand(device.id, action, value ? parseInt(value) : null, 'ai_command');
       });
     } else if (appState.devices.some(d => d.id === devId)) {
-      sendCommand(devId, action, value ? parseInt(value) : null);
-      // Re-logger avec la bonne source "ai_command"
-      logStateChange(devId, action, 'ai_command');
+      sendCommand(devId, action, value ? parseInt(value) : null, 'ai_command');
     }
   }
 }
@@ -3389,6 +3369,7 @@ async function logStateChange(deviceId, etat, source = 'manual') {
   if (!db || !deviceId || deviceId === 'all_devices') return;
   try {
     await push(ref(db, historyLogsRefPath), {
+      type: 'state_change',
       deviceId,
       etat,
       source,
@@ -3396,6 +3377,44 @@ async function logStateChange(deviceId, etat, source = 'manual') {
     });
   } catch (e) {
     console.warn(`⚠️ Impossible de logger ${deviceId} → ${etat}:`, e.message);
+  }
+}
+
+/**
+ * Enregistre un ajout/suppression d'appareil dans history_logs (interface manuelle).
+ * Stocké pour usage futur, mais jamais raconté spontanément par l'assistant
+ * sauf demande explicite de l'utilisateur.
+ */
+async function logDeviceMetaChangeClient(deviceId, deviceName, action) {
+  // action: 'device_add' | 'device_delete'
+  if (!db || !deviceId) return;
+  try {
+    await push(ref(db, historyLogsRefPath), {
+      type: action,
+      deviceId,
+      deviceName: deviceName || deviceId,
+      timestamp: Date.now()
+    });
+  } catch (e) {
+    console.warn(`⚠️ Impossible de logger ${action} pour ${deviceId}:`, e.message);
+  }
+}
+
+/**
+ * Enregistre un ajout/suppression de planification dans history_logs (interface manuelle).
+ */
+async function logPlanningMetaChangeClient(deviceId, action, extra = {}) {
+  // action: 'planning_add' | 'planning_delete' | 'planning_delete_all'
+  if (!db) return;
+  try {
+    await push(ref(db, historyLogsRefPath), {
+      type: action,
+      deviceId: deviceId || null,
+      ...extra,
+      timestamp: Date.now()
+    });
+  } catch (e) {
+    console.warn(`⚠️ Impossible de logger ${action}:`, e.message);
   }
 }
 
@@ -3490,6 +3509,7 @@ el('btnAddDevice')?.addEventListener('click', async () => {
   const meta = { id, name, type, room, hasBrightness: deviceType.hasBrightness, icon: deviceType.icon };
   if (db) await set(ref(db, `${metaRefPath}/${id}`), meta);
   else { appState.devices.push(meta); saveDevicesToLocalStorage(); renderDevices(); }
+  logDeviceMetaChangeClient(id, name, 'device_add');
   el('newDeviceName').value = ''; el('newDeviceRoom').value = '';
   logActivity(`Appareil ajouté: ${name}`);
   el('addDeviceFormContainer').style.display = 'none';
@@ -3501,6 +3521,7 @@ el('btnAddDevice')?.addEventListener('click', async () => {
 
 window.deleteDevicePrompt = async function(id) {
   if (!confirm(`Supprimer l'appareil ${id} ?`)) return;
+  const deviceName = appState.devices.find(d => d.id === id)?.name || id;
   if (db) {
     await set(ref(db, `${metaRefPath}/${id}`), null);
     await set(ref(db, `${devicesRefPath}/${id}`), null);
@@ -3509,6 +3530,7 @@ window.deleteDevicePrompt = async function(id) {
     delete appState.deviceStates[id];
     saveDevicesToLocalStorage(); renderDevices();
   }
+  logDeviceMetaChangeClient(id, deviceName, 'device_delete');
   logActivity(`Appareil supprimé: ${id}`);
 };
 
@@ -3526,78 +3548,16 @@ async function writeDeviceStateToBackend(deviceId, etat, value = null) {
 }
 
 function updateStatusUI(type, connected) {
-  const element = el(type === 'local' ? 'statusLocal' : 'statusFirebase');
+  const element = el('statusFirebase');
   if (!element) return;
   
   if (connected) {
-    element.textContent = type === 'local' ? 'ESP32: Connecté ✔' : 'Firebase: Connecté ✔';
+    element.textContent = 'Firebase: Connecté ✔';
     element.style.background = 'rgba(46, 213, 115, 0.3)';
   } else {
-    element.textContent = type === 'local' ? 'ESP32: Déconnecté ✗' : 'Firebase: Déconnecté ✗';
+    element.textContent = 'Firebase: Déconnecté ✗';
     element.style.background = 'rgba(231, 76, 60, 0.3)';
   }
-}
-
-function connectToESP32() {
-  const ip = appState.esp32Ip;
-  if (!ip) {
-    logActivity("Connexion locale ignorée (pas d'IP)");
-    updateStatusUI('local', false);
-    return;
-  }
-
-  const wsUrl = `ws://${ip}/ws`;
-  logActivity(`📡 Tentative de connexion locale à ${wsUrl}...`);
-
-  if (appState.localWebSocket) {
-    appState.localWebSocket.close();
-  }
-
-  appState.localWebSocket = new WebSocket(wsUrl);
-
-  appState.localWebSocket.onopen = () => {
-    appState.isLocalConnected = true;
-    logActivity("✅ WebSocket LOCAL connecté !", 'success');
-    updateStatusUI('local', true);
-    appState.localWebSocket.send(JSON.stringify({ type: "hello", message: "Interface Web connectée" }));
-  };
-
-  appState.localWebSocket.onmessage = (event) => {
-    try {
-      const data = JSON.parse(event.data);
-      if (data.type === "state_update") {
-        const device = data.device_id;
-        const state = data.state === "ON";
-        const power = data.power || 0;
-        
-        if (appState.deviceStates[device]) {
-          appState.deviceStates[device].etat = state ? "ON" : "OFF";
-          appState.deviceStates[device].luminosite = power;
-          logActivity(`⚡[WS] ${device} mis à jour : ${state ? 'ON' : 'OFF'} (${power}%)`);
-          renderDevices(); 
-        }
-      }
-    } catch (e) {
-      logActivity(`❌ Erreur parsing WS: ${e.message}`, 'error');
-    }
-  };
-
-  appState.localWebSocket.onerror = (error) => {
-    logActivity("❌ Erreur WebSocket Locale", 'error');
-    appState.isLocalConnected = false;
-    updateStatusUI('local', false);
-  };
-
-  appState.localWebSocket.onclose = () => {
-    logActivity("🔌 WebSocket LOCAL déconnecté", 'warning');
-    appState.isLocalConnected = false;
-    updateStatusUI('local', false);
-    setTimeout(() => {
-      if (appState.currentUser && appState.esp32Ip) { 
-        connectToESP32();
-      }
-    }, 5000);
-  };
 }
 
 window.toggleDevice = (deviceId) => {
@@ -3615,11 +3575,11 @@ window.adjustBrightness = (deviceId, value) => {
 /* ===================================================
    CORRECTION 1 : sendCommand gère "all_devices"
    =================================================== */
-window.sendCommand = (deviceId, action, value = null) => {
+window.sendCommand = (deviceId, action, value = null, source = 'manual') => {
   // Si l'appareil est "all_devices", on applique à tous
   if (deviceId === "all_devices") {
     appState.devices.forEach(device => {
-      sendCommand(device.id, action, value);
+      sendCommand(device.id, action, value, source);
     });
     return;
   }
@@ -3627,33 +3587,17 @@ window.sendCommand = (deviceId, action, value = null) => {
   const val = (value !== null) ? parseInt(value) : (action === "ON" ? 100 : 0);
   
   // ✅ NOUVEAU v14.2 : marquer la commande comme "en attente" 
-  // pour ne pas la re-logger comme changement ESP32
+  // pour ne pas la re-logger comme changement bouton poussoir (ESP32)
   if (!appState._pendingCommands) appState._pendingCommands = new Set();
   appState._pendingCommands.add(deviceId);
   
-  if (appState.isLocalConnected && appState.localWebSocket && appState.localWebSocket.readyState === 1) {
-    logActivity(`⚡[WS] Envoi: ${deviceId} → ${action} (${val}%)`);
-    appState.localWebSocket.send(JSON.stringify({
-      type: "control",
-      device_id: deviceId,
-      action: action,
-      value: val
-    }));
-    
-    appState.deviceStates[deviceId] = { etat: action, luminosite: val };
-    renderDevices();
-    // ✅ Logger le changement d'état (source: manual car initié par l'interface)
-    logStateChange(deviceId, action, 'manual');
-    
-  } else {
-    logActivity(`☁️ [Firebase] Envoi: ${deviceId} → ${action} (${val}%)`);
-    writeDeviceStateToBackend(deviceId, action, val);
-    
-    appState.deviceStates[deviceId] = { etat: action, luminosite: val };
-    renderDevices();
-    // ✅ Logger le changement d'état
-    logStateChange(deviceId, action, 'manual');
-  }
+  logActivity(`☁️ [Firebase] Envoi: ${deviceId} → ${action} (${val}%)`);
+  writeDeviceStateToBackend(deviceId, action, val);
+  
+  appState.deviceStates[deviceId] = { etat: action, luminosite: val };
+  renderDevices();
+  // ✅ Logger le changement d'état avec la vraie source (manual / ai_command / planning)
+  logStateChange(deviceId, action, source);
   
   // Nettoyer le marqueur après 2 secondes
   setTimeout(() => appState._pendingCommands?.delete(deviceId), 2000);
@@ -3717,6 +3661,7 @@ el('addPlan')?.addEventListener('click', async () => {
     renderPlanningListUI(appState.plans);
   }
   
+  logPlanningMetaChangeClient(device, 'planning_add', { time, frequency: freq });
   logActivity(`✅ Plan ajouté: ${device} à ${time} (${freq})`);
   alert('✅ Planification ajoutée avec succès !');
   
@@ -3790,6 +3735,7 @@ function renderPlanningListUI(plans) {
 
 window.deletePlan = async (planId) => {
   if (!confirm('🗑️ Supprimer cette planification ?')) return;
+  const plan = appState.plans.find(p => (p.firebaseId || p.createdAt) == planId);
   if (db) { 
     await remove(ref(db, `${planningRefPath}/${planId}`)); 
   } else {
@@ -3797,6 +3743,7 @@ window.deletePlan = async (planId) => {
     savePlansToLocalStorage(); 
     renderPlanningListUI(appState.plans);
   }
+  logPlanningMetaChangeClient(plan?.device, 'planning_delete', { time: plan?.time });
   logActivity(`🗑️ Planification supprimée.`);
 };
 
@@ -3804,6 +3751,7 @@ const deleteAllPlans = async () => {
   if (!confirm('🗑️ Supprimer TOUTES les planifications ?')) return;
   if (db) await set(ref(db, planningRefPath), null);
   else { appState.plans = []; savePlansToLocalStorage(); renderPlanningListUI([]); }
+  logPlanningMetaChangeClient(null, 'planning_delete_all');
   logActivity(`🗑️ Toutes les planifications supprimées.`);
   speak('Toutes les planifications ont été supprimées.');
 };
@@ -4094,8 +4042,7 @@ async function checkAndExecutePlans() {
         const action = getPlanAction(plan);
         const actionText = action === 'ON' ? 'allumé' : 'éteint';
         logActivity(`⏰ Exécution : ${deviceName} ${actionText}`);
-        sendCommand(plan.device, action);
-        logStateChange(plan.device, action, 'planning'); // ✅ NOUVEAU v14.2
+        sendCommand(plan.device, action, null, 'planning');
         const chatMessage = `⏰ Tâche planifiée : **${deviceName}** ${actionText}`;
         if (el('chatFullWindow')) appendChat("bot", chatMessage);
         if (appState.voiceNotifications) speak(`Exécution planifiée. ${deviceName} ${actionText}.`);
@@ -4137,8 +4084,7 @@ async function checkAndExecutePlans() {
       const action = getPlanAction(plan);
       const actionText = action === 'ON' ? 'allumé' : 'éteint';
       console.log(`🚀 Client: Exécution ${deviceName} ${actionText}`);
-      sendCommand(plan.device, action);
-      logStateChange(plan.device, action, 'planning'); // ✅ NOUVEAU v14.2
+      sendCommand(plan.device, action, null, 'planning');
       logActivity(`⏰ Exécution : ${deviceName} ${actionText}`);
       const chatMessage = `⏰ Tâche planifiée : **${deviceName}** ${actionText}`;
       if (el('chatFullWindow')) appendChat("bot", chatMessage);
@@ -4226,22 +4172,12 @@ if (auth) {
       
       loadChatHistorySidebar();
       
-      if (appState.esp32Ip) {
-        connectToESP32();
-      }
-      
       navigateTo('sec-domotique');
 
     } else {
       appState.currentUser = null;
       document.querySelector('.main-app').style.display = 'none';
       el('login-overlay').style.display = 'flex';
-      
-      if (appState.localWebSocket) {
-        appState.isLocalConnected = false;
-        appState.localWebSocket.close();
-        updateStatusUI('local', false);
-      }
     }
   });
 } else {
@@ -4492,17 +4428,6 @@ function initUI() {
     form.style.display = isHidden ? 'block' : 'none';
     btn.innerHTML = isHidden ? '➖ Masquer le formulaire' : '➕ Ajouter un appareil';
   });
-  
-  el('btnConnectLocal').addEventListener('click', () => {
-    const ip = el('esp32IpInput').value.trim();
-    if (ip) {
-      appState.esp32Ip = ip;
-      localStorage.setItem('esp32Ip', ip);
-      logActivity(`IP locale sauvée: ${ip}. Connexion...`);
-      connectToESP32();
-    }
-  });
-  el('esp32IpInput').value = appState.esp32Ip;
   
   navigateTo('sec-domotique');
 }
