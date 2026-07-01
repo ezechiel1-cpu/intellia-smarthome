@@ -953,49 +953,280 @@ function getMostRecentDayOfWeekDate(targetDow) {
 }
 
 /**
- * Détecte si le message demande un récapitulatif de journée passée
- * (ex: "qu'a-t-on fait hier ?", "fais comme vendredi", "résumé de la journée").
- * Retourne la date cible (YYYY-MM-DD) ou null si aucune demande détectée.
+ * Retourne le jour de la semaine (0=dimanche..6=samedi) d'une date décalée
+ * de "daysOffset" jours par rapport à aujourd'hui, en heure du Bénin.
  */
-function detectDayHistoryRequest(message) {
-  if (!message) return null;
-  const lower = message.toLowerCase();
-  const recapKeywords = /(qu['’]a[- ]t[- ]on fait|qu['’]est[- ]ce qu['’]on a fait|qu['’]est[- ]ce qui a (?:été|ete) fait|qu['’]as[- ]tu fait|qu['’]avez[- ]vous fait|récapitulat|recapitulat|résumé de la journée|resume de la journee|fais comme (?:hier|aujourd['’]hui)|répète ce qu['’]on a fait|repete ce qu['’]on a fait|journal (?:du|de la) jour|historique (?:du|de la) jour)/i;
-  if (!recapKeywords.test(lower)) return null;
-
-  if (/avant[- ]hier/.test(lower)) return getBeninDateString(-2);
-  if (/\bhier\b/.test(lower)) return getBeninDateString(-1);
-
-  for (let i = 0; i < DAY_NAMES_FR.length; i++) {
-    if (new RegExp(`\\b${DAY_NAMES_FR[i]}\\b`, 'i').test(lower)) {
-      return getMostRecentDayOfWeekDate(i);
-    }
-  }
-  // Par défaut (mention "aujourd'hui" ou demande générique) : aujourd'hui
-  return getBeninDateString(0);
+function getBeninDayOfWeek(daysOffset = 0) {
+  const dateStr = getBeninDateString(daysOffset);
+  return new Date(dateStr + 'T12:00:00Z').getUTCDay();
 }
 
 /**
- * Construit le bloc texte [Journal du jour] à injecter dans le prompt,
- * à partir des logs bruts de history_logs pour la date donnée.
- * Le formatage final (traduction des sources en français naturel) est
- * délégué au modèle, conformément aux règles du prompt système.
+ * Calcule une plage "semaine" (lundi -> dimanche) en heure du Bénin.
+ * weeksAgo = 0 -> semaine en cours (lundi -> aujourd'hui)
+ * weeksAgo = 1 -> semaine dernière complète (lundi -> dimanche)
  */
-async function buildDayHistoryBlock(targetDate, devices) {
-  const entries = await getDayHistory(targetDate);
-  if (!entries || entries.length === 0) {
-    return `\n[Journal du jour (${targetDate}): aucune donnée enregistrée pour cette date]`;
+function getWeekRange(weeksAgo = 0) {
+  const dow = getBeninDayOfWeek(0); // 0=dimanche..6=samedi
+  const mondayOffsetToday = (dow === 0) ? 6 : dow - 1; // jours écoulés depuis le lundi de cette semaine
+  const mondayOffset = mondayOffsetToday + (weeksAgo * 7);
+  const start = getBeninDateString(-mondayOffset);
+  const end = weeksAgo === 0 ? getBeninDateString(0) : getBeninDateString(-(mondayOffset - 6));
+  return { start, end };
+}
+
+/**
+ * Parse un repère temporel explicite dans le message ("hier", "avant-hier",
+ * un jour de semaine, "cette semaine", "la semaine passée"...).
+ * Retourne { type: 'day', date } ou { type: 'range', start, end }, ou null si aucun repère trouvé.
+ */
+function parseRequestedPeriod(lower) {
+  if (/la semaine (?:passée|dernière|derniere)|semaine (?:passée|dernière|derniere)/.test(lower)) {
+    const { start, end } = getWeekRange(1);
+    return { type: 'range', start, end };
   }
+  if (/cette semaine/.test(lower)) {
+    const { start, end } = getWeekRange(0);
+    return { type: 'range', start, end };
+  }
+  if (/avant[- ]hier/.test(lower)) return { type: 'day', date: getBeninDateString(-2) };
+  if (/\bhier\b/.test(lower)) return { type: 'day', date: getBeninDateString(-1) };
+  if (/aujourd['’]hui/.test(lower)) return { type: 'day', date: getBeninDateString(0) };
+
+  for (let i = 0; i < DAY_NAMES_FR.length; i++) {
+    if (new RegExp(`\\b${DAY_NAMES_FR[i]}\\b`, 'i').test(lower)) {
+      return { type: 'day', date: getMostRecentDayOfWeekDate(i) };
+    }
+  }
+  return null; // aucun repère temporel explicite
+}
+
+/**
+ * Détecte si le message demande un historique/récapitulatif d'activité d'appareil(s)
+ * (ex: "qu'a-t-on fait hier ?", "fais comme vendredi", "le story de la prise hier",
+ * "l'historique du ventilateur la semaine passée", "historique de la prise" [-> aujourd'hui par défaut]).
+ * Retourne { type: 'day', date } ou { type: 'range', start, end }, ou null si rien détecté.
+ */
+function detectHistoryRequest(message, devices = []) {
+  if (!message) return null;
+  const lower = message.toLowerCase();
+
+  // Formulations "fortes" : déclenchent toujours la détection, même sans référence temporelle explicite
+  // (dans ce cas -> aujourd'hui par défaut).
+  const strongRecapKeywords = /(qu['’]a[- ]t[- ]on fait|qu['’]est[- ]ce qu['’]on a fait|qu['’]est[- ]ce qui a (?:été|ete) fait|qu['’]as[- ]tu fait|qu['’]avez[- ]vous fait|récapitulat|recapitulat|fais comme (?:hier|aujourd['’]hui)|répète ce qu['’]on a fait|repete ce qu['’]on a fait|journal (?:du|de la) jour)/i;
+  // Formulations "faibles" (mots plus génériques comme "historique", "story", "résumé", "raconte") :
+  // déclenchent la détection soit avec une référence temporelle, soit avec un nom d'appareil cité
+  // (ex: "historique de la prise" -> aujourd'hui par défaut), pour éviter les faux positifs purement
+  // génériques (ex: "fais-moi un résumé de ce document").
+  const weakRecapKeywords = /(historique|story|résumé|resume|récap\b|recap\b|raconte[- ]moi|ce qui s['’]est passé)/i;
+  const timeReference = /(avant[- ]hier|\bhier\b|aujourd['’]hui|cette semaine|la semaine (?:passée|dernière|derniere)|semaine (?:passée|dernière|derniere)|\b(lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche)\b)/i;
+
+  const hasDeviceMention = extractDeviceFilter(message, devices) !== null;
+  const isStrong = strongRecapKeywords.test(lower);
+  const isWeak = weakRecapKeywords.test(lower) && (timeReference.test(lower) || hasDeviceMention);
+  if (!isStrong && !isWeak) return null;
+
+  const period = parseRequestedPeriod(lower);
+  // Par défaut (pas de repère temporel explicite, ex: "historique de la prise") : aujourd'hui
+  return period || { type: 'day', date: getBeninDateString(0) };
+}
+
+/**
+ * Normalise une chaîne pour comparaison insensible aux accents/casse.
+ */
+function normalizeForMatch(str) {
+  return (str || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+}
+
+/**
+ * Essaie de détecter si le message cible un appareil précis
+ * (ex: "le story de la prise hier" -> id de l'appareil "prise").
+ * Retourne l'id de l'appareil trouvé, ou null.
+ */
+function extractDeviceFilter(message, devices) {
+  if (!message || !devices || devices.length === 0) return null;
+  const lower = normalizeForMatch(message);
+  let bestMatch = null;
+  let bestLen = 0;
+  for (const d of devices) {
+    const name = normalizeForMatch(d.name || d.id || '');
+    if (name && name.length >= 3 && lower.includes(name) && name.length > bestLen) {
+      bestMatch = d;
+      bestLen = name.length;
+    }
+  }
+  return bestMatch ? bestMatch.id : null;
+}
+
+/**
+ * Récupère le journal des actions sur une plage de dates (bornes incluses).
+ */
+async function getRangeHistory(startDate, endDate) {
+  if (!db) return [];
+  try {
+    const snapshot = await get(ref(db, HISTORY_LOGS_REF));
+    if (!snapshot.exists()) return [];
+
+    const allLogs = Object.values(snapshot.val() || {});
+    const start = new Date(startDate);
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(endDate);
+    end.setHours(23, 59, 59, 999);
+
+    return allLogs
+      .filter(l => l.timestamp >= start.getTime() && l.timestamp <= end.getTime())
+      .sort((a, b) => a.timestamp - b.timestamp)
+      .map(l => {
+        const dateObj = new Date(l.timestamp);
+        const heure = dateObj.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+        const dateLabel = dateObj.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+        const type = l.type || 'state_change'; // logs historiques sans "type" = changements d'état
+        if (type === 'device_add' || type === 'device_delete') {
+          return { type, deviceId: l.deviceId, deviceName: l.deviceName, heure, dateLabel };
+        }
+        if (type === 'planning_add' || type === 'planning_delete' || type === 'planning_delete_all') {
+          return { type, deviceId: l.deviceId, time: l.time, frequency: l.frequency, heure, dateLabel };
+        }
+        // state_change (par défaut, y compris les anciens logs sans champ "type")
+        return { type: 'state_change', deviceId: l.deviceId, etat: l.etat, source: l.source, heure, dateLabel };
+      });
+  } catch (e) {
+    return [];
+  }
+}
+
+/**
+ * Construit le bloc texte [Journal ...] à injecter dans le prompt,
+ * à partir des logs bruts de history_logs pour la date/plage donnée,
+ * avec filtrage optionnel sur un appareil précis.
+ * Le formatage final (traduction des sources en français naturel + mise en forme
+ * soignée) est délégué au modèle, conformément aux règles du prompt système.
+ */
+async function buildHistoryBlock(dateRange, devices, deviceFilterId = null) {
+  let entries;
+  let rangeLabel;
+  const isRange = dateRange.type === 'range';
+
+  if (isRange) {
+    entries = await getRangeHistory(dateRange.start, dateRange.end);
+    rangeLabel = `du ${dateRange.start} au ${dateRange.end}`;
+  } else {
+    entries = await getDayHistory(dateRange.date);
+    rangeLabel = dateRange.date;
+  }
+
+  if (deviceFilterId) {
+    entries = entries.filter(e => e.deviceId === deviceFilterId);
+  }
+
   const deviceName = (id) => devices.find(d => d.id === id)?.name || id;
+  const deviceLabel = deviceFilterId ? ` [Filtré sur appareil: ${deviceName(deviceFilterId)}]` : '';
+
+  if (!entries || entries.length === 0) {
+    return `\n[Journal (${rangeLabel})${deviceLabel}: aucune donnée enregistrée pour cette période]`;
+  }
+
   const lines = entries.map(e => {
-    if (e.type === 'device_add') return `- ${e.heure} | AJOUT_APPAREIL | ${e.deviceName || deviceName(e.deviceId)}`;
-    if (e.type === 'device_delete') return `- ${e.heure} | SUPPRESSION_APPAREIL | ${e.deviceName || deviceName(e.deviceId)}`;
-    if (e.type === 'planning_add') return `- ${e.heure} | AJOUT_PLANIFICATION | ${deviceName(e.deviceId)} (${e.time || '?'}, ${e.frequency || 'once'})`;
-    if (e.type === 'planning_delete') return `- ${e.heure} | SUPPRESSION_PLANIFICATION | ${deviceName(e.deviceId)}`;
-    if (e.type === 'planning_delete_all') return `- ${e.heure} | SUPPRESSION_TOUTES_PLANIFICATIONS`;
-    return `- ${e.heure} | ETAT | ${deviceName(e.deviceId)} | ${e.etat} | source=${e.source || 'inconnue'}`;
+    const dateTag = isRange ? `${e.dateLabel} ` : '';
+    if (e.type === 'device_add') return `- ${dateTag}${e.heure} | AJOUT_APPAREIL | ${e.deviceName || deviceName(e.deviceId)}`;
+    if (e.type === 'device_delete') return `- ${dateTag}${e.heure} | SUPPRESSION_APPAREIL | ${e.deviceName || deviceName(e.deviceId)}`;
+    if (e.type === 'planning_add') return `- ${dateTag}${e.heure} | AJOUT_PLANIFICATION | ${deviceName(e.deviceId)} (${e.time || '?'}, ${e.frequency || 'once'})`;
+    if (e.type === 'planning_delete') return `- ${dateTag}${e.heure} | SUPPRESSION_PLANIFICATION | ${deviceName(e.deviceId)}`;
+    if (e.type === 'planning_delete_all') return `- ${dateTag}${e.heure} | SUPPRESSION_TOUTES_PLANIFICATIONS`;
+    return `- ${dateTag}${e.heure} | ETAT | ${deviceName(e.deviceId)} | ${e.etat} | source=${e.source || 'inconnue'}`;
   });
-  return `\n[Journal du jour (${targetDate}):\n${lines.join('\n')}\n]`;
+  return `\n[Journal (${rangeLabel})${deviceLabel}:\n${lines.join('\n')}\n]`;
+}
+
+// ========================================
+// 💬 HISTORIQUE DE CONVERSATION PAR DATE
+// ("Qu'avons-nous dit hier ?", "De quoi a-t-on parlé la semaine passée ?")
+// ========================================
+
+/**
+ * Détecte si le message demande de retrouver le CONTENU de conversations passées
+ * (par opposition à l'historique des appareils). Nécessite un repère temporel explicite,
+ * sinon le contexte récent (10 derniers messages déjà injectés) suffit.
+ * Retourne { type: 'day', date } ou { type: 'range', start, end }, ou null.
+ */
+function detectConversationRecapRequest(message) {
+  if (!message) return null;
+  const lower = message.toLowerCase();
+  const convoKeywords = /(qu['’]avons[- ]nous dit|qu['’]est[- ]ce qu['’]on a dit|qu['’]est[- ]ce qui a (?:été )?dit|qu['’]est[- ]ce que (?:je|nous) (?:t['’]ai|t['’]avons) (?:demandé|dit)|de quoi (?:on|nous) (?:a[- ]t[- ]on|a(?:vons)?) parlé|a[- ]t[- ]on parlé|on avait discuté|qu['’]avais[- ]je demandé|qu['’]est[- ]ce qu['’]on s['’]est dit|qu['’]est[- ]ce que je t['’]avais (?:demandé|dit))/i;
+  if (!convoKeywords.test(lower)) return null;
+
+  const period = parseRequestedPeriod(lower);
+  return period; // null si pas de repère temporel -> pas de recherche spéciale nécessaire
+}
+
+function truncateForPrompt(text, maxLen = 500) {
+  if (!text) return '';
+  const clean = String(text).replace(/\s+/g, ' ').trim();
+  if (clean.length <= maxLen) return clean;
+  return clean.slice(0, maxLen) + '… [tronqué]';
+}
+
+/**
+ * Récupère tous les échanges (toutes sessions confondues) d'un utilisateur
+ * dont le timestamp tombe dans la période demandée.
+ */
+async function getConversationHistoryInRange(userId, dateRange) {
+  if (!db || !userId) return [];
+  try {
+    const isRange = dateRange.type === 'range';
+    const startStr = isRange ? dateRange.start : dateRange.date;
+    const endStr = isRange ? dateRange.end : dateRange.date;
+    const start = new Date(startStr); start.setHours(0, 0, 0, 0);
+    const end = new Date(endStr); end.setHours(23, 59, 59, 999);
+
+    const sessionsSnapshot = await get(ref(db, `${USER_CHATS_REF}/${userId}`));
+    if (!sessionsSnapshot.exists()) return [];
+
+    const sessions = sessionsSnapshot.val();
+    const results = [];
+    for (const session of Object.values(sessions)) {
+      const messages = session.messages || {};
+      for (const msg of Object.values(messages)) {
+        if (msg.timestamp >= start.getTime() && msg.timestamp <= end.getTime()) {
+          results.push({ timestamp: msg.timestamp, user: msg.user || '', bot: msg.bot || '' });
+        }
+      }
+    }
+    results.sort((a, b) => a.timestamp - b.timestamp);
+    return results;
+  } catch (e) {
+    console.warn('⚠️ Erreur lecture historique conversation:', e.message);
+    return [];
+  }
+}
+
+/**
+ * Construit le bloc [Conversations passées] injecté dans le prompt.
+ * Garde le texte utilisateur quasi complet (généralement court) et tronque
+ * les réponses trop longues de l'assistant tout en conservant leur substance
+ * (le début, qui contient en général l'essentiel de la réponse).
+ */
+async function buildConversationHistoryBlock(userId, dateRange) {
+  const MAX_EXCHANGES = 25;
+  const exchanges = await getConversationHistoryInRange(userId, dateRange);
+  const isRange = dateRange.type === 'range';
+  const label = isRange ? `du ${dateRange.start} au ${dateRange.end}` : dateRange.date;
+
+  if (!exchanges || exchanges.length === 0) {
+    return `\n[Conversations passées (${label}): aucun échange enregistré pour cette période]`;
+  }
+
+  const limited = exchanges.length > MAX_EXCHANGES ? exchanges.slice(-MAX_EXCHANGES) : exchanges;
+  const lines = limited.map(ex => {
+    const d = new Date(ex.timestamp);
+    const dateLabel = d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' });
+    const heure = d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+    return `- ${dateLabel} ${heure} | UTILISATEUR: "${truncateForPrompt(ex.user, 250)}" | ASSISTANT: "${truncateForPrompt(ex.bot, 600)}"`;
+  });
+  const note = exchanges.length > MAX_EXCHANGES
+    ? `\n(Note: ${exchanges.length} échanges trouvés au total sur cette période, seuls les ${MAX_EXCHANGES} plus récents sont listés ci-dessus.)`
+    : '';
+  return `\n[Conversations passées (${label}):\n${lines.join('\n')}${note}\n]`;
 }
 
 
@@ -1467,6 +1698,8 @@ L'utilisateur peut demander des planifications uniques OU récurrentes. Tu dois 
 - \`daysOfWeek\`: Tableau d'entiers pour "weekly" [0=Dim, 1=Lun, ... 6=Sam].
 - \`targetDate\`: "YYYY-MM-DD" si frequency est "once" (et que ce n'est pas aujourd'hui).
 
+**⚠️ RÈGLE DE DÉFAUT (CRITIQUE) :** Si l'utilisateur demande une planification SANS préciser de date, de jour, ni de fréquence (ex: "Allume la lampe à 18h" sans autre précision), considère par défaut \`frequency: "once"\` pour **aujourd'hui** (ne demande pas de précision, n'invente pas une récurrence). Précise-le naturellement dans ta réponse (ex: "✅ J'ai programmé l'allumage de la Lampe Salon aujourd'hui à 18h.").
+
 **SCÉNARIOS INTELLIGENTS :**
 
 1. **Routine Quotidienne ("Comme d'habitude", "Tous les jours")**
@@ -1713,7 +1946,9 @@ Si l'utilisateur demande de supprimer un appareil (ex: "Supprime la lampe jardin
 13. Intelligence: Détecte les incohérences (ex : planifier l'allumage d'une lampe déjà allumée).
 14. CONTINUATION: Si tu atteins la limite de tokens, ajoute "needs_continuation: true" et le client affichera un bouton "Continuer".
 15. Habitudes d'usage : Si [Habitudes d'usage] est présent dans les métadonnées, utilise-le pour faire des suggestions proactives. Ex : "D'habitude vous allumez la lampe salon vers 18h, voulez-vous que je le fasse ?".
-16. Mémoire du jour précédent (RÉCAPITULATIF DE JOURNÉE) : Si l'utilisateur demande "qu'a-t-on fait aujourd'hui/hier ?", "fais comme hier", "répète ce qu'on a fait vendredi", etc., un bloc [Journal du jour] peut être présent dans les métadonnées (issu de history_logs). Utilise-le pour répondre avec PRÉCISION. Règles strictes :
+16. Mémoire d'activité (HISTORIQUE / RÉCAPITULATIF — jour, semaine, ou appareil précis) : Si l'utilisateur demande un historique, un "story", un résumé ou un récapitulatif ("qu'a-t-on fait aujourd'hui/hier ?", "fais comme hier", "répète ce qu'on a fait vendredi", "le story de la prise pour hier", "l'historique du ventilateur la semaine passée", "résumé de cette semaine"...), un bloc [Journal (...)] peut être présent dans les métadonnées (issu de history_logs). Utilise-le pour répondre avec PRÉCISION. Règles strictes :
+- Le bloc peut couvrir UN SEUL JOUR (ex: "[Journal (2026-06-30): ...]") ou UNE PLAGE DE PLUSIEURS JOURS (ex: "[Journal (du 2026-06-22 au 2026-06-28): ...]") pour une demande portant sur "la semaine passée" ou "cette semaine". Dans ce dernier cas, chaque ligne indique le jour concerné : REGROUPE ta réponse par jour (un sous-titre par jour, ex: "**Lundi 22 juin**"), ne mélange pas tout en une seule liste plate.
+- Le bloc peut être FILTRÉ SUR UN APPAREIL PRÉCIS (mention "[Filtré sur appareil: NomAppareil]" dans l'en-tête). Dans ce cas, ta réponse ne doit parler QUE de cet appareil — ne mentionne aucun autre appareil, même si la question était formulée de façon générale.
 - Par défaut, ne raconte QUE les changements d'état des appareils (allumage/extinction), avec l'heure exacte de chaque action.
 - Traduis TOUJOURS la source technique en formulation naturelle et professionnelle, sans jamais utiliser les termes techniques bruts ("manual", "ai_command", "planning", "esp32", "source", "type") :
   - source "manual" → "allumé/éteint manuellement"
@@ -1721,8 +1956,17 @@ Si l'utilisateur demande de supprimer un appareil (ex: "Supprime la lampe jardin
   - source "planning" → "allumé/éteint automatiquement (planification)"
   - source "esp32" → "allumé/éteint par appui sur bouton poussoir"
 - N'évoque les ajouts/suppressions d'appareils ou de planifications QUE si l'utilisateur les demande explicitement (ex: "quels appareils ont été ajoutés aujourd'hui ?", "quelles planifications ont été créées ?"). Par défaut, ces événements sont ignorés dans le récapitulatif, même s'ils sont présents dans les données.
-- Présente le récapitulatif de façon chronologique et lisible (liste à puces avec heure, appareil, action, source reformulée), jamais sous forme de JSON ou de jargon technique.
-- Si [Journal du jour] est absent ou vide pour la date demandée, dis-le clairement plutôt que d'inventer des événements.
+- PRÉSENTATION SOIGNÉE (obligatoire) : ne recopie jamais les lignes brutes du bloc [Journal ...] telles quelles (jamais de "ETAT", "source=...", "|" dans la réponse visible). Reformule proprement en Markdown, par exemple :
+  ### 📅 Récapitulatif du 30 juin 2026
+  - 🟢 **08h12** — Lampe Salon allumée manuellement
+  - 🔴 **22h45** — Lampe Salon éteinte par l'assistant
+  Pour une plage de plusieurs jours, structure avec un sous-titre par jour (ex: "**Lundi 22 juin**") suivi des actions de ce jour, plutôt qu'une liste unique non datée.
+- Si le bloc [Journal ...] est absent ou vide pour la période/l'appareil demandé, dis-le clairement (ex: "Je n'ai aucune donnée enregistrée pour la prise sur cette période.") plutôt que d'inventer des événements.
+16bis. Mémoire de CONVERSATION par date ("Qu'avons-nous dit hier/avant-hier ?", "De quoi a-t-on parlé la semaine passée ?") : Ceci est DIFFÉRENT du point 16 (qui concerne les appareils). Si un bloc [Conversations passées (...)] est présent dans les métadonnées, il contient les échanges réels (question de l'utilisateur + réponse de l'assistant) de la période demandée, toutes discussions confondues. Règles strictes :
+- Réponds en te basant sur le CONTENU RÉEL de ces échanges, pas sur une généralité vague. Si le bloc montre par exemple que l'utilisateur avait demandé un CV et reçu telle réponse, dis-le précisément (ex: "Le 29 juin, tu m'as demandé de préparer un CV pour un poste de développeur, et je t'avais proposé une structure avec telles sections.").
+- Tu peux résumer si les échanges sont longs, mais le résumé doit FAIRE RESSORTIR l'essentiel du sujet et du contenu réellement échangé (sujet précis, éléments clés de la réponse), jamais une phrase générique du type "nous avons parlé de choses diverses".
+- Si plusieurs échanges distincts existent dans la période, regroupe-les par sujet ou par jour, de façon lisible (liste à puces ou courts paragraphes), pas en JSON ni en bloc brut.
+- Si le bloc [Conversations passées ...] est absent ou vide pour la période demandée, dis-le clairement (ex: "Je n'ai gardé aucune trace de nos échanges pour cette période.") plutôt que d'inventer un contenu.
 17. Fiabilité des faits sensibles au temps (CRITIQUE) : Pour tout fait qui peut changer avec le temps (chef d'état, ministres, gouvernement, prix, actualités, résultats d'élections, etc.), tes connaissances internes peuvent être dépassées. 
 - Si un bloc [Web: ...] est présent dans le message, considère-le comme la vérité la plus à jour et fais-le PRIMER sur tes connaissances internes en cas de contradiction. 
 - Si [Web] est absent et que la question porte sur un fait potentiellement périmé, dis clairement que l'information pourrait avoir changé plutôt que d'affirmer avec une fausse certitude une réponse issue uniquement de tes connaissances internes. 
@@ -2009,12 +2253,24 @@ async function chatWithGemini(userMessage, devices, userId, sessionId, attachmen
     }
   }
 
-  // ✅ NOUVEAU : récapitulatif de journée ("qu'a-t-on fait hier/aujourd'hui/vendredi ?")
+  // ✅ Historique/récapitulatif ("qu'a-t-on fait hier/aujourd'hui/vendredi ?", "story de la prise hier",
+  // "historique du ventilateur la semaine passée") — supporte jour unique, plage (semaine) et filtre par appareil.
   let dayHistoryBlock = '';
   if (!continuationMode) {
-    const requestedDate = detectDayHistoryRequest(userMessage);
-    if (requestedDate) {
-      dayHistoryBlock = await buildDayHistoryBlock(requestedDate, devices);
+    const requestedRange = detectHistoryRequest(userMessage, devices);
+    if (requestedRange) {
+      const deviceFilterId = extractDeviceFilter(userMessage, devices);
+      dayHistoryBlock = await buildHistoryBlock(requestedRange, devices, deviceFilterId);
+    }
+  }
+
+  // ✅ NOUVEAU : contenu des conversations passées ("qu'avons-nous dit avant-hier ?",
+  // "de quoi a-t-on parlé la semaine passée ?") — distinct de l'historique des appareils.
+  let conversationHistoryBlock = '';
+  if (!continuationMode) {
+    const convoRange = detectConversationRecapRequest(userMessage);
+    if (convoRange) {
+      conversationHistoryBlock = await buildConversationHistoryBlock(userId, convoRange);
     }
   }
 
@@ -2102,7 +2358,7 @@ MESSAGE: "${userMessage}"
 ${planningsText}
 ]
 [Analyse: ${JSON.stringify(contextAnalysis)}]${usagePatterns}
-${webResults.length > 0 ? `[Web: ${JSON.stringify(webResults.slice(0, 3))}]` : ''}${dayHistoryBlock}
+${webResults.length > 0 ? `[Web: ${JSON.stringify(webResults.slice(0, 3))}]` : ''}${dayHistoryBlock}${conversationHistoryBlock}
 
 MESSAGE: "${userMessage}"
 `;
