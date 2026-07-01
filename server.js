@@ -812,7 +812,7 @@ async function computeUsageStats(deviceId, days = 7) {
     // Compter les activations par heure
     const hourCounts = new Array(24).fill(0);
     deviceLogs.forEach(l => {
-      const h = new Date(l.timestamp).getHours();
+      const h = getBeninHour(l.timestamp);
       hourCounts[h]++;
     });
 
@@ -864,7 +864,7 @@ async function getAllDeviceUsagePatterns(currentHour) {
     const byDevice = {};
     recentLogs.forEach(l => {
       if (!byDevice[l.deviceId]) byDevice[l.deviceId] = [];
-      byDevice[l.deviceId].push(new Date(l.timestamp).getHours());
+      byDevice[l.deviceId].push(getBeninHour(l.timestamp));
     });
 
     const patterns = [];
@@ -888,6 +888,31 @@ async function getAllDeviceUsagePatterns(currentHour) {
  * Récupère le journal des actions d'hier ou d'un jour précis.
  * Utilisé pour "fais comme hier" ou "qu'a-t-on fait vendredi ?".
  */
+const BENIN_TZ = 'Africa/Porto-Novo';
+
+/**
+ * Bornes [début, fin] d'une journée (YYYY-MM-DD) en heure du Bénin (UTC+1, sans DST),
+ * exprimées en timestamps ms UTC — évite de dépendre du fuseau horaire du serveur.
+ */
+function getBeninDayBoundsMs(dateStr) {
+  const start = new Date(`${dateStr}T00:00:00+01:00`).getTime();
+  const end = new Date(`${dateStr}T23:59:59.999+01:00`).getTime();
+  return { start, end };
+}
+
+function formatBeninTime(timestamp) {
+  return new Date(timestamp).toLocaleTimeString('fr-FR', { timeZone: BENIN_TZ, hour: '2-digit', minute: '2-digit' });
+}
+
+function formatBeninDateLabel(timestamp, opts = { day: 'numeric', month: 'long' }) {
+  return new Date(timestamp).toLocaleDateString('fr-FR', { timeZone: BENIN_TZ, ...opts });
+}
+
+function getBeninHour(timestamp) {
+  const h = new Intl.DateTimeFormat('en-US', { timeZone: BENIN_TZ, hour: 'numeric', hour12: false }).format(new Date(timestamp));
+  return h === '24' ? 0 : parseInt(h, 10);
+}
+
 async function getDayHistory(targetDate) {
   if (!db) return [];
   try {
@@ -895,16 +920,13 @@ async function getDayHistory(targetDate) {
     if (!snapshot.exists()) return [];
 
     const allLogs = Object.values(snapshot.val() || {});
-    const start = new Date(targetDate);
-    start.setHours(0, 0, 0, 0);
-    const end = new Date(targetDate);
-    end.setHours(23, 59, 59, 999);
+    const { start, end } = getBeninDayBoundsMs(targetDate);
 
     return allLogs
-      .filter(l => l.timestamp >= start.getTime() && l.timestamp <= end.getTime())
+      .filter(l => l.timestamp >= start && l.timestamp <= end)
       .sort((a, b) => a.timestamp - b.timestamp)
       .map(l => {
-        const heure = new Date(l.timestamp).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+        const heure = formatBeninTime(l.timestamp);
         const type = l.type || 'state_change'; // logs historiques sans "type" = changements d'état
         if (type === 'device_add' || type === 'device_delete') {
           return { type, deviceId: l.deviceId, deviceName: l.deviceName, heure };
@@ -1068,18 +1090,15 @@ async function getRangeHistory(startDate, endDate) {
     if (!snapshot.exists()) return [];
 
     const allLogs = Object.values(snapshot.val() || {});
-    const start = new Date(startDate);
-    start.setHours(0, 0, 0, 0);
-    const end = new Date(endDate);
-    end.setHours(23, 59, 59, 999);
+    const start = getBeninDayBoundsMs(startDate).start;
+    const end = getBeninDayBoundsMs(endDate).end;
 
     return allLogs
-      .filter(l => l.timestamp >= start.getTime() && l.timestamp <= end.getTime())
+      .filter(l => l.timestamp >= start && l.timestamp <= end)
       .sort((a, b) => a.timestamp - b.timestamp)
       .map(l => {
-        const dateObj = new Date(l.timestamp);
-        const heure = dateObj.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-        const dateLabel = dateObj.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+        const heure = formatBeninTime(l.timestamp);
+        const dateLabel = formatBeninDateLabel(l.timestamp, { weekday: 'long', day: 'numeric', month: 'long' });
         const type = l.type || 'state_change'; // logs historiques sans "type" = changements d'état
         if (type === 'device_add' || type === 'device_delete') {
           return { type, deviceId: l.deviceId, deviceName: l.deviceName, heure, dateLabel };
@@ -1176,8 +1195,8 @@ async function getConversationHistoryInRange(userId, dateRange) {
     const isRange = dateRange.type === 'range';
     const startStr = isRange ? dateRange.start : dateRange.date;
     const endStr = isRange ? dateRange.end : dateRange.date;
-    const start = new Date(startStr); start.setHours(0, 0, 0, 0);
-    const end = new Date(endStr); end.setHours(23, 59, 59, 999);
+    const start = getBeninDayBoundsMs(startStr).start;
+    const end = getBeninDayBoundsMs(endStr).end;
 
     const sessionsSnapshot = await get(ref(db, `${USER_CHATS_REF}/${userId}`));
     if (!sessionsSnapshot.exists()) return [];
@@ -1187,7 +1206,7 @@ async function getConversationHistoryInRange(userId, dateRange) {
     for (const session of Object.values(sessions)) {
       const messages = session.messages || {};
       for (const msg of Object.values(messages)) {
-        if (msg.timestamp >= start.getTime() && msg.timestamp <= end.getTime()) {
+        if (msg.timestamp >= start && msg.timestamp <= end) {
           results.push({ timestamp: msg.timestamp, user: msg.user || '', bot: msg.bot || '' });
         }
       }
@@ -1218,9 +1237,8 @@ async function buildConversationHistoryBlock(userId, dateRange) {
 
   const limited = exchanges.length > MAX_EXCHANGES ? exchanges.slice(-MAX_EXCHANGES) : exchanges;
   const lines = limited.map(ex => {
-    const d = new Date(ex.timestamp);
-    const dateLabel = d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' });
-    const heure = d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+    const dateLabel = formatBeninDateLabel(ex.timestamp);
+    const heure = formatBeninTime(ex.timestamp);
     return `- ${dateLabel} ${heure} | UTILISATEUR: "${truncateForPrompt(ex.user, 250)}" | ASSISTANT: "${truncateForPrompt(ex.bot, 600)}"`;
   });
   const note = exchanges.length > MAX_EXCHANGES
